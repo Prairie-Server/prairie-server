@@ -19,6 +19,8 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/livetv"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // liveTVViewID is a stable CollectionFolder id for the Live TV library tab.
@@ -30,10 +32,12 @@ var liveTVViewUUID = uuid.MustParse(liveTVViewID)
 
 // LiveTVHandler wraps *livetv.Service with Jellyfin Live TV HTTP endpoints.
 type LiveTVHandler struct {
-	service    *livetv.Service
-	codec      *ResourceIDCodec
-	serverID   string
-	httpClient *http.Client
+	service        *livetv.Service
+	codec          *ResourceIDCodec
+	serverID       string
+	jwtSecret      string
+	deviceProfiles *DeviceProfileStore
+	httpClient     *http.Client
 	now        func() time.Time
 
 	mu      sync.Mutex
@@ -47,6 +51,8 @@ type openLiveStream struct {
 	SourceURL     string
 	OpenedAt      time.Time
 	OpenerToken   string
+	UserID        int
+	ProfileID     string
 }
 
 type liveTVInfoDTO struct {
@@ -118,15 +124,23 @@ type openLiveStreamRequestDTO struct {
 }
 
 // NewLiveTVHandler creates a Jellyfin-compat Live TV handler.
-func NewLiveTVHandler(service *livetv.Service, codec *ResourceIDCodec, cfg *config.Config) *LiveTVHandler {
+func NewLiveTVHandler(service *livetv.Service, codec *ResourceIDCodec, cfg *config.Config, profiles ...*DeviceProfileStore) *LiveTVHandler {
 	serverID := ""
+	jwtSecret := ""
+	var deviceProfiles *DeviceProfileStore
 	if cfg != nil {
 		serverID = cfg.JellyfinCompat.ServerID
+		jwtSecret = cfg.Auth.JWTSecret
+	}
+	if len(profiles) > 0 {
+		deviceProfiles = profiles[0]
 	}
 	return &LiveTVHandler{
-		service:  service,
-		codec:    codec,
-		serverID: serverID,
+		service:        service,
+		codec:          codec,
+		serverID:       serverID,
+		jwtSecret:      jwtSecret,
+		deviceProfiles: deviceProfiles,
 		httpClient: &http.Client{
 			// No overall Timeout: live MPEG-TS proxies run indefinitely.
 			Timeout: 0,
@@ -627,7 +641,7 @@ func (h *LiveTVHandler) HandleOpenLiveStream(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "BadRequest", "OpenToken or ItemId with a Live TV channel is required")
 		return
 	}
-	opened, err := h.openChannelStream(r.Context(), session, channelID)
+	opened, err := h.openChannelStream(r.Context(), session, channelID, h.liveTVDeviceProfile(session))
 	if err != nil {
 		writeLiveTVCompatError(w, err)
 		return
@@ -727,7 +741,7 @@ func (h *LiveTVHandler) HandleLiveStreamFile(w http.ResponseWriter, r *http.Requ
 // When autoOpen is true the upstream tuner session is opened here (Jellyfin
 // AutoOpenLiveStream pattern) so RequiresOpening can be false and DirectStreamUrl
 // is immediately usable.
-func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Session, channelRouteID string, autoOpen bool, existingLiveStreamID string) (mediaSourceDTO, error) {
+func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Session, channelRouteID string, autoOpen bool, existingLiveStreamID string, profiles ...DeviceProfile) (mediaSourceDTO, error) {
 	channelID, err := h.decodeChannelID(channelRouteID)
 	if err != nil {
 		return mediaSourceDTO{}, err
@@ -765,12 +779,16 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 		}},
 	}
 	if autoOpen {
+		profile := firstDeviceProfile(profiles)
+		if !profile.HasData() {
+			profile = h.liveTVDeviceProfile(session)
+		}
 		if existingLiveStreamID != "" {
 			if reused, ok := h.mediaSourceForOpenStream(ctx, existingLiveStreamID, ch.ID); ok {
 				return reused, nil
 			}
 		}
-		opened, err := h.openChannelStream(ctx, session, ch.ID)
+		opened, err := h.openChannelStream(ctx, session, ch.ID, profile)
 		if err != nil {
 			return mediaSourceDTO{}, err
 		}
@@ -799,6 +817,26 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
 	if stream.OpenerToken != "" {
 		directURL += "?api_key=" + url.QueryEscape(stream.OpenerToken)
+	}
+	if deliveryID, ok := livetv.LiveHLSDeliveryID(stream.SourceURL); ok && h.jwtSecret != "" {
+		if token, err := streamtoken.Sign(streamtoken.Claims{
+			SessionID: deliveryID, UserID: stream.UserID, ProfileID: stream.ProfileID,
+		}, h.jwtSecret, playback.MaxTokenTTL); err == nil {
+			hlsURL := stream.SourceURL + "?" + streamtoken.QueryParam + "=" + url.QueryEscape(token)
+			return mediaSourceDTO{
+				Protocol: "Http", ID: h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
+				Path: hlsURL, Type: "Default", Container: "hls", Name: name,
+				IsRemote: true, SupportsTranscoding: true, SupportsDirectPlay: true,
+				SupportsDirectStream: false, IsInfiniteStream: true,
+				RequiresOpening: false, RequiresClosing: true, LiveStreamID: liveStreamID,
+				DirectStreamURL: hlsURL, Formats: []string{},
+				RequiredHTTPHeaders: map[string]string{}, MediaAttachments: []map[string]any{},
+				MediaStreams: []mediaStreamDTO{
+					{Index: 0, Type: streamTypeVideo, Codec: "h264", IsDefault: true, DisplayTitle: streamTypeVideo},
+					{Index: 1, Type: "Audio", Codec: "aac", IsDefault: true, DisplayTitle: streamTypeAudio},
+				},
+			}, true
+		}
 	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
@@ -829,7 +867,7 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 	}, true
 }
 
-func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session, channelID string) (mediaSourceDTO, error) {
+func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session, channelID string, profile DeviceProfile) (mediaSourceDTO, error) {
 	userID := 0
 	profileID := ""
 	if session != nil {
@@ -838,13 +876,64 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 	}
 	// Compat clients consume the raw MPEG-TS below, so they never want the
 	// bridge to re-encode: leave capabilities empty to keep the copy path.
-	native, err := h.service.StartChannelSession(ctx, channelID, userID, profileID, livetv.ClientCapabilities{})
+	caps := liveTVClientCapabilities(profile)
+	native, err := h.service.StartChannelSession(ctx, channelID, userID, profileID, caps)
 	if err != nil {
 		return mediaSourceDTO{}, err
 	}
 	liveStreamID := uuid.NewString()
-	// Compat clients always consume MPEG-TS via HandleLiveStreamFile. Keep the
-	// upstream tuner URL even when the native PlaybackBridge remuxes to HLS.
+
+	// Capable Jellyfin clients use the same HLS bridge as the native API. This
+	// lets browsers receive H.264/AAC instead of raw ATSC MPEG-2/AC-3.
+	if native.Transport == "hls" && livetv.IsClientSafePlayURL(native.HLSURL) && h.jwtSecret != "" {
+		if deliveryID, ok := livetv.LiveHLSDeliveryID(native.HLSURL); ok {
+			token, signErr := streamtoken.Sign(streamtoken.Claims{
+				SessionID: deliveryID,
+				UserID: userID,
+				ProfileID: profileID,
+			}, h.jwtSecret, playback.MaxTokenTTL)
+			if signErr == nil {
+				directURL := native.HLSURL + "?" + streamtoken.QueryParam + "=" + url.QueryEscape(token)
+				openerToken := ""
+				if session != nil {
+					openerToken = session.Token
+				}
+				h.mu.Lock()
+				h.streams[liveStreamID] = &openLiveStream{
+					ID:            liveStreamID,
+					ChannelID:     channelID,
+					NativeSession: native.ID,
+					SourceURL:     native.HLSURL,
+					OpenedAt:      h.now(),
+					OpenerToken:   openerToken,
+					UserID:        userID,
+					ProfileID:     profileID,
+				}
+				h.mu.Unlock()
+				name := channelID
+				if ch, getErr := h.service.GetChannel(ctx, channelID); getErr == nil && ch != nil {
+					name = channelDisplayName(*ch)
+				}
+				return mediaSourceDTO{
+					Protocol: "Http", ID: h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
+					Path: directURL, Type: "Default", Container: "hls", Name: name,
+					IsRemote: true, SupportsTranscoding: true, SupportsDirectPlay: true,
+					SupportsDirectStream: false, IsInfiniteStream: true,
+					RequiresOpening: false, RequiresClosing: true, LiveStreamID: liveStreamID,
+					DirectStreamURL: directURL, Formats: []string{},
+					RequiredHTTPHeaders: map[string]string{}, MediaAttachments: []map[string]any{},
+					MediaStreams: []mediaStreamDTO{
+						{Index: 0, Type: streamTypeVideo, Codec: "h264", IsDefault: true, DisplayTitle: streamTypeVideo},
+						{Index: 1, Type: "Audio", Codec: "aac", IsDefault: true, DisplayTitle: streamTypeAudio},
+					},
+				}, nil
+			}
+			slog.WarnContext(ctx, "jellycompat live HLS token signing failed; falling back to MPEG-TS", "component", "jellycompat", "channel_id", channelID, "error", signErr)
+		}
+	}
+
+	// Legacy clients and clients without capability information retain the
+	// existing authenticated MPEG-TS proxy.
 	sourceURL, resolveErr := h.service.ResolveSessionUpstreamURL(ctx, native.ID)
 	if resolveErr != nil || sourceURL == "" {
 		_, _ = h.service.ReleaseSession(ctx, native.ID, userID, profileID, false)
@@ -904,6 +993,62 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 			DisplayTitle: streamTypeVideo,
 		}},
 	}, nil
+}
+
+func firstDeviceProfile(profiles []DeviceProfile) DeviceProfile {
+	if len(profiles) == 0 {
+		return DeviceProfile{}
+	}
+	return profiles[0]
+}
+
+func (h *LiveTVHandler) liveTVDeviceProfile(session *Session) DeviceProfile {
+	if h.deviceProfiles == nil || session == nil {
+		return DeviceProfile{}
+	}
+	profile, _ := h.deviceProfiles.Get(session.Token)
+	return profile
+}
+
+func liveTVClientCapabilities(profile DeviceProfile) livetv.ClientCapabilities {
+	caps := livetv.ClientCapabilities{}
+	for _, p := range profile.DirectPlayProfiles {
+		if !matchesVideoType(p.Type) {
+			continue
+		}
+		if raw := strings.TrimSpace(p.VideoCodec); raw != "" && raw != "*" {
+			caps.CodecsVideo = appendCodecCSV(caps.CodecsVideo, raw)
+		}
+		if raw := strings.TrimSpace(p.AudioCodec); raw != "" && raw != "*" {
+			caps.CodecsAudio = appendCodecCSV(caps.CodecsAudio, raw)
+		}
+	}
+	for _, p := range profile.TranscodingProfiles {
+		if max, err := strconv.Atoi(strings.TrimSpace(p.MaxAudioChannels)); err == nil && max > caps.MaxAudioChannels {
+			caps.MaxAudioChannels = max
+		}
+	}
+	return caps
+}
+
+func appendCodecCSV(dst []string, raw string) []string {
+	for part := range strings.SplitSeq(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" || part == "*" {
+			continue
+		}
+		seen := false
+		for _, existing := range dst {
+			if strings.EqualFold(existing, part) {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			dst = append(dst, part)
+		}
+	}
+	return dst
 }
 
 func (h *LiveTVHandler) closeLiveStream(ctx context.Context, liveStreamID string) {

@@ -2145,7 +2145,7 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 	routeID := chi.URLParam(r, "id")
 	if h.liveTV != nil {
 		if channelID, ok := h.liveTV.DecodeLiveTVChannelID(routeID); ok {
-			req, _, err := h.parsePlaybackRequest(r, session.Token)
+			req, profile, err := h.parsePlaybackRequest(r, session.Token)
 			if err != nil {
 				writeError(w, http.StatusBadRequest, "BadRequest", "Invalid playback request")
 				return
@@ -2156,7 +2156,7 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 			}
 			autoOpen := req.AutoOpenLiveStream || r.URL.Query().Get("AutoOpenLiveStream") == "true"
 			liveStreamID := firstNonEmpty(req.LiveStreamID, r.URL.Query().Get("LiveStreamId"))
-			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen, liveStreamID)
+			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen, liveStreamID, profile)
 			if err != nil {
 				writeLiveTVCompatError(w, err)
 				return
