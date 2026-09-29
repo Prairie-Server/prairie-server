@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
@@ -48,6 +49,7 @@ func (r *runtimeConfigBackfillRows) FieldDescriptions() []pgconn.FieldDescriptio
 func (r *runtimeConfigBackfillRows) Values() ([]any, error)                       { return nil, nil }
 func (r *runtimeConfigBackfillRows) RawValues() [][]byte                          { return nil }
 func (r *runtimeConfigBackfillRows) Conn() *pgx.Conn                              { return nil }
+func (r *runtimeConfigBackfillRows) TypeMap() *pgtype.Map                         { return nil }
 
 type runtimeConfigBackfillExec struct {
 	row        runtimeConfigBackfillRows
