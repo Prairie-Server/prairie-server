@@ -1,8 +1,13 @@
 package trickplay
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"image/jpeg"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -191,12 +196,145 @@ func TestProcessRequestGeneratesPrioritySheet(t *testing.T) {
 }
 
 func TestBuildSheetExtractArgsIncludesTonemap(t *testing.T) {
-	args := buildSheetExtractArgs("/media/a.mkv", 1000, 10, 320, 10, 10, true)
+	args := buildSheetExtractArgs("/media/a.mkv", 1000, 10, 320, 10, 10, true, true)
 	joined := strings.Join(args, " ")
-	if !strings.Contains(joined, "tonemap=bt2390") {
-		t.Fatalf("missing tonemap in args: %v", args)
+	// Plain tonemap has no bt2390; only jellyfin-ffmpeg's tonemapx does.
+	if !strings.Contains(joined, "fps=1/10,scale=320:-2,tonemapx=tonemap=bt2390,") {
+		t.Fatalf("missing tonemapx after fps/scale in args: %v", args)
 	}
-	if !strings.Contains(joined, "fps=1/10,scale=320:-2,tile=10x10") {
+	if !strings.HasSuffix(strings.Split(joined, " -vf ")[1], "format=yuv420p,tile=10x10 -frames:v 1 -f image2pipe -vcodec mjpeg -") {
+		t.Fatalf("tile must follow tone mapping: %v", args)
+	}
+	if !strings.Contains(joined, "-skip_frame nokey -ss") {
+		t.Fatalf("missing keyframe-only decode in args: %v", args)
+	}
+}
+
+func TestBuildSheetExtractArgsSDRSkipsTonemap(t *testing.T) {
+	args := buildSheetExtractArgs("/media/a.mkv", 0, 10, 320, 10, 10, false, false)
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "tonemap") {
+		t.Fatalf("SDR args must not tone map: %v", args)
+	}
+	if !strings.Contains(joined, "-vf fps=1/10,scale=320:-2,tile=10x10 ") {
 		t.Fatalf("missing tile filter in args: %v", args)
+	}
+	if strings.Contains(joined, "-skip_frame") {
+		t.Fatalf("full decode must not skip frames: %v", args)
+	}
+}
+
+func TestKeyframesDenseEnough(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyframes []float64
+		want      bool
+	}{
+		{"blu-ray 1s GOP", []float64{600, 601, 602.1, 603, 604}, true},
+		{"gap exactly half the interval", []float64{600, 605, 610}, true},
+		{"WEB 10s GOP", []float64{600, 610.1, 620.2}, false},
+		{"one long gap", []float64{600, 602, 614, 616}, false},
+		{"single keyframe", []float64{600}, false},
+		{"none", nil, false},
+	}
+	for _, tt := range tests {
+		if got := keyframesDenseEnough(tt.keyframes, 10); got != tt.want {
+			t.Errorf("%s: keyframesDenseEnough = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestExtractSheetDecodesKeyframesOnlyWhenTheyAreDense(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyframes []float64
+		probeErr  error
+		wantSkip  bool
+	}{
+		{"dense keyframes", []float64{600, 601, 602, 603}, nil, true},
+		{"sparse keyframes", []float64{600, 610, 620}, nil, false},
+		{"probe failure", nil, errors.New("ffprobe failed"), false},
+	}
+	for _, tt := range tests {
+		var gotArgs []string
+		_, _, err := ExtractSheet(context.Background(), SheetExtractOptions{
+			InputPath:  "/media/a.mkv",
+			SheetStart: 600,
+			RunFunc: func(_ context.Context, _ string, args []string) ([]byte, error) {
+				gotArgs = args
+				return []byte("jpeg"), nil
+			},
+			ProbeKeyframes: func(context.Context, string, string, float64, float64) ([]float64, error) {
+				return tt.keyframes, tt.probeErr
+			},
+		})
+		if err != nil {
+			t.Fatalf("%s: ExtractSheet: %v", tt.name, err)
+		}
+		if got := strings.Contains(strings.Join(gotArgs, " "), "-skip_frame nokey"); got != tt.wantSkip {
+			t.Errorf("%s: keyframe-only decode = %v, want %v (args %v)", tt.name, got, tt.wantSkip, gotArgs)
+		}
+	}
+}
+
+// The probe must judge the stream the extract tiles, and neither may pick an
+// attached cover picture (v:0 would).
+func TestProbeAndExtractReadTheSameVideoStream(t *testing.T) {
+	probe := strings.Join(buildKeyframeProbeArgs("/media/a.mkv", 600, 60), " ")
+	extract := strings.Join(buildSheetExtractArgs("/media/a.mkv", 600, 10, 320, 10, 10, false, false), " ")
+	if !strings.Contains(probe, "-select_streams V:0 ") {
+		t.Fatalf("probe does not select the first non-picture video stream: %s", probe)
+	}
+	if !strings.Contains(extract, "-i /media/a.mkv -map 0:V:0 ") {
+		t.Fatalf("extract does not map the probed stream: %s", extract)
+	}
+}
+
+// With two video streams of different GOP spacing, the probe reports the
+// first stream's keyframes and the extract tiles that same stream.
+func TestKeyframeProbeFollowsTheExtractedStream(t *testing.T) {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Skip("ffmpeg not installed")
+	}
+	ffprobe, err := exec.LookPath("ffprobe")
+	if err != nil {
+		t.Skip("ffprobe not installed")
+	}
+	// Stream 0: 16:9, keyframe every 1s. Stream 1: square, keyframe every 40s.
+	// The aspect ratio tells the tiled stream apart in the output sheet.
+	input := filepath.Join(t.TempDir(), "two-streams.mkv")
+	gen := exec.Command(ffmpeg, "-v", "error",
+		"-f", "lavfi", "-i", "testsrc=size=160x90:rate=10:duration=40",
+		"-f", "lavfi", "-i", "testsrc=size=320x320:rate=10:duration=40",
+		"-map", "0:v", "-map", "1:v",
+		"-c:v", "mpeg4", "-g:v:0", "10", "-g:v:1", "400",
+		// Flag the second stream default so ffmpeg's own pick (default
+		// disposition, then resolution) differs from the probed stream.
+		"-disposition:v:0", "0", "-disposition:v:1", "default",
+		input)
+	if out, err := gen.CombinedOutput(); err != nil {
+		t.Fatalf("generate fixture: %v: %s", err, out)
+	}
+
+	keyframes, err := probeKeyframeTimes(context.Background(), ffprobe, input, 0, 30)
+	if err != nil {
+		t.Fatalf("probeKeyframeTimes: %v", err)
+	}
+	if len(keyframes) < 20 || !keyframesDenseEnough(keyframes, 10) {
+		t.Fatalf("probe did not read the dense first stream: %v", keyframes)
+	}
+
+	sheet, err := runFFmpegSheetExtract(context.Background(), ffmpeg,
+		buildSheetExtractArgs(input, 0, 10, 160, 2, 2, false, true))
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(sheet))
+	if err != nil {
+		t.Fatalf("decode sheet: %v", err)
+	}
+	if cfg.Width != 320 || cfg.Height != 180 {
+		t.Fatalf("sheet is %dx%d, want 320x180 tiled from the first stream", cfg.Width, cfg.Height)
 	}
 }

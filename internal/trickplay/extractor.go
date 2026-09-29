@@ -5,13 +5,27 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
 )
 
 const (
 	sheetExtractTimeoutSDR = 2 * time.Minute
 	sheetExtractTimeoutHDR = 5 * time.Minute
+
+	// keyframeProbeWindow is how much of a sheet's range is demuxed to judge
+	// its keyframe spacing. An encode's GOP structure is effectively uniform,
+	// so a short window stands in for the sheet without reading all of it.
+	keyframeProbeWindow  = 60.0
+	keyframeProbeTimeout = 30 * time.Second
+
+	// sheetVideoStream is the stream both the keyframe probe and the sheet
+	// extract read: the first video stream that is not an attached picture
+	// (cover art), so the probe judges the stream that is tiled.
+	sheetVideoStream = "V:0"
 )
 
 type SheetExtractOptions struct {
@@ -24,6 +38,9 @@ type SheetExtractOptions struct {
 	FFmpegPath      string
 	ToneMap         bool
 	RunFunc         func(ctx context.Context, ffmpegPath string, args []string) ([]byte, error)
+	// ProbeKeyframes returns keyframe timestamps in [start, start+window);
+	// nil uses ffprobe beside FFmpegPath.
+	ProbeKeyframes func(ctx context.Context, ffprobePath, inputPath string, start, window float64) ([]float64, error)
 }
 
 func ExtractSheet(ctx context.Context, opts SheetExtractOptions) ([]byte, string, error) {
@@ -53,7 +70,16 @@ func ExtractSheet(ctx context.Context, opts SheetExtractOptions) ([]byte, string
 		rows = DefaultTileRows
 	}
 
-	args := buildSheetExtractArgs(opts.InputPath, opts.SheetStart, interval, width, columns, rows, opts.ToneMap)
+	probe := opts.ProbeKeyframes
+	if probe == nil {
+		probe = probeKeyframeTimes
+	}
+	probeCtx, probeCancel := context.WithTimeout(ctx, keyframeProbeTimeout)
+	keyframes, probeErr := probe(probeCtx, mediaprobe.FFprobePathFromFFmpeg(ffmpegPath), opts.InputPath, opts.SheetStart, keyframeProbeWindow)
+	probeCancel()
+	keyframeOnly := probeErr == nil && keyframesDenseEnough(keyframes, interval)
+
+	args := buildSheetExtractArgs(opts.InputPath, opts.SheetStart, interval, width, columns, rows, opts.ToneMap, keyframeOnly)
 	timeout := sheetExtractTimeoutSDR
 	if opts.ToneMap {
 		timeout = sheetExtractTimeoutHDR
@@ -75,22 +101,80 @@ func buildSheetExtractArgs(
 	interval float64,
 	width, columns, rows int,
 	toneMap bool,
+	keyframeOnly bool,
 ) []string {
-	vf := fmt.Sprintf("fps=1/%g,scale=%d:-2,tile=%dx%d", interval, width, columns, rows)
+	// bt2390 exists only in jellyfin-ffmpeg's tonemapx; stock ffmpeg's tonemap
+	// rejects it. Tone mapping after fps and scale keeps it to one small frame
+	// per tile instead of every decoded 4K frame.
+	toneMapChain := ""
 	if toneMap {
-		vf = "zscale=t=linear:npl=100,format=gbrpf32le,tonemap=bt2390,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p," + vf
+		toneMapChain = "tonemapx=tonemap=bt2390,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p,"
 	}
-	return []string{
-		"-hide_banner",
-		"-loglevel", "error",
+	vf := fmt.Sprintf("fps=1/%g,scale=%d:-2,%stile=%dx%d", interval, width, toneMapChain, columns, rows)
+	args := []string{"-hide_banner", "-loglevel", "error"}
+	if keyframeOnly {
+		// Decoding every frame of a 4K HEVC source in software overruns the
+		// sheet timeout; keyframes alone are exact enough when they are dense.
+		args = append(args, "-skip_frame", "nokey")
+	}
+	return append(args,
 		"-ss", fmt.Sprintf("%.3f", sheetStart),
 		"-i", inputPath,
+		"-map", "0:"+sheetVideoStream,
 		"-vf", vf,
 		"-frames:v", "1",
 		"-f", "image2pipe",
 		"-vcodec", "mjpeg",
 		"-",
+	)
+}
+
+// keyframesDenseEnough reports whether decoding only keyframes still gives
+// every tile its own frame close to its time: no gap between keyframes may
+// exceed half a tile interval. Longer GOPs (common in WEB encodes, where 10s
+// is typical) would make neighboring tiles repeat one keyframe, so those
+// sheets decode every frame instead.
+func keyframesDenseEnough(keyframes []float64, interval float64) bool {
+	if len(keyframes) < 2 {
+		return false
 	}
+	for i := 1; i < len(keyframes); i++ {
+		if keyframes[i]-keyframes[i-1] > interval/2 {
+			return false
+		}
+	}
+	return true
+}
+
+func buildKeyframeProbeArgs(inputPath string, start, window float64) []string {
+	return []string{
+		"-v", "error",
+		"-select_streams", sheetVideoStream,
+		"-read_intervals", fmt.Sprintf("%.3f%%+%.3f", start, window),
+		"-show_entries", "packet=pts_time,flags",
+		"-of", "csv=p=0",
+		inputPath,
+	}
+}
+
+// probeKeyframeTimes lists the video keyframe timestamps in a window by
+// demuxing packets; nothing is decoded.
+func probeKeyframeTimes(ctx context.Context, ffprobePath, inputPath string, start, window float64) ([]float64, error) {
+	out, err := exec.CommandContext(ctx, ffprobePath, buildKeyframeProbeArgs(inputPath, start, window)...).Output()
+	if err != nil {
+		return nil, fmt.Errorf("ffprobe keyframes: %w", err)
+	}
+	var times []float64
+	for _, line := range strings.Split(string(out), "\n") {
+		pts, flags, ok := strings.Cut(strings.TrimSpace(line), ",")
+		if !ok || !strings.HasPrefix(flags, "K") {
+			continue
+		}
+		if t, err := strconv.ParseFloat(pts, 64); err == nil {
+			times = append(times, t)
+		}
+	}
+	return times, nil
 }
 
 func runFFmpegSheetExtract(ctx context.Context, ffmpegPath string, args []string) ([]byte, error) {

@@ -1578,7 +1578,7 @@ func main() {
 			deps.FolderRepo,
 			settingsRepo,
 			trickplayObjStore,
-			cfg.Playback.FFmpegPath,
+			playback.ResolveFFmpegPath(cfg.Playback.FFmpegPath),
 			cfg.Playback.ChapterThumbnailWorkers,
 		)
 		if trickplayService != nil {
