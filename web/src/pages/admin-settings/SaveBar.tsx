@@ -66,7 +66,7 @@ export function SaveBar({
               size="sm"
               onClick={() => onSave()}
               disabled={isSaving || !canSave}
-              className="rounded-full bg-[var(--settings-accent)] text-[#15151a] hover:bg-[var(--settings-accent)] hover:brightness-110"
+              className="rounded-full bg-[var(--settings-accent)] text-[var(--settings-accent-foreground)] hover:bg-[var(--settings-accent)] hover:brightness-110"
             >
               {isSaving ? "Saving..." : saveLabel}
             </Button>
