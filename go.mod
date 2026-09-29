@@ -46,7 +46,7 @@ require (
 	golang.org/x/image v0.45.0
 	golang.org/x/net v0.58.0
 	golang.org/x/tools v0.48.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260825221802-da73d73af1c5
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
