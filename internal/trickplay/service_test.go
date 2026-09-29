@@ -2,6 +2,7 @@ package trickplay
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -191,7 +192,7 @@ func TestProcessRequestGeneratesPrioritySheet(t *testing.T) {
 }
 
 func TestBuildSheetExtractArgsIncludesTonemap(t *testing.T) {
-	args := buildSheetExtractArgs("/media/a.mkv", 1000, 10, 320, 10, 10, true)
+	args := buildSheetExtractArgs("/media/a.mkv", 1000, 10, 320, 10, 10, true, true)
 	joined := strings.Join(args, " ")
 	// Plain tonemap has no bt2390; only jellyfin-ffmpeg's tonemapx does.
 	if !strings.Contains(joined, "fps=1/10,scale=320:-2,tonemapx=tonemap=bt2390,") {
@@ -206,12 +207,68 @@ func TestBuildSheetExtractArgsIncludesTonemap(t *testing.T) {
 }
 
 func TestBuildSheetExtractArgsSDRSkipsTonemap(t *testing.T) {
-	args := buildSheetExtractArgs("/media/a.mkv", 0, 10, 320, 10, 10, false)
+	args := buildSheetExtractArgs("/media/a.mkv", 0, 10, 320, 10, 10, false, false)
 	joined := strings.Join(args, " ")
 	if strings.Contains(joined, "tonemap") {
 		t.Fatalf("SDR args must not tone map: %v", args)
 	}
 	if !strings.Contains(joined, "-vf fps=1/10,scale=320:-2,tile=10x10 ") {
 		t.Fatalf("missing tile filter in args: %v", args)
+	}
+	if strings.Contains(joined, "-skip_frame") {
+		t.Fatalf("full decode must not skip frames: %v", args)
+	}
+}
+
+func TestKeyframesDenseEnough(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyframes []float64
+		want      bool
+	}{
+		{"blu-ray 1s GOP", []float64{600, 601, 602.1, 603, 604}, true},
+		{"gap exactly half the interval", []float64{600, 605, 610}, true},
+		{"WEB 10s GOP", []float64{600, 610.1, 620.2}, false},
+		{"one long gap", []float64{600, 602, 614, 616}, false},
+		{"single keyframe", []float64{600}, false},
+		{"none", nil, false},
+	}
+	for _, tt := range tests {
+		if got := keyframesDenseEnough(tt.keyframes, 10); got != tt.want {
+			t.Errorf("%s: keyframesDenseEnough = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestExtractSheetDecodesKeyframesOnlyWhenTheyAreDense(t *testing.T) {
+	tests := []struct {
+		name      string
+		keyframes []float64
+		probeErr  error
+		wantSkip  bool
+	}{
+		{"dense keyframes", []float64{600, 601, 602, 603}, nil, true},
+		{"sparse keyframes", []float64{600, 610, 620}, nil, false},
+		{"probe failure", nil, errors.New("ffprobe failed"), false},
+	}
+	for _, tt := range tests {
+		var gotArgs []string
+		_, _, err := ExtractSheet(context.Background(), SheetExtractOptions{
+			InputPath:  "/media/a.mkv",
+			SheetStart: 600,
+			RunFunc: func(_ context.Context, _ string, args []string) ([]byte, error) {
+				gotArgs = args
+				return []byte("jpeg"), nil
+			},
+			ProbeKeyframes: func(context.Context, string, string, float64, float64) ([]float64, error) {
+				return tt.keyframes, tt.probeErr
+			},
+		})
+		if err != nil {
+			t.Fatalf("%s: ExtractSheet: %v", tt.name, err)
+		}
+		if got := strings.Contains(strings.Join(gotArgs, " "), "-skip_frame nokey"); got != tt.wantSkip {
+			t.Errorf("%s: keyframe-only decode = %v, want %v (args %v)", tt.name, got, tt.wantSkip, gotArgs)
+		}
 	}
 }
