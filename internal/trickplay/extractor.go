@@ -126,7 +126,7 @@ func buildSheetExtractArgs(
 // keyframesDenseEnough reports whether decoding only keyframes still gives
 // every tile its own frame close to its time: no gap between keyframes may
 // exceed half a tile interval. Longer GOPs (common in WEB encodes, where 10s
-// is typical) would make neighbouring tiles repeat one keyframe, so those
+// is typical) would make neighboring tiles repeat one keyframe, so those
 // sheets decode every frame instead.
 func keyframesDenseEnough(keyframes []float64, interval float64) bool {
 	if len(keyframes) < 2 {
