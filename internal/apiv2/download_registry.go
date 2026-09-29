@@ -39,7 +39,7 @@ type DownloadEntry struct {
 type DownloadEntryOutput struct{ Body DownloadEntry }
 type DownloadRegistryOutput struct{ Body Collection[DownloadEntry] }
 type DownloadRegistryInput struct {
-	DeviceID string `header:"X-Silo-Device-Id" maxLength:"128"`
+	DeviceID string `header:"X-Prairie-Device-Id" maxLength:"128"`
 	Limit    int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
 	Cursor   string `query:"cursor"`
 }
@@ -50,12 +50,12 @@ type DownloadStatusBody struct {
 }
 type DownloadStatusInput struct {
 	ID       string `path:"id" minLength:"1"`
-	DeviceID string `header:"X-Silo-Device-Id" required:"true" minLength:"1" maxLength:"128"`
+	DeviceID string `header:"X-Prairie-Device-Id" required:"true" minLength:"1" maxLength:"128"`
 	Body     DownloadStatusBody
 }
 type DownloadDeleteInput struct {
 	ID       string `path:"id" minLength:"1"`
-	DeviceID string `header:"X-Silo-Device-Id" maxLength:"128"`
+	DeviceID string `header:"X-Prairie-Device-Id" maxLength:"128"`
 }
 type DownloadCapability struct {
 	Capability

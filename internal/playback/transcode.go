@@ -19,11 +19,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/prairie-server/prairie-server/internal/mediaprobe"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/processmetrics"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
-	"github.com/google/uuid"
 )
 
 func init() {
@@ -102,7 +102,15 @@ type TranscodeOpts struct {
 	vaapiRateControl string
 	// preparedFileEncode marks a single-file download encode. Nothing waits on
 	// it in real time, so it trades encode speed for quality; HLS never sets it.
-	preparedFileEncode         bool
+	preparedFileEncode bool
+	// manifestWindowStart is the first segment the synthetic VOD manifest
+	// lists. It is pinned from StartSegmentNumber when the session starts and
+	// deliberately survives seek restarts, which move StartSegmentNumber: a
+	// refetched playlist must describe the same window the client mounted.
+	// Reconstructs pin it from the recipe card's original start before any
+	// fast-resume seek moves StartSegmentNumber.
+	manifestWindowStart        int
+	manifestWindowPinned       bool
 	ToneMapPolicy              tonemap.Policy
 	ToneMapMode                tonemap.Mode
 	ToneMapSourceKind          tonemap.SourceKind
@@ -123,6 +131,11 @@ type TranscodeOpts struct {
 	// Empty preserves the legacy text path for callers minted before the field.
 	SubtitleCodec   string
 	AudioTrackIndex int // -1 = default (first track), >= 0 = specific track
+	// SourceAudioCodec is the probed codec of the mapped audio track (e.g.
+	// "truehd", "eac3"). When set to a fragile lossless family (TrueHD/MLP),
+	// the AAC path forces a stereo downmix — multichannel TrueHD decode is a
+	// known stall source (quant_step_size / huff_lsbs warnings).
+	SourceAudioCodec string
 	// SourceAudioChannels is the selected source stream's channel count. Zero
 	// means unknown and deliberately disables stereo downmix gain: boosting an
 	// already-stereo stream would change its authored level.
@@ -136,6 +149,10 @@ type TranscodeOpts struct {
 	TargetBitrateKbps      int     // max video bitrate in kbps; 0 = CRF-only (no cap)
 	TotalDuration          float64 // total media duration in seconds (for VOD manifest)
 	FastStart              bool    // use superfast preset for faster first-segment production
+	// EncoderPreset trades compression for encode speed. Empty keeps the VOD
+	// defaults; live sessions ask for a low-latency preset because falling
+	// below realtime starves the player no matter how good the picture is.
+	EncoderPreset string
 	// ThrottleSeconds is the resolved forward-buffer policy for this session.
 	// Zero disables throttling. It is durable so a remote executor can preserve
 	// the API server's policy across node reconstruction without reading settings.
@@ -148,6 +165,17 @@ type TranscodeOpts struct {
 // DV7ToHDR10BitstreamFilter strips Dolby Vision RPU metadata during a
 // copy-mode HLS remux; the enhancement layer is dropped by stream mapping.
 const DV7ToHDR10BitstreamFilter = "dovi_rpu=strip=1"
+
+// Encoder presets shared by the live and on-demand paths. Empty keeps the
+// historical VOD behavior.
+const (
+	// EncoderPresetLowLatency favors keeping up with a live source.
+	EncoderPresetLowLatency = "low_latency"
+	// EncoderPresetBalanced trades a little speed for compression.
+	EncoderPresetBalanced = "balanced"
+	// EncoderPresetQuality is the VOD-style quality-first preset.
+	EncoderPresetQuality = "quality"
+)
 
 // CopyFMP4RecipeVersion identifies the byte-affecting copy-video HLS recipe.
 // Remote starts attest it so rolling clusters never silently mix the old
@@ -403,6 +431,9 @@ func StartTranscode(ctx context.Context, opts TranscodeOpts) (*TranscodeSession,
 	// context. Once it succeeds, keep the established behavior where the
 	// transcode process outlives a disconnected manifest request.
 	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	if !opts.manifestWindowPinned {
+		opts.PinManifestWindowStart(opts.ManifestWindowStartSegment())
+	}
 	s := &TranscodeSession{
 		cancel:               cancel,
 		opts:                 opts,
@@ -854,7 +885,14 @@ func buildFFmpegArgs(opts TranscodeOpts) []string {
 		"-hls_segment_type", segmentType,
 		// Write segments to temp files first so the player never fetches a
 		// partially-written segment during a quality switch.
-		"-hls_flags", "independent_segments+temp_file",
+		// independent_segments is deliberately absent: it only writes the
+		// #EXT-X-INDEPENDENT-SEGMENTS assertion tag (segmentation and encoding
+		// are unaffected), and Samsung lists that tag as "Not supported" on
+		// every Tizen version. Their HLS parser abandons the playlist without
+		// reporting an error, and the AVPlay plugin then swallows the failed
+		// prepare in OnPrepareDone, so playback hangs with no diagnostic
+		// anywhere. See RewriteManifestPaths for the matching defensive strip.
+		"-hls_flags", "temp_file",
 		"-hls_segment_filename", segmentPattern,
 	)
 	// fMP4 segments need movflags=+frag_discont so each fragment writes
@@ -1068,7 +1106,7 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 			args = append(args, "-hwaccel", "vaapi", "-hwaccel_output_format", "vaapi")
 		}
 		args = append(args, "-noautorotate")
-	case "vaapi":
+	case hwAccelVAAPI:
 		vaapiDevice := PickRenderDevice(opts.HWDevice)
 		if vaapiDevice == "" {
 			vaapiDevice = "/dev/dri/renderD128" // last-resort fallback
@@ -1137,10 +1175,38 @@ func videoPreset(opts TranscodeOpts, hwAccel string) string {
 	if hwAccel == "qsv" {
 		return "veryfast"
 	}
+	switch opts.EncoderPreset {
+	case EncoderPresetLowLatency:
+		// x264 below "ultrafast" cannot hold 59.94fps on a busy host.
+		return "ultrafast"
+	case EncoderPresetBalanced:
+		return "veryfast"
+	}
 	if opts.FastStart {
 		return "superfast"
 	}
 	return "veryfast"
+}
+
+// nvencPresetArgs maps a preset onto NVENC's p1–p7 scale and latency tunes.
+func nvencPresetArgs(preset string) []string {
+	switch preset {
+	case EncoderPresetLowLatency:
+		return []string{"-preset", "p2", "-tune", "ll"}
+	case EncoderPresetBalanced:
+		return []string{"-preset", "p4"}
+	default:
+		return nil
+	}
+}
+
+// x264LatencyArgs disables the lookahead and B-frame buffering that otherwise
+// hold frames back from a live segment.
+func x264LatencyArgs(preset string) []string {
+	if preset == EncoderPresetLowLatency {
+		return []string{"-tune", "zerolatency"}
+	}
+	return nil
 }
 
 // appendVideoArgs adds video codec arguments.
@@ -1192,6 +1258,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == transcodeHWNVENC && codec == transcodeCodecH264:
 		args = append(args, "-c:v", "h264_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = appendCappedVBRArgs(args, opts.TargetBitrateKbps)
 		} else {
@@ -1199,6 +1266,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == transcodeHWNVENC && codec == transcodeCodecHEVC:
 		args = append(args, "-c:v", "hevc_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = appendCappedVBRArgs(args, opts.TargetBitrateKbps)
 		} else {
@@ -1230,6 +1298,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		// Profile which browsers cannot decode via MSE).
 		if codec == transcodeCodecHEVC {
 			args = append(args, "-c:v", "libx265", "-preset", preset, "-crf", "28", "-pix_fmt", "yuv420p")
+			args = append(args, x264LatencyArgs(opts.EncoderPreset)...)
 		} else {
 			args = append(args, "-c:v", "libx264", "-preset", preset, "-crf", "23",
 				"-pix_fmt", "yuv420p", "-profile:v", "high")
@@ -1238,6 +1307,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 			if !opts.preparedFileEncode {
 				args = append(args, "-level", "4.1")
 			}
+			args = append(args, x264LatencyArgs(opts.EncoderPreset)...)
 		}
 		if hasBitrateCap {
 			args = append(args,
@@ -2009,9 +2079,9 @@ func (s *TranscodeSession) getManifest(currentGeneration bool) ([]byte, error) {
 				if s.waitErr != nil {
 					stderr := truncateStderr(s.stderr.String())
 					if stderr != "" {
-						return nil, fmt.Errorf("%w: %v (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
+						return nil, fmt.Errorf("%w: %w (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
 					}
-					return nil, fmt.Errorf("%w: %v", ErrTranscodeFailed, s.waitErr)
+					return nil, fmt.Errorf("%w: %w", ErrTranscodeFailed, s.waitErr)
 				}
 				return nil, ErrTranscodeFailed
 			}
@@ -2117,7 +2187,7 @@ func (s *TranscodeSession) waitForManifest(ctx context.Context, timeout time.Dur
 		if err == nil {
 			return manifest, nil
 		}
-		if err != nil && err != ErrManifestNotReady {
+		if !errors.Is(err, ErrManifestNotReady) {
 			return nil, err
 		}
 
@@ -2697,6 +2767,10 @@ func (s *TranscodeSession) SegmentProgress(time.Time) SegmentProgress {
 // wait for ffmpeg or immediately use the seek-restart path.
 func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) SegmentRecoveryDecision {
 	progress := s.SegmentProgress(now)
+	encodedWindowStart := -1
+	if opts := s.Opts(); !strings.EqualFold(opts.TargetCodecVideo, "copy") {
+		encodedWindowStart = opts.ManifestWindowStartSegment()
+	}
 	decision := SegmentRecoveryDecision{
 		WaitTimeout:      segmentWaitTimeout(progress.SegmentDuration),
 		RestartOnTimeout: true,
@@ -2714,10 +2788,26 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 		decision.WaitTimeout = activeSegmentWait
 		decision.RestartOnTimeout = false
 		decision.Reason = "transcode_restarting"
+	case segNum < encodedWindowStart:
+		// Below an encoded session's window. Players that ignore playlist
+		// start tags (notably Tizen AVPlay) probe the playlist head, and a
+		// seek restart from here would discard the resume offset and
+		// re-encode from the beginning. Encoded timelines publish the window
+		// start as seek_window_start_seconds, so a real seek before it
+		// re-plans a new window instead of arriving here. This is checked before
+		// the stopped-session case, which would otherwise restart from here.
+		decision.RestartOnTimeout = false
+		if progress.ProducedHead < progress.StartSegmentNumber {
+			decision.Reason = "before_start_segment_startup"
+		} else {
+			decision.Reason = "before_start_segment"
+		}
 	case !progress.Running:
 		decision.Reason = "transcode_not_running"
 	case segNum < progress.StartSegmentNumber:
-		decision.Reason = "before_start_segment"
+		// Inside the manifest window but behind the current generation (a
+		// backward seek after a forward seek restart): restart there.
+		decision.Reason = "before_generation_start"
 	case segNum <= progress.ProducedHead:
 		decision.Reason = "segment_missing_behind_produced_head"
 	case !progress.HasManifest:
@@ -2743,10 +2833,52 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 	return decision
 }
 
-// GenerateFullManifest builds a complete VOD-style HLS manifest that lists
-// every segment for the full media duration, matching Jellyfin's approach.
-// The player can seek to any position immediately; the backend produces
-// segments on demand when they are requested via HandleGetTranscodeSegment.
+// PinManifestWindowStart fixes the first segment GenerateFullManifest lists
+// for the life of the session, independent of later seek restarts.
+func (o *TranscodeOpts) PinManifestWindowStart(segment int) {
+	o.manifestWindowStart = max(0, segment)
+	o.manifestWindowPinned = true
+}
+
+// ManifestWindowStartSegment is the first segment of the synthetic VOD
+// window: the pinned session start, or the current start segment for opts
+// that were never pinned. It always names a segment FFmpeg numbers the same
+// way (-start_number is StartSegmentNumber), and it is clamped to the last
+// segment of a known runtime so a resume at the very end still lists a
+// segment the recovery path can produce instead of an empty window.
+func (o TranscodeOpts) ManifestWindowStartSegment() int {
+	start := o.StartSegmentNumber
+	if o.manifestWindowPinned {
+		start = o.manifestWindowStart
+	}
+	if o.TotalDuration > 0 {
+		segDur := o.SegmentDuration
+		if segDur <= 0 {
+			segDur = defaultSegmentDuration
+		}
+		if last := int(math.Ceil(o.TotalDuration/float64(segDur))) - 1; start > last {
+			start = last
+		}
+	}
+	return max(0, start)
+}
+
+// GenerateFullManifest builds a VOD-style HLS manifest for the encode window
+// that begins at the session's start segment and runs to the end of the
+// media. The player can scrub anywhere inside the window; the backend
+// produces segments on demand when they are requested via
+// HandleGetTranscodeSegment. A seek before the window re-plans a new window
+// (Jellyfin/Plex-style seek = new manifest).
+//
+// Resumed sessions do not list segments 0..K-1 behind an #EXT-X-START tag:
+// AVPlay ignores EXT-X-START and always begins at the first playlist entry,
+// and every player probes the head while buffering, which would otherwise
+// restart the encode at segment 0. The window head IS the resume point:
+// #EXT-X-MEDIA-SEQUENCE and the first URI are the start segment, matching
+// the timeline's stream_origin_seconds. Media keeps source timestamps under
+// -copyts (appendTimestampNormalizationArgs), exactly like FFmpeg's own
+// windowed playlist for long encodes, so seek restarts inside the window stay
+// continuous with the segments already delivered.
 //
 // segPrefix is prepended to each segment filename (e.g. "segment/") and
 // rawQuery is appended as a query string (e.g. auth tokens).
@@ -2765,8 +2897,9 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	if segCount < 1 {
 		segCount = 1
 	}
+	startSeg := min(opts.ManifestWindowStartSegment(), segCount-1)
 
-	queryDefinition, suffix, queryVersion := syntheticManifestQuery(segCount, rawQuery)
+	queryDefinition, suffix, queryVersion := syntheticManifestQuery(segCount-startSeg, rawQuery)
 
 	segExt := hlsSegmentExtension(opts)
 	hlsVersion := 3
@@ -2779,17 +2912,21 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 
 	var buf bytes.Buffer
 	buf.WriteString("#EXTM3U\n")
-	buf.WriteString(fmt.Sprintf("#EXT-X-VERSION:%d\n", hlsVersion))
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-VERSION:%d\n", hlsVersion)
 	buf.WriteString(queryDefinition)
-	buf.WriteString(fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", segDur))
-	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
-	buf.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-MEDIA-SEQUENCE:%d\n", startSeg)
+	// No #EXT-X-PLAYLIST-TYPE:VOD -- Tizen lists the tag as unsupported and
+	// abandons the playlist, and the #EXT-X-ENDLIST written below already tells
+	// every client this playlist is complete. This manifest is assembled with
+	// its prefixes inline rather than through RewriteManifestPaths, so the
+	// defensive strip there does not cover it.
 
 	if segExt == ".m4s" {
-		buf.WriteString(fmt.Sprintf("#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix))
+		_, _ = fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)
 	}
 
-	for i := range segCount {
+	for i := startSeg; i < segCount; i++ {
 		dur := float64(segDur)
 		if i == segCount-1 {
 			// Last segment covers the remainder.
@@ -2798,8 +2935,8 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 				dur = float64(segDur)
 			}
 		}
-		buf.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", dur))
-		buf.WriteString(fmt.Sprintf("%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix))
+		_, _ = fmt.Fprintf(&buf, "#EXTINF:%.6f,\n", dur)
+		_, _ = fmt.Fprintf(&buf, "%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix)
 	}
 
 	buf.WriteString("#EXT-X-ENDLIST\n")
@@ -3334,7 +3471,7 @@ func (s *TranscodeSession) WaitForSegment(name string, timeout time.Duration) (s
 		}
 
 		if !running && waitErr != nil {
-			return "", fmt.Errorf("%w: %v", ErrTranscodeFailed, waitErr)
+			return "", fmt.Errorf("%w: %w", ErrTranscodeFailed, waitErr)
 		}
 		// If ffmpeg finished cleanly but the segment doesn't exist,
 		// it won't appear later — fail fast.
@@ -3408,9 +3545,22 @@ func RewriteManifestPaths(manifest []byte, segPrefix, rawQuery string) ([]byte, 
 	}
 
 	lines := bytes.Split(manifest, []byte("\n"))
-	for i, line := range lines {
+	out := make([][]byte, 0, len(lines))
+	for _, line := range lines {
 		trimmed := bytes.TrimSpace(line)
 		if len(trimmed) == 0 {
+			out = append(out, line)
+			continue
+		}
+
+		// Drop tags Tizen does not support. Samsung's HLS tag support table
+		// marks these "Not supported" on every version, and their parser
+		// abandons the whole playlist rather than skipping the line -- silently,
+		// which the AVPlay plugin then swallows (see BuildMasterManifest). Every
+		// media playlist reaches a client through this function, so stripping
+		// here also covers manifests ffmpeg already wrote to disk under an older
+		// flag set and sessions restored by ReconstructTranscode.
+		if isUnsupportedTizenTag(trimmed) {
 			continue
 		}
 
@@ -3420,19 +3570,40 @@ func RewriteManifestPaths(manifest []byte, segPrefix, rawQuery string) ([]byte, 
 			if err != nil {
 				return nil, err
 			}
-			lines[i] = rewritten
+			out = append(out, rewritten)
 			continue
 		}
 
-		// Skip other tags/comments.
+		// Other tags/comments pass through untouched.
 		if trimmed[0] == '#' {
+			out = append(out, line)
 			continue
 		}
 
 		// Segment filename line.
-		lines[i] = []byte(segPrefix + string(trimmed) + suffix)
+		out = append(out, []byte(segPrefix+string(trimmed)+suffix))
 	}
-	return bytes.Join(lines, []byte("\n")), nil
+	return bytes.Join(out, []byte("\n")), nil
+}
+
+// isUnsupportedTizenTag reports HLS tags Samsung's TV platform documents as
+// "Not supported" for every Tizen version. An unsupported tag is not skipped by
+// their parser -- the playlist is abandoned, with no error surfaced to the
+// application -- so none may reach a client.
+//
+// EXT-X-INDEPENDENT-SEGMENTS only asserts that segments decode independently
+// and is dropped in every form. Only the VOD value of EXT-X-PLAYLIST-TYPE is
+// dropped: it restates what EXT-X-ENDLIST already conveys. The EVENT value is
+// kept because the copy-HLS remount timeline relies on it to stop players from
+// treating a growing playlist as live (see stabilizeCopyHLSRemountTimeline).
+func isUnsupportedTizenTag(trimmed []byte) bool {
+	const independentSegments = "#EXT-X-INDEPENDENT-SEGMENTS"
+	if rest, ok := bytes.CutPrefix(trimmed, []byte(independentSegments)); ok {
+		// Match the tag exactly or up to its ":" separator, so a longer tag that
+		// merely starts with the same characters is left alone.
+		return len(rest) == 0 || rest[0] == ':'
+	}
+	return bytes.Equal(trimmed, []byte("#EXT-X-PLAYLIST-TYPE:VOD"))
 }
 
 // rewriteMapURI rewrites the URI value inside an #EXT-X-MAP tag.
@@ -3546,9 +3717,9 @@ func (s *TranscodeSession) manifestTimeoutError(timeout time.Duration) error {
 
 	switch {
 	case waitErr != nil && stderr != "":
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
 	case waitErr != nil:
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v", ErrManifestNotReady, timeout, waitErr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w", ErrManifestNotReady, timeout, waitErr)
 	case running:
 		return fmt.Errorf("%w after %s: ffmpeg still running", ErrManifestNotReady, timeout)
 	default:
@@ -3939,7 +4110,8 @@ func formatWaitError(err error) string {
 	if err == nil {
 		return ""
 	}
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
 			return fmt.Sprintf("exit_code=%d: %v", status.ExitStatus(), err)
 		}
