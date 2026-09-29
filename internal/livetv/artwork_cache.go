@@ -26,6 +26,9 @@ const (
 	// programArtworkGrace keeps guide art around briefly after the airing ends
 	// so On-now / guide refreshes do not thrash the cache on every tick.
 	programArtworkGrace = 6 * time.Hour
+	// artworkCacheConcurrency caps simultaneous Live TV artwork downloads and
+	// encodes so a cold guide cannot saturate the node.
+	artworkCacheConcurrency = 4
 )
 
 // ImageCacher downloads/encodes artwork into object storage.
@@ -72,6 +75,10 @@ type ArtworkCache struct {
 	deleter  artworkObjectDeleter
 
 	inFlight sync.Map // kind\0subjectID → struct{}
+	// slots bounds concurrent downloads and encodes. A guide view lists
+	// thousands of programmes; unbounded, a cold cache started one encode per
+	// programme at once and starved live transcodes of CPU.
+	slots    chan struct{}
 	enabled  bool
 	syncKick bool // when true, cacheOne runs inline (tests)
 	now      func() time.Time
@@ -92,6 +99,7 @@ func newArtworkCache(index artworkIndex, cacher ImageCacher, resolver ImageURLRe
 		cacher:   cacher,
 		resolver: resolver,
 		enabled:  index != nil && cacher != nil,
+		slots:    make(chan struct{}, artworkCacheConcurrency),
 		now:      time.Now,
 	}
 }
@@ -163,6 +171,7 @@ func (c *ArtworkCache) EnrichPrograms(ctx context.Context, programs []Program) [
 	}
 	out := make([]Program, len(programs))
 	copy(out, programs)
+	var touches []artworkTouch
 	for i := range out {
 		src := strings.TrimSpace(out[i].ImageURL)
 		if src == "" {
@@ -175,7 +184,7 @@ func (c *ArtworkCache) EnrichPrograms(ctx context.Context, programs []Program) [
 			if url := c.resolve(ctx, row.ObjectPath); url != "" {
 				out[i].ImageURL = url
 				if expires.After(now) {
-					_ = c.index.TouchExpiry(ctx, ArtworkKindProgram, out[i].ID, expires)
+					touches = append(touches, artworkTouch{subjectID: out[i].ID, expiresAt: expires})
 				}
 				continue
 			}
@@ -185,7 +194,33 @@ func (c *ArtworkCache) EnrichPrograms(ctx context.Context, programs []Program) [
 		}
 		c.kick(ArtworkKindProgram, out[i].ID, src, expires)
 	}
+	c.touchExpiries(ArtworkKindProgram, touches)
 	return out
+}
+
+type artworkTouch struct {
+	subjectID string
+	expiresAt time.Time
+}
+
+// touchExpiries extends the expiry of served artwork off the request path:
+// one UPDATE per visible programme was the bulk of a slow guide response.
+func (c *ArtworkCache) touchExpiries(kind string, touches []artworkTouch) {
+	if len(touches) == 0 {
+		return
+	}
+	run := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		for _, t := range touches {
+			_ = c.index.TouchExpiry(ctx, kind, t.subjectID, t.expiresAt)
+		}
+	}
+	if c.syncKick {
+		run()
+		return
+	}
+	go run()
 }
 
 // ReapExpired deletes expired programme artwork objects and index rows.
@@ -239,8 +274,21 @@ func (c *ArtworkCache) kick(kind, subjectID, sourceURL string, expiresAt time.Ti
 	if _, loaded := c.inFlight.LoadOrStore(key, struct{}{}); loaded {
 		return
 	}
+	if !c.syncKick {
+		select {
+		case c.slots <- struct{}{}:
+		default:
+			// Saturated: skip rather than queue. The next guide view kicks
+			// whatever is still uncached, so nothing is lost.
+			c.inFlight.Delete(key)
+			return
+		}
+	}
 	run := func() {
 		defer c.inFlight.Delete(key)
+		if !c.syncKick {
+			defer func() { <-c.slots }()
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 		if err := c.cacheOne(ctx, kind, subjectID, sourceURL, expiresAt); err != nil {

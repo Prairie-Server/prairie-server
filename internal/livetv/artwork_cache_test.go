@@ -534,3 +534,62 @@ func TestArtworkCacheRequestShape(t *testing.T) {
 		t.Fatalf("unexpected request %+v", req)
 	}
 }
+
+// blockingImageCacher holds every Cache call until release is closed and
+// records the peak number of concurrent calls.
+type blockingImageCacher struct {
+	release chan struct{}
+	mu      sync.Mutex
+	active  int
+	peak    int
+	total   int
+}
+
+func (b *blockingImageCacher) Cache(context.Context, imagecache.CacheRequest) (*imagecache.CacheResult, error) {
+	b.mu.Lock()
+	b.active++
+	b.total++
+	b.peak = max(b.peak, b.active)
+	b.mu.Unlock()
+	<-b.release
+	b.mu.Lock()
+	b.active--
+	b.mu.Unlock()
+	return nil, errors.New("released")
+}
+
+func (b *blockingImageCacher) counts() (active, peak, total int) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.active, b.peak, b.total
+}
+
+// A cold guide must not start one download and encode per programme at once.
+func TestArtworkCacheBoundsConcurrentCaching(t *testing.T) {
+	cacher := &blockingImageCacher{release: make(chan struct{})}
+	c := newArtworkCache(newMemoryArtworkIndex(), cacher, stubResolver{})
+	programs := make([]Program, 200)
+	for i := range programs {
+		programs[i] = Program{
+			ID:       fmt.Sprintf("p%d", i),
+			ImageURL: fmt.Sprintf("https://cdn.example/p%d.jpg", i),
+			Stop:     time.Now().Add(time.Hour),
+		}
+	}
+	c.EnrichPrograms(context.Background(), programs)
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if active, _, _ := cacher.counts(); active == artworkCacheConcurrency || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	c.EnrichPrograms(context.Background(), programs) // saturated: must not start more
+	time.Sleep(50 * time.Millisecond)
+	_, peak, total := cacher.counts()
+	close(cacher.release)
+	if peak != artworkCacheConcurrency || total != artworkCacheConcurrency {
+		t.Fatalf("peak %d, total %d concurrent caches; want both %d", peak, total, artworkCacheConcurrency)
+	}
+}
