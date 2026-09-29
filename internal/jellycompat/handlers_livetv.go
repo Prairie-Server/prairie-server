@@ -51,6 +51,8 @@ type openLiveStream struct {
 	SourceURL     string
 	OpenedAt      time.Time
 	OpenerToken   string
+	UserID        int
+	ProfileID     string
 }
 
 type liveTVInfoDTO struct {
@@ -816,6 +818,26 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 	if stream.OpenerToken != "" {
 		directURL += "?api_key=" + url.QueryEscape(stream.OpenerToken)
 	}
+	if deliveryID, ok := livetv.LiveHLSDeliveryID(stream.SourceURL); ok && h.jwtSecret != "" {
+		if token, err := streamtoken.Sign(streamtoken.Claims{
+			SessionID: deliveryID, UserID: stream.UserID, ProfileID: stream.ProfileID,
+		}, h.jwtSecret, playback.MaxTokenTTL); err == nil {
+			hlsURL := stream.SourceURL + "?" + streamtoken.QueryParam + "=" + url.QueryEscape(token)
+			return mediaSourceDTO{
+				Protocol: "Http", ID: h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
+				Path: hlsURL, Type: "Default", Container: "hls", Name: name,
+				IsRemote: true, SupportsTranscoding: true, SupportsDirectPlay: true,
+				SupportsDirectStream: false, IsInfiniteStream: true,
+				RequiresOpening: false, RequiresClosing: true, LiveStreamID: liveStreamID,
+				DirectStreamURL: hlsURL, Formats: []string{},
+				RequiredHTTPHeaders: map[string]string{}, MediaAttachments: []map[string]any{},
+				MediaStreams: []mediaStreamDTO{
+					{Index: 0, Type: streamTypeVideo, Codec: "h264", IsDefault: true, DisplayTitle: streamTypeVideo},
+					{Index: 1, Type: streamTypeAudio, Codec: "aac", IsDefault: true, DisplayTitle: streamTypeAudio},
+				},
+			}, true
+		}
+	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
@@ -884,6 +906,8 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 					SourceURL:     native.HLSURL,
 					OpenedAt:      h.now(),
 					OpenerToken:   openerToken,
+					UserID:        userID,
+					ProfileID:     profileID,
 				}
 				h.mu.Unlock()
 				name := channelID
