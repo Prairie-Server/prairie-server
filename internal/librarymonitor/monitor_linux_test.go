@@ -700,6 +700,10 @@ func TestFailedBackendIsReplaced(t *testing.T) {
 		created []*fakeBackend
 	)
 	_, _, _, status := fakeMonitor(t, folders, func(cfg *Config) {
+		// The replacement can finish before the status loop wakes, leaving
+		// rows identical to the last report, which it then skips. A short
+		// refresh reports the settled rows anyway.
+		cfg.StatusRefresh = 20 * time.Millisecond
 		cfg.hooks.primary = func(BackendOptions) (Backend, error) {
 			b := newFakeBackend("inotify")
 			mu.Lock()
