@@ -58,6 +58,7 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
         id: "about",
         label: "About",
         description: "Server version, update status, and changelog.",
+        groups: ["Version", "Updates", "Changelog"],
         keywords: ["version", "build", "update", "changelog", "release notes", "revision", "git"],
         settings: settingIndex("Version", "Update status", "Latest version", "Changelog"),
         icon: Info,
