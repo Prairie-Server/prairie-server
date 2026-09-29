@@ -1,9 +1,9 @@
 package executor
 
 import (
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
@@ -25,7 +25,7 @@ func sectionReplaceOverlay(t *testing.T, e *Env) {
 }
 
 func TestRequiredSectionReplaceAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-section-replacements for required acceptance")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -36,7 +36,7 @@ func TestRequiredSectionReplaceAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	e := New(t)

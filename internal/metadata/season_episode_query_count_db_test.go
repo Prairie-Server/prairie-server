@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -105,7 +105,7 @@ func (t *seasonEpisodeQueryTracer) count() int {
 // statements and N+1 regressions. A deliberate, reviewed statement-count change
 // must update both constants together with this comment.
 func TestPersistSeasonsAndEpisodes_QueryCountIsBounded(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -247,7 +247,7 @@ func TestPersistSeasonsAndEpisodes_QueryCountIsBounded(t *testing.T) {
 }
 
 func TestPersistSeasonsAndEpisodes_NonCanonicalRefreshPreservesBaseAndLocalizations(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

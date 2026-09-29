@@ -2,11 +2,11 @@ package catalog
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -30,7 +30,7 @@ func (r *batchImageResolver) ResolveImageURLs(_ context.Context, paths []string,
 }
 
 func TestGetItemCardsByIDsSignsThePageInOneBatch(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

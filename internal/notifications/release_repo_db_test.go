@@ -3,12 +3,13 @@ package notifications
 import (
 	"context"
 	"fmt"
-	"os"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // releaseFixture is one library with catalog rows in the migrated test
@@ -22,7 +23,7 @@ type releaseFixture struct {
 
 func newReleaseFixture(t *testing.T, libraryType string) releaseFixture {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

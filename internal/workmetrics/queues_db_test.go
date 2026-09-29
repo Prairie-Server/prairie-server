@@ -3,18 +3,19 @@ package workmetrics
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // Exercise the migrated status-fencing trigger as well as the sampler: recipe
 // variants must contribute to the same two bounded queue states, while terminal
 // artifacts must contribute neither depth nor oldest-request timestamps.
 func TestQueueSamplerIncludesDownloadRecipeVariants(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL requires an isolated migrated database")
 	}
@@ -96,7 +97,7 @@ func TestQueueSamplerIncludesDownloadRecipeVariants(t *testing.T) {
 }
 
 func TestQueueSamplerReadsMigratedSchemaAndFailureIsUnavailable(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL requires an isolated migrated database")
 	}

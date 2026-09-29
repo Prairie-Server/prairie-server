@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 type recordingSearchIndexExecer struct {
@@ -108,7 +109,7 @@ func TestItemRepositoryActiveProviderDisablesSearchIndexEvents(t *testing.T) {
 }
 
 func TestPruneProcessedSearchIndexEventsPreservesRecoveryRows(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

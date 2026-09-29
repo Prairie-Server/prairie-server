@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -51,7 +51,7 @@ func (d *deletionJobCreator) CreateLibraryDeletion(ctx context.Context, _ int, r
 // real-time monitoring immediately; a failed mutation does not, and a
 // handler without a monitor still works.
 func TestLibraryMutationsPokeRealtimeMonitor(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

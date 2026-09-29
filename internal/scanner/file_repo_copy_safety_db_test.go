@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // copySafetyTestRow inserts one media_files row with a known size and mtime and
@@ -63,7 +64,7 @@ func readCopySafetyRow(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fi
 // verdict for bytes that are gone read back as valid. It also drives a
 // notification, so the refusal has to be visible rather than a silent no-op.
 func TestUpdateMultiplePPSGuardsAgainstAStaleGeneration(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

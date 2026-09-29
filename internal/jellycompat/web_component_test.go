@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func seedWebSeekSources(t *testing.T, root string) {
@@ -253,7 +254,7 @@ func TestWebInstallNPMCommandUsesUpstreamEngineRange(t *testing.T) {
 // Set this to an unmodified upstream checkout to verify the guarded patch
 // against complete source files as well as the small executable excerpts.
 func TestManagedWebSeekPatchUpstreamCheckout(t *testing.T) {
-	upstream := os.Getenv("SILO_TEST_JELLYFIN_WEB_SOURCE")
+	upstream := envutil.Getenv("SILO_TEST_JELLYFIN_WEB_SOURCE")
 	if upstream == "" {
 		t.Skip("SILO_TEST_JELLYFIN_WEB_SOURCE is not set")
 	}

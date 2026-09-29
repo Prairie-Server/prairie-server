@@ -3,13 +3,13 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -26,7 +26,7 @@ func TestLibraryCollectionAggregateTransactionLockOrderDB(t *testing.T) {
 			trigger := fmt.Sprintf("test_library_aggregate_%d", first.libraryID)
 			firstName, secondName := trigger+"_first", trigger+"_second"
 			named := func(name string) *LibraryCollectionRepository {
-				cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+				cfg, err := pgxpool.ParseConfig(envutil.Getenv("SILO_TEST_DATABASE_URL"))
 				if err != nil {
 					t.Fatal(err)
 				}

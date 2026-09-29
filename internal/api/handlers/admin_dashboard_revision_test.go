@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestDashboardRevisionPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_DASHBOARD_TEST_DSN")
+	dsn := envutil.Getenv("SILO_DASHBOARD_TEST_DSN")
 	if dsn == "" {
 		t.Skip("SILO_DASHBOARD_TEST_DSN must name the isolated operations_dashboard_guard database")
 	}

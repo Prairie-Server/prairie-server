@@ -2,11 +2,12 @@ package catalog
 
 import (
 	"context"
-	"os"
 	"slices"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestDeleteOrphanedItemsAndImageDirsKeepsRelinkedArtworkPostgres covers the
@@ -16,7 +17,7 @@ import (
 // reported for deletion. The test puts the item in that state directly: it is
 // passed as an orphan but already has a membership again.
 func TestDeleteOrphanedItemsAndImageDirsKeepsRelinkedArtworkPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

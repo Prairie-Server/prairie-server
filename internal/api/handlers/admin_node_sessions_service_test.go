@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/nodesessions"
 )
@@ -25,7 +25,7 @@ func (r adminNodeReadRepo) GetByID(_ context.Context, id int) (*nodepool.Node, e
 	return &nodepool.Node{URL: r.url}, nil
 }
 func TestAdminNodeSessionsSharedRedisReader(t *testing.T) {
-	raw := os.Getenv("SILO_TEST_REDIS_URL")
+	raw := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if raw == "" {
 		t.Skip("SILO_TEST_REDIS_URL not set")
 	}

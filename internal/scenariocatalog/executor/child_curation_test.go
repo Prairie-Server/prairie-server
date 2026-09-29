@@ -11,16 +11,17 @@ import (
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scanner"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 func TestRequiredNewChildCuration(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-child-curation for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	e := New(t)
@@ -144,7 +145,7 @@ func TestRequiredNewChildCuration(t *testing.T) {
 		}
 		seen[r.ID] = true
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                                       string
 			NewScenarios, PhysicalRequests, EffectReads int

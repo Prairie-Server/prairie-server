@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/prairie-server/prairie-server/contracts/api/v2/scenarios"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestManualFrozenSequenceGuard(t *testing.T) {
-	if mode := os.Getenv("SILO_SEQUENCE_GUARD_CHILD"); mode != "" {
+	if mode := envutil.Getenv("SILO_SEQUENCE_GUARD_CHILD"); mode != "" {
 		parts := strings.Split(mode, "|")
 		raw, err := scenarios.FS.ReadFile("api/api-v1-auth.json")
 		if err != nil {
@@ -84,7 +85,7 @@ func TestManualFrozenSequenceGuard(t *testing.T) {
 // Dispatch identity is separate from the scenario fields on this internal entry
 // point. Exact frozen originals must not authorize different external arguments.
 func TestManualSequenceDispatchBinding(t *testing.T) {
-	if mode := os.Getenv("SILO_SEQUENCE_DISPATCH_CHILD"); mode != "" {
+	if mode := envutil.Getenv("SILO_SEQUENCE_DISPATCH_CHILD"); mode != "" {
 		parts := strings.Split(mode, "|")
 		row := scenariocatalog.Row{Listener: "api", Method: "GET", Path: "/api/v1/devices/"}
 		s := scenariocatalog.Scenario{ID: "ordinary", V2Expectation: &scenariocatalog.V2Expectation{OperationID: "listDevices", Method: "GET", Request: scenariocatalog.Request{Path: "/api/v2/devices", Repeat: 16}}}

@@ -3,12 +3,12 @@ package autoscan
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
@@ -16,7 +16,7 @@ import (
 // unmigrated) and returns a repository plus a fresh webhook-mode source row.
 func newWebhookDBTest(t *testing.T) (context.Context, *Repository, Source) {
 	t.Helper()
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

@@ -3,11 +3,12 @@ package sections
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestCanonicalTrendingKey(t *testing.T) {
@@ -36,7 +37,7 @@ func TestCanonicalTrendingKey(t *testing.T) {
 }
 
 func TestRefreshLeaseReleasesSingleConnectionDuringWork(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

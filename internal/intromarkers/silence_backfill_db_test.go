@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"os"
 	"slices"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/migrations"
 )
 
@@ -22,7 +22,7 @@ import (
 // refinement failed, must both drop out of the next run until their inputs
 // change or the failure backoff elapses.
 func TestSilenceBackfillRevisitsLegacySilenceMarkersPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -60,7 +60,7 @@ func TestSilenceBackfillRevisitsLegacySilenceMarkersPostgres(t *testing.T) {
 }
 
 func TestSilenceBackfillSkipsUnchangedAttemptsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -263,7 +263,7 @@ func seedSilenceBackfillFixture(t *testing.T, pool *pgxpool.Pool) []int {
 }
 
 func TestSeasonStateRoundTripsAnalyzedAtPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

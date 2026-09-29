@@ -3,10 +3,10 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -28,10 +28,10 @@ func TestRequiredHardwareRefusalAcceptance(t *testing.T) {
 
 func runSystemReadAcceptance(t *testing.T, selectCases func([]*scenariocatalog.Catalog) ([]*scenariocatalog.Catalog, error), ids []string, wantRequests int) {
 	t.Helper()
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run the selected build-info, build-authority or resource-refusals scenario target for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

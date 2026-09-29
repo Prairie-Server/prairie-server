@@ -21,6 +21,7 @@ import (
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/apiv2"
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 	"github.com/prairie-server/prairie-server/internal/plugins"
 )
@@ -48,7 +49,7 @@ func (browserPluginFixture) HTTPRoutesClient(context.Context, int, string) (*plu
 // JWT and session repository. Plugin-provided absolute links are still owned
 // by each plugin; this fixture exercises browser-relative page assets.
 func TestV2PluginBrowserLaunchPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

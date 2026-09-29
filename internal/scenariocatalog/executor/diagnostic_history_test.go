@@ -9,14 +9,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredNewDiagnosticHistory(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-diagnostic-history for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	guardNewDiagnosticFixture(t)
@@ -128,7 +129,7 @@ func TestRequiredNewDiagnosticHistory(t *testing.T) {
 		}
 		seen[r.ID] = true
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                                       string
 			NewScenarios, PhysicalRequests, EffectReads int

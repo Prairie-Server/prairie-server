@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/settingsmigrate"
@@ -165,7 +165,7 @@ func TestRetiredSettingsFallbacksMigrationMatchesPlanner(t *testing.T) {
 	if len(matches) != 1 {
 		t.Fatalf("migration matches = %v; want exactly one", matches)
 	}
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

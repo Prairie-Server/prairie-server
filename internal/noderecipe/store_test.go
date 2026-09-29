@@ -3,7 +3,6 @@ package noderecipe
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
@@ -173,7 +173,7 @@ func TestNodeAuthorityKeepsPreviousRecipeWireFormat(t *testing.T) {
 }
 
 func TestNodeAuthorityGenerationRevokesDormantRecipes(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if rawURL == "" {
 		t.Skip("SILO_TEST_REDIS_URL not set")
 	}
@@ -433,7 +433,7 @@ func TestOrdinaryRecipeRemainsLegacyFlatJSON(t *testing.T) {
 }
 
 func TestPutTTLBoundsRecordLifetime(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if rawURL == "" {
 		t.Skip("SILO_TEST_REDIS_URL not set")
 	}

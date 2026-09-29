@@ -3,12 +3,13 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // Real values seen rejected in production: media_items.tmdb_id held TMDB's
@@ -50,7 +51,7 @@ func TestNormalizeTMDBIDLeavesNonIdentifiersAlone(t *testing.T) {
 }
 
 func TestAttachTMDBIDRejectsEquivalentSlugOwner(t *testing.T) {
-	dsn := strings.TrimSpace(os.Getenv("SILO_TEST_DATABASE_URL"))
+	dsn := strings.TrimSpace(envutil.Getenv("SILO_TEST_DATABASE_URL"))
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

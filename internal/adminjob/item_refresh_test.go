@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -14,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -638,7 +638,7 @@ func (i *itemRefreshDBIngester) IngestSubtree(ctx context.Context, folder *model
 }
 
 func TestItemRefreshExecutorPersistsForeignKeyBackedScanProvenance(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

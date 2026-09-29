@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestPostgresOperationPrivacy(t *testing.T) {
@@ -29,7 +29,7 @@ func TestPostgresOperationPrivacy(t *testing.T) {
 }
 
 func TestPostgresPoolSaturationMetrics(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL required for pool saturation")
 	}

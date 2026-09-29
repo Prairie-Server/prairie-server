@@ -3,9 +3,9 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -16,10 +16,10 @@ import (
 // lookup, and each proves it wrote no oauth_sessions, oauth_completions, or
 // login-session row.
 func TestRequiredOAuthRefusalAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run oauth refusal acceptance explicitly")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestRedisHookPreservesFailuresAndBoundsCommands(t *testing.T) {
@@ -34,7 +34,7 @@ func TestRedisHookPreservesFailuresAndBoundsCommands(t *testing.T) {
 }
 
 func TestRedisMetricsOutageAndRecovery(t *testing.T) {
-	endpoint := os.Getenv("SILO_TEST_REDIS_URL")
+	endpoint := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if endpoint == "" {
 		t.Skip("SILO_TEST_REDIS_URL required for Redis operation integration")
 	}
@@ -82,7 +82,7 @@ func TestRedisMetricsOutageAndRecovery(t *testing.T) {
 }
 
 func TestRedisPoolSaturationAndRecovery(t *testing.T) {
-	endpoint := os.Getenv("SILO_TEST_REDIS_URL")
+	endpoint := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if endpoint == "" {
 		t.Skip("SILO_TEST_REDIS_URL required for Redis pool saturation")
 	}

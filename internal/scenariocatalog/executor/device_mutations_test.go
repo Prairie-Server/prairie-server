@@ -2,9 +2,9 @@ package executor
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -26,7 +26,7 @@ func deviceMutationOverlay(t *testing.T, e *Env) {
 }
 
 func TestRequiredDeviceMutationAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-device-mutations for required acceptance")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -37,7 +37,7 @@ func TestRequiredDeviceMutationAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	e := New(t)

@@ -1,13 +1,13 @@
 package intromarkers
 
 import (
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/migrations"
 )
@@ -15,7 +15,7 @@ import (
 // TestPatchMarkerCreditsPostgres writes a credits marker through PatchMarker
 // and reads it back on the candidate, leaving the file's intro untouched.
 func TestPatchMarkerCreditsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -83,7 +83,7 @@ func TestPatchMarkerCreditsPostgres(t *testing.T) {
 // TestSeasonStateIsKeyedByAnalysisHashPostgres stores two kinds' season state
 // for one group side by side.
 func TestSeasonStateIsKeyedByAnalysisHashPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

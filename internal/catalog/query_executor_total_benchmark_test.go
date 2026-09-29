@@ -3,13 +3,14 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 type previewTotalBenchmarkTracer struct{ counts int }
@@ -27,7 +28,7 @@ func (*previewTotalBenchmarkTracer) TraceQueryEnd(context.Context, *pgx.Conn, pg
 // This benchmark requires a disposable migrated database. Only the 100 movies
 // visible to these preview requests are needed; playback fixtures are separate.
 func BenchmarkPreviewPageExactTotalQueries(b *testing.B) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		b.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

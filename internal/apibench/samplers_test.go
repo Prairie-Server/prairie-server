@@ -2,11 +2,12 @@ package apibench
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestSamplerStatementsCarryTag pins the self-exclusion contract: every
@@ -33,7 +34,7 @@ func TestSamplerStatementsCarryTag(t *testing.T) {
 // it, the statement_calls assertions are skipped and only the
 // pg_stat_database path is exercised.
 func TestPostgresSamplerExcludesItself(t *testing.T) {
-	dsn := os.Getenv("SILO_BENCH_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_BENCH_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_BENCH_DATABASE_URL not set")
 	}

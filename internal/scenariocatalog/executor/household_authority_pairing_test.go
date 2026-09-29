@@ -4,23 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 var householdAuthorityTables = []string{"users", "user_profiles", "api_keys", "server_settings", "auth_sessions", "device_login_requests", "invitations", "invite_codes", "user_devices", "user_device_settings", "user_favorites", "user_watchlist", "user_watch_progress", "user_collection_sort_preferences", "user_personal_collections", "user_personal_collection_items", "user_series_playback_preferences", "user_library_playback_preferences", "user_setting_values", "user_setting_mutations", "user_setting_migration_rejects", "user_profile_allowed_libraries", "user_settings", "user_profile_onboarding", "request_settings", "playback_sessions_sync"}
 
 func TestRequiredHouseholdAuthorityAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run household authority acceptance explicitly")
 	}
-	dsn := os.Getenv(DatabaseEnv)
+	dsn := envutil.Getenv(DatabaseEnv)
 	if dsn == "" {
 		t.Fatal(DatabaseEnv + " required before constructor")
 	}
@@ -56,7 +56,7 @@ func TestRequiredHouseholdAuthorityAcceptance(t *testing.T) {
 	defer e.Reseed()
 	var results []Result
 	snapshots := 0
-	followup := os.Getenv("SILO_HOUSEHOLD_READBACK_FOLLOWUP") == "1"
+	followup := envutil.Getenv("SILO_HOUSEHOLD_READBACK_FOLLOWUP") == "1"
 	expectedIDs := scenariocatalog.RequiredHouseholdAuthorityScenarios
 	snapshot := func() map[string]json.RawMessage {
 		t.Helper()

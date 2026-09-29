@@ -10,6 +10,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
@@ -17,10 +18,10 @@ import (
 // These NEW cases exercise the actual router and filesystem provider. They do
 // not add or alter scenarios in the frozen paired acceptance oracle.
 func TestRequiredNewCatalogSourceBrowse(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-catalog-sources for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	e := New(t)
@@ -148,7 +149,7 @@ func TestRequiredNewCatalogSourceBrowse(t *testing.T) {
 			t.Errorf("required NEW case %s failed: %v", result.ID, result.Failures)
 		}
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                          string
 			NewScenarios, PhysicalRequests int

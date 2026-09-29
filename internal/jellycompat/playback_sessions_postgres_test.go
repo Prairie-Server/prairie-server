@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
@@ -244,7 +244,7 @@ func TestNegotiatedPlaybackScopeIsPostgresSafeAndUnambiguous(t *testing.T) {
 
 func newCompatTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -506,7 +506,7 @@ func TestDurableCompatPlaybackStore_EmptyTokenFindByRouteNoDBScan(t *testing.T) 
 	// loadByCompatToken must early-return for an empty token even with a non-nil
 	// pool, so it can never issue a full-table query. Use a closed pool so any
 	// query attempt would error; reaching the early return means no query ran.
-	if dsn := os.Getenv("SILO_TEST_DATABASE_URL"); dsn != "" {
+	if dsn := envutil.Getenv("SILO_TEST_DATABASE_URL"); dsn != "" {
 		pool := newCompatTestPool(t)
 		s := NewDurableCompatPlaybackStore(pool, time.Hour, nil)
 		// Should be a no-op (no panic, no scan); cache stays empty.

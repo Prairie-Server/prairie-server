@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
@@ -50,7 +50,7 @@ func TestLibraryViewsRefuseLibraryOutsideViewerScope(t *testing.T) {
 
 func viewerAccessTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

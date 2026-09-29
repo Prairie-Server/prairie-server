@@ -21,6 +21,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
 	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
@@ -54,7 +55,7 @@ func (*catalogTransferStore) PublicURL(string, string) (string, error) {
 
 func catalogTransferPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

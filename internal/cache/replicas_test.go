@@ -3,11 +3,12 @@ package cache
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestAPIReplicaPresenceNilReportsOneReplica(t *testing.T) {
@@ -36,7 +37,7 @@ func TestAPIReplicaPresenceSeparatesIdenticalNodeNames(t *testing.T) {
 // Two replicas registering see each other; one whose context ends drops its
 // marker so the census shrinks again.
 func TestAPIReplicaPresenceCountsLiveReplicas(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if rawURL == "" {
 		t.Skip("SILO_TEST_REDIS_URL not set")
 	}

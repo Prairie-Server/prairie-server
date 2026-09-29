@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/storetest"
 )
@@ -20,7 +20,7 @@ import (
 // user_watch_progress synced_seq trigger and event_at LWW comparison. Skips
 // unless PRAIRIE_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresProgressSince(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
@@ -64,7 +64,7 @@ func TestPostgresProgressSince(t *testing.T) {
 // the two transactional implementations from drifting. Skips unless
 // SILO_TEST_DATABASE_URL is set.
 func TestPostgresMarkWatchedBatch(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -100,7 +100,7 @@ func TestPostgresMarkWatchedBatch(t *testing.T) {
 // drifting on scope identity, partial uniqueness and delete behavior. Skips
 // unless SILO_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresSettingValues(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -171,7 +171,7 @@ func deleteUserAssertingCascade(t *testing.T, pool *pgxpool.Pool, userID int, ch
 // backend runs the same suite in internal/userdb. Skips unless
 // SILO_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresJellycompatDisplayPrefs(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -209,7 +209,7 @@ func TestPostgresJellycompatDisplayPrefs(t *testing.T) {
 }
 
 func TestPostgresCollectionSortPreferences(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -249,7 +249,7 @@ func TestPostgresCollectionSortPreferences(t *testing.T) {
 // conformance test against the Postgres backend.
 // Skips unless SILO_TEST_DATABASE_URL is set.
 func TestPostgresPersonalListPage(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -281,7 +281,7 @@ func TestPostgresPersonalListPage(t *testing.T) {
 // TestPostgresProgressPage runs the keyset progress paging conformance test
 // against the Postgres backend. Skips unless SILO_TEST_DATABASE_URL is set.
 func TestPostgresProgressPage(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

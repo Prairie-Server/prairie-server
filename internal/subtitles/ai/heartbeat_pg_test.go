@@ -2,17 +2,17 @@ package ai
 
 import (
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestSubtitleAIHeartbeatPostgresTerminalSignal(t *testing.T) {
-	dsn := os.Getenv("SILO_SUBTITLE_STORAGE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_SUBTITLE_STORAGE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_SUBTITLE_STORAGE_TEST_DATABASE_URL must name a disposable PostgreSQL test database")
 	}

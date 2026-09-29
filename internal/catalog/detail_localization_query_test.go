@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"errors"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -35,7 +35,7 @@ func (*detailLocalizationTracer) TraceQueryEnd(context.Context, *pgx.Conn, pgx.T
 
 func detailLocalizationFixture(t testing.TB) (*DetailService, *pgxpool.Pool, *detailLocalizationTracer) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

@@ -2,14 +2,14 @@ package executor
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredProfileListAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-profile-pairing for required acceptance")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -20,7 +20,7 @@ func TestRequiredProfileListAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	results := RunAll(t, pilot)
@@ -38,7 +38,7 @@ func TestRequiredProfileListAcceptance(t *testing.T) {
 }
 
 func TestRequiredDeviceListAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-device-pairing for required acceptance")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -49,7 +49,7 @@ func TestRequiredDeviceListAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	results := RunAll(t, pilot)

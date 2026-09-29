@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -55,7 +55,7 @@ func (c *countingQueryTracer) snapshot() []string {
 // rejected implementation, and nothing else in the suite would notice the
 // difference — the returned rows would be identical.
 func TestPostgresResolutionIssuesOneQuery(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -345,7 +345,7 @@ func TestPostgresSettingValueConstraints(t *testing.T) {
 
 func newConstraintTestUser(t *testing.T) (*pgxpool.Pool, int) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

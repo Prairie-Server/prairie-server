@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func seedNativeCollectionItem(t *testing.T, f libraryCASFixture, suffix string) string {
@@ -63,7 +64,7 @@ func TestLibraryCollectionNativeMembershipDefinitionRaceDB(t *testing.T) {
 				}
 			}
 			name := fmt.Sprintf("native-member-race-%d", f.libraryID)
-			cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+			cfg, err := pgxpool.ParseConfig(envutil.Getenv("SILO_TEST_DATABASE_URL"))
 			if err != nil {
 				t.Fatal(err)
 			}

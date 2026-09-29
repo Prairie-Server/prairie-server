@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -17,6 +16,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
@@ -38,7 +38,7 @@ func (j *gatedAdmissionJobs) Create(ctx context.Context, input adminjob.CreateJo
 }
 
 func TestStartSerializesStageAndAdmissionAcrossServicesPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -108,7 +108,7 @@ func TestStartSerializesStageAndAdmissionAcrossServicesPostgres(t *testing.T) {
 }
 
 func TestFinalizeCommittedCompletesInterruptedReceiptPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -202,7 +202,7 @@ func TestFinalizeCommittedCompletesInterruptedReceiptPostgres(t *testing.T) {
 }
 
 func TestPostRestartRepairsArtifactsAfterBootStageReadFailurePostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -285,7 +285,7 @@ func TestPostRestartRepairsArtifactsAfterBootStageReadFailurePostgres(t *testing
 }
 
 func TestPostRestartReconcileHasSingleDatabaseOwner(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -378,7 +378,7 @@ func TestPostRestartReconcileHasSingleDatabaseOwner(t *testing.T) {
 }
 
 func TestPostRestartWithoutStageReturnsWhileReconcileLockIsHeld(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -409,7 +409,7 @@ func TestPostRestartWithoutStageReturnsWhileReconcileLockIsHeld(t *testing.T) {
 }
 
 func TestPostRestartRetriesStageReadFailureAfterTakingLock(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -447,7 +447,7 @@ func TestPostRestartRetriesStageReadFailureAfterTakingLock(t *testing.T) {
 }
 
 func TestPostRestartLockAcquisitionErrorDoesNotOverwriteOwnerStatus(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -479,7 +479,7 @@ func TestPostRestartLockAcquisitionErrorDoesNotOverwriteOwnerStatus(t *testing.T
 }
 
 func TestPostgresListingStateAndOrphanCleanupAcrossPages(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -523,7 +523,7 @@ func TestPostgresListingStateAndOrphanCleanupAcrossPages(t *testing.T) {
 }
 
 func TestPostgresPartialOrphanDeletionRetainsCheckpoints(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -575,7 +575,7 @@ func TestPostgresPartialOrphanDeletionRetainsCheckpoints(t *testing.T) {
 }
 
 func TestPostgresCancellationFlushesPageReceiptsForSameRunFencedPass(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -623,7 +623,7 @@ func (r *recordingJobRepository) GetActiveByType(context.Context, string) (*mode
 }
 
 func TestRepointPrivateArtifactsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -678,7 +678,7 @@ func TestRepointPrivateArtifactsPostgres(t *testing.T) {
 // repoint those rows under every policy, since an S3 reader would take "local"
 // as a real bucket, and leave rows that name any other bucket alone.
 func TestFinalizeCommittedRepointsLocalArtifactsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -752,7 +752,7 @@ func (r *recordingJobRepository) Create(_ context.Context, _ adminjob.CreateJobI
 }
 
 func TestStartRejectsMultipleActiveNodesPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

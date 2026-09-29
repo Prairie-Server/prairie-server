@@ -2,19 +2,20 @@ package handlers
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestAdminPlaybackHistoryPageDB proves the keyset page over synthetic
 // finalized attempts: newest ended first with session id tiebreak, every v1
 // filter, an exact page boundary, and the projection's joins and fallbacks.
 func TestAdminPlaybackHistoryPageDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

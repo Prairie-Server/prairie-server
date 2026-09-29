@@ -1,13 +1,14 @@
 package events
 
 import (
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func socketIdentity() SocketIdentity {
@@ -61,7 +62,7 @@ func TestSocketTicketMemorySingleUseAndExpiry(t *testing.T) {
 	}
 }
 func TestSocketTicketRedisCrossNodeSingleUse(t *testing.T) {
-	endpoint := os.Getenv("SILO_TEST_REDIS_URL")
+	endpoint := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if endpoint == "" {
 		t.Skip("requires synthetic Redis URL")
 	}

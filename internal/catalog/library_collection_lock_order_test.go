@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // A trigger pauses the legacy update after it owns the target tuple. The
@@ -17,7 +18,7 @@ import (
 // the legacy writer. Releasing the barrier proves progress, exact stale refusal,
 // and whole-transaction wildcard retry without replacing the expected witness.
 func TestLibraryCollectionMixedWriterLockOrderDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -143,7 +144,7 @@ func TestLibraryCollectionMixedTargetLockOrderDB(t *testing.T) {
 			f := newLibraryCASFixture(t)
 			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
-			dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+			dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 			trigger := fmt.Sprintf("test_library_target_%d", f.libraryID)
 			legacyName, guardName := trigger+"_legacy", trigger+"_guard"
 			named := func(name string) *pgxpool.Pool {

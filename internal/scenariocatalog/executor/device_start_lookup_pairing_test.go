@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -15,14 +14,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredDeviceStartLookupAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run device start/lookup acceptance explicitly")
 	}
-	dsn := os.Getenv(DatabaseEnv)
+	dsn := envutil.Getenv(DatabaseEnv)
 	if dsn == "" {
 		t.Fatal(DatabaseEnv + " required before constructor")
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
 	"github.com/prairie-server/prairie-server/migrations"
@@ -48,11 +49,11 @@ type initialRows map[string][]map[string]any
 func newInitialSetup(t *testing.T, key string) *initialSetupEnv {
 	t.Helper()
 	var dsns map[string]string
-	if err := json.Unmarshal([]byte(os.Getenv("SILO_INITIAL_SETUP_DATABASES")), &dsns); err != nil {
+	if err := json.Unmarshal([]byte(envutil.Getenv("SILO_INITIAL_SETUP_DATABASES")), &dsns); err != nil {
 		t.Fatal("missing private owned database map")
 	}
 	u, err := url.Parse(dsns[key])
-	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_worker_initial_") || os.Getenv("SILO_INITIAL_SETUP_OWNED") != "1" {
+	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_worker_initial_") || envutil.Getenv("SILO_INITIAL_SETUP_OWNED") != "1" {
 		t.Fatal("initial setup requires its owned ephemeral loopback virgin database")
 	}
 	pool, err := pgxpool.New(t.Context(), u.String())
@@ -100,7 +101,7 @@ func newInitialSetup(t *testing.T, key string) *initialSetupEnv {
 		}
 	}
 	t.Cleanup(func() {
-		if dir := os.Getenv("SILO_INITIAL_SETUP_EVIDENCE"); dir != "" {
+		if dir := envutil.Getenv("SILO_INITIAL_SETUP_EVIDENCE"); dir != "" {
 			data, err := json.MarshalIndent(e.evidence, "", "  ")
 			if err != nil {
 				t.Error(err)
@@ -211,7 +212,7 @@ func initialString(t *testing.T, obj map[string]any, key string) string {
 }
 
 func TestNewInitialSetupSequences(t *testing.T) {
-	if os.Getenv("SILO_INITIAL_SETUP_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_INITIAL_SETUP_REQUIRED") != "1" {
 		t.Skip("requires separate NEW initial setup virgin resources")
 	}
 	for _, mode := range []string{"profile", "no_profile"} {
@@ -363,7 +364,7 @@ func (e *initialSetupEnv) checkCreated(t *testing.T, all initialRows, mode, sess
 // database serialize them. Exactly one caller may create the administrator; the
 // other must recount under the lock and receive the completed-setup refusal.
 func TestNewInitialSetupCompetingBoundary(t *testing.T) {
-	if os.Getenv("SILO_INITIAL_SETUP_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_INITIAL_SETUP_REQUIRED") != "1" {
 		t.Skip("requires separate NEW initial setup virgin resources")
 	}
 	for _, transport := range []string{"v1", "v2"} {

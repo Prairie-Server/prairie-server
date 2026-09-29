@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,11 +12,12 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func searchTestRedis(t *testing.T) *redis.Client {
 	t.Helper()
-	raw := os.Getenv("SILO_TEST_REDIS_URL")
+	raw := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if raw == "" {
 		t.Skip("SILO_TEST_REDIS_URL is not set")
 	}
@@ -88,7 +88,7 @@ func TestSearchSessionRetentionDB(t *testing.T) {
 }
 
 func TestMeilisearchRankingSessionDB(t *testing.T) {
-	dsn, endpoint := os.Getenv("SILO_TEST_DATABASE_URL"), os.Getenv("SILO_TEST_MEILISEARCH_URL")
+	dsn, endpoint := envutil.Getenv("SILO_TEST_DATABASE_URL"), envutil.Getenv("SILO_TEST_MEILISEARCH_URL")
 	if dsn == "" || endpoint == "" {
 		t.Skip("SILO_TEST_DATABASE_URL and SILO_TEST_MEILISEARCH_URL are required")
 	}

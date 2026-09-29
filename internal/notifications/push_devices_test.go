@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
@@ -284,7 +285,7 @@ func TestPushDeviceAPNsTokenEncryptionUsesRowAAD(t *testing.T) {
 // pool to one connection so every query sees it.
 func newPushDeviceTestRepo(t *testing.T) (*PushDeviceRepository, *pgxpool.Pool) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed push device repository test")
 	}
