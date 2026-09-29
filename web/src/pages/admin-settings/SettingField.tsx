@@ -77,7 +77,7 @@ export interface SettingFieldRowProps {
    * what they see to the API, environment overrides, and support answers.
    */
   settingKey?: string;
-  /** The row has an unsaved edit; shows the violet dot before the label. */
+  /** The row has an unsaved edit; shows the accent dot before the label. */
   dirty?: boolean;
   /** Description under the label. One short sentence, or nothing at all. */
   description?: ReactNode;

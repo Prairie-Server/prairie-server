@@ -1,8 +1,9 @@
 /* ================================================================
    Admin settings — accent tokens
    ================================================================
-   The app themes carry no hue accent: `--accent` is a raised surface
-   colour, not a brand hue. One violet carries the active rail item, the
+   `--accent` is a raised surface colour, not a brand hue, so the settings
+   accent follows the theme's brand colour (`--primary`, which the accent
+   picker and custom themes drive). It carries the active rail item, the
    advanced-disclosure rail, and the save pill, so it is defined once
    here instead of being hardcoded per component.
 
@@ -12,10 +13,11 @@
    ================================================================ */
 
 :root {
-  --settings-accent: #a78bfa;
+  --settings-accent: var(--primary);
+  --settings-accent-foreground: var(--primary-foreground);
   /* 15% alpha variant for tinted bleeds and soft chip fills. */
   --settings-accent-soft: color-mix(in srgb, var(--settings-accent) 15%, transparent);
-  /* Slightly stronger, for 1px hairlines that still have to read as violet. */
+  /* Slightly stronger, for 1px hairlines that still have to read as the accent. */
   --settings-accent-line: color-mix(in srgb, var(--settings-accent) 32%, transparent);
 }
 
