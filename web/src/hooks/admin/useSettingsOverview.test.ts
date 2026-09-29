@@ -25,7 +25,7 @@ describe("buildSettingsOverview health tiles", () => {
     const model = buildSettingsOverview({});
 
     expect(model.tiles).toHaveLength(5);
-    expect(model.cards).toHaveLength(13);
+    expect(model.cards).toHaveLength(14);
     expect(tile({}, "storage").stateText).toBe("Not set up");
     expect(card({}, "general")).toEqual({ id: "general" });
   });
@@ -305,6 +305,7 @@ describe("buildSettingsOverview groups", () => {
       "library",
       "playback",
       "downloads",
+      "requests",
       "providers",
       "watch-sync",
       "ai",

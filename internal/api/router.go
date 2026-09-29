@@ -95,6 +95,7 @@ import (
 	watchtrakt "github.com/prairie-server/prairie-server/internal/watchsync/providers/trakt"
 	"github.com/prairie-server/prairie-server/internal/watchtogether"
 	"github.com/prairie-server/prairie-server/internal/webhooksync"
+	"github.com/prairie-server/prairie-server/internal/animeids"
 )
 
 // Dependencies holds all shared dependencies that handlers need.
@@ -898,6 +899,7 @@ func newChiRouter(deps Dependencies) chi.Router {
 			mediarequests.NewCatalogPresence(itemRepo, providerIDRepo),
 		)
 		AttachRequestRouter(requestSvc, deps.PluginService)
+		requestSvc.SetAnimeIndex(animeids.NewStore(deps.DB))
 		requestSvc.SetGroupPolicyProvider(accessGroupStore)
 		if userRepo != nil {
 			requestSvc.SetUserRepository(userRepo)

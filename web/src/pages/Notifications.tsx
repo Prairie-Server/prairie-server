@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { notificationScope } from "@/api/v2/notifications";
 import { Fragment, useState, useRef } from "react";
-import { Link } from "react-router";
 import { Bell, BellOff, Check, CheckCheck, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import type { AppNotification } from "@/api/types";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,8 @@ import {
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { preferredDateLocale } from "@/lib/datetime";
+import { requestDetailHref } from "@/lib/mediaRequests";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
 
 function formatNotificationTime(value: string): string {
   const date = new Date(value);
@@ -73,6 +74,13 @@ function notificationDescription(notification: AppNotification): string {
   }
   if (notification.type === "request.fulfilled") {
     const mediaType = notification.reason_flags?.media_type;
+    if (notification.reason_flags?.follower) {
+      return mediaType === "movie"
+        ? "A movie you followed is now available"
+        : mediaType === "series"
+          ? "A series you followed is now available"
+          : "A title you followed is now available";
+    }
     return mediaType === "movie"
       ? "Your requested movie is now available"
       : mediaType === "series"
@@ -87,6 +95,23 @@ function notificationDescription(notification: AppNotification): string {
     return reason ? `Your request was declined — ${reason}` : "Your request was declined";
   }
   return notification.type;
+}
+
+/**
+ * Where a row leads. Episode and fulfilled-request rows open the catalog item;
+ * approved and declined requests have no catalog item yet, so they open the
+ * title's page from the TMDB id their payload carries.
+ */
+function notificationHref(notification: AppNotification): string | null {
+  if (notification.episode_id) return `/item/${notification.episode_id}`;
+  if (notification.series_id) return `/item/${notification.series_id}`;
+  if (notification.type === "request.approved" || notification.type === "request.declined") {
+    const { media_type: mediaType, tmdb_id: tmdbID } = notification.reason_flags ?? {};
+    if ((mediaType === "movie" || mediaType === "series") && tmdbID && tmdbID > 0) {
+      return requestDetailHref(mediaType, tmdbID);
+    }
+  }
+  return null;
 }
 
 function reasonLabels(notification: AppNotification): string[] {
@@ -118,11 +143,7 @@ function NotificationRow({
   const thumbhashUrl = notification.poster_thumbhash
     ? decodeThumbhash(notification.poster_thumbhash)
     : "";
-  const detailHref = notification.episode_id
-    ? `/item/${notification.episode_id}`
-    : notification.series_id
-      ? `/item/${notification.series_id}`
-      : null;
+  const detailHref = notificationHref(notification);
 
   const body = (
     <>
@@ -185,7 +206,7 @@ function NotificationRow({
   return (
     <li className="group relative">
       {detailHref ? (
-        <Link
+        <ViewTransitionLink
           to={detailHref}
           onClick={() => unread && onMarkRead(notification.id)}
           className={`hover:bg-muted/60 flex items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
@@ -193,7 +214,7 @@ function NotificationRow({
           }`}
         >
           {body}
-        </Link>
+        </ViewTransitionLink>
       ) : (
         <div
           className={`flex items-start gap-3 rounded-xl px-3 py-3 ${unread ? "bg-muted/30" : ""}`}

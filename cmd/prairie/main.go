@@ -82,6 +82,8 @@ import (
 	"github.com/prairie-server/prairie-server/internal/mdblist"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/animeids"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
@@ -3100,14 +3102,17 @@ func main() {
 		if trendingRefresher != nil {
 			taskMgr.Register(tasks.NewRefreshTrendingDiscoverTask(trendingRefresher))
 		}
+		taskMgr.Register(tasks.NewRefreshAnimeIDsTask(animeids.NewRefresher(deps.DB)))
 		if userCollectionScheduler != nil {
 			taskMgr.Register(tasks.NewSyncUserCollectionsTask(userCollectionScheduler))
 		}
 		if watchProviderService != nil {
 			taskMgr.Register(tasks.NewSyncWatchProvidersTask(watchProviderService))
 		}
-		// The TMDB client lets a submission started here pick up a TVDB ID
-		// added on TMDB after the request was created.
+		// The reconcile pass routes requests, which reads TMDB for requests
+		// whose routing facts were never captured. The TMDB client also lets a
+		// submission started here pick up a TVDB ID added on TMDB after the
+		// request was created.
 		requestReconcileSvc := mediarequests.NewService(
 			mediarequests.NewRepository(deps.DB, deps.SecretCipher),
 			tmdb.NewClient(cfg.TMDBAPIKey, 40),
@@ -3116,6 +3121,7 @@ func main() {
 				catalog.NewProviderIDRepository(deps.DB),
 			),
 		)
+		requestReconcileSvc.SetAnimeIndex(animeids.NewStore(deps.DB))
 		requestReconcileSvc.SetRequesterIdentityResolver(plugins.RequesterIdentityFromLookup(plugins.NewPgUserIdentityLookup(deps.DB)))
 		if metadataService != nil {
 			requestReconcileSvc.SetTVDBIDResolver(metadataService)
@@ -3137,7 +3143,8 @@ func main() {
 		if notificationSystem != nil {
 			requestReconcileSvc.SetFulfillmentNotifier(notifications.NewRequestFulfillmentNotifier(notificationSystem))
 		}
-		taskMgr.Register(tasks.NewReconcileRequestsTask(requestReconcileSvc, 100))
+		taskMgr.Register(tasks.NewReconcileRequestsTask(requestReconcileSvc, 100, deps.DB))
+		taskMgr.Register(tasks.NewRefreshRequestDownloadsTask(requestReconcileSvc, 200, deps.DB))
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil && pluginService != nil && pluginInstallationStore != nil {
 			autoscanRepo := autoscan.NewRepository(deps.DB, deps.SecretCipher)
 			if err := autoscanRepo.MarkInterruptedEvents(appCtx); err != nil {
