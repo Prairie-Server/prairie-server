@@ -2844,18 +2844,23 @@ func (o *TranscodeOpts) PinManifestWindowStart(segment int) {
 
 // ManifestWindowStartSegment is the first segment of the synthetic VOD
 // window: the pinned session start, or the current start segment for opts
-// that were never pinned.
+// that were never pinned. It always names a segment FFmpeg numbers the same
+// way (-start_number is StartSegmentNumber), and it is clamped to the last
+// segment of a known runtime so a resume at the very end still lists a
+// segment the recovery path can produce instead of an empty window.
 func (o TranscodeOpts) ManifestWindowStartSegment() int {
-	if o.manifestWindowPinned {
-		return o.manifestWindowStart
-	}
 	start := o.StartSegmentNumber
-	if start <= 0 && o.SeekSeconds > 0 {
+	if o.manifestWindowPinned {
+		start = o.manifestWindowStart
+	}
+	if o.TotalDuration > 0 {
 		segDur := o.SegmentDuration
 		if segDur <= 0 {
 			segDur = defaultSegmentDuration
 		}
-		start = int(o.SeekSeconds) / segDur
+		if last := int(math.Ceil(o.TotalDuration/float64(segDur))) - 1; start > last {
+			start = last
+		}
 	}
 	return max(0, start)
 }
@@ -2894,10 +2899,7 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	if segCount < 1 {
 		segCount = 1
 	}
-	startSeg := opts.ManifestWindowStartSegment()
-	if startSeg >= segCount {
-		startSeg = 0
-	}
+	startSeg := min(opts.ManifestWindowStartSegment(), segCount-1)
 
 	queryDefinition, suffix, queryVersion := syntheticManifestQuery(segCount-startSeg, rawQuery)
 

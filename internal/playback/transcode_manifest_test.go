@@ -452,6 +452,30 @@ func TestGenerateFullManifest_PinnedWindowSurvivesSeekRestart(t *testing.T) {
 	}
 }
 
+func TestGenerateFullManifest_ResumeAtEndListsLastSegment(t *testing.T) {
+	// A resume at the runtime boundary must not fall back to listing the whole
+	// title from segment 0, which this generation (numbered from 300) never
+	// produces. The last segment stays listed and restartable.
+	opts := TranscodeOpts{
+		TargetCodecVideo:   "h264",
+		SegmentDuration:    2,
+		TotalDuration:      600,
+		SeekSeconds:        600,
+		StartSegmentNumber: 300,
+	}
+	opts.PinManifestWindowStart(300)
+	session := &TranscodeSession{outputDir: t.TempDir(), running: true, opts: opts}
+
+	text := string(session.GenerateFullManifest("segment/", ""))
+	if !strings.Contains(text, "#EXT-X-MEDIA-SEQUENCE:299\n") || !strings.Contains(text, "segment/seg_00299.ts\n") ||
+		strings.Contains(text, "segment/seg_00000.ts") {
+		t.Fatalf("end-of-title resume manifest:\n%s", text)
+	}
+	if decision := session.SegmentRecoveryDecision(299, time.Now()); !decision.RestartOnTimeout {
+		t.Fatalf("last listed segment decision = %+v, want restartable", decision)
+	}
+}
+
 func TestSegmentRecoveryDecision_CopyBeforeStartStillRestarts(t *testing.T) {
 	// Copy sessions keep upstream's recovery: their real playlist has its own
 	// anchor semantics, and the windowing rule only applies to encodes.
