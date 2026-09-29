@@ -1,179 +1,151 @@
 package playback
 
 import (
-	"strings"
-
-	"github.com/prairie-server/prairie-server/internal/models"
+	"math"
+	"strconv"
 )
 
-// QualityRung is one selectable step on the transcode ladder.
-//
-// ID is the stable identifier clients key their selection on. Resolution and
-// BitrateKbps are what a client sends as target_resolution and
-// target_bitrate_kbps when starting a transcode, so a rung fully describes
-// itself and a client never has to invent either value.
-//
-// Several rungs share a Resolution at different bitrates (the "High" variants),
-// so Resolution alone does not identify a rung -- match on ID.
-type QualityRung struct {
-	ID          string `json:"id"`
-	Label       string `json:"label"`
-	Resolution  string `json:"resolution"`
-	Height      int    `json:"height"`
-	BitrateKbps int    `json:"bitrate_kbps"`
+// ladderClass is one output resolution class of the bitrate ladder: a 16:9
+// box and the least H.264 bitrate at <=30 fps that looks clean at that size.
+type ladderClass struct {
+	Height, Width int
+	FloorKbps     int
 }
 
-// qualityLadder is ordered highest-first, which is the order clients render and
-// the order the step helpers walk.
-//
-// Every Resolution here must be one resolutionToScale understands, or an encode
-// at that rung silently produces no scale filter and runs at source resolution.
-// A test pins that.
-//
-// Note this is a target_resolution contract, not a quality_preference one.
-// NormalizeQualityV3 governs the stored profile preference and the plan/replan
-// requests, and deliberately knows a smaller set of tokens. Conflating the two
-// is why an earlier version of this ladder wrongly dropped the High variants and
-// 420p, which the web player has offered all along.
-var qualityLadder = []QualityRung{
-	{ID: "2160p", Label: "4K", Resolution: resolution2160p, Height: 2160, BitrateKbps: 20000},
-	{ID: "1080p-high", Label: "1080p High", Resolution: resolution1080p, Height: 1080, BitrateKbps: 10000},
-	{ID: "1080p", Label: "1080p", Resolution: resolution1080p, Height: 1080, BitrateKbps: 6000},
-	{ID: "720p-high", Label: "720p High", Resolution: "720p", Height: 720, BitrateKbps: 4000},
-	{ID: "720p", Label: "720p", Resolution: "720p", Height: 720, BitrateKbps: 2000},
-	{ID: "480p", Label: "480p", Resolution: "480p", Height: 480, BitrateKbps: 1500},
-	{ID: "420p", Label: "420p", Resolution: "420p", Height: 420, BitrateKbps: 720},
+// bitrateLadder pairs a bitrate budget with the largest output that budget
+// encodes well. The floors follow Apple's HLS authoring ladder and Jellyfin's
+// ResolutionNormalizer for H.264 at <=30 fps; 480p takes everything below
+// 540p's floor. Download presets, automatic streaming quality, and
+// jellycompat all read this one table so a given bitrate always means the
+// same resolution.
+var bitrateLadder = []ladderClass{
+	{Height: 2160, Width: 3840, FloorKbps: 20_000},
+	{Height: 1080, Width: 1920, FloorKbps: 5_000},
+	{Height: 720, Width: 1280, FloorKbps: 2_000},
+	{Height: 540, Width: 960, FloorKbps: 1_200},
+	{Height: 480, Width: 854, FloorKbps: 0},
 }
 
-// QualityLadderFor returns the rungs offerable for a source of the given height,
-// highest first.
-//
-// Rungs above the source are omitted rather than clamped: upscaling spends
-// encode time and bitrate reproducing detail the file does not contain, and
-// offering "4K" for a 1080p source misrepresents what the viewer would get. A
-// source shorter than the lowest rung still yields that rung, so the ladder is
-// never empty and Auto always has somewhere to go.
-//
-// sourceHeight <= 0 means the probe reported no dimensions; the full ladder is
-// returned, because wrongly hiding the source's own rung is worse than showing
-// one option too many.
-func QualityLadderFor(sourceHeight int) []QualityRung {
-	if sourceHeight <= 0 {
-		return append([]QualityRung(nil), qualityLadder...)
+const (
+	codecVP9 = "vp9"
+	codecAV1 = "av1"
+)
+
+// codecEfficiency is the bitrate a codec needs relative to H.264 for the same
+// quality: HEVC and VP9 are about 40% more efficient, AV1 about 50%.
+func codecEfficiency(codec string) float64 {
+	switch normalizeCodecV3(codec) {
+	case transcodeCodecHEVC, codecVP9:
+		return 0.6
+	case codecAV1:
+		return 0.5
+	default:
+		return 1
 	}
+}
 
-	out := make([]QualityRung, 0, len(qualityLadder))
-	for _, rung := range qualityLadder {
-		// A small tolerance keeps sources mastered slightly off a rung (1080p
-		// content at 1072 lines, say) from losing their own native rung.
-		if rung.Height <= sourceHeight+8 {
-			out = append(out, rung)
+// LadderClassForBitrate returns the height of the largest ladder class whose
+// floor kbps meets once normalized to H.264 at <=30 fps. Higher frame rates
+// need more bits per second for the same picture, so above 30 fps the budget
+// shrinks by the square root of the frame-rate ratio; more efficient output
+// codecs stretch it.
+func LadderClassForBitrate(kbps int, frameRate float64, outputCodec string) int {
+	equivalent := float64(kbps) / codecEfficiency(outputCodec)
+	if frameRate > 30 {
+		equivalent /= math.Sqrt(frameRate / 30)
+	}
+	for _, class := range bitrateLadder {
+		if equivalent >= float64(class.FloorKbps) {
+			return class.Height
 		}
 	}
-	if len(out) == 0 {
-		out = append(out, qualityLadder[len(qualityLadder)-1])
-	}
-	return out
+	return bitrateLadder[len(bitrateLadder)-1].Height
 }
 
-// RungByID resolves a rung by its stable identifier.
-func RungByID(id string) (QualityRung, bool) {
-	for _, rung := range qualityLadder {
-		if strings.EqualFold(rung.ID, id) {
-			return rung, true
+// ladderClassesFrom returns the ladder classes at or below height, tallest
+// first, so a caller can step down when a device cannot decode a class.
+func ladderClassesFrom(height int) []ladderClass {
+	for i, class := range bitrateLadder {
+		if class.Height <= height {
+			return bitrateLadder[i:]
 		}
 	}
-	return QualityRung{}, false
+	return bitrateLadder[len(bitrateLadder)-1:]
 }
 
-// RungForSession resolves the rung a running session is playing, from its target
-// resolution and bitrate cap.
-//
-// Bitrate disambiguates rungs sharing a resolution. A cap matching no rung
-// exactly resolves to the nearest rung at that resolution, so advice still works
-// for a session started before a ladder change or by a client that chose its own
-// bitrate.
-//
-// Reports false when there is no target resolution: "auto", "original" and
-// direct play have no rung to step from, and a direct play is the source file
-// itself, where reducing quality is a plan decision rather than a ladder move.
-func RungForSession(resolution string, bitrateKbps int) (QualityRung, bool) {
-	if strings.TrimSpace(resolution) == "" {
-		return QualityRung{}, false
-	}
-
-	var best QualityRung
-	found := false
-	for _, rung := range qualityLadder {
-		if !strings.EqualFold(rung.Resolution, resolution) {
-			continue
-		}
-		if !found || absInt(rung.BitrateKbps-bitrateKbps) < absInt(best.BitrateKbps-bitrateKbps) {
-			best, found = rung, true
-		}
-	}
-	return best, found
-}
-
-func absInt(v int) int {
-	if v < 0 {
-		return -v
-	}
-	return v
-}
-
-// StepDownFrom returns the next rung below the given one that the source can
-// offer.
-//
-// Reports false at the bottom of the ladder, which the advice engine reads as
-// "nothing left to give". Recommending the rung already in use would spend a
-// replan slot and a rebuffer to arrive exactly where playback already is.
-func StepDownFrom(id string, sourceHeight int) (QualityRung, bool) {
-	ladder := QualityLadderFor(sourceHeight)
-	for i, rung := range ladder {
-		if strings.EqualFold(rung.ID, id) && i+1 < len(ladder) {
-			return ladder[i+1], true
-		}
-	}
-	return QualityRung{}, false
-}
-
-// StepUpFrom returns the next rung above the given one, bounded by the source.
-func StepUpFrom(id string, sourceHeight int) (QualityRung, bool) {
-	ladder := QualityLadderFor(sourceHeight)
-	for i, rung := range ladder {
-		if strings.EqualFold(rung.ID, id) && i > 0 {
-			return ladder[i-1], true
-		}
-	}
-	return QualityRung{}, false
-}
-
-// HighestRungWithin returns the best rung whose bitrate fits budgetKbps.
-//
-// Lets a session be placed on the ladder directly from a measured throughput
-// instead of stepping down one rung per rebuffer, so a client on a badly
-// congested link reaches something playable in one move. Reports false when even
-// the lowest rung exceeds the budget, leaving the caller to choose between the
-// floor and giving up.
-func HighestRungWithin(budgetKbps int, sourceHeight int) (QualityRung, bool) {
-	for _, rung := range QualityLadderFor(sourceHeight) {
-		if rung.BitrateKbps <= budgetKbps {
-			return rung, true
-		}
-	}
-	return QualityRung{}, false
-}
-
-// SourceVideoHeight is the probed height of a file's primary video stream, or 0
-// when the probe recorded no video track.
-//
-// 0 is a meaningful answer, not an error: QualityLadderFor treats it as "offer
-// every rung", on the grounds that hiding a source's own rung is worse than
-// showing one option too many.
-func SourceVideoHeight(file *models.MediaFile) int {
-	if file == nil || len(file.VideoTracks) == 0 {
+// ladderClassForSize is the smallest ladder class whose box holds a frame,
+// the class a source already belongs to: 1920x800 is 1080p, 1280x720 is
+// 720p. A frame known only by its height is classed by that height, a frame
+// larger than every box is the largest class, and an unknown size is 0.
+func ladderClassForSize(width, height int) int {
+	if height <= 0 {
 		return 0
 	}
-	return file.VideoTracks[0].Height
+	for i := len(bitrateLadder) - 1; i >= 0; i-- {
+		class := bitrateLadder[i]
+		if height <= class.Height && (width <= 0 || width <= class.Width) {
+			return class.Height
+		}
+	}
+	return bitrateLadder[0].Height
+}
+
+// FitLadderBox scales a source into a class's 16:9 box, keeping its aspect
+// ratio and never enlarging it. A 3840x1600 scope film fits the 1080p class
+// as 1920x800 rather than 2592x1080. Dimensions are even, as H.264 and HEVC
+// 4:2:0 encodes require. The encoder is given only the height and derives the
+// width as FFmpeg's scale=-2 does, so the width here is computed the same way
+// and the height steps down until that width fits the box. An unknown source
+// size returns zeros; a source known only by its height keeps a zero width and
+// its own height, or the class height when it is taller.
+func FitLadderBox(sourceWidth, sourceHeight, classHeight int) (int, int) {
+	if sourceHeight <= 0 {
+		return 0, 0
+	}
+	if sourceWidth <= 0 {
+		return 0, min(sourceHeight, classHeight)
+	}
+	boxWidth, boxHeight := classHeight*16/9, classHeight
+	for _, class := range bitrateLadder {
+		if class.Height == classHeight {
+			boxWidth = class.Width
+		}
+	}
+	if sourceWidth <= boxWidth && sourceHeight <= boxHeight {
+		return sourceWidth, sourceHeight
+	}
+	scale := math.Min(float64(boxWidth)/float64(sourceWidth), float64(boxHeight)/float64(sourceHeight))
+	height := int(math.Round(float64(sourceHeight)*scale/2)) * 2
+	width := scaledEvenWidth(sourceWidth, sourceHeight, height)
+	for width > boxWidth && height > 2 {
+		height -= 2
+		width = scaledEvenWidth(sourceWidth, sourceHeight, height)
+	}
+	return width, height
+}
+
+// encodedFrame is the frame an encode of a box-fit size actually produces:
+// an odd height rounds down to even, since 4:2:0 output needs it, and the
+// width is then what scale=-2 gives. An even fit is returned unchanged.
+func encodedFrame(sourceWidth, sourceHeight, width, height int) (int, int) {
+	if width%2 == 0 && height%2 == 0 {
+		return width, height
+	}
+	height &^= 1
+	if sourceWidth > 0 && sourceHeight > 0 {
+		width = scaledEvenWidth(sourceWidth, sourceHeight, height)
+	}
+	return width, height
+}
+
+// scaledEvenWidth is the width FFmpeg's scale=-2:height gives a source: the
+// aspect-preserving width rounded to the nearest even number.
+func scaledEvenWidth(sourceWidth, sourceHeight, height int) int {
+	return int(math.Round(float64(height)*float64(sourceWidth)/float64(2*sourceHeight))) * 2
+}
+
+// heightLabel formats an output height as the resolution label the encoder's
+// scale filters parse.
+func heightLabel(height int) string {
+	return strconv.Itoa(height) + "p"
 }

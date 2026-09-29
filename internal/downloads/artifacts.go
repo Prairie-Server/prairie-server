@@ -11,16 +11,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/workmetrics"
+	"github.com/Silo-Server/silo-server/internal/workmetrics"
 
 	"github.com/google/uuid"
 
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/downloadprepare"
-	"github.com/prairie-server/prairie-server/internal/idgen"
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/Silo-Server/silo-server/internal/downloadprepare"
+	"github.com/Silo-Server/silo-server/internal/idgen"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/Silo-Server/silo-server/internal/tonemap"
 )
 
 const (
@@ -1097,7 +1097,7 @@ func (m *ArtifactManager) buildOpts(file *models.MediaFile, a *Artifact) playbac
 		SoftwareVideoDecode:        playback.RequiresSoftwareVideoDecode(sourceVideoCodec, sourceVideoProfile, sourceVideoBitDepth),
 		TargetCodecVideo:           a.CodecVideo,
 		TargetCodecAudio:           a.CodecAudio,
-		TargetResolution:           a.Resolution,
+		TargetResolution:           playback.DownloadScaleResolution(file, a.Resolution),
 		TargetBitrateKbps:          a.TargetBitrateKbps,
 		ToneMapPolicy:              toneMapPolicy,
 		ToneMapMode:                a.ToneMapMode,

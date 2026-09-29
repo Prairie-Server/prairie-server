@@ -20,27 +20,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/clientip"
-	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/Silo-Server/silo-server/internal/telemetry"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/prairie-server/prairie-server/internal/access"
-	"github.com/prairie-server/prairie-server/internal/catalog"
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/logredact"
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/netaccess"
-	"github.com/prairie-server/prairie-server/internal/nodepool"
-	"github.com/prairie-server/prairie-server/internal/noderouting"
-	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/prairie-server/prairie-server/internal/streamlocation"
-	"github.com/prairie-server/prairie-server/internal/streamtoken"
-	"github.com/prairie-server/prairie-server/internal/subtitles"
-	"github.com/prairie-server/prairie-server/internal/tonemap"
-	"github.com/prairie-server/prairie-server/internal/transcodenode"
-	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/prairie-server/prairie-server/internal/watchsync"
+	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/Silo-Server/silo-server/internal/logredact"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/Silo-Server/silo-server/internal/noderouting"
+	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/Silo-Server/silo-server/internal/streamlocation"
+	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/Silo-Server/silo-server/internal/watchsync"
 )
 
 // Tests override this to exercise indeterminate remote-start failures without
@@ -72,8 +72,6 @@ type playbackInfoRequest struct {
 	AllowVideoStreamCopy                *bool           `json:"AllowVideoStreamCopy"`
 	AllowAudioStreamCopy                *bool           `json:"AllowAudioStreamCopy"`
 	DeviceProfile                       json.RawMessage `json:"DeviceProfile"`
-	LiveStreamID                        string          `json:"LiveStreamId"`
-	AutoOpenLiveStream                  bool            `json:"AutoOpenLiveStream"`
 }
 
 var compatLanguageNames = map[string]string{
@@ -355,16 +353,9 @@ type PlaybackHandler struct {
 	// compatLocalTranscodeReady is a test seam invoked after manifest readiness
 	// and before lifecycle-locked publication. Production leaves it nil.
 	compatLocalTranscodeReady func(*playback.TranscodeSession)
-
-	liveTV *LiveTVHandler
 	// compatAutoTranscodePipeline is a test seam for the hw_accel=auto
 	// fallback pipeline; nil uses playback.NewAutoTranscodePipeline.
 	compatAutoTranscodePipeline func(context.Context, playback.TranscodeOpts) *playback.AutoTranscodePipeline
-}
-
-// SetLiveTV wires Live TV channel PlaybackInfo negotiation.
-func (h *PlaybackHandler) SetLiveTV(handler *LiveTVHandler) {
-	h.liveTV = handler
 }
 
 func (h *PlaybackHandler) serverBitrateCap(ctx context.Context, session *Session) (int, error) {
@@ -1156,18 +1147,26 @@ func compatVideoToolboxToneMapBitrateKbps(version catalog.FileVersion, recipe co
 	}
 }
 
-func compatMaxResolutionForBitrateKbps(kbps int64) string {
+// compatTargetResolutionForBitrate is the encoder height a Jellyfin client's
+// bitrate limit earns on Silo's shared ladder (playback.LadderClassForBitrate),
+// fit to the source's aspect ratio. Empty leaves the source unscaled: at 20
+// Mbps and above, and whenever the source already fits the class.
+func compatTargetResolutionForBitrate(kbps int64, track models.VideoTrack) string {
+	if kbps <= 0 {
+		return ""
+	}
+	class := playback.LadderClassForBitrate(int(kbps), parseCompatFrameRate(track.FrameRate), compatTargetVideoCodec)
+	if class >= 2160 {
+		return ""
+	}
+	width, height := playback.FitLadderBox(track.Width, track.Height, class)
 	switch {
-	case kbps <= 0:
+	case height == 0:
+		return strconv.Itoa(class) + "p"
+	case width == track.Width && height == track.Height:
 		return ""
-	case kbps < 2000:
-		return "480p"
-	case kbps < 6000:
-		return compatResolution720p
-	case kbps < 20000:
-		return compatResolution1080p
 	default:
-		return ""
+		return strconv.Itoa(height) + "p"
 	}
 }
 
@@ -1253,7 +1252,7 @@ func NewPlaybackHandler(
 		if h.sessionMgr != nil && h.tm.CloseTranscodeSessionIf(sessionID, dead, nodeURL) {
 			if h.playbackStore != nil {
 				if playSession, ok := h.playbackStore.FindByUpstreamSessionID(sessionID); ok {
-					_ = h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
+					h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
 				}
 			}
 			_ = h.sessionMgr.StopSession(sessionID)
@@ -2142,36 +2141,7 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	routeID := chi.URLParam(r, "id")
-	if h.liveTV != nil {
-		if channelID, ok := h.liveTV.DecodeLiveTVChannelID(routeID); ok {
-			req, profile, err := h.parsePlaybackRequest(r, session.Token)
-			if err != nil {
-				writeError(w, http.StatusBadRequest, "BadRequest", "Invalid playback request")
-				return
-			}
-			if req.UserID != "" && req.UserID != session.PseudoUserID.String() {
-				writeError(w, http.StatusNotFound, "NotFound", "User not found")
-				return
-			}
-			autoOpen := req.AutoOpenLiveStream || r.URL.Query().Get("AutoOpenLiveStream") == "true"
-			liveStreamID := firstNonEmpty(req.LiveStreamID, r.URL.Query().Get("LiveStreamId"))
-			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen, liveStreamID, profile)
-			if err != nil {
-				writeLiveTVCompatError(w, err)
-				return
-			}
-			_ = channelID
-			playSessionID := h.codec.EncodeStringID(EncodedIDPlaySession, uuidNewString())
-			writeJSON(w, http.StatusOK, playbackInfoResponseDTO{
-				PlaySessionID: playSessionID,
-				MediaSources:  []mediaSourceDTO{source},
-			})
-			return
-		}
-	}
-
-	contentID, pathFileID, err := decodeItemOrMediaSourceID(r.Context(), h.codec, routeID)
+	contentID, pathFileID, err := decodeItemOrMediaSourceID(r.Context(), h.codec, chi.URLParam(r, "id"))
 	if err != nil {
 		writeItemIDError(w, r, err)
 		return
@@ -2576,14 +2546,10 @@ func (h *PlaybackHandler) buildPlaybackSource(
 		_, audioBitrateKbps := playback.ResolveAACOutputV3(targetAudioChannels, 0)
 		targetBitrateKbps = int(maxBitrate*95/100/1000) - audioBitrateKbps
 	}
-	targetResolution := compatMaxResolutionForBitrateKbps(maxBitrate / 1000)
-	if ceiling, err := strconv.Atoi(strings.TrimSuffix(targetResolution, "p")); err == nil {
-		if height := compatPrimaryVideoTrack(version).Height; height > 0 && height <= ceiling {
-			// FFmpeg scales to an exact height; a bandwidth ceiling must not
-			// enlarge a source already below it.
-			targetResolution = ""
-		}
-	}
+	// The class follows the video's share of the ceiling, the same budget the
+	// encode targets, so a limit near a class floor does not earn a class its
+	// video bitrate cannot fill.
+	targetResolution := compatTargetResolutionForBitrate(int64(max(targetBitrateKbps, 0)), compatPrimaryVideoTrack(version))
 	targetVideoCodec := compatTargetVideoCodec
 	canEncodeOutput := profile.supportsTranscodingOutput(version, targetAudioChannels, max(targetBitrateKbps, 0), targetResolution)
 	// HEVC needs server opt-in and an explicit compatible HLS fMP4 profile.
@@ -3724,6 +3690,15 @@ func (v *compatIntValue) UnmarshalJSON(data []byte) error {
 func compatIntValuePtr(value int) *compatIntValue {
 	v := compatIntValue(value)
 	return &v
+}
+
+func (h *PlaybackHandler) playbackUnavailable(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrSessionNotFound):
+		writeError(w, http.StatusUnauthorized, "Unauthorized", "Authentication failed")
+	default:
+		writeCompatUpstreamError(w, err)
+	}
 }
 
 func compatSubtitleExtractionURL(track catalog.VersionSubtitleTrack, item, source string, index int, format, token, session string) string {

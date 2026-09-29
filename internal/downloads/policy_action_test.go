@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 	"testing"
 
-	"github.com/prairie-server/prairie-server/internal/access"
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/playback"
-	policyengine "github.com/prairie-server/prairie-server/internal/policy"
+	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/playback"
+	policyengine "github.com/Silo-Server/silo-server/internal/policy"
 )
 
 func TestPolicyActionDeciderMatchesLegacyCapability(t *testing.T) {
@@ -122,6 +123,26 @@ func TestResolveTranscodePassesDeviceQualityFactsAndAppliesCeiling(t *testing.T)
 	if got.PrepareTarget.Resolution != "1080p" {
 		t.Fatalf("PrepareTarget.Resolution = %q, want %q (policy ceiling applied)",
 			got.PrepareTarget.Resolution, "1080p")
+	}
+}
+
+// The capability labels presets with the same transcode ceiling Resolve
+// applies, so an override that narrows downloads to 1080p never advertises
+// "up to 4K".
+func TestCapabilityQualityOptionsHonorOverrideCeiling(t *testing.T) {
+	decider := &capturingActionDecider{decision: policyengine.ActionDecision{Allowed: true, QualityCeiling: "1080p"}}
+	user := &models.User{ID: 9, DownloadAllowed: ptrBool(true), DownloadTranscodeAllowed: ptrBool(true)}
+	svc := newPolicyActionTestService(user, config.DownloadConfig{Enabled: true, TranscodeEnabled: true, Allow4KTranscode: true}, true, decider)
+	capability, err := svc.Capability(context.Background(), user.ID)
+	if err != nil {
+		t.Fatalf("Capability error: %v", err)
+	}
+	var heights []int
+	for _, option := range capability.QualityOptions {
+		heights = append(heights, option.MaxHeight)
+	}
+	if want := []int{0, 1080, 1080, 1080, 720, 480}; !slices.Equal(heights, want) {
+		t.Fatalf("max heights = %v, want %v", heights, want)
 	}
 }
 

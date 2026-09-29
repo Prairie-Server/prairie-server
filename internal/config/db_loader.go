@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	subtitleai "github.com/prairie-server/prairie-server/internal/subtitles/ai"
+	subtitleai "github.com/Silo-Server/silo-server/internal/subtitles/ai"
 )
 
 // stringOr returns the value from the map for the given key, or the fallback if absent/empty.
@@ -317,8 +317,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 
 	// Artwork
 	cfg.Artwork.StorageBackend = stringOr(m, "artwork.storage_backend", "auto")
-	// artwork.local_dir is Prairie's pre-blobstore name for the same root.
-	cfg.Artwork.LocalPath = stringOr(m, "artwork.local_path", stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork"))
+	cfg.Artwork.LocalPath = stringOr(m, "artwork.local_path", "/var/lib/silo/artwork")
 
 	// Metadata
 	cacheImages, err := boolOr(m, "metadata.cache_images", true)
@@ -326,43 +325,6 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Metadata.CacheImages = cacheImages
-	artworkEncodeWorkers, err := intOr(m, "metadata.artwork_encode_workers", 0)
-	if err != nil {
-		return nil, err
-	}
-	cfg.Metadata.ArtworkEncodeWorkers = artworkEncodeWorkers
-	pauseArtworkDuringPlayback, err := boolOr(m, "metadata.pause_artwork_during_playback", true)
-	if err != nil {
-		return nil, err
-	}
-	cfg.Metadata.PauseArtworkDuringPlayback = pauseArtworkDuringPlayback
-	avifWorkers, err := intOr(m, "metadata.avif_backfill_workers", 0)
-	if err != nil {
-		return nil, err
-	}
-	cfg.Metadata.AVIFBackfillWorkers = avifWorkers
-	cfg.Metadata.AVIFEncoder = stringOr(m, "metadata.avif_encoder", "auto")
-	cfg.Metadata.AVIFFFmpegPath = stringOr(m, "metadata.avif_ffmpeg_path", "ffmpeg")
-	cfg.Metadata.WebPEncoder = stringOr(m, "metadata.webp_encoder", "auto")
-	avifNVENCSessions, err := intOr(m, "metadata.avif_nvenc_sessions", 0)
-	if err != nil {
-		return nil, err
-	}
-	cfg.Metadata.AVIFNVENCSessions = avifNVENCSessions
-
-	// Live TV
-	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
-	liveTVMaxTranscodes, err := intOr(m, "livetv.max_transcodes", DefaultLiveTVMaxTranscodes)
-	if err != nil {
-		return nil, err
-	}
-	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
-	cfg.LiveTV.HWAccel = stringOr(m, "livetv.hw_accel", DefaultLiveTVHWAccel)
-	cfg.LiveTV.HWDecode = stringOr(m, "livetv.hw_decode", DefaultLiveTVHWDecode)
-	cfg.LiveTV.EncoderPreset = stringOr(m, "livetv.encoder_preset", DefaultLiveTVEncoderPreset)
-	cfg.LiveTV.FrameRateCap = stringOr(m, "livetv.framerate_cap", DefaultLiveTVFrameRateCap)
-	cfg.LiveTV.MaxResolution = stringOr(m, "livetv.max_resolution", DefaultLiveTVMaxResolution)
-	cfg.LiveTV.PlayMethod = stringOr(m, "livetv.play_method", DefaultLiveTVPlayMethod)
 	imageWorkers, err := intOr(m, MetadataImageWorkersSettingKey, 0)
 	if err != nil {
 		return nil, err
@@ -455,7 +417,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.JellyfinCompat.PublicURL = stringOr(m, "jellyfin_compat.public_url", "http://127.0.0.1:8096")
 	cfg.JellyfinCompat.EmulatedServerVersion = stringOr(m, "jellyfin_compat.emulated_server_version", DefaultJellyfinCompatEmulatedServerVersion)
 	cfg.JellyfinCompat.ServerID = stringOr(m, "jellyfin_compat.server_id", defaultJellyfinCompatServerIDFromDB)
-	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Prairie")
+	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Silo")
 	webEnabled, err := boolOr(m, "jellyfin_compat.web_enabled", true)
 	if err != nil {
 		return nil, err
@@ -683,6 +645,10 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.Download.ArtifactDir = artifactDir
 	cfg.Download.MaxConcurrentPrepares = maxConcurrentPrepares
 	cfg.Download.ArtifactMaxBytes = artifactMaxBytes
+	// Playback owns these keys and reads them as exact "true"; parse them the
+	// same way so one malformed value cannot stall the whole download config.
+	cfg.Download.Allow4KTranscode = strings.EqualFold(strings.TrimSpace(m[Allow4KTranscodeSettingKey]), "true")
+	cfg.Download.AllowHEVCEncoding = strings.EqualFold(strings.TrimSpace(m[PlaybackAllowHEVCEncodingSettingKey]), "true")
 
 	// Policy
 	policyEvalTimeoutMS, err := intOr(m, "policy.eval_timeout_ms", 100)

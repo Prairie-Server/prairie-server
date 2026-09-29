@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/tonemap"
 )
 
 func hasDegradationWarningV3(warnings []DegradationWarningV3, code string) bool {
@@ -175,9 +175,9 @@ func TestPlanPlaybackV3CroppedRungKeepsEncoderHeight(t *testing.T) {
 		wantWidth, wantHeight     int
 		wantResolution, wantScale string
 	}{
-		{"cropped 1080p on 720p rung", 1918, 700, QualityRung720pMediumV3, 1918, 700, "700p", ""},
-		{"cropped 720p on 480p rung", 1024, 436, "480p", 1024, 436, "436p", ""},
-		{"same class crop", 1918, 872, QualityRung1080pMediumV3, 1918, 872, "872p", ""},
+		{"cropped 1080p on 720p rung", 1918, 700, QualityRung720pMediumV3, 1918, 700, "700p", "scale=-2:700"},
+		{"cropped 720p on 480p rung", 1024, 436, "480p", 1024, 436, "436p", "scale=-2:436"},
+		{"same class crop", 1918, 872, QualityRung1080pMediumV3, 1918, 872, "872p", "scale=-2:872"},
 		{"lower resolution", 1920, 1080, QualityRung720pMediumV3, 1280, 720, "720p", "scale=-2:720"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

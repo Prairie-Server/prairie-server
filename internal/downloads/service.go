@@ -13,15 +13,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/access"
-	"github.com/prairie-server/prairie-server/internal/catalog"
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/downloadprepare"
-	"github.com/prairie-server/prairie-server/internal/idgen"
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/prairie-server/prairie-server/internal/scanner"
-	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/Silo-Server/silo-server/internal/downloadprepare"
+	"github.com/Silo-Server/silo-server/internal/idgen"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/Silo-Server/silo-server/internal/userstore"
 )
 
 // FileResolver looks up media files by various keys.
@@ -72,6 +72,7 @@ type Capability struct {
 	Enabled              bool
 	DownloadAllowed      bool
 	QualityPresets       []string
+	QualityOptions       []QualityOption
 	TranscodeEnabled     bool
 	TranscodeUserAllowed bool
 	// SeasonDownload reports whether per-season series downloads are available;
@@ -310,11 +311,13 @@ func (s *Service) Capability(ctx context.Context, userID int) (Capability, error
 		TranscodeEnabled:     cfg.TranscodeEnabled,
 		TranscodeUserAllowed: policyUser.Policy.DownloadTranscodeAllowed,
 	}
+	policyCeiling := ""
 	if s.actionDecider != nil {
-		c.QualityPresets = s.policyPresetsFor(ctx, policyUser, cfg, s.artifacts != nil)
+		c.QualityPresets, policyCeiling = s.policyPresetsFor(ctx, policyUser, cfg, s.artifacts != nil)
 	} else {
 		c.QualityPresets = s.policy.PresetsFor(policyUser, cfg, s.artifacts != nil)
 	}
+	c.QualityOptions = qualityOptionsFor(c.QualityPresets, cfg, policyUser, policyCeiling)
 	if len(c.QualityPresets) > 0 {
 		// Per-season download is always available when downloads are enabled;
 		// auto-download monitoring additionally requires the subscription repo.
@@ -369,10 +372,11 @@ type CreateRequest struct {
 	Caps playback.ClientCapabilities
 }
 
-// Create creates a download for a single item (movie or episode). For
-// public `original` it registers an idempotent managed entry or queues an
-// ephemeral row unless compatibility requires a prepared artifact. Bitrate
-// qualities always prepare a transcode artifact before the row becomes ready.
+// Create creates a download for a single item (movie or episode). When the
+// source is served as-is — `original`, or a bitrate preset the source already
+// fits — it registers an idempotent managed entry or queues an ephemeral row;
+// otherwise it prepares a remux or transcode artifact before the row becomes
+// ready.
 func (s *Service) Create(ctx context.Context, userID int, req CreateRequest, filter catalog.AccessFilter) (*Download, error) {
 	cfg, user, err := s.downloadConfigForUser(ctx, userID, req.DeviceID)
 	if err != nil {
@@ -430,8 +434,8 @@ func (s *Service) Create(ctx context.Context, userID int, req CreateRequest, fil
 			Kind:             KindQueued,
 			Status:           StatusQueued,
 			Format:           FormatOriginal,
-			Quality:          QualityOriginal,
-			EffectiveQuality: QualityOriginal,
+			Quality:          decision.RequestedQuality,
+			EffectiveQuality: decision.EffectiveQuality,
 			Revision:         1,
 			FileSize:         file.FileSize,
 			CreatedAt:        now,

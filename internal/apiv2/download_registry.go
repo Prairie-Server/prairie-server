@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
-	"github.com/prairie-server/prairie-server/internal/downloads"
+	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/Silo-Server/silo-server/internal/downloads"
 )
 
 type DownloadRegistryService interface {
@@ -39,7 +39,7 @@ type DownloadEntry struct {
 type DownloadEntryOutput struct{ Body DownloadEntry }
 type DownloadRegistryOutput struct{ Body Collection[DownloadEntry] }
 type DownloadRegistryInput struct {
-	DeviceID string `header:"X-Prairie-Device-Id" maxLength:"128"`
+	DeviceID string `header:"X-Silo-Device-Id" maxLength:"128"`
 	Limit    int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
 	Cursor   string `query:"cursor"`
 }
@@ -50,12 +50,12 @@ type DownloadStatusBody struct {
 }
 type DownloadStatusInput struct {
 	ID       string `path:"id" minLength:"1"`
-	DeviceID string `header:"X-Prairie-Device-Id" required:"true" minLength:"1" maxLength:"128"`
+	DeviceID string `header:"X-Silo-Device-Id" required:"true" minLength:"1" maxLength:"128"`
 	Body     DownloadStatusBody
 }
 type DownloadDeleteInput struct {
 	ID       string `path:"id" minLength:"1"`
-	DeviceID string `header:"X-Prairie-Device-Id" maxLength:"128"`
+	DeviceID string `header:"X-Silo-Device-Id" maxLength:"128"`
 }
 type DownloadCapability struct {
 	Capability
@@ -70,11 +70,23 @@ type DownloadCapability struct {
 	ProxyDelivery           bool     `json:"proxy_delivery"`
 	OrderedStatus           bool     `json:"ordered_status"`
 	QualityPresets          []string `json:"quality_presets"`
-	TranscodeEnabled        bool     `json:"transcode_enabled"`
-	TranscodeUserAllowed    bool     `json:"transcode_user_allowed"`
-	SeasonDownload          bool     `json:"season_download"`
-	SeriesMonitoring        bool     `json:"series_monitoring"`
-	MonitoringModes         []string `json:"monitoring_modes"`
+	// QualityOptions describes quality_presets, in the same order, for labels:
+	// each bitrate preset's video cap and the tallest output it can produce.
+	QualityOptions       []DownloadQualityOption `json:"quality_options"`
+	TranscodeEnabled     bool                    `json:"transcode_enabled"`
+	TranscodeUserAllowed bool                    `json:"transcode_user_allowed"`
+	SeasonDownload       bool                    `json:"season_download"`
+	SeriesMonitoring     bool                    `json:"series_monitoring"`
+	MonitoringModes      []string                `json:"monitoring_modes"`
+}
+
+// DownloadQualityOption describes one quality preset. bitrate_kbps and
+// max_height are omitted for original, which keeps the source's bitrate and
+// resolution.
+type DownloadQualityOption struct {
+	Preset      string `json:"preset"`
+	BitrateKbps int    `json:"bitrate_kbps,omitempty"`
+	MaxHeight   int    `json:"max_height,omitempty"`
 }
 type DownloadCapabilityOutput struct {
 	Status       int
@@ -193,7 +205,7 @@ func (reg *Registry) deleteDownload(ctx context.Context, in *DownloadDeleteInput
 	return &struct{}{}, nil
 }
 func (reg *Registry) getDownloadCapability(ctx context.Context, _ *CapabilityInput) (*DownloadCapabilityOutput, error) {
-	out := DownloadCapability{Capability: Capability{State: StateNotConfigured}, QualityPresets: []string{}, MonitoringModes: []string{}}
+	out := DownloadCapability{Capability: Capability{State: StateNotConfigured}, QualityPresets: []string{}, QualityOptions: []DownloadQualityOption{}, MonitoringModes: []string{}}
 	if reg.deps.Downloads != nil {
 		user, _, p := viewerIdentity(ctx)
 		if p != nil {
@@ -216,6 +228,9 @@ func (reg *Registry) getDownloadCapability(ctx context.Context, _ *CapabilityInp
 			out.ProxyDelivery = reg.deps.DownloadProxyDelivery()
 		}
 		out.QualityPresets = append([]string{}, view.QualityPresets...)
+		for _, option := range view.QualityOptions {
+			out.QualityOptions = append(out.QualityOptions, DownloadQualityOption{Preset: option.Preset, BitrateKbps: option.BitrateKbps, MaxHeight: option.MaxHeight})
+		}
 		out.MonitoringModes = append([]string{}, view.MonitoringModes...)
 		out.TranscodeEnabled = view.TranscodeEnabled
 		out.TranscodeUserAllowed = view.TranscodeUserAllowed

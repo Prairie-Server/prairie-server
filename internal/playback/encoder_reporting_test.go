@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/Silo-Server/silo-server/internal/tonemap"
 )
 
 func TestHEVCEncoderReportingPreservesGPURecipeAcrossReconstruction(t *testing.T) {
 	opts := TranscodeOpts{
 		SessionID: "hevc-report", HWAccel: transcodeHWVAAPI, TargetCodecVideo: transcodeCodecHEVC,
-		ToneMapMode: tonemap.ModeHardware, ToneMapFilter: tonemap.HardwareFilterVAAPI, softwareHEVCEncode: true,
+		ToneMapMode: tonemap.ModeHardware, ToneMapFilter: tonemap.HardwareFilterVAAPI, softwareEncode: true,
 	}
 	if opts.EffectiveEncoderHWAccel() != transcodeHWNone {
 		t.Fatal("CPU HEVC encoder reported GPU acceleration")
@@ -52,7 +52,7 @@ func TestHEVCReconstructionConfirmsActualEncoder(t *testing.T) {
 		t.Fatal("session reconstruction failed")
 	}
 	runtime := &TranscodeSession{opts: TranscodeOpts{
-		HWAccel: transcodeHWVAAPI, ToneMapMode: tonemap.ModeHardware, softwareHEVCEncode: true,
+		HWAccel: transcodeHWVAAPI, ToneMapMode: tonemap.ModeHardware, softwareEncode: true,
 	}}
 	result := m.completeTranscodeLoad(sessions, sessions.GetSession, session, inserted, 0, runtime)
 	if result.status != SessionLoaded || result.session.TranscodeHWAccel != transcodeHWNone || result.session.ToneMapMode != tonemap.ModeHardware {

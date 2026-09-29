@@ -17,22 +17,22 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
-	"github.com/prairie-server/prairie-server/internal/auth"
-	"github.com/prairie-server/prairie-server/internal/catalog"
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/mediaprobe"
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/noderouting"
-	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/prairie-server/prairie-server/internal/settingscontract"
-	"github.com/prairie-server/prairie-server/internal/settingskeys"
-	"github.com/prairie-server/prairie-server/internal/streamtoken"
-	"github.com/prairie-server/prairie-server/internal/tonemap"
-	"github.com/prairie-server/prairie-server/internal/transcodenode"
-	"github.com/prairie-server/prairie-server/internal/userdb"
-	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/prairie-server/prairie-server/internal/watchsync"
+	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/Silo-Server/silo-server/internal/mediaprobe"
+	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/Silo-Server/silo-server/internal/noderouting"
+	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/Silo-Server/silo-server/internal/settingskeys"
+	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/Silo-Server/silo-server/internal/userdb"
+	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/Silo-Server/silo-server/internal/watchsync"
 )
 
 func TestWritePlaybackToneMapExecutionError(t *testing.T) {
@@ -605,9 +605,12 @@ func writePlaybackTestFFmpegSleep(t *testing.T, sleepSeconds string) string {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "fake-ffmpeg.sh")
+	// A capped VAAPI start first runs one-frame rate-control smoke encodes
+	// into the null muxer; they succeed at once, as on a VBR-capable driver.
 	script := "#!/bin/sh\n" +
 		"last=\"\"\n" +
 		"for arg in \"$@\"; do last=\"$arg\"; done\n" +
+		"case \" $* \" in *\" -rc_mode \"*\" -f null - \"*) exit 0 ;; esac\n" +
 		"case \"$last\" in\n" +
 		"  *.m3u8) out=\"$(dirname \"$last\")\"; mkdir -p \"$out\"; " +
 		"printf x > \"$out/init.mp4\"; printf x > \"$out/seg_0.m4s\"; " +

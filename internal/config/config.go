@@ -194,51 +194,6 @@ type PlaybackConfig struct {
 	Routing                      PlaybackRoutingPolicy `yaml:"-"`
 }
 
-// LiveTVConfig holds Live TV / OTA / DVR settings.
-type LiveTVConfig struct {
-	// DVRPath is where completed Live TV recordings are written.
-	DVRPath string `yaml:"dvr_path"`
-	// MaxTranscodes bounds concurrent Live TV sessions that re-encode for
-	// clients which cannot decode the broadcast codecs (browsers on MPEG-2 /
-	// AC-3 OTA). 0 uses the default; a negative value disables the limit.
-	MaxTranscodes int `yaml:"max_transcodes"`
-	// HWAccel selects the encoder for live transcodes: auto, nvenc, qsv,
-	// vaapi, or none.
-	HWAccel string `yaml:"hw_accel"`
-	// HWDecode controls hardware decoding of the broadcast: auto, on, off.
-	// Software MPEG-2 decode at 59.94fps is the usual reason a live transcode
-	// cannot hold realtime.
-	HWDecode string `yaml:"hw_decode"`
-	// EncoderPreset trades compression for encode speed: low_latency,
-	// balanced, or quality.
-	EncoderPreset string `yaml:"encoder_preset"`
-	// FrameRateCap limits live output frame rate: source, 60, or 30. A
-	// fallback for hardware that cannot sustain the broadcast rate.
-	FrameRateCap string `yaml:"framerate_cap"`
-	// MaxResolution caps live output resolution: source, 1080p, or 720p.
-	MaxResolution string `yaml:"max_resolution"`
-	// PlayMethod forces the delivery decision: auto, copy, or transcode.
-	PlayMethod string `yaml:"play_method"`
-}
-
-// DefaultLiveTVDVRPath is the fallback livetv.dvr_path.
-const DefaultLiveTVDVRPath = "/var/lib/prairie/dvr"
-
-// DefaultLiveTVMaxTranscodes is the fallback livetv.max_transcodes.
-const DefaultLiveTVMaxTranscodes = 3
-
-// Live TV transcoding defaults. Live favors keeping up with the broadcast:
-// hardware decode and encode when the host has them, a low-latency preset, and
-// no frame-rate or resolution reduction unless an operator asks for one.
-const (
-	DefaultLiveTVHWAccel       = "auto"
-	DefaultLiveTVHWDecode      = "auto"
-	DefaultLiveTVEncoderPreset = "low_latency"
-	DefaultLiveTVFrameRateCap  = "source"
-	DefaultLiveTVMaxResolution = "source"
-	DefaultLiveTVPlayMethod    = "auto"
-)
-
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
 	URL               string   `yaml:"url"`
@@ -387,6 +342,11 @@ type DownloadConfig struct {
 	ArtifactDir           string `yaml:"-"` // prepared-artifact output volume ("" = default under the transcode dir)
 	MaxConcurrentPrepares int    `yaml:"-"` // encode/remux worker-pool size (default 2)
 	ArtifactMaxBytes      int64  `yaml:"-"` // LRU eviction budget for prepared artifacts (0 = unlimited)
+
+	// Playback transcode switches that also govern converted downloads, read
+	// from their playback setting keys so both surfaces follow one toggle.
+	Allow4KTranscode  bool `yaml:"-"` // allow_4k_transcode: 4K sources may be converted
+	AllowHEVCEncoding bool `yaml:"-"` // playback.allow_hevc_encoding: HEVC output when the device decodes it
 }
 
 // PolicyConfig holds embedded policy engine settings.
@@ -408,22 +368,6 @@ type MarkersConfig struct {
 // MetadataConfig holds metadata pipeline settings.
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
-	// ArtworkEncodeWorkers caps total in-flight artwork encode work (WebP cache
-	// workers + AVIF backfill workers share it). 0 means auto.
-	ArtworkEncodeWorkers int `yaml:"-"`
-	// PauseArtworkDuringPlayback stops the AVIF backfill and throttles the WebP
-	// image cache to one encode slot while any playback session is live.
-	PauseArtworkDuringPlayback bool `yaml:"-"`
-	// AVIFBackfillWorkers is the durable AVIF encode concurrency. 0 means auto.
-	AVIFBackfillWorkers int `yaml:"-"`
-	// AVIFEncoder selects the still-image AVIF backend: auto|svt|nvenc|wasm.
-	AVIFEncoder string `yaml:"-"`
-	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc AVIF backends.
-	AVIFFFmpegPath string `yaml:"-"`
-	// AVIFNVENCSessions caps concurrent NVENC still encodes. 0 → 3.
-	AVIFNVENCSessions int `yaml:"-"`
-	// WebPEncoder is retained for admin settings compatibility; WebP encode uses libvips/bimg.
-	WebPEncoder string `yaml:"-"`
 	// ImageWorkers is how many artwork encodes run at once. Zero means one
 	// per CPU core.
 	ImageWorkers int `yaml:"-"`
@@ -441,7 +385,7 @@ type ArtworkConfig struct {
 	LocalPath      string `yaml:"local_path"`
 }
 
-// Config is the top-level configuration for Prairie.
+// Config is the top-level configuration for Silo.
 type Config struct {
 	Server               ServerConfig               `yaml:"server"`
 	Database             DatabaseConfig             `yaml:"database"`
@@ -453,7 +397,6 @@ type Config struct {
 	Metadata             MetadataConfig             `yaml:"-"`
 	Markers              MarkersConfig              `yaml:"-"`
 	Playback             PlaybackConfig             `yaml:"playback"`
-	LiveTV               LiveTVConfig               `yaml:"livetv"`
 	Redis                RedisConfig                `yaml:"redis"`
 	RateLimit            RateLimitConfig            `yaml:"rate_limiting"`
 	Auth                 AuthConfig                 `yaml:"-"`
@@ -499,7 +442,7 @@ var dayRegexp = regexp.MustCompile(`^(\d+)d$`)
 
 var defaultJellyfinCompatServerID = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://prairie.local/jellycompat"),
+	[]byte("https://silo.local/jellycompat"),
 ).String()
 
 const playbackTranscodeDirSettingKey = "playback.transcode_dir"
@@ -528,7 +471,7 @@ func EffectiveDownloadArtifactDir(artifactDir, transcodeDir string) string {
 
 const DefaultJellyfinCompatEmulatedServerVersion = "12.1.0"
 const DefaultJellyfinWebVersion = "12.1"
-const DefaultJellyfinWebInstallDir = "/var/lib/prairie/compat/jellyfin-web"
+const DefaultJellyfinWebInstallDir = "/var/lib/silo/compat/jellyfin-web"
 const DefaultJellyfinWebDir = DefaultJellyfinWebInstallDir + "/current"
 
 // parseDuration parses a duration string that supports Go's time.ParseDuration
@@ -587,7 +530,7 @@ func setDefaults() *configRaw {
 			MaxConcurrentScoped:    2,
 			RealtimeMonitoring:     true,
 		},
-		Artwork: ArtworkConfig{StorageBackend: artworkBackendAuto, LocalPath: "/var/lib/prairie/artwork"},
+		Artwork: ArtworkConfig{StorageBackend: artworkBackendAuto, LocalPath: "/var/lib/silo/artwork"},
 		Matcher: MatcherConfig{
 			Workers:                 8,
 			BatchSize:               500,
@@ -617,7 +560,7 @@ func setDefaults() *configRaw {
 			PublicURL:             "http://127.0.0.1:8097",
 			EmulatedServerVersion: DefaultJellyfinCompatEmulatedServerVersion,
 			ServerID:              defaultJellyfinCompatServerID,
-			ServerName:            "Prairie",
+			ServerName:            "Silo",
 			WebEnabled:            true,
 			WebVersion:            DefaultJellyfinWebVersion,
 			WebDir:                DefaultJellyfinWebDir,
