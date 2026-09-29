@@ -15,14 +15,14 @@ func TestAutoUpdateDefaultsInstallTheIntroDBWithoutReenablingExistingInstallatio
 		t.Run(name, func(t *testing.T) {
 			installations := &fakeAutoUpdateInstallations{}
 			if existing {
-				installations.list = []*Installation{{PluginID: "silo.theintrodb", Enabled: false}}
+				installations.list = []*Installation{{PluginID: "prairie.theintrodb", Enabled: false}}
 			}
 			catalog := &fakeAutoUpdateCatalog{
 				entries: []CatalogEntry{{
 					RepositoryID: 7,
 					SourceKind:   RepositorySourcePrairie,
 					Manifest: &pluginv1.PluginManifest{
-						PluginId: "silo.theintrodb",
+						PluginId: "prairie.theintrodb",
 						Version:  "1.0.0",
 					},
 				}},
@@ -47,7 +47,7 @@ func TestAutoUpdateDefaultsInstallTheIntroDBWithoutReenablingExistingInstallatio
 			if summary.DefaultPluginsInstalled != 1 || len(installer.binary) != 1 {
 				t.Fatalf("TheIntroDB installs = %d, binary requests = %d, want 1 each", summary.DefaultPluginsInstalled, len(installer.binary))
 			}
-			if len(catalog.resolveRequests) != 1 || catalog.resolveRequests[0].PluginID != "silo.theintrodb" {
+			if len(catalog.resolveRequests) != 1 || catalog.resolveRequests[0].PluginID != "prairie.theintrodb" {
 				t.Fatalf("resolved plugins = %+v, want TheIntroDB", catalog.resolveRequests)
 			}
 		})

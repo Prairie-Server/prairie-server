@@ -631,9 +631,15 @@ func TestClientEffectivePresignTTLPreservesNonTokenAuth(t *testing.T) {
 	}
 }
 
+// samePath treats a bucket-level path with and without its trailing slash as
+// equal: newer aws-sdk-go-v2 releases send "/bucket/" for bucket operations.
+func samePath(got, want string) bool {
+	return got == want || strings.TrimSuffix(got, "/") == strings.TrimSuffix(want, "/")
+}
+
 func containsRequest(requests []recordedRequest, method, path, rawQueryContains string) bool {
 	for _, req := range requests {
-		if req.Method == method && req.Path == path && strings.Contains(req.RawQuery, rawQueryContains) {
+		if req.Method == method && samePath(req.Path, path) && strings.Contains(req.RawQuery, rawQueryContains) {
 			return true
 		}
 	}
@@ -642,7 +648,7 @@ func containsRequest(requests []recordedRequest, method, path, rawQueryContains 
 
 func findRequest(requests []recordedRequest, method, path, rawQueryContains string) recordedRequest {
 	for _, req := range requests {
-		if req.Method == method && req.Path == path && strings.Contains(req.RawQuery, rawQueryContains) {
+		if req.Method == method && samePath(req.Path, path) && strings.Contains(req.RawQuery, rawQueryContains) {
 			return req
 		}
 	}

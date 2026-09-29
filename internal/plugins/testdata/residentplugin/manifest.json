@@ -2,7 +2,7 @@
   "plugin_id": "silo.test.resident",
   "version": "0.1.0",
   "checksum": "__CHECKSUM__",
-  "silo_api_version": "v1",
+  "prairie_api_version": "v1",
   "supported_platforms": [
     {"os": "linux", "arch": "amd64"},
     {"os": "linux", "arch": "arm64"},
