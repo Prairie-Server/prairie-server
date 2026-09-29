@@ -94,7 +94,15 @@ type TranscodeOpts struct {
 	nvencSoftwareDecode bool
 	// softwareHEVCEncode retains a frozen GPU tone-map graph while its final
 	// SDR frames feed libx265. It is derived again on reconstruction.
-	softwareHEVCEncode         bool
+	softwareHEVCEncode bool
+	// manifestWindowStart is the first segment the synthetic VOD manifest
+	// lists. It is pinned from StartSegmentNumber when the session starts and
+	// deliberately survives seek restarts, which move StartSegmentNumber: a
+	// refetched playlist must describe the same window the client mounted.
+	// Reconstructs pin it from the recipe card's original start before any
+	// fast-resume seek moves StartSegmentNumber.
+	manifestWindowStart        int
+	manifestWindowPinned       bool
 	ToneMapPolicy              tonemap.Policy
 	ToneMapMode                tonemap.Mode
 	ToneMapSourceKind          tonemap.SourceKind
@@ -413,6 +421,9 @@ func StartTranscode(ctx context.Context, opts TranscodeOpts) (*TranscodeSession,
 	// context. Once it succeeds, keep the established behavior where the
 	// transcode process outlives a disconnected manifest request.
 	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	if !opts.manifestWindowPinned {
+		opts.PinManifestWindowStart(opts.ManifestWindowStartSegment())
+	}
 	s := &TranscodeSession{
 		cancel:               cancel,
 		opts:                 opts,
@@ -2759,6 +2770,10 @@ func (s *TranscodeSession) SegmentProgress(time.Time) SegmentProgress {
 // wait for ffmpeg or immediately use the seek-restart path.
 func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) SegmentRecoveryDecision {
 	progress := s.SegmentProgress(now)
+	encodedWindowStart := -1
+	if opts := s.Opts(); !strings.EqualFold(opts.TargetCodecVideo, "copy") {
+		encodedWindowStart = opts.ManifestWindowStartSegment()
+	}
 	decision := SegmentRecoveryDecision{
 		WaitTimeout:      segmentWaitTimeout(progress.SegmentDuration),
 		RestartOnTimeout: true,
@@ -2776,10 +2791,26 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 		decision.WaitTimeout = activeSegmentWait
 		decision.RestartOnTimeout = false
 		decision.Reason = "transcode_restarting"
+	case segNum < encodedWindowStart:
+		// Below an encoded session's window. Players that ignore playlist
+		// start tags (notably Tizen AVPlay) probe the playlist head, and a
+		// seek restart from here would discard the resume offset and
+		// re-encode from the beginning. Encoded timelines publish the window
+		// start as seek_window_start_seconds, so a real seek before it
+		// re-plans a new window instead of arriving here. This is checked before
+		// the stopped-session case, which would otherwise restart from here.
+		decision.RestartOnTimeout = false
+		if progress.ProducedHead < progress.StartSegmentNumber {
+			decision.Reason = "before_start_segment_startup"
+		} else {
+			decision.Reason = "before_start_segment"
+		}
 	case !progress.Running:
 		decision.Reason = "transcode_not_running"
 	case segNum < progress.StartSegmentNumber:
-		decision.Reason = "before_start_segment"
+		// Inside the manifest window but behind the current generation (a
+		// backward seek after a forward seek restart): restart there.
+		decision.Reason = "before_generation_start"
 	case segNum <= progress.ProducedHead:
 		decision.Reason = "segment_missing_behind_produced_head"
 	case !progress.HasManifest:
@@ -2805,10 +2836,52 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 	return decision
 }
 
-// GenerateFullManifest builds a complete VOD-style HLS manifest that lists
-// every segment for the full media duration, matching Jellyfin's approach.
-// The player can seek to any position immediately; the backend produces
-// segments on demand when they are requested via HandleGetTranscodeSegment.
+// PinManifestWindowStart fixes the first segment GenerateFullManifest lists
+// for the life of the session, independent of later seek restarts.
+func (o *TranscodeOpts) PinManifestWindowStart(segment int) {
+	o.manifestWindowStart = max(0, segment)
+	o.manifestWindowPinned = true
+}
+
+// ManifestWindowStartSegment is the first segment of the synthetic VOD
+// window: the pinned session start, or the current start segment for opts
+// that were never pinned. It always names a segment FFmpeg numbers the same
+// way (-start_number is StartSegmentNumber), and it is clamped to the last
+// segment of a known runtime so a resume at the very end still lists a
+// segment the recovery path can produce instead of an empty window.
+func (o TranscodeOpts) ManifestWindowStartSegment() int {
+	start := o.StartSegmentNumber
+	if o.manifestWindowPinned {
+		start = o.manifestWindowStart
+	}
+	if o.TotalDuration > 0 {
+		segDur := o.SegmentDuration
+		if segDur <= 0 {
+			segDur = defaultSegmentDuration
+		}
+		if last := int(math.Ceil(o.TotalDuration/float64(segDur))) - 1; start > last {
+			start = last
+		}
+	}
+	return max(0, start)
+}
+
+// GenerateFullManifest builds a VOD-style HLS manifest for the encode window
+// that begins at the session's start segment and runs to the end of the
+// media. The player can scrub anywhere inside the window; the backend
+// produces segments on demand when they are requested via
+// HandleGetTranscodeSegment. A seek before the window re-plans a new window
+// (Jellyfin/Plex-style seek = new manifest).
+//
+// Resumed sessions do not list segments 0..K-1 behind an #EXT-X-START tag:
+// AVPlay ignores EXT-X-START and always begins at the first playlist entry,
+// and every player probes the head while buffering, which would otherwise
+// restart the encode at segment 0. The window head IS the resume point:
+// #EXT-X-MEDIA-SEQUENCE and the first URI are the start segment, matching
+// the timeline's stream_origin_seconds. Media keeps source timestamps under
+// -copyts (appendTimestampNormalizationArgs), exactly like FFmpeg's own
+// windowed playlist for long encodes, so seek restarts inside the window stay
+// continuous with the segments already delivered.
 //
 // segPrefix is prepended to each segment filename (e.g. "segment/") and
 // rawQuery is appended as a query string (e.g. auth tokens).
@@ -2827,8 +2900,9 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	if segCount < 1 {
 		segCount = 1
 	}
+	startSeg := min(opts.ManifestWindowStartSegment(), segCount-1)
 
-	queryDefinition, suffix, queryVersion := syntheticManifestQuery(segCount, rawQuery)
+	queryDefinition, suffix, queryVersion := syntheticManifestQuery(segCount-startSeg, rawQuery)
 
 	segExt := hlsSegmentExtension(opts)
 	hlsVersion := 3
@@ -2844,7 +2918,7 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	_, _ = fmt.Fprintf(&buf, "#EXT-X-VERSION:%d\n", hlsVersion)
 	buf.WriteString(queryDefinition)
 	_, _ = fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
-	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-MEDIA-SEQUENCE:%d\n", startSeg)
 	// No #EXT-X-PLAYLIST-TYPE:VOD -- Tizen lists the tag as unsupported and
 	// abandons the playlist, and the #EXT-X-ENDLIST written below already tells
 	// every client this playlist is complete. This manifest is assembled with
@@ -2855,7 +2929,7 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 		_, _ = fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)
 	}
 
-	for i := range segCount {
+	for i := startSeg; i < segCount; i++ {
 		dur := float64(segDur)
 		if i == segCount-1 {
 			// Last segment covers the remainder.

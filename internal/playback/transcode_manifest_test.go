@@ -418,6 +418,104 @@ func TestSegmentRecoveryDecision_BeforeStartNeverRestartsAtZero(t *testing.T) {
 	}
 }
 
+func TestGenerateFullManifest_PinnedWindowSurvivesSeekRestart(t *testing.T) {
+	// A forward seek restart moves StartSegmentNumber to 120, but a refetched
+	// playlist must still describe the window the client mounted at 50.
+	opts := TranscodeOpts{
+		TargetCodecVideo:   "h264",
+		SegmentDuration:    2,
+		TotalDuration:      600,
+		SeekSeconds:        240,
+		StartSegmentNumber: 120,
+	}
+	opts.PinManifestWindowStart(50)
+	session := &TranscodeSession{outputDir: t.TempDir(), running: true, opts: opts}
+
+	text := string(session.GenerateFullManifest("segment/", ""))
+	if !strings.Contains(text, "#EXT-X-MEDIA-SEQUENCE:50\n") || !strings.Contains(text, "segment/seg_00050.ts\n") {
+		t.Fatalf("pinned window lost after restart:\n%s", text)
+	}
+	if strings.Contains(text, "segment/seg_00049.ts") {
+		t.Fatalf("manifest lists a segment before the pinned window:\n%s", text)
+	}
+
+	// Inside the window but behind the current generation: a backward seek,
+	// which must still restart there.
+	decision := session.SegmentRecoveryDecision(80, time.Now())
+	if decision.Reason != "before_generation_start" || !decision.RestartOnTimeout {
+		t.Fatalf("in-window backward seek decision = %+v, want restartable before_generation_start", decision)
+	}
+	// Below the window: a head probe, never a restart.
+	decision = session.SegmentRecoveryDecision(10, time.Now())
+	if decision.RestartOnTimeout {
+		t.Fatalf("below-window probe decision = %+v, want no restart", decision)
+	}
+}
+
+func TestGenerateFullManifest_ResumeAtEndListsLastSegment(t *testing.T) {
+	// A resume at the runtime boundary must not fall back to listing the whole
+	// title from segment 0, which this generation (numbered from 300) never
+	// produces. The last segment stays listed and restartable.
+	opts := TranscodeOpts{
+		TargetCodecVideo:   "h264",
+		SegmentDuration:    2,
+		TotalDuration:      600,
+		SeekSeconds:        600,
+		StartSegmentNumber: 300,
+	}
+	opts.PinManifestWindowStart(300)
+	session := &TranscodeSession{outputDir: t.TempDir(), running: true, opts: opts}
+
+	text := string(session.GenerateFullManifest("segment/", ""))
+	if !strings.Contains(text, "#EXT-X-MEDIA-SEQUENCE:299\n") || !strings.Contains(text, "segment/seg_00299.ts\n") ||
+		strings.Contains(text, "segment/seg_00000.ts") {
+		t.Fatalf("end-of-title resume manifest:\n%s", text)
+	}
+	if decision := session.SegmentRecoveryDecision(299, time.Now()); !decision.RestartOnTimeout {
+		t.Fatalf("last listed segment decision = %+v, want restartable", decision)
+	}
+}
+
+func TestSegmentRecoveryDecision_StoppedSessionBelowWindowDoesNotRestart(t *testing.T) {
+	// A stopped encode (finished or killed) must not be revived at seg 0 by a
+	// head probe either; that would re-encode from the start of the title.
+	session := &TranscodeSession{
+		outputDir: t.TempDir(),
+		running:   false,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+	if decision := session.SegmentRecoveryDecision(0, time.Now()); decision.RestartOnTimeout {
+		t.Fatalf("stopped below-window decision = %+v, want no restart", decision)
+	}
+	if decision := session.SegmentRecoveryDecision(60, time.Now()); decision.Reason != "transcode_not_running" || !decision.RestartOnTimeout {
+		t.Fatalf("stopped in-window decision = %+v, want restartable transcode_not_running", decision)
+	}
+}
+
+func TestSegmentRecoveryDecision_CopyBeforeStartStillRestarts(t *testing.T) {
+	// Copy sessions keep upstream's recovery: their real playlist has its own
+	// anchor semantics, and the windowing rule only applies to encodes.
+	session := &TranscodeSession{
+		outputDir: t.TempDir(),
+		running:   true,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "copy",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+	decision := session.SegmentRecoveryDecision(0, time.Now())
+	if decision.Reason != "before_generation_start" || !decision.RestartOnTimeout {
+		t.Fatalf("copy decision = %+v, want restartable before_generation_start", decision)
+	}
+}
+
 func TestRestartSeekTarget_MidStreamSeekUsesSegmentIndexNotZero(t *testing.T) {
 	const segDur = 2
 	session := &TranscodeSession{
