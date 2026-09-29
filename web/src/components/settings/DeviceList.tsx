@@ -163,7 +163,7 @@ export function DeviceList({
         // line at any household size — the same trade the settings shell's own
         // mobile tab bar makes — and unwraps into a normal row from xl up.
         <div
-          className="flex gap-1.5 overflow-x-auto px-0.5 pt-2 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] xl:flex-wrap xl:gap-1 xl:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-0.5 pt-2 pb-1 [-ms-overflow-style:none] xl:flex-wrap xl:gap-1 xl:overflow-visible [&::-webkit-scrollbar]:hidden"
           role="group"
           aria-label="Filter by profile"
         >

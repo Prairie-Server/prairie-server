@@ -153,7 +153,7 @@ export default function AdminRequests() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:mx-0 sm:px-0">
+        <div className="-mx-4 [scrollbar-width:thin] overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           <TabsList
             variant="line"
             aria-label="Request administration sections"
