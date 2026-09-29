@@ -128,6 +128,9 @@ const AdminPolicyLayout = lazy(() => import("@/pages/admin-policy/AdminPolicyLay
 const Recommendations = lazy(importRecommendations);
 const RecommendationsSection = lazy(() => import("@/pages/RecommendationsSection"));
 const Calendar = lazy(() => import("@/pages/Calendar"));
+const AdminLiveTV = lazy(() => import("@/pages/AdminLiveTV"));
+const LiveTV = lazy(() => import("@/pages/LiveTV"));
+const LiveWatchRoute = lazy(() => import("@/pages/LiveWatchRoute"));
 const Signup = lazy(() => import("@/pages/Signup"));
 const InviteClaim = lazy(() => import("@/pages/InviteClaim"));
 const PasswordReset = lazy(() => import("@/pages/PasswordReset"));
@@ -479,6 +482,14 @@ function AppRoutes() {
                   }
                 />
                 <Route
+                  path="/watch/live/:channelId"
+                  element={
+                    <RequireProfile>
+                      <LiveWatchRoute />
+                    </RequireProfile>
+                  }
+                />
+                <Route
                   path="/watch/:id"
                   element={
                     <RequireProfile>
@@ -515,6 +526,7 @@ function AppRoutes() {
                   <Route path="requests" element={<AdminRequests />} />
                   {/* Autoscan is a tab on Libraries now; keep old links working. */}
                   <Route path="autoscan" element={<LegacyAutoscanRedirect />} />
+                  <Route path="livetv" element={<AdminLiveTV />} />
                   <Route path="history" element={<AdminPlaybackHistory />} />
                   <Route path="marker-history" element={<AdminMarkerHistory />} />
                   <Route path="history-import" element={<AdminHistoryImport />} />
@@ -703,6 +715,7 @@ function AppRoutes() {
                             element={<RecommendationsSection />}
                           />
                           <Route path="/calendar" element={<Calendar />} />
+                          <Route path="/livetv" element={<LiveTV />} />
                           <Route path="/notifications" element={<Notifications />} />
                           <Route
                             path="/profile/customize-home"

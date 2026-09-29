@@ -117,6 +117,12 @@ function pluginInstallation(
   };
 }
 
+vi.mock("@/hooks/queries/useLiveTV", () => ({
+  useLiveTVChannels: () => ({
+    data: [],
+  }),
+}));
+
 vi.mock("@/hooks/queries/useRequests", () => ({
   useRequestFeatureStatus: () => ({
     data: { requests_enabled: false },
