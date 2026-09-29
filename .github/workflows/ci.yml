@@ -371,10 +371,7 @@ jobs:
           set -euo pipefail
           # Scope CI to packages listed in .github/coverage-packages.txt.
           # jellycompat / imageutil run in parallel sibling jobs.
-          # `go test ./...` currently fails on unrelated suites (playback_v3
-          # seek recovery, web embed without a built dist/) and is not gated
-          # on main. Full suite remains: `make test-coverage` locally (after
-          # `pnpm run build` in web/ so embed finds dist/).
+          # Everything else runs, ungated by coverage, in go-test-full.
           #
           # coverage.out must include every package in coverage-packages.txt.
           # covermode=set is enough: CI does not use -race, and atomic is slower.
@@ -422,6 +419,61 @@ jobs:
       - name: Run govulncheck
         run: |
           "$(go env GOPATH)/bin/govulncheck" ./...
+
+  # Every Go package that the coverage-gated job and the jellycompat /
+  # imageutil siblings do not run. Before this job, metadata, api/handlers,
+  # playback, apiv2, scenariocatalog, database and the rest ran nowhere in CI,
+  # so upstream syncs could silently drop Prairie fixes (#174) or leave tests
+  # asserting upstream-only behaviour. DB-gated tests skip without
+  # PRAIRIE_TEST_DATABASE_URL / PRAIRIE_SCENARIO_DATABASE_URL, and Live TV
+  # tests use fake tuners, so no hardware is needed. Split in two so the heavy
+  # HTTP packages compile in parallel with the rest.
+  go-test-full:
+    name: Go tests (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [http, rest]
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install libvips
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      - name: Run tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          # jellycompat and imageutil have their own jobs.
+          all=$(go list ./... | grep -vE '/internal/jellycompat(/|$)|/internal/imageutil$')
+          http_re='/internal/(api|apiv2)(/|$)'
+          if [[ "$SHARD" == "http" ]]; then
+            pkgs=$(grep -E "$http_re" <<<"$all")
+          else
+            pkgs=$(grep -vE "$http_re" <<<"$all")
+          fi
+          # -vet=off: golangci already covers vet.
+          go test $pkgs -count=1 -vet=off -timeout 30m
 
   # Kept as a named check for branch-protection compatibility; work lives in
   # go-test-coverage. Must not treat a failed coverage job as a successful skip.
