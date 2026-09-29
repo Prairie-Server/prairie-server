@@ -505,3 +505,46 @@ func TestLiveTVHandleChannelRoute(t *testing.T) {
 		t.Fatalf("item = %+v", item)
 	}
 }
+
+
+func TestLiveTVClientCapabilitiesFromDeviceProfile(t *testing.T) {
+	profile := DeviceProfile{
+		DirectPlayProfiles: []DirectPlayProfile{
+			{Type: "Video", Container: "ts", VideoCodec: "h264,hevc", AudioCodec: "aac,ac3"},
+			{Type: "Video", Container: "mp4", VideoCodec: "h264", AudioCodec: "aac"},
+		},
+		TranscodingProfiles: []TranscodingProfile{
+			{Type: "Video", Protocol: "hls", Container: "ts", VideoCodec: "h264", AudioCodec: "aac", MaxAudioChannels: "2"},
+		},
+	}
+	caps := liveTVClientCapabilities(profile)
+	if !containsFold(caps.CodecsVideo, "h264") || !containsFold(caps.CodecsVideo, "hevc") {
+		t.Fatalf("video codecs = %#v", caps.CodecsVideo)
+	}
+	if !containsFold(caps.CodecsAudio, "aac") || !containsFold(caps.CodecsAudio, "ac3") {
+		t.Fatalf("audio codecs = %#v", caps.CodecsAudio)
+	}
+	if caps.MaxAudioChannels != 2 {
+		t.Fatalf("max audio channels = %d, want 2", caps.MaxAudioChannels)
+	}
+}
+
+func TestLiveTVClientCapabilitiesIgnoresWildcardProfiles(t *testing.T) {
+	caps := liveTVClientCapabilities(DeviceProfile{
+		DirectPlayProfiles: []DirectPlayProfile{
+			{Type: "Video", Container: "ts", VideoCodec: "*", AudioCodec: "*"},
+		},
+	})
+	if caps.Declared() {
+		t.Fatalf("wildcard-only profile should not claim specific broadcast codec support: %#v", caps)
+	}
+}
+
+func containsFold(values []string, want string) bool {
+	for _, value := range values {
+		if strings.EqualFold(value, want) {
+			return true
+		}
+	}
+	return false
+}
