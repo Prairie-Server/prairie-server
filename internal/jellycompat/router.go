@@ -321,7 +321,7 @@ func NewRouter(deps Dependencies) chi.Router {
 			r.Get("/socket", NewSocketHandlerWithUserData(deps.SessionStore, adminAPIKeyAuth, deps.UserStateEvents, deps.IDCodec))
 
 			if deps.LiveTV != nil {
-				liveTVHandler := NewLiveTVHandler(deps.LiveTV, deps.IDCodec, deps.Config)
+				liveTVHandler := NewLiveTVHandler(deps.LiveTV, deps.IDCodec, deps.Config, deps.DeviceProfiles)
 				authHandler.SetLiveTVEnabled(true)
 				itemsHandler.SetLiveTV(liveTVHandler)
 				playbackHandler.SetLiveTV(liveTVHandler)
