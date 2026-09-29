@@ -188,7 +188,7 @@ func (r *Refresher) download(ctx context.Context, etag string) (ids []listedID, 
 	if err != nil {
 		return nil, "", false, err
 	}
-	req.Header.Set("User-Agent", "silo-anime-ids")
+	req.Header.Set("User-Agent", "prairie-anime-ids")
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}

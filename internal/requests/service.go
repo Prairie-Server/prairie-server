@@ -1199,7 +1199,7 @@ func (s *Service) Approve(ctx context.Context, viewer Viewer, id string) (*Reque
 // Decline rejects a request nothing has been sent for: a pending one, or an
 // approved one still waiting for the library or backing off. Once a submission
 // is in flight or a target exists, declining could leave the downstream
-// service's state diverged from Silo's, so the guard refuses it.
+// service's state diverged from Prairie's, so the guard refuses it.
 func (s *Service) Decline(ctx context.Context, viewer Viewer, id, reason string) (*Request, error) {
 	if !viewer.IsAdmin {
 		return nil, ErrForbidden

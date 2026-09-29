@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
 )
 
 // The host reads supports_seasons and reports_download_progress from the

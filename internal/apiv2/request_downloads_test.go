@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 func TestRequestDownloadOf(t *testing.T) {

@@ -32,7 +32,7 @@ const MEDIA_TYPES: readonly { value: RequestRouteMediaType; label: string }[] = 
 
 /**
  * "Where requests go": Standard, which sends each request to the server for
- * its type, or Advanced: for movies and for series, the rules Silo checks from
+ * its type, or Advanced: for movies and for series, the rules Prairie checks from
  * the top, Everything else for what no rule takes, and a way to try a title.
  * Every change saves right away.
  */
@@ -114,8 +114,8 @@ export function RequestRoutingGroup({
       label="Where requests go"
       description={
         advanced
-          ? "Silo checks the rules from the top. The first rule that matches a request decides where it goes; anything no rule matches goes to Everything else. Changes save right away."
-          : "Choose how Silo picks the server for each request. Changes save right away."
+          ? "Prairie checks the rules from the top. The first rule that matches a request decides where it goes; anything no rule matches goes to Everything else. Changes save right away."
+          : "Choose how Prairie picks the server for each request. Changes save right away."
       }
     >
       {routesLoading || serversLoading || routing.isPending ? (

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

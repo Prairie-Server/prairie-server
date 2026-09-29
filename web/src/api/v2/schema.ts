@@ -14974,7 +14974,7 @@ export interface components {
       requester_user_id?: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 129
        */
       tmdb_id: number;
@@ -15031,7 +15031,7 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 129
        */
       tmdb_id: number;
@@ -110030,7 +110030,7 @@ export interface operations {
       path: {
         /** @description The media type */
         media_type: "movie" | "series";
-        /** @description TMDB identifier (external, not a Silo ID) */
+        /** @description TMDB identifier (external, not a Prairie ID) */
         tmdb_id: number;
       };
       cookie?: never;
@@ -110150,7 +110150,7 @@ export interface operations {
       path: {
         /** @description The media type */
         media_type: "movie" | "series";
-        /** @description TMDB identifier (external, not a Silo ID) */
+        /** @description TMDB identifier (external, not a Prairie ID) */
         tmdb_id: number;
       };
       cookie?: never;

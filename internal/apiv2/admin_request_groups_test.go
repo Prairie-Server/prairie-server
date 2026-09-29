@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeGroupAdmin adds access-group request limits to the admin request fake.

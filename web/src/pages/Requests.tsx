@@ -78,7 +78,7 @@ const STATUS_HELP: Array<{ state: RequestDisplayState; description: string }> = 
   { state: "available", description: "In your library and ready to watch." },
   { state: "declined", description: "An admin declined it." },
   { state: "cancelled", description: "Withdrawn before it was sent to the download automation." },
-  { state: "failed", description: "Silo or the download automation hit an error." },
+  { state: "failed", description: "Prairie or the download automation hit an error." },
 ];
 
 /**

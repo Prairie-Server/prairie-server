@@ -112,7 +112,7 @@ export const pluginInstallations = {
   data: [
     {
       id: 1,
-      plugin_id: "silo.requests.arr",
+      plugin_id: "prairie.requests.arr",
       enabled: true,
       capabilities: [
         {

@@ -99,7 +99,7 @@ func TestFulfilledCopyForFollowers(t *testing.T) {
 	if got := requestLine(follower); got != followedTitleAvailable {
 		t.Fatalf("follower email line = %q", got)
 	}
-	if got := discordEmbedAuthorLine(follower); got != "Now available on Silo" {
+	if got := discordEmbedAuthorLine(follower); got != "Now available on Prairie" {
 		t.Fatalf("follower Discord author = %q", got)
 	}
 }
@@ -118,10 +118,10 @@ func TestNotifyFulfilledDeliversOncePerAccountForSharedProfileID(t *testing.T) {
 			(id, user_id, profile_id, device_id, platform, provider, apns_environment, apns_topic,
 			 apns_token_ciphertext, apns_token_hash, server_device_id, push_mode, enabled)
 		VALUES
-			('device-account-1', 1, 'default', 'local-1', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-1', 'server-1', 'private_push', true),
-			('device-account-2', 2, 'default', 'local-2', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-2', 'server-2', 'private_push', true)`); err != nil {
+			('device-account-1', 1, 'default', 'local-1', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-1', 'server-1', 'private_push', true),
+			('device-account-2', 2, 'default', 'local-2', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-2', 'server-2', 'private_push', true)`); err != nil {
 		t.Fatalf("create push tables: %v", err)
 	}
 	system := &System{

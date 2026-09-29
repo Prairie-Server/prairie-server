@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // modeStore is the fake store with a routing mode.

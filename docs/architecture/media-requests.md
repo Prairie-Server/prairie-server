@@ -55,7 +55,7 @@ and the facts stay uncaptured until routing fetches them.
 
 ## Routing
 
-Silo, not the router plugin, decides which server each quality tier of a request
+Prairie, not the router plugin, decides which server each quality tier of a request
 goes to (`internal/requests/routing.go`). Routes (`request_routes`) belong to a
 media type and hold conditions and a destination per tier: a server plus
 overrides for its plugin config (root folder, quality profile, tags, series type,
@@ -103,9 +103,9 @@ Settings › Requests, which also hides the server switches routing now owns).
 Each media type
 always has its fallback ("Everything else"); until it is saved it has no servers
 and routing leaves the media type to the plugin. Saving it requires an HD server,
-since a saved fallback moves the media type to Silo's routing. A rule cannot be added before
+since a saved fallback moves the media type to Prairie's routing. A rule cannot be added before
 the fallback has an HD server, because the first rule switches the media type to
-Silo's routing and titles no rule matches would otherwise have nowhere to go.
+Prairie's routing and titles no rule matches would otherwise have nowhere to go.
 The first Radarr (Sonarr) server added becomes Everything else for movies
 (series) in the same transaction, unless another enabled server already takes
 that media type (another of the kind, or a Seerr connection) or the new one is
@@ -195,7 +195,7 @@ and `approved` ones with no target and no live submission lease (waiting for the
 library, or backing off after a failed send). Once a submission is in flight or
 a target exists, the request stays in the pipeline until it completes or fails,
 because withdrawing it could leave the downstream service's state diverged from
-Silo's. Retry reopens a `failed` request to `approved` + `active` in one guarded
+Prairie's. Retry reopens a `failed` request to `approved` + `active` in one guarded
 write.
 
 ## Submission is claimed

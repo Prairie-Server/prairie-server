@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
-// Routing: Silo decides which server each quality tier of a request goes to,
+// Routing: Prairie decides which server each quality tier of a request goes to,
 // and hands the router plugin only that server. Routes are evaluated per tier
 // in order: the first enabled route whose conditions match the request and
 // that has a destination for the tier wins, and the media type's fallback

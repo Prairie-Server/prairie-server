@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeQueueAdmin adds view counts and request history to the admin request

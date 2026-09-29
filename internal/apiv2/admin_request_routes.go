@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // Request routing administration: the ordered rules that decide which server
@@ -169,7 +169,7 @@ type AdminRequestRouteReorderInput struct {
 type AdminRequestRoutePreviewInput struct {
 	Body struct {
 		MediaType       string `json:"media_type" enum:"movie,series"`
-		TMDBID          int    `json:"tmdb_id" minimum:"1" doc:"TMDB identifier (external, not a Silo ID)" example:"129"`
+		TMDBID          int    `json:"tmdb_id" minimum:"1" doc:"TMDB identifier (external, not a Prairie ID)" example:"129"`
 		RequesterUserID *ID    `json:"requester_user_id,omitempty" doc:"Route as this account's request; without it, rules for certain accounts do not match"`
 	}
 }
@@ -200,7 +200,7 @@ type AdminRequestRoutePreviewRule struct {
 
 // AdminRequestRouteTitle is a title the admin can try the rules on.
 type AdminRequestRouteTitle struct {
-	TMDBID     int    `json:"tmdb_id" doc:"TMDB identifier (external, not a Silo ID)" example:"129"`
+	TMDBID     int    `json:"tmdb_id" doc:"TMDB identifier (external, not a Prairie ID)" example:"129"`
 	MediaType  string `json:"media_type" enum:"movie,series"`
 	Title      string `json:"title" example:"Spirited Away"`
 	Year       int    `json:"year,omitempty" example:"2001"`

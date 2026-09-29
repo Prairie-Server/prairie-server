@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 func TestDetectAnime(t *testing.T) {

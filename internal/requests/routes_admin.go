@@ -12,8 +12,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // Route administration. Every media type has one fallback route, with the
@@ -166,7 +166,7 @@ func (s *Service) CreateRoute(ctx context.Context, viewer Viewer, route Route) (
 		return nil, err
 	}
 	// The first rule switches the media type from the plugin's routing to
-	// Silo's, where a title no rule matches goes to the fallback. Without a
+	// Prairie's, where a title no rule matches goes to the fallback. Without a
 	// fallback HD server those titles would have nowhere to go.
 	fallbackReady := false
 	rules := 0
@@ -506,7 +506,7 @@ func (s *Service) validateRoute(ctx context.Context, route *Route) error {
 		if !conditionsEmpty(route.Conditions) {
 			fields["conditions"] = "Everything else takes every request; it can't have conditions."
 		}
-		// A saved fallback moves the media type to Silo's routing; without an
+		// A saved fallback moves the media type to Prairie's routing; without an
 		// HD server, every title no rule matches would fail.
 		if route.HD.IntegrationID == "" && fields["hd.integration_id"] == "" {
 			fields["hd.integration_id"] = "Choose the server that gets everything else."

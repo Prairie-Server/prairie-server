@@ -12159,7 +12159,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               129
             ],
@@ -12339,7 +12339,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               129
             ],
@@ -167442,12 +167442,12 @@
             }
           },
           {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "in": "path",
             "name": "tmdb_id",
             "required": true,
             "schema": {
-              "description": "TMDB identifier (external, not a Silo ID)",
+              "description": "TMDB identifier (external, not a Prairie ID)",
               "examples": [
                 949
               ],
@@ -167610,12 +167610,12 @@
             }
           },
           {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "in": "path",
             "name": "tmdb_id",
             "required": true,
             "schema": {
-              "description": "TMDB identifier (external, not a Silo ID)",
+              "description": "TMDB identifier (external, not a Prairie ID)",
               "examples": [
                 949
               ],

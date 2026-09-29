@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // animeKeywordID is TMDB's "anime" keyword id, the one Seerr checks

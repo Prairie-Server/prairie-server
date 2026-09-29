@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // Season requests: a series request names the seasons it wants. A request
