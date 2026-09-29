@@ -1970,6 +1970,9 @@ func (s *Server) spawnReconstruct(r *http.Request, sessionID string, requestedSe
 	// original start untouched and let the segment-recovery machinery seek forward
 	// once the manifest is rebuilt. This mirrors doReconstructTranscode in
 	// internal/playback/transcode_manager.go so both reconstruct paths stay consistent.
+	// Keep the manifest window the client mounted (see TranscodeOpts
+	// manifestWindowStart) even when ffmpeg resumes at a later segment.
+	opts.PinManifestWindowStart(card.StartSegmentNumber)
 	if requestedSegment > card.StartSegmentNumber && card.SegmentDuration > 0 &&
 		!strings.EqualFold(card.TargetCodecVideo, "copy") {
 		opts.StartSegmentNumber = requestedSegment

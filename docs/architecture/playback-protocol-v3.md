@@ -743,6 +743,18 @@ Three shapes exist:
 position, `can_seek_anywhere` is true when the runtime is known, and
 `seek_restoration` is `player_position` — the client seeks locally.
 
+**Resumed encoded HLS** (Prairie) is the exception for transcoded routes that
+start past the first segment. The synthetic VOD playlist is a window that begins
+at the resume segment rather than at segment 0, because players that ignore
+`EXT-X-START` (notably Tizen AVPlay) always start at the first entry, and every
+player's head probe would otherwise restart the encode at the beginning.
+`stream_origin` and `timeline_offset` equal the segment-aligned resume position,
+`player_start` is the sub-segment remainder, `seek_window_start_seconds` is the
+window head and `seek_window_end_seconds` is the runtime: the window is complete,
+so targets inside it seek locally, and `can_seek_anywhere: false` with
+`seek_restoration: source_position` routes a target before the window through
+the server as a reanchor.
+
 **Copy remux over HLS** is served from FFmpeg's live, still-growing playlist,
 which starts at the preceding keyframe selected by FFmpeg's input seek.
 For HEVC HDR copy packaging, the frozen plan also controls the sample entry: a

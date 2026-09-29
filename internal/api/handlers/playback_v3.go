@@ -6683,6 +6683,24 @@ func configureHLSTimelineV3(plan *playback.PlanV3, videoCodec string, segmentDur
 		plan.Timeline.SeekWindowEndSeconds = nil
 		plan.Timeline.CanSeekAnywhere = false
 		plan.Timeline.SeekRestoration = "source_position"
+	} else if seek > 0 {
+		// The synthetic VOD manifest is a window that begins at the resume
+		// segment (see playback.GenerateFullManifest): players that ignore
+		// EXT-X-START, notably Tizen AVPlay, always start at the first entry,
+		// so the window head has to be the resume point. Player t=0 is the
+		// window head and media time = player time + stream origin. The window
+		// runs to the end of the media and every listed segment is produced on
+		// demand, so it is complete: targets inside it seek locally, and a
+		// target before it re-plans a new window.
+		plan.Timeline.PlayerStartSeconds = max(0, requested-seek)
+		plan.Timeline.StreamOriginSeconds = seek
+		plan.Timeline.TimelineOffsetSeconds = seek
+		windowStart := seek
+		windowEnd := durationSeconds
+		plan.Timeline.SeekWindowStartSeconds = &windowStart
+		plan.Timeline.SeekWindowEndSeconds = &windowEnd
+		plan.Timeline.CanSeekAnywhere = false
+		plan.Timeline.SeekRestoration = "source_position"
 	} else {
 		plan.Timeline.PlayerStartSeconds = requested
 		plan.Timeline.StreamOriginSeconds = 0
