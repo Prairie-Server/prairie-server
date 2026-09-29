@@ -465,7 +465,7 @@ jobs:
         run: |
           set -euo pipefail
           # jellycompat and imageutil have their own jobs.
-          all=$(go list ./... | grep -vE '/internal/(jellycompat|livetv|contentid|librarykind|logredact|logfilter|titleutil|lang|rootcheck|secret|providerid|buildinfo|artworkkey)(/|$)|/internal/imageutil
+          all=$(go list ./... | grep -vE '/internal/(jellycompat|livetv|contentid|librarykind|logredact|logfilter|titleutil|lang|rootcheck|secret|providerid|buildinfo|artworkkey|imageutil)(/|$)')
           http_re='/internal/(api|apiv2)(/|$)'
           if [[ "$SHARD" == "http" ]]; then
             pkgs=$(grep -E "$http_re" <<<"$all")
