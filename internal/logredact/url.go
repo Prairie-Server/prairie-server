@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -30,7 +31,74 @@ func SanitizeURL(raw string) string {
 // so errors.Is and useful transport diagnostics continue to work. When the
 // URL error is nested inside another wrapper (fmt.Errorf or errors.Join), the
 // surrounding chain and its diagnostic text are preserved as well.
+//
+// Every raw URL carried by a *url.Error anywhere in the chain is also scrubbed
+// from the final message, wherever it appears: a wrapper that formats the URL
+// itself (fmt.Errorf("fetch %s: %w", raw, urlErr)), a sibling in an
+// errors.Join, or a transport cause whose own text repeats the URL. Replacing
+// only the url.Error's text would leave those copies intact.
 func SanitizeURLError(err error) error {
+	if err == nil {
+		return nil
+	}
+	sanitized := sanitizeURLErrorChain(err)
+	replacer := rawURLReplacer(err)
+	if replacer == nil {
+		return sanitized
+	}
+	message := sanitized.Error()
+	scrubbed := replacer.Replace(message)
+	if scrubbed == message {
+		return sanitized
+	}
+	return &sanitizedWrapperError{message: scrubbed, cause: sanitized}
+}
+
+// rawURLReplacer returns a replacer mapping every distinct raw URL found in a
+// *url.Error within err's chain (and its %q-quoted form) to its sanitized
+// form, or nil when there is nothing to replace. strings.NewReplacer compares
+// candidates in argument order, so longer raw URLs go first: a raw URL that
+// is a prefix of another must not rewrite part of the longer one.
+func rawURLReplacer(err error) *strings.Replacer {
+	seen := map[string]bool{}
+	var raws []string
+	var walk func(error)
+	walk = func(e error) {
+		for e != nil {
+			if urlErr, ok := e.(*url.Error); ok && urlErr != nil { //nolint:errorlint // walking the chain by hand
+				raw := urlErr.URL
+				if safe := SanitizeURL(raw); raw != "" && raw != safe && !seen[raw] {
+					seen[raw] = true
+					raws = append(raws, raw)
+				}
+			}
+			switch unwrapper := e.(type) { //nolint:errorlint // walking the chain by hand
+			case interface{ Unwrap() []error }:
+				for _, child := range unwrapper.Unwrap() {
+					walk(child)
+				}
+				return
+			case interface{ Unwrap() error }:
+				e = unwrapper.Unwrap()
+			default:
+				return
+			}
+		}
+	}
+	walk(err)
+	if len(raws) == 0 {
+		return nil
+	}
+	sort.SliceStable(raws, func(a, b int) bool { return len(raws[a]) > len(raws[b]) })
+	pairs := make([]string, 0, 4*len(raws))
+	for _, raw := range raws {
+		safe := SanitizeURL(raw)
+		pairs = append(pairs, strconv.Quote(raw), strconv.Quote(safe), raw, safe)
+	}
+	return strings.NewReplacer(pairs...)
+}
+
+func sanitizeURLErrorChain(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -51,7 +119,7 @@ func SanitizeURLError(err error) error {
 	}
 	clone := *urlErr
 	clone.URL = SanitizeURL(urlErr.URL)
-	clone.Err = SanitizeURLError(urlErr.Err)
+	clone.Err = sanitizeURLErrorChain(urlErr.Err)
 	// The identity check is deliberate: errors.As already located the nested
 	// URL error, and this distinguishes a direct *url.Error (the clone is the
 	// whole chain) from a wrapper that must keep its surrounding message.
@@ -100,7 +168,7 @@ func sanitizeMultiURLError(original error, components []error) error {
 			sanitized[idx] = component
 			continue
 		}
-		sanitized[idx] = SanitizeURLError(component)
+		sanitized[idx] = sanitizeURLErrorChain(component)
 		if strings.Contains(outer, component.Error()) {
 			outer = strings.ReplaceAll(outer, component.Error(), sanitized[idx].Error())
 		} else {
