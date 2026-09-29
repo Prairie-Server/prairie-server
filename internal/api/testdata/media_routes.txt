@@ -1155,9 +1155,9 @@ POST /api/v1/playback/route-events	non-media
 GET /api/v1/playback/sessions/{session_id}/control/ws	non-media
 POST /api/v1/playback/start	non-media
 GET /api/v1/playback/transcode/{session_id}/master.m3u8	media	manifest	viewer_egress	true	true
-GET /api/v1/playback/transcode/{session_id}/media.m3u8	non-media
+GET /api/v1/playback/transcode/{session_id}/media.m3u8	media	manifest	viewer_egress	true	true
 GET /api/v1/playback/transcode/{session_id}/segment/{name}	media	playback	viewer_egress	true	true
-HEAD /api/v1/playback/transcode/{session_id}/segment/{name}	non-media
+HEAD /api/v1/playback/transcode/{session_id}/segment/{name}	media	playback	viewer_egress	true	true
 DELETE /api/v1/playback/{session_id}	non-media
 POST /api/v1/playback/{session_id}/progress	non-media
 POST /api/v1/playback/{session_id}/replan	non-media
