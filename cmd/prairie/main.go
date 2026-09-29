@@ -38,6 +38,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/activitylog"
 	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/animeids"
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	"github.com/prairie-server/prairie-server/internal/apiv2"
@@ -81,15 +82,13 @@ import (
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/mdblist"
 	"github.com/prairie-server/prairie-server/internal/metadata"
-	"github.com/prairie-server/prairie-server/internal/netaccess"
-	"github.com/prairie-server/prairie-server/internal/animeids"
 	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
 	// entries in-process (no gRPC).
 	_ "github.com/prairie-server/prairie-server/internal/metadata/nfo"
-	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/nodemetrics"

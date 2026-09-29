@@ -7,10 +7,11 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
 	"github.com/prairie-server/prairie-server/internal/requests"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
-	"github.com/prairie-server/prairie-server/internal/database/pglock"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // requestReconcileAdvisoryLock spells "SILORQRC". It lets one server run each

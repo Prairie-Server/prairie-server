@@ -23,6 +23,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/animeids"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/apiv2"
@@ -95,7 +96,6 @@ import (
 	watchtrakt "github.com/prairie-server/prairie-server/internal/watchsync/providers/trakt"
 	"github.com/prairie-server/prairie-server/internal/watchtogether"
 	"github.com/prairie-server/prairie-server/internal/webhooksync"
-	"github.com/prairie-server/prairie-server/internal/animeids"
 )
 
 // Dependencies holds all shared dependencies that handlers need.

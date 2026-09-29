@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/requests"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type RequestDownloadRefresher interface {
