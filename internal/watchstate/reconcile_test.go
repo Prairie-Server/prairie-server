@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -124,6 +125,10 @@ func (r *fakeHistoryRows) Values() ([]any, error) {
 }
 
 func (r *fakeHistoryRows) RawValues() [][]byte {
+	return nil
+}
+
+func (r *fakeHistoryRows) TypeMap() *pgtype.Map {
 	return nil
 }
 
