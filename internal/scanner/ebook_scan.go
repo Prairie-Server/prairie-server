@@ -38,7 +38,7 @@ type filesystemMediaItemReader interface {
 }
 
 func ebookScanWorkers() int {
-	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_SCAN_WORKERS", "SILO_EBOOK_SCAN_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_SCAN_WORKERS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
 		}

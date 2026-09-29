@@ -62,7 +62,7 @@ const (
 
 // audiobookEnrichBatchSize returns the configured maximum sweep size.
 func audiobookEnrichBatchSize() int {
-	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "SILO_AUDIOBOOK_ENRICH_BATCH_SIZE"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			return parsed
 		}
@@ -75,7 +75,7 @@ func audiobookEnrichBatchSize() int {
 // they drain.
 func audiobookEnrichWorkers(batchSize int) int {
 	n := defaultEnrichWorkers
-	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "SILO_AUDIOBOOK_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}

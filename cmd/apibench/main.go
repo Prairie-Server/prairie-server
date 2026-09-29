@@ -39,6 +39,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/apibench"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // databaseEnv is the fallback source of the -db DSN. It is resolved after
@@ -55,7 +56,7 @@ func main() {
 	label := flag.String("label", "", "override plan label")
 	flag.Parse()
 	if *dbDSN == "" {
-		*dbDSN = os.Getenv(databaseEnv)
+		*dbDSN = envutil.Getenv(databaseEnv)
 	}
 	if *planPath == "" {
 		fmt.Fprintln(os.Stderr, "apibench: -plan is required")

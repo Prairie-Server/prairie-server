@@ -20,6 +20,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/contracts/api/v2/scenarios"
 	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -773,7 +774,7 @@ func syntheticFile(spec string) ([]byte, error) {
 // WriteReport renders results as JSON for CI artifacts when
 // SILO_SCENARIO_REPORT names a file.
 func WriteReport(results []Result) error {
-	path := os.Getenv("SILO_SCENARIO_REPORT")
+	path := envutil.Getenv("SILO_SCENARIO_REPORT")
 	if path == "" {
 		return nil
 	}

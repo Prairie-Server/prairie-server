@@ -33,6 +33,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // Surfaces a path can target.
@@ -500,7 +502,7 @@ func (r *Runner) loadBody(p Path) ([]byte, error) {
 // be committed without credentials.
 func expandEnv(s string) string {
 	return os.Expand(s, func(name string) string {
-		if v, ok := os.LookupEnv(name); ok {
+		if v, ok := envutil.LookupEnv(name); ok {
 			return v
 		}
 		return "${" + name + "}"

@@ -143,10 +143,10 @@ import (
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
 // PRAIRIE_NODE_NAME > SILO_NODE_NAME > NODE_NAME > os.Hostname().
 func resolveNodeIdentity() string {
-	if v := envutil.FirstNonEmpty("PRAIRIE_NODE_NAME", "SILO_NODE_NAME"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_NODE_NAME"); v != "" {
 		return v
 	}
-	if v := os.Getenv("NODE_NAME"); v != "" {
+	if v := envutil.Getenv("NODE_NAME"); v != "" {
 		return v
 	}
 	h, _ := os.Hostname()
@@ -376,7 +376,7 @@ func newStreamTelemetryViewCache(registry *streamtelemetry.Registry) *streamtele
 }
 
 func resolvePluginCacheDir() string {
-	if v := envutil.FirstNonEmpty("PRAIRIE_PLUGIN_CACHE_DIR", "SILO_PLUGIN_CACHE_DIR"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_PLUGIN_CACHE_DIR"); v != "" {
 		return v
 	}
 	return filepath.Join(os.TempDir(), "prairie-plugins")
@@ -1074,8 +1074,8 @@ func main() {
 		// Resolved before the watcher starts: NODE_URL is this process's
 		// stream_nodes identity, and the watcher needs it on its very first
 		// load to overlay the node's own acceleration overrides.
-		nodeURL := os.Getenv("NODE_URL")
-		nodeName := os.Getenv("NODE_NAME")
+		nodeURL := envutil.Getenv("NODE_URL")
+		nodeName := envutil.Getenv("NODE_NAME")
 		if nodeURL == "" {
 			nodeURL = "http://localhost" + cfg.Server.Listen
 			// The guess is this process's whole identity: it keys session
@@ -1234,7 +1234,7 @@ func main() {
 		bootstrapSensitiveConfigured["redis.url"] = true
 		bootstrapSensitiveValues["redis.url"] = bc.RedisURL
 	}
-	if rawTrustedProxies := strings.TrimSpace(os.Getenv(clientip.EnvTrustedProxies)); rawTrustedProxies != "" {
+	if rawTrustedProxies := strings.TrimSpace(envutil.Getenv(clientip.EnvTrustedProxies)); rawTrustedProxies != "" {
 		normalizedTrustedProxies, normalizeErr := clientip.NormalizeCIDRList(rawTrustedProxies)
 		if normalizeErr != nil {
 			log.Fatalf("invalid %s: %v", clientip.EnvTrustedProxies, normalizeErr)
