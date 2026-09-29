@@ -3955,12 +3955,27 @@ func TestConfigureHLSTimelineV3MatchesTransportSeekSemantics(t *testing.T) {
 		t.Fatalf("copy timeline=%#v", copyPlan.Timeline)
 	}
 
+	// A resumed bounded encode serves a synthetic VOD window that begins at the
+	// resume segment (Tizen AVPlay ignores EXT-X-START), so the player clock
+	// starts at the window head. The window is complete to the runtime, so
+	// targets inside it seek locally and earlier targets reanchor.
 	encodePlan := &playback.PlanV3{Timeline: playback.TimelineV3{SourceStartSeconds: 17.3}}
 	encodeSeek, encodeSegment := configureHLSTimelineV3(encodePlan, "h264", 2, 600)
-	if encodeSeek != 16 || encodeSegment != 8 || encodePlan.Timeline.StreamOriginSeconds != 0 || encodePlan.Timeline.TimelineOffsetSeconds != 0 || encodePlan.Timeline.PlayerStartSeconds != 17.3 || !encodePlan.Timeline.CanSeekAnywhere ||
-		encodePlan.Timeline.SeekWindowStartSeconds != nil || encodePlan.Timeline.SeekWindowEndSeconds != nil ||
-		encodePlan.Timeline.SeekRestoration != "player_position" {
+	if encodeSeek != 16 || encodeSegment != 8 || encodePlan.Timeline.StreamOriginSeconds != 16 || encodePlan.Timeline.TimelineOffsetSeconds != 16 || math.Abs(encodePlan.Timeline.PlayerStartSeconds-1.3) > 0.0001 || encodePlan.Timeline.CanSeekAnywhere ||
+		encodePlan.Timeline.SeekWindowStartSeconds == nil || *encodePlan.Timeline.SeekWindowStartSeconds != 16 ||
+		encodePlan.Timeline.SeekWindowEndSeconds == nil || *encodePlan.Timeline.SeekWindowEndSeconds != 600 ||
+		encodePlan.Timeline.SeekRestoration != "source_position" {
 		t.Fatalf("encode timeline=%#v seek=%v segment=%d", encodePlan.Timeline, encodeSeek, encodeSegment)
+	}
+
+	// Inside the first segment the aligned seek is zero, so the window is the
+	// whole title and the player seeks locally from the start.
+	fromStartPlan := &playback.PlanV3{Timeline: playback.TimelineV3{SourceStartSeconds: 1.5}}
+	fromStartSeek, fromStartSegment := configureHLSTimelineV3(fromStartPlan, "h264", 2, 600)
+	if fromStartSeek != 0 || fromStartSegment != 0 || fromStartPlan.Timeline.StreamOriginSeconds != 0 || fromStartPlan.Timeline.PlayerStartSeconds != 1.5 || !fromStartPlan.Timeline.CanSeekAnywhere ||
+		fromStartPlan.Timeline.SeekWindowStartSeconds != nil || fromStartPlan.Timeline.SeekWindowEndSeconds != nil ||
+		fromStartPlan.Timeline.SeekRestoration != "player_position" {
+		t.Fatalf("from-start encode timeline=%#v seek=%v segment=%d", fromStartPlan.Timeline, fromStartSeek, fromStartSegment)
 	}
 
 	longEncodePlan := &playback.PlanV3{Timeline: playback.TimelineV3{SourceStartSeconds: 17.3}}
