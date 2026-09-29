@@ -12,6 +12,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/notifications"
@@ -37,6 +38,9 @@ type AdminJobsHandler struct {
 	store          AdminJobArtifactStore
 	CancelRegistry *adminjob.CancelRegistry
 	RealtimeHub    *notifications.Hub
+	// ArtifactSigner mints self-authorizing download URLs for stores that
+	// cannot presign. Nil leaves download_url empty, as before.
+	ArtifactSigner *artworkurl.Signer
 }
 
 func NewAdminJobsHandler(repo adminJobRepository, store AdminJobArtifactStore) *AdminJobsHandler {
@@ -231,6 +235,7 @@ func (h *AdminJobsHandler) requestRunningCancellation(w http.ResponseWriter, r *
 }
 
 func adminJobToResponse(r *http.Request, job *models.AdminJob, store AdminJobArtifactStore) adminJobResponse {
+	job = notifications.SafeStorageTransitionJob(job)
 	resp := adminJobResponse{
 		ID:                job.ID,
 		JobType:           job.JobType,

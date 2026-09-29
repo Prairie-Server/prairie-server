@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -5,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useAdminServerStatus: vi.fn(),
+  shortcutLabel: "Ctrl K",
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
@@ -27,6 +29,11 @@ vi.mock("@/playback/watchPlaybackContext", () => ({
 vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
   useAudiobookPlaybackController: () => null,
 }));
+vi.mock("@/lib/keyboardShortcut", () => ({
+  get SEARCH_SHORTCUT_LABEL() {
+    return mocks.shortcutLabel;
+  },
+}));
 
 import AdminLayout from "./AdminLayout";
 
@@ -48,13 +55,20 @@ function renderAdmin(initialPath = "/admin") {
     { initialEntries: [initialPath] },
   );
 
-  return { router, ...render(<RouterProvider router={router} />) };
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return {
+    router,
+    ...render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 beforeEach(() => {
-  mocks.useAdminServerStatus.mockReturnValue({
-    data: { restart_required: true },
-  });
+  mocks.useAdminServerStatus.mockReturnValue({ data: { restart_required: true } });
+  mocks.shortcutLabel = "Ctrl K";
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(min-width: 64rem)",
     media: query,
@@ -69,17 +83,10 @@ afterEach(() => {
 });
 
 describe("AdminLayout search shortcut hint", () => {
-  function stubUserAgent(value: string) {
-    vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue(value);
-  }
-
   // The dialog opens on Cmd or Ctrl, so the advertised hint has to name the key
   // this keyboard actually has — a hardcoded ⌘ is a dead instruction on Windows
   // and Linux, which is most self-hosters.
   it("names Ctrl off Apple platforms", () => {
-    stubUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    );
     renderAdmin();
 
     const [search] = screen.getAllByRole("button", {
@@ -91,9 +98,7 @@ describe("AdminLayout search shortcut hint", () => {
   });
 
   it("names the command glyph on Apple platforms", () => {
-    stubUserAgent(
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
-    );
+    mocks.shortcutLabel = "⌘ K";
     renderAdmin();
 
     const [search] = screen.getAllByRole("button", {
@@ -104,6 +109,18 @@ describe("AdminLayout search shortcut hint", () => {
   });
 });
 
+describe("AdminLayout shell attribute", () => {
+  it("publishes data-admin-shell for exactly its own lifetime", () => {
+    // app.css resolves `--app-sidebar-offset` to this shell's 240px sidebar
+    // only while the attribute is present, so the audiobook MiniBar clears the
+    // admin navigation instead of painting over its bottom edge.
+    const { unmount } = renderAdmin();
+    expect(document.documentElement).toHaveAttribute("data-admin-shell", "true");
+    unmount();
+    expect(document.documentElement).not.toHaveAttribute("data-admin-shell");
+  });
+});
+
 describe("AdminLayout restart banner", () => {
   it("stays quiet while no restart is owed", () => {
     mocks.useAdminServerStatus.mockReturnValue({
@@ -111,9 +128,7 @@ describe("AdminLayout restart banner", () => {
     });
     renderAdmin();
 
-    expect(
-      screen.getByRole("heading", { name: "Admin dashboard" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Admin dashboard" })).toBeInTheDocument();
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
   });
 
@@ -125,9 +140,7 @@ describe("AdminLayout restart banner", () => {
 
     expect(banner).toHaveTextContent("Restart required");
     // Node.DOCUMENT_POSITION_FOLLOWING: the page comes after the banner.
-    expect(
-      banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("keeps a dismissal across admin navigation", async () => {
@@ -142,9 +155,7 @@ describe("AdminLayout restart banner", () => {
       await router.navigate("/admin/users");
     });
 
-    expect(
-      screen.getByRole("heading", { name: "Admin users" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Admin users" })).toBeInTheDocument();
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
   });
 });

@@ -1,8 +1,4 @@
-import type {
-  LibraryTabCollection,
-  LibraryTabGroup,
-  LibraryTabUngrouped,
-} from "@/api/types";
+import type { LibraryTabCollection, LibraryTabGroup, LibraryTabUngrouped } from "@/api/types";
 import { useLibraryCollections } from "@/hooks/queries/libraryCollections";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,9 +10,7 @@ interface LibraryCollectionsProps {
   libraryId: number;
 }
 
-export default function LibraryCollections({
-  libraryId,
-}: LibraryCollectionsProps) {
+export default function LibraryCollections({ libraryId }: LibraryCollectionsProps) {
   const { data, isLoading } = useLibraryCollections(libraryId);
   const { cardPresentation } = useUICustomization();
   const gridClasses = cardGridClasses(cardPresentation.poster_size);
@@ -47,8 +41,7 @@ export default function LibraryCollections({
           <CardContent className="py-10 text-center">
             <p className="text-lg font-semibold">No collections yet</p>
             <p className="text-muted-foreground mt-2 text-sm">
-              Create library collections from the admin area to feature curated
-              shelves here.
+              Create library collections from the admin area to feature curated shelves here.
             </p>
           </CardContent>
         </Card>
@@ -60,9 +53,7 @@ export default function LibraryCollections({
     <div className="page-shell space-y-6 py-6 sm:py-8">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
-            Collections
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Collections</h1>
           <p className="page-subtitle text-sm sm:text-base">
             Browse hand-picked shelves and smart lists created for this library.
           </p>
@@ -132,12 +123,7 @@ function UngroupedGroupSection({
     <section>
       <div className={gridClasses}>
         {collections.map((c) => (
-          <CollectionPosterCard
-            key={c.id}
-            collection={c}
-            kind="regular"
-            libraryId={libraryId}
-          />
+          <CollectionPosterCard key={c.id} collection={c} kind="regular" libraryId={libraryId} />
         ))}
       </div>
     </section>
@@ -158,12 +144,7 @@ function GroupSection({
       <h2 className="mb-3 text-lg font-semibold">{group.name}</h2>
       <div className={gridClasses}>
         {group.collections.map((c) => (
-          <CollectionPosterCard
-            key={c.id}
-            collection={c}
-            kind={group.kind}
-            libraryId={libraryId}
-          />
+          <CollectionPosterCard key={c.id} collection={c} kind={group.kind} libraryId={libraryId} />
         ))}
       </div>
     </section>

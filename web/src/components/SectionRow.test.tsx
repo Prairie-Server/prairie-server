@@ -30,10 +30,7 @@ vi.mock("@/components/MediaCarousel", () => ({
   }) => {
     latestCarouselProps = { onViewAll, headerActions };
     return (
-      <section
-        data-title={title}
-        data-has-view-all={String(Boolean(onViewAll))}
-      >
+      <section data-title={title} data-has-view-all={String(Boolean(onViewAll))}>
         {headerActions}
         {children}
       </section>
@@ -305,9 +302,7 @@ describe("SectionRow", () => {
     expect(mockNavigate).toHaveBeenCalledWith(
       "/catalog?source=section&scope=home&section_id=featured-picks&title=Featured+Picks",
     );
-    expect(
-      String(renderToStaticMarkup(<>{latestCarouselProps?.headerActions}</>)),
-    ).toBe("");
+    expect(String(renderToStaticMarkup(<>{latestCarouselProps?.headerActions}</>))).toBe("");
   });
 
   it("only shows pin affordances for browse-supported section types", () => {

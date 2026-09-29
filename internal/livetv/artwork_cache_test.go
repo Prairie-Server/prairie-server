@@ -55,8 +55,7 @@ type stubDeleter struct {
 	err    error
 }
 
-func (s *stubDeleter) Bucket() string { return s.bucket }
-func (s *stubDeleter) DeleteObjects(_ context.Context, _ string, keys []string) (int, error) {
+func (s *stubDeleter) Delete(_ context.Context, keys []string) (int, error) {
 	s.keys = append([]string(nil), keys...)
 	return len(keys), s.err
 }

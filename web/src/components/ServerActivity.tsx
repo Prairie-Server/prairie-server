@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { Activity, ChevronRight, Loader, ScanLine } from "lucide-react";
 import { useAdminSessions } from "@/hooks/queries/admin/stats";
-import { useTasks } from "@/hooks/queries/admin/tasks";
+import { useTasksIncludingHidden } from "@/hooks/queries/admin/tasks";
 import { useActiveScans } from "@/hooks/queries/admin/scans";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import {
@@ -35,23 +35,17 @@ interface ServerActivityProps {
 // (AdminLayoutEventChannels / AdminEventChannels), not here.
 function useServerActivityData() {
   const { data: sessions = [] } = useAdminSessions();
-  const { data: tasks = [] } = useTasks();
+  const { data: tasks = [] } = useTasksIncludingHidden();
   const { data: scans } = useActiveScans();
   const { data: libraries = [] } = useAdminLibraries();
   const { connectionState } = useRealtimeEvents();
 
   const activeScans = useMemo(
-    () =>
-      (scans ?? []).filter(
-        (s) => s.status === "accepted" || s.status === "running",
-      ),
+    () => (scans ?? []).filter((s) => s.status === "accepted" || s.status === "running"),
     [scans],
   );
 
-  const runningTasks = useMemo(
-    () => tasks.filter((t) => t.state === "running"),
-    [tasks],
-  );
+  const runningTasks = useMemo(() => tasks.filter((t) => t.state === "running"), [tasks]);
 
   const streamCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -62,11 +56,9 @@ function useServerActivityData() {
     return counts;
   }, [sessions]);
 
-  const totalActive =
-    sessions.length + runningTasks.length + activeScans.length;
+  const totalActive = sessions.length + runningTasks.length + activeScans.length;
 
-  const libraryName = (id: number) =>
-    libraries.find((l) => l.id === id)?.name ?? `Library #${id}`;
+  const libraryName = (id: number) => libraries.find((l) => l.id === id)?.name ?? `Library #${id}`;
 
   return {
     sessions,
@@ -110,10 +102,7 @@ function useDelayedConnectionProblem(connectionState: RealtimeConnectionState) {
   return isNonLive && connectionProblemState;
 }
 
-export default function ServerActivity({
-  hideWhenEmpty = false,
-  className,
-}: ServerActivityProps) {
+export default function ServerActivity({ hideWhenEmpty = false, className }: ServerActivityProps) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -130,22 +119,14 @@ export default function ServerActivity({
   const showConnectionProblem = useDelayedConnectionProblem(connectionState);
   const visibleActiveScans = activeScans.slice(0, MAX_ACTIVITY_SCAN_ROWS);
   const hiddenActiveScanCount = activeScans.length - visibleActiveScans.length;
-  const activeScansMayBeTruncated =
-    activeScans.length >= ACTIVE_SCAN_SNAPSHOT_LIMIT;
-  const totalActiveLabel = formatBadgeCount(
-    totalActive,
-    activeScansMayBeTruncated,
-  );
+  const activeScansMayBeTruncated = activeScans.length >= ACTIVE_SCAN_SNAPSHOT_LIMIT;
+  const totalActiveLabel = formatBadgeCount(totalActive, activeScansMayBeTruncated);
 
   // Keep mounted while popover is open so Radix can animate closed
   if (hideWhenEmpty && totalActive === 0 && !open) return null;
 
   return (
-    <PopoverPrimitive.Root
-      key={location.pathname}
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <PopoverPrimitive.Root key={location.pathname} open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Trigger asChild>
         <button
           type="button"
@@ -190,9 +171,7 @@ export default function ServerActivity({
             <span className="text-[13px] font-bold">Server Activity</span>
             {connectionState !== "live" && (
               <span className="text-warning text-[10px] font-medium">
-                {connectionState === "connecting"
-                  ? "Connecting…"
-                  : "Disconnected"}
+                {connectionState === "connecting" ? "Connecting…" : "Disconnected"}
               </span>
             )}
           </div>
@@ -216,11 +195,7 @@ export default function ServerActivity({
                       {Object.entries(streamCounts)
                         .sort(([a], [b]) => compareActivityMethods(a, b))
                         .map(([method, count]) => (
-                          <StreamCountRow
-                            key={method}
-                            method={method}
-                            count={count}
-                          />
+                          <StreamCountRow key={method} method={method} count={count} />
                         ))}
                     </div>
                   ) : (
@@ -238,7 +213,7 @@ export default function ServerActivity({
                   {runningTasks.length > 0 ? (
                     <div className="space-y-2">
                       {runningTasks.map((task) => (
-                        <TaskRow key={task.key} task={task} />
+                        <TaskRow key={task.key} task={task} onNavigate={() => setOpen(false)} />
                       ))}
                     </div>
                   ) : (
@@ -356,13 +331,20 @@ function StreamCountRow({ method, count }: { method: string; count: number }) {
   );
 }
 
-function TaskRow({ task }: { task: TaskInfo }) {
+function TaskRow({ task, onNavigate }: { task: TaskInfo; onNavigate: () => void }) {
   const hasDeterminateProgress = task.progress > 0;
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="truncate text-[12px] font-medium">{task.name}</span>
+        {/* Hidden workers are absent from the task list, so link each row to its own page. */}
+        <Link
+          to={`/admin/tasks/${task.key}`}
+          onClick={onNavigate}
+          className="hover:text-primary truncate text-[12px] font-medium transition-colors"
+        >
+          {task.name}
+        </Link>
         {hasDeterminateProgress ? (
           <span className="text-muted-foreground ml-2 shrink-0 text-[10px] font-semibold tabular-nums">
             {formatTaskProgress(task.progress)}
@@ -382,22 +364,11 @@ function TaskRow({ task }: { task: TaskInfo }) {
           />
         </div>
       )}
-      {task.progress_message && (
-        <div className="text-muted-foreground truncate text-[10px]">
-          {task.progress_message}
-        </div>
-      )}
     </div>
   );
 }
 
-function ScanRow({
-  scan,
-  libraryName,
-}: {
-  scan: ScanRun;
-  libraryName: string;
-}) {
+function ScanRow({ scan, libraryName }: { scan: ScanRun; libraryName: string }) {
   const progressLabel = formatScanProgress(scan);
   return (
     <div className="flex items-start gap-2.5">
@@ -408,9 +379,7 @@ function ScanRow({
       )}
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[12px] font-medium">
-            {libraryName}
-          </span>
+          <span className="truncate text-[12px] font-medium">{libraryName}</span>
           <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
             {scan.status === "running" ? "Scanning…" : "Queued"}
           </span>
@@ -420,9 +389,7 @@ function ScanRow({
           {scan.path ? ` · ${scan.path}` : ""}
         </div>
         {progressLabel && (
-          <div className="text-muted-foreground/80 truncate text-[10px]">
-            {progressLabel}
-          </div>
+          <div className="text-muted-foreground/80 truncate text-[10px]">{progressLabel}</div>
         )}
       </div>
     </div>
@@ -450,10 +417,7 @@ function formatScanProgress(scan: ScanRun) {
   if (result.total_files && result.files_processed) {
     const percent = Math.max(
       0,
-      Math.min(
-        100,
-        Math.round((result.files_processed / result.total_files) * 100),
-      ),
+      Math.min(100, Math.round((result.files_processed / result.total_files) * 100)),
     );
     return `${result.message ?? "Processing files"} · ${result.files_processed.toLocaleString()} / ${result.total_files.toLocaleString()} (${percent}%)`;
   }
@@ -464,9 +428,7 @@ function formatScanProgress(scan: ScanRun) {
 }
 
 function EmptyRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-muted-foreground py-1 text-[11px]">{children}</div>
-  );
+  return <div className="text-muted-foreground py-1 text-[11px]">{children}</div>;
 }
 
 function MoreRows({

@@ -28,11 +28,11 @@ const (
 	ArtifactDirectoryName = "download-artifacts"
 	RelayReadIdleTimeout  = 2 * time.Minute
 
-	resultToneMapRecipeVersionHeader             = "X-Silo-Tone-Map-Recipe-Version"
-	resultToneMapModeHeader                      = "X-Silo-Tone-Map-Mode"
-	resultToneMapSourceRevisionFingerprintHeader = "X-Silo-Tone-Map-Source-Revision-Fingerprint"
-	resultExecutionFingerprintHeader             = "X-Silo-Download-Execution-Fingerprint"
-	resultArtifactSizeHeader                     = "X-Silo-Download-Artifact-Size"
+	resultToneMapRecipeVersionHeader             = "X-Prairie-Tone-Map-Recipe-Version"
+	resultToneMapModeHeader                      = "X-Prairie-Tone-Map-Mode"
+	resultToneMapSourceRevisionFingerprintHeader = "X-Prairie-Tone-Map-Source-Revision-Fingerprint"
+	resultExecutionFingerprintHeader             = "X-Prairie-Download-Execution-Fingerprint"
+	resultArtifactSizeHeader                     = "X-Prairie-Download-Artifact-Size"
 	maxResultAttestationHeaderBytes              = 1024
 )
 
@@ -187,7 +187,7 @@ func (r Request) AudioRecipeRequested() bool {
 }
 
 // StereoDownmixBoostRequested reports whether this is the complete,
-// source-sensitive audio_to_aac v2 recipe. Prepared encoded audio uses the
+// source-sensitive audio_to_aac recipe. Prepared encoded audio uses the
 // historical stereo default, so only a known surround source qualifies.
 func (r Request) StereoDownmixBoostRequested() bool {
 	return r.AudioRecipeVersion == playback.TransformationAudioToAACRecipeVersionV3 &&

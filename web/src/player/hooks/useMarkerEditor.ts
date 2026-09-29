@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
-import { playerFetch } from "../player-fetch";
+import { playerV2 } from "../player-v2";
+import { markerUpdateToV2 } from "../marker-wire";
 import type { MarkerDraft, MarkerKind, PlayerTimeRange } from "../types";
 
 /** Edit order shown in the panel: chronological-ish within an episode. */
-export const MARKER_KINDS: MarkerKind[] = [
-  "intro",
-  "recap",
-  "credits",
-  "preview",
-];
+export const MARKER_KINDS: MarkerKind[] = ["intro", "recap", "credits", "preview"];
 
 /** Human labels. "credits" doubles as the outro, so we say so. */
 export const MARKER_LABELS: Record<MarkerKind, string> = {
@@ -32,10 +28,7 @@ const EMPTY_DRAFT: MarkerDraft = {
   preview: null,
 };
 
-function rangesEqual(
-  a: PlayerTimeRange | null,
-  b: PlayerTimeRange | null,
-): boolean {
+function rangesEqual(a: PlayerTimeRange | null, b: PlayerTimeRange | null): boolean {
   if (a === null || b === null) return a === b;
   return a.start === b.start && a.end === b.end;
 }
@@ -53,10 +46,7 @@ function draftsEqual(a: MarkerDraft, b: MarkerDraft): boolean {
   return MARKER_KINDS.every((kind) => rangesEqual(a[kind], b[kind]));
 }
 
-function clampRangeToUpper(
-  range: PlayerTimeRange,
-  upper: number,
-): PlayerTimeRange {
+function clampRangeToUpper(range: PlayerTimeRange, upper: number): PlayerTimeRange {
   const start = Math.max(0, Math.min(upper, range.start));
   const end = Math.max(start, Math.min(upper, range.end));
   return { start, end };
@@ -136,9 +126,7 @@ export function useMarkerEditor({
     const snapshot = savedBaselineRef.current ?? normalizeDraft(markers);
     originalRef.current = snapshot;
     setDraft(snapshot);
-    setActiveKind(
-      MARKER_KINDS.find((kind) => snapshot[kind] != null) ?? "intro",
-    );
+    setActiveKind(MARKER_KINDS.find((kind) => snapshot[kind] != null) ?? "intro");
     setError(null);
     setEditing(true);
   }, [markers]);
@@ -158,10 +146,7 @@ export function useMarkerEditor({
         const existing = prev[kind];
         let next: PlayerTimeRange;
         if (!existing) {
-          const span =
-            duration > 0
-              ? Math.min(NEW_MARKER_SPAN, duration)
-              : NEW_MARKER_SPAN;
+          const span = duration > 0 ? Math.min(NEW_MARKER_SPAN, duration) : NEW_MARKER_SPAN;
           next =
             edge === "start"
               ? { start: clamped, end: Math.min(upper, clamped + span) }
@@ -205,9 +190,7 @@ export function useMarkerEditor({
     [draft],
   );
 
-  const dirty = MARKER_KINDS.some(
-    (kind) => !rangesEqual(draft[kind], originalRef.current[kind]),
-  );
+  const dirty = MARKER_KINDS.some((kind) => !rangesEqual(draft[kind], originalRef.current[kind]));
 
   const save = useCallback(async () => {
     if (fileId == null || !canEdit) return;
@@ -225,9 +208,9 @@ export function useMarkerEditor({
     setSaving(true);
     setError(null);
     try {
-      await playerFetch(config, `/markers/files/${fileId}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
+      await playerV2(config, "PUT /api/v2/markers/files/{file_id}", {
+        path: { file_id: String(fileId) },
+        body: markerUpdateToV2(body),
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save markers");

@@ -51,10 +51,10 @@ func ClientInfoFromRequest(r *http.Request) ClientInfo {
 	// reach both despite the published bound. Values stay opaque — trimmed and
 	// length-clamped, never parsed or validated against an enum.
 	return ClientInfo{
-		Name:      r.Header.Get("X-Silo-Client"),
-		Version:   r.Header.Get("X-Silo-Client-Version"),
-		Build:     r.Header.Get("X-Silo-Client-Build"),
-		Channel:   r.Header.Get("X-Silo-Client-Channel"),
+		Name:      r.Header.Get("X-Prairie-Client"),
+		Version:   r.Header.Get("X-Prairie-Client-Version"),
+		Build:     r.Header.Get("X-Prairie-Client-Build"),
+		Channel:   r.Header.Get("X-Prairie-Client-Channel"),
 		UserAgent: r.UserAgent(),
 	}.Normalized()
 }

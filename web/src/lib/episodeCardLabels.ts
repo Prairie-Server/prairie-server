@@ -12,16 +12,11 @@ export interface EpisodeCardLabels {
   episodeCode: string;
 }
 
-function formatEpisodeCode(
-  seasonNumber: number,
-  episodeNumber: number,
-): string {
+function formatEpisodeCode(seasonNumber: number, episodeNumber: number): string {
   return `S${String(seasonNumber).padStart(2, "0")}E${String(episodeNumber).padStart(2, "0")}`;
 }
 
-export function buildEpisodeCardLabels(
-  item: EpisodeCardLabelItem,
-): EpisodeCardLabels | null {
+export function buildEpisodeCardLabels(item: EpisodeCardLabelItem): EpisodeCardLabels | null {
   if (
     item.type !== "episode" ||
     item.season_number == null ||
@@ -31,9 +26,7 @@ export function buildEpisodeCardLabels(
     return null;
   }
 
-  const hasSeriesTitle = Boolean(
-    item.series_title && item.series_title !== item.title,
-  );
+  const hasSeriesTitle = Boolean(item.series_title && item.series_title !== item.title);
 
   return {
     seriesTitle: hasSeriesTitle ? item.series_title! : item.title,

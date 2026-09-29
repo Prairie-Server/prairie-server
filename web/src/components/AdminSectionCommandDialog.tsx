@@ -3,12 +3,7 @@ import { Search } from "lucide-react";
 import { VisuallyHidden } from "radix-ui";
 import { useNavigate } from "react-router";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   countSettingsSearchItems,
   filterSettingsSearchEntries,
@@ -59,8 +54,7 @@ export function AdminSectionCommandDialog({
   );
   const totalCount = countSettingsSearchItems(sections);
   const resultCount = results.length;
-  const selectedResult =
-    selectedIndex >= 0 ? results[selectedIndex] : undefined;
+  const selectedResult = selectedIndex >= 0 ? results[selectedIndex] : undefined;
 
   const focusSearch = useCallback(() => {
     const focus = () => {
@@ -97,8 +91,7 @@ export function AdminSectionCommandDialog({
     };
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
-    return () =>
-      window.removeEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [openDialog]);
 
   const pickResult = useCallback(
@@ -116,9 +109,7 @@ export function AdminSectionCommandDialog({
   function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setSelectedIndex((current) =>
-        resultCount === 0 ? -1 : (current + 1) % resultCount,
-      );
+      setSelectedIndex((current) => (resultCount === 0 ? -1 : (current + 1) % resultCount));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setSelectedIndex((current) =>
@@ -146,18 +137,15 @@ export function AdminSectionCommandDialog({
       }}
     >
       <DialogContent
-        className="top-[18%] max-h-[min(34rem,calc(100dvh-4rem))] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl"
+        className="top-[18%] flex max-h-[min(34rem,calc(82dvh-1rem))] translate-y-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
         showCloseButton={false}
       >
         <VisuallyHidden.Root>
           <DialogTitle>Search admin sections</DialogTitle>
           <DialogDescription>Search and open admin sections.</DialogDescription>
         </VisuallyHidden.Root>
-        <div className="border-border flex h-12 items-center border-b px-4">
-          <Search
-            className="text-muted-foreground mr-3 h-4 w-4 shrink-0"
-            aria-hidden="true"
-          />
+        <div className="border-border flex h-12 shrink-0 items-center border-b px-4">
+          <Search className="text-muted-foreground mr-3 h-4 w-4 shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="search"
@@ -169,9 +157,7 @@ export function AdminSectionCommandDialog({
             onKeyDown={handleInputKeyDown}
             placeholder="Search admin sections..."
             aria-label="Search admin sections"
-            aria-activedescendant={
-              selectedResult ? resultId(selectedResult.href) : undefined
-            }
+            aria-activedescendant={selectedResult ? resultId(selectedResult.href) : undefined}
             className="placeholder:text-muted-foreground h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
             autoComplete="off"
             autoFocus
@@ -181,13 +167,9 @@ export function AdminSectionCommandDialog({
           </kbd>
         </div>
 
-        <div className="max-h-[min(25rem,58vh)] overflow-y-auto overscroll-contain p-2">
+        <div className="overlay-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
           {filteredSections.length > 0 ? (
-            <div
-              role="listbox"
-              aria-label="Admin sections"
-              className="space-y-3"
-            >
+            <div role="listbox" aria-label="Admin sections" className="space-y-3">
               {filteredSections.map((section) => (
                 <div key={section.label}>
                   <div className="text-muted-foreground px-2 pb-1 text-xs font-medium">
@@ -218,7 +200,7 @@ export function AdminSectionCommandDialog({
           )}
         </div>
 
-        <div className="text-muted-foreground border-border border-t px-4 py-2 text-xs">
+        <div className="text-muted-foreground border-border shrink-0 border-t px-4 py-2 text-xs">
           {query.trim()
             ? `${resultCount} ${resultCount === 1 ? "match" : "matches"}`
             : `${totalCount} admin sections`}
@@ -242,10 +224,7 @@ function AdminCommandResultRow({
   onPick: () => void;
 }) {
   const Icon = item.icon;
-  const matchingSettings = filterSettingsSearchEntries(
-    item.settings,
-    query,
-  ).slice(0, 3);
+  const matchingSettings = filterSettingsSearchEntries(item.settings, query).slice(0, 3);
 
   return (
     <button
@@ -265,9 +244,7 @@ function AdminCommandResultRow({
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <span className="min-w-0">
-        <span className="text-foreground block text-sm font-medium">
-          {item.label}
-        </span>
+        <span className="text-foreground block text-sm font-medium">{item.label}</span>
         {item.description ? (
           <span className="text-muted-foreground mt-0.5 block text-xs leading-relaxed">
             {item.description}

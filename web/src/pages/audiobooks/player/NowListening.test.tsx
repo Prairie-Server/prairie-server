@@ -26,9 +26,7 @@ describe("NowListening", () => {
         onCollapse={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole("heading", { name: "Project Hail Mary" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Project Hail Mary" })).toBeInTheDocument();
     expect(screen.getByText("Andy Weir")).toBeInTheDocument();
     expect(screen.getByText(/Ray Porter/)).toBeInTheDocument();
     expect(screen.getByText("The Astrophage")).toBeInTheDocument();
@@ -46,9 +44,7 @@ describe("NowListening", () => {
         onCollapse={onCollapse}
       />,
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: /back to player/i }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /back to player/i }));
     expect(onCollapse).toHaveBeenCalled();
   });
 

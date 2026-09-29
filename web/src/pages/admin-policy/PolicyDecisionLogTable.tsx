@@ -1,11 +1,5 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  RotateCcw,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RotateCcw } from "lucide-react";
+import { messageFromError } from "./policyPageUtils";
 import { Fragment, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -54,9 +48,7 @@ function decisionLabel(value: string) {
   return match ? formatPolicyDomain(match[1] ?? value) : value;
 }
 
-export function PolicyDecisionLogTable({
-  domains,
-}: PolicyDecisionLogTableProps) {
+export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps) {
   const [decisionName, setDecisionName] = useState("all");
   const [userID, setUserID] = useState("");
   const [allowed, setAllowed] = useState("all");
@@ -64,10 +56,8 @@ export function PolicyDecisionLogTable({
   const [to, setTo] = useState("");
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [cursorStack, setCursorStack] = useState<string[]>([]);
-  const [selectedID, setSelectedID] = useState<number | undefined>(undefined);
-  const [appliedFilters, setAppliedFilters] = useState<PolicyDecisionFilters>({
-    limit: 25,
-  });
+  const [selectedID, setSelectedID] = useState<string | undefined>(undefined);
+  const [appliedFilters, setAppliedFilters] = useState<PolicyDecisionFilters>({ limit: 25 });
 
   const filters = useMemo(
     () => ({
@@ -80,12 +70,12 @@ export function PolicyDecisionLogTable({
   const selectedDecision = usePolicyDecision(selectedID);
 
   function applyFilters() {
-    const parsedUserID = Number.parseInt(userID, 10);
+    const parsedUserID = userID.trim();
     setAppliedFilters({
       limit: 25,
       decision_name: decisionName === "all" ? undefined : decisionName,
-      user_id: Number.isFinite(parsedUserID) ? parsedUserID : undefined,
-      allowed: allowed === "all" ? undefined : allowed === "true",
+      user_id: parsedUserID || undefined,
+      allowed: allowed === "all" ? undefined : allowed === "true" ? "true" : "false",
       from: toRFC3339FromLocalInput(from),
       to: toRFC3339FromLocalInput(to),
     });
@@ -107,9 +97,9 @@ export function PolicyDecisionLogTable({
   }
 
   function goNext() {
-    if (!decisions.data?.next_cursor) return;
+    if (!decisions.data?.page?.next_cursor) return;
     setCursorStack((prev) => [...prev, cursor ?? ""]);
-    setCursor(decisions.data.next_cursor);
+    setCursor(decisions.data.page?.next_cursor);
     setSelectedID(undefined);
   }
 
@@ -123,6 +113,12 @@ export function PolicyDecisionLogTable({
 
   return (
     <div className="space-y-4">
+      {decisions.error && (
+        <div role="alert">
+          <p>{messageFromError(decisions.error, "Unable to load decisions. Restart the list.")}</p>
+          <Button onClick={resetFilters}>Restart decisions</Button>
+        </div>
+      )}
       <div className="surface-panel-subtle grid gap-3 rounded-2xl p-4 md:grid-cols-[minmax(160px,220px)_120px_130px_1fr_1fr_auto] md:items-end">
         <div className="space-y-2">
           <Label htmlFor="policy-decision-name">Decision</Label>
@@ -217,34 +213,26 @@ export function PolicyDecisionLogTable({
           <TableBody>
             {decisions.isLoading && (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-muted-foreground py-6 text-center"
-                >
+                <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
                   Loading policy decisions...
                 </TableCell>
               </TableRow>
             )}
-            {!decisions.isLoading && decisions.data?.entries.length === 0 && (
+            {!decisions.isLoading && decisions.data?.items.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-muted-foreground py-6 text-center"
-                >
+                <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
                   No policy decisions matched the current filters.
                 </TableCell>
               </TableRow>
             )}
-            {decisions.data?.entries.map((entry) => {
+            {decisions.data?.items.map((entry) => {
               const expanded = selectedID === entry.id;
               return (
                 <Fragment key={entry.id}>
                   <TableRow
                     className="cursor-pointer"
                     data-state={expanded ? "selected" : undefined}
-                    onClick={() =>
-                      setSelectedID(expanded ? undefined : entry.id)
-                    }
+                    onClick={() => setSelectedID(expanded ? undefined : entry.id)}
                   >
                     <TableCell>{formatPolicyDate(entry.timestamp)}</TableCell>
                     <TableCell>{decisionLabel(entry.decision_name)}</TableCell>
@@ -266,9 +254,7 @@ export function PolicyDecisionLogTable({
                             : "Error"}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {formatPolicyEvalMicros(entry.eval_time_ns)}
-                    </TableCell>
+                    <TableCell>{formatPolicyEvalMicros(entry.eval_time_ns)}</TableCell>
                     <TableCell className="max-w-[260px] truncate font-mono text-xs">
                       {entry.input_digest || "—"}
                     </TableCell>
@@ -313,14 +299,14 @@ export function PolicyDecisionLogTable({
         <div className="text-muted-foreground text-xs">
           {decisions.isFetching
             ? "Refreshing..."
-            : decisions.data?.next_cursor
+            : decisions.data?.page?.next_cursor
               ? "More rows"
               : ""}
         </div>
         <Button
           type="button"
           variant="outline"
-          disabled={!decisions.data?.next_cursor || decisions.isFetching}
+          disabled={!decisions.data?.page?.next_cursor || decisions.isFetching}
           onClick={goNext}
         >
           <ChevronRight />
@@ -345,20 +331,14 @@ function DecisionDetail({
   resultSample?: unknown;
 }) {
   if (isLoading) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Loading decision details...
-      </p>
-    );
+    return <p className="text-muted-foreground text-sm">Loading decision details...</p>;
   }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">Input</h3>
-        <p className="text-muted-foreground font-mono text-xs">
-          Digest: {inputDigest || "—"}
-        </p>
+        <p className="text-muted-foreground font-mono text-xs">Digest: {inputDigest || "—"}</p>
         {inputSample !== undefined && (
           <pre className="border-border bg-background max-h-[260px] overflow-auto rounded-lg border p-3 font-mono text-xs">
             {prettyPolicyJson(inputSample)}
@@ -374,9 +354,7 @@ function DecisionDetail({
           </pre>
         )}
         {!error && resultSample === undefined && (
-          <p className="text-muted-foreground text-sm">
-            No verbose result sample was logged.
-          </p>
+          <p className="text-muted-foreground text-sm">No verbose result sample was logged.</p>
         )}
       </div>
     </div>

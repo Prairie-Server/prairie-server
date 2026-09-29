@@ -21,26 +21,18 @@ export default function BrandCarousel({
   isError,
   onRetry,
 }: BrandCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   const slides = isLoading
     ? Array.from({ length: 8 }).map((_, idx) => (
-        <Skeleton
-          key={idx}
-          className="h-28 w-52 flex-none rounded-xl sm:h-32 sm:w-64"
-        />
+        <Skeleton key={idx} className="h-28 w-52 flex-none rounded-xl sm:h-32 sm:w-64" />
       ))
-    : (cards ?? []).map((card) => (
-        <BrandCard key={card.slug} kind={kind} card={card} />
-      ));
+    : (cards ?? []).map((card) => <BrandCard key={card.slug} kind={kind} card={card} />);
 
   return (
     <section className="group/carousel relative isolate space-y-3">
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 xl:px-12">
-        <h2 className="text-muted-foreground text-sm font-semibold tracking-normal">
-          {title}
-        </h2>
+        <h2 className="text-muted-foreground text-sm font-semibold tracking-normal">{title}</h2>
         {isError && onRetry ? (
           <button
             type="button"
@@ -65,7 +57,7 @@ export default function BrandCarousel({
             <button
               type="button"
               onClick={scrollPrev}
-              className="from-background/80 absolute top-0 bottom-0 left-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-r to-transparent opacity-0 transition-opacity duration-[--duration-fast] group-hover/carousel:opacity-100 focus-visible:opacity-100"
+              className="from-background/80 absolute top-0 bottom-0 left-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-r to-transparent opacity-0 transition-opacity duration-(--duration-fast) group-hover/carousel:opacity-100 focus-visible:opacity-100"
               aria-label="Scroll left"
             >
               <ChevronLeft className="text-foreground h-6 w-6" />
@@ -101,7 +93,7 @@ export default function BrandCarousel({
             <button
               type="button"
               onClick={scrollNext}
-              className="from-background/80 absolute top-0 right-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-[--duration-fast] group-hover/carousel:opacity-100 focus-visible:opacity-100"
+              className="from-background/80 absolute top-0 right-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-(--duration-fast) group-hover/carousel:opacity-100 focus-visible:opacity-100"
               aria-label="Scroll right"
             >
               <ChevronRight className="text-foreground h-6 w-6" />

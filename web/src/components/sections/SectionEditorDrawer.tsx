@@ -26,14 +26,20 @@ import LibraryMultiSelect from "@/components/LibraryMultiSelect";
 import { CollectionSearchableSelect } from "@/components/CollectionSearchableSelect";
 import RecipeParamFields from "@/components/RecipeGallery/RecipeParamFields";
 import {
-  SECTION_TYPES,
   FILTER_SECTION_TYPES,
+  fallbackSectionTypes,
+  filterRecipeCatalog,
   sectionTypeLabel,
 } from "@/lib/sectionTypes";
-import type {
-  Category,
-  RecipeCatalogResponse,
-  RecipeDefinition,
+import {
+  finalizeSectionLibraryFilter,
+  LIBRARY_FILTER_SECTION_TYPES,
+} from "@/lib/sectionLibraryFilter";
+import {
+  matchRecipePreset,
+  type Category,
+  type RecipeCatalogResponse,
+  type RecipeDefinition,
 } from "@/lib/recipes";
 import {
   queryDefinitionFromSectionConfig,
@@ -84,6 +90,16 @@ function lookupRecipe(
   return undefined;
 }
 
+/** The preset labelling a type the pickable list no longer offers, e.g. an admin-only section a profile already owns. */
+function matchRecipePresetFor(
+  catalog: RecipeCatalogResponse | undefined,
+  type: string,
+  params: Record<string, unknown>,
+) {
+  const definition = lookupRecipe(catalog, type);
+  return definition ? matchRecipePreset(definition, params) : undefined;
+}
+
 function parseRecipeParams(config: unknown): Record<string, unknown> {
   if (config && typeof config === "object" && !Array.isArray(config)) {
     return { ...(config as Record<string, unknown>) };
@@ -100,10 +116,7 @@ function preserveGeneratedSectionMetadata(
   }
 
   const merged = { ...nextConfig };
-  if (
-    typeof existingConfig.generated_source === "string" &&
-    existingConfig.generated_source
-  ) {
+  if (typeof existingConfig.generated_source === "string" && existingConfig.generated_source) {
     merged.generated_source = existingConfig.generated_source;
   }
   if (
@@ -140,9 +153,7 @@ export function buildProfileSectionSaveEntry({
 }: BuildProfileSectionSaveEntryInput): SettingsSectionEntry {
   let config: Record<string, unknown>;
   if (sectionType === "collection") {
-    const selected = collections?.find(
-      (collection) => collection.id === selectedCollectionId,
-    );
+    const selected = collections?.find((collection) => collection.id === selectedCollectionId);
     config =
       selected?.source === "user"
         ? { user_collection_id: selectedCollectionId }
@@ -152,11 +163,12 @@ export function buildProfileSectionSaveEntry({
       section?.config,
       queryDefinitionToSectionConfig(queryDefinition),
     );
+  } else if (recipeParams && LIBRARY_FILTER_SECTION_TYPES.has(sectionType)) {
+    // The params start from the section config and the library picker owns the
+    // filter keys, so restoring the old filter_library_id would widen the selection.
+    config = finalizeSectionLibraryFilter(recipeParams);
   } else {
-    config = preserveGeneratedSectionMetadata(
-      section?.config,
-      recipeParams ?? {},
-    );
+    config = preserveGeneratedSectionMetadata(section?.config, recipeParams ?? {});
   }
 
   return {
@@ -200,23 +212,28 @@ export function buildAdminSectionPayload({
   queryDefinition,
   selectedCollectionId,
   recipeParams,
-  collections,
-}: BuildAdminSectionPayloadInput): Partial<PageSectionConfig> & {
-  id?: string;
-} {
+}: BuildAdminSectionPayloadInput): Partial<PageSectionConfig> & { id?: string } {
+  const base = section?.section_type === sectionType ? { ...section.config } : {};
   let config: Record<string, unknown>;
   if (sectionType === "collection") {
-    const selected = collections?.find(
-      (collection) => collection.id === selectedCollectionId,
-    );
-    config =
-      selected?.source === "user"
-        ? { user_collection_id: selectedCollectionId }
-        : { library_collection_id: selectedCollectionId };
+    delete base.user_collection_id;
+    config = { ...base, library_collection_id: selectedCollectionId };
   } else if (isLegacyFilterType(sectionType)) {
-    config = queryDefinitionToSectionConfig(queryDefinition);
+    // The editor replaces query fields, while keeping recipe metadata it does not edit.
+    delete base.filter_type;
+    delete base.filter_library_id;
+    delete base.filter_library_ids;
+    delete base.order;
+    config = { ...base, ...queryDefinitionToSectionConfig(queryDefinition) };
+  } else if (recipeParams && LIBRARY_FILTER_SECTION_TYPES.has(sectionType)) {
+    // The library picker owns the filter keys; keeping the old ones from base
+    // would re-add a replaced filter_library_id.
+    delete base.filter_library_id;
+    delete base.filter_library_ids;
+    delete base.library_ids;
+    config = finalizeSectionLibraryFilter({ ...base, ...recipeParams });
   } else {
-    config = recipeParams ?? {};
+    config = { ...base, ...recipeParams };
   }
 
   const safeTitle = title.trim() || sectionTypeLabel(sectionType);
@@ -224,9 +241,7 @@ export function buildAdminSectionPayload({
   return {
     ...(section ? { id: section.id } : {}),
     scope,
-    ...(scope === "library" && currentLibraryId != null
-      ? { library_id: currentLibraryId }
-      : {}),
+    ...(scope === "library" && currentLibraryId != null ? { library_id: currentLibraryId } : {}),
     title: safeTitle,
     section_type: sectionType,
     item_limit: itemLimit,
@@ -243,7 +258,11 @@ type ProfileDrawerProps = {
   section: SettingsSectionEntry | null;
   libraries: Array<{ id: number; name: string }>;
   recipeCatalog?: RecipeCatalogResponse;
-  onSave: (section: SettingsSectionEntry) => void;
+  /** The profile is editing a library page's sections; see RecipeParamFieldsProps. */
+  libraryScoped?: boolean;
+  /** False when the server refuses admin-only recipes for this profile; defaults to true. */
+  allowAdminOnlyRecipes?: boolean;
+  onSave: (section: SettingsSectionEntry) => void | Promise<void>;
 };
 
 type AdminDrawerProps = {
@@ -256,6 +275,8 @@ type AdminDrawerProps = {
   libraries: Array<{ id: number; name: string }>;
   recipeCatalog?: RecipeCatalogResponse;
   isSubmitting?: boolean;
+  conflict?: boolean;
+  onReload?: () => void;
   onSave: (section: Partial<PageSectionConfig> & { id?: string }) => void;
 };
 
@@ -264,9 +285,9 @@ type SectionEditorDrawerProps = ProfileDrawerProps | AdminDrawerProps;
 export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
   const isProfile = props.mode === "profile";
   const isEdit = props.section !== null;
-  const lockSectionType =
-    isProfile && props.section !== null && !props.section.is_custom;
-  const isSubmitting = props.mode === "admin" ? props.isSubmitting : false;
+  const lockSectionType = isProfile && props.section !== null && !props.section.is_custom;
+  const [profileSubmitting, setProfileSubmitting] = useState(false);
+  const isSubmitting = props.mode === "admin" ? props.isSubmitting : profileSubmitting;
   const [sectionType, setSectionType] = useState("recently_added");
   const [title, setTitle] = useState("");
   const [itemLimit, setItemLimit] = useState(20);
@@ -278,18 +299,29 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
   const [selectedCollectionId, setSelectedCollectionId] = useState("");
   const [recipeParams, setRecipeParams] = useState<Record<string, unknown>>({});
   const [filterMode, setFilterMode] = useState<"easy" | "advanced">("easy");
-  const { collections, isLoading: collectionsLoading } =
-    useAllUserCollections();
+  const { collections: allCollections, isLoading: collectionsLoading } = useAllUserCollections();
+  const collections = useMemo(
+    () =>
+      isProfile
+        ? allCollections
+        : allCollections.filter((collection) => collection.source === "library"),
+    [allCollections, isProfile],
+  );
 
+  const allowAdminOnlyRecipes = props.mode === "admin" || props.allowAdminOnlyRecipes !== false;
+  const pickableCatalog = useMemo(
+    () => filterRecipeCatalog(props.recipeCatalog, allowAdminOnlyRecipes),
+    [props.recipeCatalog, allowAdminOnlyRecipes],
+  );
+  const pickableFallbackTypes = fallbackSectionTypes(allowAdminOnlyRecipes);
   const catalogCategories = useMemo(
     () =>
-      props.recipeCatalog
-        ? (Object.keys(props.recipeCatalog.categories) as Category[]).filter(
-            (category) =>
-              (props.recipeCatalog?.categories[category]?.length ?? 0) > 0,
+      pickableCatalog
+        ? (Object.keys(pickableCatalog.categories) as Category[]).filter(
+            (category) => (pickableCatalog.categories[category]?.length ?? 0) > 0,
           )
         : [],
-    [props.recipeCatalog],
+    [pickableCatalog],
   );
   const recipeDef = !isLegacyFilterType(sectionType)
     ? lookupRecipe(props.recipeCatalog, sectionType)
@@ -297,8 +329,7 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
   const isKnownRecipe = Boolean(recipeDef);
   const showCollectionPicker = sectionType === "collection";
   const showLegacyFilter = isLegacyFilterType(sectionType);
-  const showRecipeParams =
-    !showCollectionPicker && !showLegacyFilter && isKnownRecipe;
+  const showRecipeParams = !showCollectionPicker && !showLegacyFilter && isKnownRecipe;
 
   useEffect(() => {
     if (!props.open) return;
@@ -307,12 +338,8 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
       setTitle(props.section.title);
       setItemLimit(props.section.item_limit);
       setFeatured(props.section.featured);
-      setEnabled(
-        "enabled" in props.section ? Boolean(props.section.enabled) : true,
-      );
-      setQueryDefinition(
-        queryDefinitionFromSectionConfig(props.section.config),
-      );
+      setEnabled("enabled" in props.section ? Boolean(props.section.enabled) : true);
+      setQueryDefinition(queryDefinitionFromSectionConfig(props.section.config));
       setSelectedCollectionId(getCollectionId(props.section.config));
       setRecipeParams(parseRecipeParams(props.section.config));
     } else {
@@ -333,8 +360,7 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
       ? queryDefinitionFromSectionConfig(props.section.config)
       : queryDefinitionFromSectionConfig();
     const easyCompatible =
-      cfg.groups.length <= 1 &&
-      (cfg.match === "all" || cfg.groups.length === 0);
+      cfg.groups.length <= 1 && (cfg.match === "all" || cfg.groups.length === 0);
     setFilterMode(easyCompatible ? "easy" : "advanced");
   }, [props.open, props.section]);
 
@@ -345,30 +371,32 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
     if (seed && Object.keys(seed).length > 0) {
       setRecipeParams({ ...seed });
     }
-  }, [
-    props.open,
-    showCollectionPicker,
-    showLegacyFilter,
-    recipeDef,
-    recipeParams,
-  ]);
+  }, [props.open, showCollectionPicker, showLegacyFilter, recipeDef, recipeParams]);
 
-  function handleSave() {
+  async function handleSave() {
+    if (isSubmitting) return;
     if (props.mode === "profile") {
-      props.onSave(
-        buildProfileSectionSaveEntry({
-          section: props.section,
-          sectionType,
-          title,
-          itemLimit,
-          featured,
-          queryDefinition,
-          selectedCollectionId,
-          recipeParams,
-          collections,
-        }),
-      );
-      props.onOpenChange(false);
+      setProfileSubmitting(true);
+      try {
+        await props.onSave(
+          buildProfileSectionSaveEntry({
+            section: props.section,
+            sectionType,
+            title,
+            itemLimit,
+            featured,
+            queryDefinition,
+            selectedCollectionId,
+            recipeParams,
+            collections,
+          }),
+        );
+        props.onOpenChange(false);
+      } catch {
+        // The owner reports the error; retain the draft for retry.
+      } finally {
+        setProfileSubmitting(false);
+      }
     } else {
       props.onSave(
         buildAdminSectionPayload({
@@ -391,19 +419,20 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
 
   const saveDisabled =
     (showCollectionPicker && !selectedCollectionId) ||
-    (props.mode === "admin" &&
-      props.scope === "library" &&
-      props.currentLibraryId == null);
+    (props.mode === "admin" && props.scope === "library" && props.currentLibraryId == null);
 
   return (
-    <Sheet open={props.open} onOpenChange={props.onOpenChange}>
+    <Sheet
+      open={props.open}
+      onOpenChange={(open) => {
+        if (!isSubmitting) props.onOpenChange(open);
+      }}
+    >
       <SheetContent side="right" className="overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>{isEdit ? "Edit Section" : "Add Section"}</SheetTitle>
           <SheetDescription>
-            {isEdit
-              ? "Modify this section's settings"
-              : "Configure a new section."}
+            {isEdit ? "Modify this section's settings" : "Configure a new section."}
           </SheetDescription>
         </SheetHeader>
 
@@ -426,41 +455,38 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {!lookupRecipe(props.recipeCatalog, sectionType) &&
+                  {!lookupRecipe(pickableCatalog, sectionType) &&
                   sectionType &&
                   (catalogCategories.length > 0 ||
-                    !SECTION_TYPES.some(
-                      (type) => type.value === sectionType,
-                    )) ? (
+                    !pickableFallbackTypes.some((type) => type.value === sectionType)) ? (
                     <SelectItem value={sectionType}>
-                      {sectionTypeLabel(sectionType)}
+                      {matchRecipePresetFor(props.recipeCatalog, sectionType, recipeParams)
+                        ?.display_name ?? sectionTypeLabel(sectionType)}
                     </SelectItem>
                   ) : null}
                   {catalogCategories.length > 0
                     ? catalogCategories.map((category) => (
                         <SelectGroup key={category}>
-                          <SelectLabel>
-                            {CATEGORY_LABELS[category] ?? category}
-                          </SelectLabel>
-                          {(
-                            props.recipeCatalog?.categories[category] ?? []
-                          ).map((definition) => {
-                            const label =
-                              definition.presets[0]?.display_name ??
-                              definition.type;
-                            const icon = definition.presets[0]?.icon;
+                          <SelectLabel>{CATEGORY_LABELS[category] ?? category}</SelectLabel>
+                          {(pickableCatalog?.categories[category] ?? []).map((definition) => {
+                            // The selected type is labelled by the preset its
+                            // params match, so a weekly trending section reads
+                            // "TMDB Trending This Week" rather than the first preset.
+                            const preset =
+                              definition.type === sectionType
+                                ? matchRecipePreset(definition, recipeParams)
+                                : definition.presets[0];
+                            const label = preset?.display_name ?? definition.type;
+                            const icon = preset?.icon;
                             return (
-                              <SelectItem
-                                key={definition.type}
-                                value={definition.type}
-                              >
+                              <SelectItem key={definition.type} value={definition.type}>
                                 {icon ? `${icon} ${label}` : label}
                               </SelectItem>
                             );
                           })}
                         </SelectGroup>
                       ))
-                    : SECTION_TYPES.map((type) => (
+                    : pickableFallbackTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -468,6 +494,12 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
                 </SelectContent>
               </Select>
             )}
+            {!lockSectionType && !allowAdminOnlyRecipes ? (
+              <p className="text-muted-foreground text-xs">
+                Some section types, such as custom filters, are available only to admins on this
+                server.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -497,21 +529,13 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
                 Use this section as the hero banner on the home screen.
               </p>
             </div>
-            <Switch
-              id="section-featured"
-              checked={featured}
-              onCheckedChange={setFeatured}
-            />
+            <Switch id="section-featured" checked={featured} onCheckedChange={setFeatured} />
           </div>
 
           {props.mode === "admin" ? (
             <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-3">
               <Label htmlFor="section-enabled">Enabled</Label>
-              <Switch
-                id="section-enabled"
-                checked={enabled}
-                onCheckedChange={setEnabled}
-              />
+              <Switch id="section-enabled" checked={enabled} onCheckedChange={setEnabled} />
             </div>
           ) : null}
 
@@ -543,12 +567,7 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
                         media_scope:
                           value === "all"
                             ? undefined
-                            : (value as
-                                | "movie"
-                                | "series"
-                                | "episode"
-                                | "audiobook"
-                                | "ebook"),
+                            : (value as "movie" | "series" | "episode" | "audiobook" | "ebook"),
                       })
                     }
                   >
@@ -631,16 +650,38 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
               def={recipeDef}
               params={recipeParams}
               onChange={setRecipeParams}
+              libraryScoped={
+                props.mode === "admin" ? props.scope === "library" : Boolean(props.libraryScoped)
+              }
+              libraries={props.mode === "admin" ? props.libraries : undefined}
             />
           ) : null}
         </div>
 
+        {props.mode === "admin" && props.conflict && (
+          <div role="alert" className="px-6">
+            <p>
+              This section changed. Your draft is preserved. Reload to discard it and edit the
+              current section.
+            </p>
+            <Button variant="outline" onClick={props.onReload}>
+              Reload section
+            </Button>
+          </div>
+        )}
         <SheetFooter>
-          <Button variant="outline" onClick={() => props.onOpenChange(false)}>
+          <Button
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => props.onOpenChange(false)}
+          >
             <X />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saveDisabled || isSubmitting}>
+          <Button
+            onClick={handleSave}
+            disabled={saveDisabled || isSubmitting || (props.mode === "admin" && props.conflict)}
+          >
             {isEdit ? <Save /> : <Plus />}
             {isEdit ? "Save" : "Add Section"}
           </Button>

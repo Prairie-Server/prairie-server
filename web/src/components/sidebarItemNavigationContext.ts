@@ -1,13 +1,11 @@
 import { createContext, useContext } from "react";
 import type { SidebarItemNavigationRequest } from "@/components/sidebarItemNavigation";
 
-export type BeginSidebarItemNavigation = (
-  request: SidebarItemNavigationRequest,
-) => boolean;
+export type BeginSidebarItemNavigation = (request: SidebarItemNavigationRequest) => boolean;
 
-export const SidebarItemNavigationContext =
-  createContext<BeginSidebarItemNavigation | null>(null);
+export const SidebarItemNavigationContext = createContext<BeginSidebarItemNavigation | null>(null);
 export const SidebarItemDetailsReadyContext = createContext(true);
+export const SidebarItemEnteredFromHomeContext = createContext(false);
 
 export function useSidebarItemNavigation(): BeginSidebarItemNavigation | null {
   return useContext(SidebarItemNavigationContext);
@@ -15,4 +13,8 @@ export function useSidebarItemNavigation(): BeginSidebarItemNavigation | null {
 
 export function useSidebarItemDetailsReady(): boolean {
   return useContext(SidebarItemDetailsReadyContext);
+}
+
+export function useSidebarItemEnteredFromHome(): boolean {
+  return useContext(SidebarItemEnteredFromHomeContext);
 }

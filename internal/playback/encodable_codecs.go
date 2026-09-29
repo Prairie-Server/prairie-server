@@ -19,7 +19,7 @@ var preferredTranscodeVideoCodecs = []string{"av1", "hevc", "h264"}
 // Software (none) advertises h264 only — libx265/libaom are not suitable for
 // interactive TV playback.
 func DetectEncodableVideoCodecs(ffmpegPath, hwAccel string) []string {
-	resolved := ResolveHWAccelWithFFmpeg(hwAccel, ffmpegPath)
+	resolved := ResolveHWAccelWithFFmpeg(hwAccel, ffmpegPath, "")
 	switch resolved {
 	case hwAccelNVENC:
 		out := []string{"h264", "hevc"}

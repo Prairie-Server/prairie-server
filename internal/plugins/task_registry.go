@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 
@@ -93,11 +94,12 @@ func (r *TaskRegistry) Tasks(ctx context.Context) ([]taskmanager.Task, error) {
 				continue
 			}
 
+			name, description := pluginTaskPresentation(installation.PluginID, capability)
 			task := &pluginTask{
 				installationID: installation.ID,
 				capabilityID:   capability.ID,
-				name:           installation.PluginID + " / " + capability.ID,
-				description:    "Runs plugin scheduled task " + capability.ID,
+				name:           name,
+				description:    description,
 				resolver:       r.host,
 				triggers:       defaultPluginTaskTriggers(binding),
 			}
@@ -156,6 +158,20 @@ func (t *pluginTask) Execute(ctx context.Context, progress taskmanager.ProgressR
 
 	progress.Report(100, "Plugin task complete")
 	return nil
+}
+
+// pluginTaskPresentation prefers the display name and description the plugin
+// manifest declares for the capability, falling back to its identifiers.
+func pluginTaskPresentation(pluginID string, capability *Capability) (string, string) {
+	name := pluginID + " / " + capability.ID
+	description := "Runs plugin scheduled task " + capability.ID
+	if displayName, _ := capability.Metadata["display_name"].(string); strings.TrimSpace(displayName) != "" {
+		name = strings.TrimSpace(displayName) + " (" + pluginID + ")"
+	}
+	if text, _ := capability.Metadata["description"].(string); strings.TrimSpace(text) != "" {
+		description = strings.TrimSpace(text)
+	}
+	return name, description
 }
 
 func pluginTaskKey(installationID int, capabilityID string) string {

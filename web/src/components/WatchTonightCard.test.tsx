@@ -20,6 +20,7 @@ describe("WatchTonightCard", () => {
             year: 2026,
             genres: ["Fantasy"],
             status: "matched",
+            content_rating: "",
             rating_imdb: null,
             overview: "Ebook overview",
             watch_tonight_source: "continue_watching",
@@ -56,6 +57,7 @@ describe("WatchTonightCard", () => {
             year: 2026,
             genres: [],
             status: "matched",
+            content_rating: "",
             rating_imdb: null,
             overview: "",
             poster_url: "",
@@ -69,8 +71,9 @@ describe("WatchTonightCard", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("link", { name: "Listen Book One" }),
-    ).toHaveAttribute("href", "/item/book-1?play=1");
+    expect(screen.getByRole("link", { name: "Listen Book One" })).toHaveAttribute(
+      "href",
+      "/item/book-1?play=1",
+    );
   });
 });

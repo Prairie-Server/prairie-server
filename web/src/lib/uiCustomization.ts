@@ -40,8 +40,7 @@ export interface CollectionMenuItem {
   library_id?: number;
 }
 
-export type ShortcutTarget =
-  LibraryMenuItem | SectionMenuItem | CollectionMenuItem;
+export type ShortcutTarget = LibraryMenuItem | SectionMenuItem | CollectionMenuItem;
 export type PrimaryMenuItem = BuiltinMenuItem | ShortcutTarget;
 
 export interface PrimaryMenuDocument {
@@ -99,11 +98,7 @@ const BUILTIN_DESTINATIONS = new Set<PrimaryMenuBuiltin>([
   "calendar",
 ]);
 const POSTER_SIZES = new Set<PosterSize>(["compact", "standard", "large"]);
-const CARD_CAPTIONS = new Set<CardCaption>([
-  "title_metadata",
-  "title",
-  "artwork",
-]);
+const CARD_CAPTIONS = new Set<CardCaption>(["title_metadata", "title", "artwork"]);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -114,25 +109,14 @@ function isPositiveInteger(value: unknown): value is number {
 }
 
 function isLabel(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.trim().length > 0 &&
-    [...value].length <= 256
-  );
+  return typeof value === "string" && value.trim().length > 0 && [...value].length <= 256;
 }
 
 function isTargetId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.trim().length > 0 &&
-    [...value].length <= 128
-  );
+  return typeof value === "string" && value.trim().length > 0 && [...value].length <= 128;
 }
 
-function parseMenuItem(
-  value: unknown,
-  allowBuiltin: boolean,
-): PrimaryMenuItem | null {
+function parseMenuItem(value: unknown, allowBuiltin: boolean): PrimaryMenuItem | null {
   if (!isObject(value) || typeof value.type !== "string") return null;
 
   if (value.type === "builtin" && allowBuiltin) {
@@ -183,9 +167,7 @@ function parseMenuItem(
       type: "collection",
       collection_id: value.collection_id,
       label: value.label.trim(),
-      ...(value.library_id === undefined
-        ? {}
-        : { library_id: value.library_id }),
+      ...(value.library_id === undefined ? {} : { library_id: value.library_id }),
     };
   }
 
@@ -219,11 +201,7 @@ export function menuItemKey(item: PrimaryMenuItem): string {
     case "section":
       return `section:${item.library_id}:${item.section_id}`;
     case "collection":
-      return JSON.stringify([
-        "collection",
-        item.library_id ?? null,
-        item.collection_id,
-      ]);
+      return JSON.stringify(["collection", item.library_id ?? null, item.collection_id]);
   }
 }
 
@@ -279,12 +257,7 @@ export function moveMenuItem(
   direction: -1 | 1,
 ): PrimaryMenuItem[] {
   const target = index + direction;
-  if (
-    index < 0 ||
-    index >= items.length ||
-    target < 0 ||
-    target >= items.length
-  ) {
+  if (index < 0 || index >= items.length || target < 0 || target >= items.length) {
     return [...items];
   }
   const next = [...items];

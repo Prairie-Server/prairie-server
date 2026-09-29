@@ -9,16 +9,11 @@ import { AudioTrackMenu } from "./AudioTrackMenu";
 import { ChaptersMenu } from "./ChaptersMenu";
 import { SubtitleMenu } from "./SubtitleMenu";
 
-async function expectMenuAboveTimeline(
-  triggerName: string,
-  menu: ReactElement,
-) {
+async function expectMenuAboveTimeline(triggerName: string, menu: ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  render(
-    <QueryClientProvider client={queryClient}>{menu}</QueryClientProvider>,
-  );
+  render(<QueryClientProvider client={queryClient}>{menu}</QueryClientProvider>);
   await userEvent.click(screen.getByRole("button", { name: triggerName }));
   expect(screen.getByRole("menu")).toHaveClass("z-30");
 }
@@ -27,12 +22,7 @@ describe("player menu layering", () => {
   it("keeps the audio menu above timeline overlays", async () => {
     await expectMenuAboveTimeline(
       "Audio tracks",
-      <AudioTrackMenu
-        tracks={[{}, {}]}
-        activeIndex={0}
-        currentPosition={0}
-        onSelect={() => {}}
-      />,
+      <AudioTrackMenu tracks={[{}, {}]} activeIndex={0} currentPosition={0} onSelect={() => {}} />,
     );
   });
 
@@ -59,9 +49,7 @@ describe("player menu layering", () => {
     await expectMenuAboveTimeline(
       "Disable captions",
       <SubtitleMenu
-        tracks={[
-          { index: 0, language: "eng", label: "English", url: "/subtitle.vtt" },
-        ]}
+        tracks={[{ index: 0, language: "eng", label: "English", url: "/subtitle.vtt" }]}
         activeIndex={0}
         delayMs={0}
         onSelect={() => {}}

@@ -124,9 +124,9 @@ describe("formatDateTime", () => {
       dateFormat: "MM/DD/YYYY",
       timeFormat: "24h",
     });
-    expect(
-      formatDateTime(sample, { dateStyle: "medium", seconds: false }),
-    ).toBe("Jun 5, 2026, 15:04");
+    expect(formatDateTime(sample, { dateStyle: "medium", seconds: false })).toBe(
+      "Jun 5, 2026, 15:04",
+    );
   });
 });
 

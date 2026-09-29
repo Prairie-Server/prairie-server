@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -24,6 +25,13 @@ type applePushRegisterResponse struct {
 	ServerDeviceID string `json:"server_device_id"`
 	Enabled        bool   `json:"enabled"`
 	PushMode       string `json:"push_mode"`
+	// DisplayToken is a long-lived, profile-scoped credential the iOS
+	// Notification Service extension presents to the display endpoint. The
+	// extension cannot refresh the short-lived access token, so without this
+	// every push arriving after access expiry rendered as generic text.
+	// Omitted when the server cannot mint one (no JWT auth or session).
+	DisplayToken          string `json:"display_token,omitempty"`
+	DisplayTokenExpiresAt string `json:"display_token_expires_at,omitempty"`
 }
 
 func (h *NotificationsHandler) pushDevices() *notifications.PushDeviceService {
@@ -56,6 +64,8 @@ func (h *NotificationsHandler) HandleRegisterApplePushDevice(w http.ResponseWrit
 	})
 	if err != nil {
 		switch {
+		case errors.Is(err, notifications.ErrPushLegacyWriter):
+			writeError(w, http.StatusConflict, "push_registration_upgrade_required", "This installation requires ordered push registration")
 		case errors.Is(err, notifications.ErrPushDeviceInvalid):
 			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		case errors.Is(err, notifications.ErrPushDeviceUnsupported):
@@ -68,12 +78,24 @@ func (h *NotificationsHandler) HandleRegisterApplePushDevice(w http.ResponseWrit
 		return
 	}
 
-	writeJSON(w, http.StatusOK, applePushRegisterResponse{
+	response := applePushRegisterResponse{
 		ID:             device.ID,
 		ServerDeviceID: device.ServerDeviceID,
 		Enabled:        device.Enabled,
 		PushMode:       device.PushMode,
-	})
+	}
+	if claims := apimw.GetClaims(r.Context()); claims != nil && h.displayTokens != nil && claims.SessionID != "" {
+		token, expiresAt, err := h.displayTokens.GenerateApplePushDisplayToken(
+			claims.UserID, claims.Role, claims.SessionID, apimw.GetProfileID(r.Context()), claims.ImpersonatorUserID,
+		)
+		if err == nil {
+			response.DisplayToken = token
+			response.DisplayTokenExpiresAt = expiresAt.UTC().Format(time.RFC3339)
+		}
+		// A minting failure is not a registration failure: the device is
+		// registered and the extension keeps its access-token fallback.
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 type pushDeviceRegisterRequest struct {
@@ -111,6 +133,8 @@ func (h *NotificationsHandler) HandleRegisterPushDevice(w http.ResponseWriter, r
 	})
 	if err != nil {
 		switch {
+		case errors.Is(err, notifications.ErrPushLegacyWriter):
+			writeError(w, http.StatusConflict, "push_registration_upgrade_required", "This installation requires ordered push registration")
 		case errors.Is(err, notifications.ErrPushDeviceInvalid):
 			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		case errors.Is(err, notifications.ErrPushDeviceUnsupported):
@@ -141,6 +165,8 @@ func (h *NotificationsHandler) HandleUnregisterPushDevice(w http.ResponseWriter,
 	err := service.Unregister(r.Context(), apimw.GetProfileID(r.Context()), chi.URLParam(r, "device_id"))
 	if err != nil {
 		switch {
+		case errors.Is(err, notifications.ErrPushLegacyWriter):
+			writeError(w, http.StatusConflict, "push_registration_upgrade_required", "This installation requires ordered push registration")
 		case errors.Is(err, notifications.ErrPushDeviceInvalid):
 			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		case errors.Is(err, notifications.ErrPushDeviceUnavailable):

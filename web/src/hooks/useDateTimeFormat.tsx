@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useSyncExternalStore,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -19,10 +13,7 @@ import type {
   DateTimeFormatPreferences,
   TimeFormatPreference,
 } from "@/lib/datetime";
-import {
-  useEffectiveSettings,
-  useSetSettingValue,
-} from "@/hooks/queries/settingValues";
+import { useEffectiveSettings, useSetSettingValue } from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 import { useAppearanceCacheOwner } from "@/hooks/themePreferences";
@@ -31,10 +22,7 @@ import { appearanceCache, storage } from "@/utils/storage";
 /** Both format keys are profile-wide in the contract (no device scope). */
 const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
 
-const FORMAT_KEYS = [
-  SETTING_KEYS.UI_DATE_FORMAT,
-  SETTING_KEYS.UI_TIME_FORMAT,
-] as const;
+const FORMAT_KEYS = [SETTING_KEYS.UI_DATE_FORMAT, SETTING_KEYS.UI_TIME_FORMAT] as const;
 
 // Seed the shared formatter state from localStorage at module load, before the
 // first render, so an app booting straight into a date-heavy page doesn't
@@ -45,12 +33,8 @@ const FORMAT_KEYS = [
 // rather than the bare key. Reading the bare key would seed the formatter with
 // whichever account happened to write before namespacing existed.
 setDateTimeFormatPreferences({
-  dateFormat: parseDateFormatPreference(
-    appearanceCache.get(storage.KEYS.UI_DATE_FORMAT, null),
-  ),
-  timeFormat: parseTimeFormatPreference(
-    appearanceCache.get(storage.KEYS.UI_TIME_FORMAT, null),
-  ),
+  dateFormat: parseDateFormatPreference(appearanceCache.get(storage.KEYS.UI_DATE_FORMAT, null)),
+  timeFormat: parseTimeFormatPreference(appearanceCache.get(storage.KEYS.UI_TIME_FORMAT, null)),
 });
 
 interface DateTimeFormatContextValue {
@@ -60,9 +44,7 @@ interface DateTimeFormatContextValue {
   setTimeFormat: (value: TimeFormatPreference) => void;
 }
 
-const DateTimeFormatContext = createContext<DateTimeFormatContextValue | null>(
-  null,
-);
+const DateTimeFormatContext = createContext<DateTimeFormatContextValue | null>(null);
 
 /**
  * Syncs the persisted date/time format settings (profile-scoped, mirrored in
@@ -92,22 +74,14 @@ export function DateTimeFormatProvider({ children }: { children: ReactNode }) {
   const apiDateFormat = effectiveSettings?.[SETTING_KEYS.UI_DATE_FORMAT]?.value;
   const apiTimeFormat = effectiveSettings?.[SETTING_KEYS.UI_TIME_FORMAT]?.value;
   const dateFormat = apiLoaded
-    ? parseDateFormatPreference(
-        typeof apiDateFormat === "string" ? apiDateFormat : undefined,
-      )
+    ? parseDateFormatPreference(typeof apiDateFormat === "string" ? apiDateFormat : undefined)
     : loadApiSettings
-      ? parseDateFormatPreference(
-          appearanceCache.get(storage.KEYS.UI_DATE_FORMAT, cacheOwner),
-        )
+      ? parseDateFormatPreference(appearanceCache.get(storage.KEYS.UI_DATE_FORMAT, cacheOwner))
       : local.dateFormat;
   const timeFormat = apiLoaded
-    ? parseTimeFormatPreference(
-        typeof apiTimeFormat === "string" ? apiTimeFormat : undefined,
-      )
+    ? parseTimeFormatPreference(typeof apiTimeFormat === "string" ? apiTimeFormat : undefined)
     : loadApiSettings
-      ? parseTimeFormatPreference(
-          appearanceCache.get(storage.KEYS.UI_TIME_FORMAT, cacheOwner),
-        )
+      ? parseTimeFormatPreference(appearanceCache.get(storage.KEYS.UI_TIME_FORMAT, cacheOwner))
       : local.timeFormat;
 
   useEffect(() => {
@@ -171,9 +145,7 @@ export function DateTimeFormatProvider({ children }: { children: ReactNode }) {
 export function useDateTimeFormatSettings(): DateTimeFormatContextValue {
   const ctx = useContext(DateTimeFormatContext);
   if (!ctx) {
-    throw new Error(
-      "useDateTimeFormatSettings must be used within DateTimeFormatProvider",
-    );
+    throw new Error("useDateTimeFormatSettings must be used within DateTimeFormatProvider");
   }
   return ctx;
 }

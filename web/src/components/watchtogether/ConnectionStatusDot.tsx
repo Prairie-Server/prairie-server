@@ -1,5 +1,4 @@
-export type WatchTogetherConnectionState =
-  "disconnected" | "connecting" | "connected";
+export type WatchTogetherConnectionState = "disconnected" | "connecting" | "connected";
 
 const connectionLabels: Record<WatchTogetherConnectionState, string> = {
   connected: "Connected",
@@ -11,11 +10,7 @@ const connectionLabels: Record<WatchTogetherConnectionState, string> = {
  * Shared watch-together connection status label. Pair with
  * `ConnectionStatusDot` so every surface uses the same palette + vocabulary.
  */
-export function ConnectionStateLabel({
-  state,
-}: {
-  state: WatchTogetherConnectionState;
-}) {
+export function ConnectionStateLabel({ state }: { state: WatchTogetherConnectionState }) {
   return <>{connectionLabels[state] ?? connectionLabels.disconnected}</>;
 }
 
@@ -33,10 +28,5 @@ export function ConnectionStatusDot({
       : state === "connecting"
         ? "animate-pulse bg-amber-300"
         : "bg-red-400";
-  return (
-    <span
-      aria-hidden="true"
-      className={`inline-block rounded-full ${color} ${className}`}
-    />
-  );
+  return <span aria-hidden="true" className={`inline-block rounded-full ${color} ${className}`} />;
 }

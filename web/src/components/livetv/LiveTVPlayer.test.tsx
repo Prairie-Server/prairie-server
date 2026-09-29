@@ -5,10 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveTVPlayer } from "./LiveTVPlayer";
 
 const { mockHls, hlsListeners } = vi.hoisted(() => {
-  const hlsListeners = new Map<
-    string,
-    Array<(event: string, data: unknown) => void>
-  >();
+  const hlsListeners = new Map<string, Array<(event: string, data: unknown) => void>>();
   const mockHls = {
     loadSource: vi.fn(),
     attachMedia: vi.fn(),
@@ -156,8 +153,6 @@ describe("LiveTVPlayer HLS bufferAppendError recovery", () => {
     }
 
     expect(mockHls.recoverMediaError).toHaveBeenCalledTimes(5);
-    expect(
-      screen.getByText(/Live stream media was rejected by the browser/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Live stream media was rejected by the browser/i)).toBeInTheDocument();
   });
 });

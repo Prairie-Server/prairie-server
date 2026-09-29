@@ -111,8 +111,7 @@ function multiChapterVolume(): ItemDetail & { type: "manga" } {
   ]);
 }
 
-const seriesBackTo =
-  "&backTo=" + encodeURIComponent("/item/manga-1?libraryId=7");
+const seriesBackTo = "&backTo=" + encodeURIComponent("/item/manga-1?libraryId=7");
 
 describe("MangaContent", () => {
   it("renders a volume-based series as flat 'Volume N' rows with no nested chapter", () => {
@@ -124,12 +123,8 @@ describe("MangaContent", () => {
 
     // Flat rows: the volume labels ARE the links, and there is no redundant
     // "Chapter 1" nested under "Volume 1".
-    expect(
-      screen.getByRole("link", { name: /^Volume 1$/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /^Volume 2$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Volume 1$/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Volume 2$/i })).toBeInTheDocument();
     expect(screen.queryByText(/^Chapter \d/)).not.toBeInTheDocument();
   });
 
@@ -156,16 +151,10 @@ describe("MangaContent", () => {
     );
 
     // Read remains the row link.
-    expect(
-      screen.getByRole("link", { name: /^Volume 1$/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Volume 1$/i })).toBeInTheDocument();
     // Mark-read + Download toggles exist per row (2 volumes → 2 of each).
-    expect(
-      screen.getAllByRole("button", { name: /Mark chapter read/i }),
-    ).toHaveLength(2);
-    expect(
-      screen.getAllByRole("button", { name: /Download chapter/i }),
-    ).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /Mark chapter read/i })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /Download chapter/i })).toHaveLength(2);
   });
 
   it("shows a Start Reading hero CTA targeting the first volume on an unread series", () => {
@@ -177,10 +166,7 @@ describe("MangaContent", () => {
 
     const cta = screen.getByRole("link", { name: /Start Reading/i });
     expect(cta).toHaveTextContent("Volume 1");
-    expect(cta).toHaveAttribute(
-      "href",
-      "/reader/ebook/v01?libraryId=7" + seriesBackTo,
-    );
+    expect(cta).toHaveAttribute("href", "/reader/ebook/v01?libraryId=7" + seriesBackTo);
   });
 
   it("shows a Continue hero CTA targeting the first unread chapter mid-series", () => {
@@ -215,10 +201,7 @@ describe("MangaContent", () => {
 
     const cta = screen.getByRole("link", { name: /Continue/i });
     expect(cta).toHaveTextContent("Volume 2");
-    expect(cta).toHaveAttribute(
-      "href",
-      "/reader/ebook/v02?libraryId=7" + seriesBackTo,
-    );
+    expect(cta).toHaveAttribute("href", "/reader/ebook/v02?libraryId=7" + seriesBackTo);
   });
 
   // Regression test for issue #188: partial progress on the resume target
@@ -249,10 +232,7 @@ describe("MangaContent", () => {
 
     const cta = screen.getByRole("link", { name: /Resume Reading/i });
     expect(cta).toHaveTextContent("Volume 1");
-    expect(cta).toHaveAttribute(
-      "href",
-      "/reader/ebook/v01?libraryId=7" + seriesBackTo,
-    );
+    expect(cta).toHaveAttribute("href", "/reader/ebook/v01?libraryId=7" + seriesBackTo);
   });
 
   it("offers a Read Again CTA from the start once every chapter is read", () => {
@@ -334,16 +314,11 @@ describe("MangaContent", () => {
     );
 
     // "Volume 1" is a plain header (not a link); chapters are the links.
-    expect(
-      screen.queryByRole("link", { name: /^Volume 1$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Volume 1$/i })).not.toBeInTheDocument();
     expect(screen.getByText("Volume 1")).toBeInTheDocument();
 
     const firstChapter = screen.getByRole("link", { name: /^Chapter 1$/i });
-    expect(firstChapter).toHaveAttribute(
-      "href",
-      "/reader/ebook/v1-c1?libraryId=7" + seriesBackTo,
-    );
+    expect(firstChapter).toHaveAttribute("href", "/reader/ebook/v1-c1?libraryId=7" + seriesBackTo);
 
     const links = screen.getAllByRole("link");
     const order = links
@@ -401,14 +376,10 @@ describe("MangaContent", () => {
 
     const header = screen.getByRole("button", { name: /Volume 1/i });
     expect(header).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByRole("link", { name: /^Chapter 1/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Chapter 1/i })).not.toBeInTheDocument();
 
     await user.click(header);
-    expect(
-      screen.getByRole("link", { name: /^Chapter 1/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Chapter 1/i })).toBeInTheDocument();
   });
 
   it("renders chapter cover thumbnails when the payload carries them", () => {
@@ -443,8 +414,6 @@ describe("MangaContent", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("button", { name: /More actions/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /More actions/i })).toBeInTheDocument();
   });
 });

@@ -34,10 +34,7 @@ export interface BuildSectionsOptions {
 export function buildGroupedSections<T extends GroupedItemLike>(
   items: T[],
   groups: GroupDefLike[],
-  {
-    hideEmpty = false,
-    ungroupedTitle = "Ungrouped",
-  }: BuildSectionsOptions = {},
+  { hideEmpty = false, ungroupedTitle = "Ungrouped" }: BuildSectionsOptions = {},
 ): GroupedSection<T>[] {
   const itemsByLabel = new Map<string, T[]>();
   for (const item of items) {

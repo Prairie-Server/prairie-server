@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
-import type { EpisodeRef } from "../types";
+import type { EpisodeRef, PlaybackStartTrigger } from "../types";
 import type { ContinueWatchingItem } from "@/hooks/queries/progress";
 import { useAutoPlayNextSetting } from "@/hooks/queries/autoPlayNext";
 import { decodeThumbhash } from "@/lib/thumbhash";
@@ -15,7 +15,8 @@ interface PlayingNextScreenProps {
   nextEpisode?: EpisodeRef;
   continueWatchingItems: ContinueWatchingItem[];
   videoEnded: boolean;
-  onPlayNow?: () => void;
+  /** Plays the next episode: `viewer` from Play Now or Enter, `automatic` from the countdown. */
+  onPlayNow?: (trigger: PlaybackStartTrigger) => void;
   onPlayItem: (contentId: string) => void;
   onClose: () => void;
 }
@@ -36,8 +37,7 @@ export function PlayingNextScreen({
   // -- Auto-play setting --
   // Shared with Settings → Playback: both surfaces edit the same profile row,
   // so a choice made here is the one that screen shows and vice versa.
-  const { enabled: autoplay, setEnabled: setAutoplay } =
-    useAutoPlayNextSetting();
+  const { enabled: autoplay, setEnabled: setAutoplay } = useAutoPlayNextSetting();
 
   const toggleAutoplay = useCallback(() => {
     void setAutoplay(!autoplay);
@@ -65,7 +65,7 @@ export function PlayingNextScreen({
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           if (countdownRef.current) clearInterval(countdownRef.current);
-          onPlayNowRef.current?.();
+          onPlayNowRef.current?.("automatic");
           return 0;
         }
         return prev - 1;
@@ -85,7 +85,7 @@ export function PlayingNextScreen({
         onClose();
       } else if (e.key === "Enter" && onPlayNow) {
         e.preventDefault();
-        onPlayNow();
+        onPlayNow("viewer");
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -100,20 +100,13 @@ export function PlayingNextScreen({
   // -- Countdown ring SVG --
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
-  const progress =
-    videoEnded && autoplay && nextEpisode
-      ? secondsRemaining / COUNTDOWN_SECONDS
-      : 0;
+  const progress = videoEnded && autoplay && nextEpisode ? secondsRemaining / COUNTDOWN_SECONDS : 0;
   const strokeDashoffset = circumference * (1 - progress);
 
   const episodeStillUrl = nextEpisode?.stillUrl;
   const episodeThumbhash = nextEpisode?.stillThumbhash;
-  const blurPlaceholder = episodeThumbhash
-    ? decodeThumbhash(episodeThumbhash)
-    : undefined;
-  const endOfSeriesHeading = seriesTitle
-    ? `You've finished ${seriesTitle}`
-    : "End of playback";
+  const blurPlaceholder = episodeThumbhash ? decodeThumbhash(episodeThumbhash) : undefined;
+  const endOfSeriesHeading = seriesTitle ? `You've finished ${seriesTitle}` : "End of playback";
 
   return (
     <motion.div
@@ -192,11 +185,7 @@ export function PlayingNextScreen({
                     }
                   />
                 ) : blurPlaceholder ? (
-                  <img
-                    src={blurPlaceholder}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={blurPlaceholder} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-white/5 text-sm text-white/30">
                     No Preview
@@ -207,32 +196,23 @@ export function PlayingNextScreen({
               {/* Episode metadata - centered */}
               <div className="flex flex-col items-center gap-1 text-center">
                 {seriesTitle && (
-                  <div className="text-base font-bold text-white sm:text-lg">
-                    {seriesTitle}
-                  </div>
+                  <div className="text-base font-bold text-white sm:text-lg">{seriesTitle}</div>
                 )}
                 <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                   <span className="text-xs font-medium text-white/60 sm:text-sm">
                     S{nextEpisode.seasonNumber}:E{nextEpisode.episodeNumber}
                   </span>
-                  <span className="hidden text-sm text-white/25 sm:inline">
-                    &mdash;
-                  </span>
-                  <span className="text-sm font-semibold sm:text-base">
-                    {nextEpisode.title}
-                  </span>
+                  <span className="hidden text-sm text-white/25 sm:inline">&mdash;</span>
+                  <span className="text-sm font-semibold sm:text-base">{nextEpisode.title}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-white/40 sm:text-xs">
                   {nextEpisode.airDate && (
                     <span>
-                      {new Date(nextEpisode.airDate).toLocaleDateString(
-                        preferredDateLocale(),
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        },
-                      )}
+                      {new Date(nextEpisode.airDate).toLocaleDateString(preferredDateLocale(), {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </span>
                   )}
                   {nextEpisode.airDate && nextEpisode.runtime > 0 && (
@@ -257,7 +237,7 @@ export function PlayingNextScreen({
                 className="mt-3 flex items-center gap-3 sm:mt-4 sm:gap-4"
               >
                 <button
-                  onClick={onPlayNow}
+                  onClick={() => onPlayNow?.("viewer")}
                   type="button"
                   className="bg-primary text-primary-foreground flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-lg transition-all hover:scale-105 hover:shadow-xl sm:px-7 sm:py-3"
                 >
@@ -271,12 +251,7 @@ export function PlayingNextScreen({
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex items-center gap-2"
                   >
-                    <svg
-                      width="48"
-                      height="48"
-                      viewBox="0 0 48 48"
-                      className="-rotate-90"
-                    >
+                    <svg width="48" height="48" viewBox="0 0 48 48" className="-rotate-90">
                       <circle
                         cx="24"
                         cy="24"
@@ -298,9 +273,7 @@ export function PlayingNextScreen({
                         className="text-primary transition-all duration-1000 ease-linear"
                       />
                     </svg>
-                    <span className="text-sm text-white/50 tabular-nums">
-                      {secondsRemaining}s
-                    </span>
+                    <span className="text-sm text-white/50 tabular-nums">{secondsRemaining}s</span>
                   </motion.div>
                 )}
               </motion.div>
@@ -320,8 +293,7 @@ export function PlayingNextScreen({
                 {endOfSeriesHeading}
               </div>
               <div className="mt-2 max-w-md text-center text-sm text-white/50">
-                There are no more episodes available. Pick something else from
-                On Deck below.
+                There are no more episodes available. Pick something else from On Deck below.
               </div>
               <button
                 onClick={onClose}
@@ -336,9 +308,7 @@ export function PlayingNextScreen({
       </div>
 
       {/* On Deck section */}
-      {onDeckItems.length > 0 && (
-        <OnDeckCarousel items={onDeckItems} onPlayItem={onPlayItem} />
-      )}
+      {onDeckItems.length > 0 && <OnDeckCarousel items={onDeckItems} onPlayItem={onPlayItem} />}
 
       {/* Bottom spacer */}
       <div className="h-3 shrink-0 sm:h-4" />
@@ -355,10 +325,9 @@ function OnDeckCarousel({
   items: ContinueWatchingItem[];
   onPlayItem: (contentId: string) => void;
 }) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla({
-      options: { slidesToScroll: 3, align: "start" },
-    });
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla({
+    options: { slidesToScroll: 3, align: "start" },
+  });
 
   return (
     <motion.div
@@ -403,22 +372,15 @@ function OnDeckCarousel({
               detail.season_number != null && detail.episode_number != null
                 ? `S${detail.season_number}:E${detail.episode_number}`
                 : null;
-            const episodeTitle =
-              episodeMeta && detail.series_title ? detail.title : null;
+            const episodeTitle = episodeMeta && detail.series_title ? detail.title : null;
             const thumbnailUrl = detail.backdrop_url ?? detail.poster_url;
             const progressPercent =
               item.progress.duration_seconds > 0
-                ? (item.progress.position_seconds /
-                    item.progress.duration_seconds) *
-                  100
+                ? (item.progress.position_seconds / item.progress.duration_seconds) * 100
                 : 0;
             const timeLeft =
               item.progress.duration_seconds > 0
-                ? Math.round(
-                    (item.progress.duration_seconds -
-                      item.progress.position_seconds) /
-                      60,
-                  )
+                ? Math.round((item.progress.duration_seconds - item.progress.position_seconds) / 60)
                 : 0;
 
             return (
@@ -447,10 +409,7 @@ function OnDeckCarousel({
                     {/* Play overlay */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
                       <div className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                        <Play
-                          className="ml-0.5 h-3.5 w-3.5"
-                          fill="currentColor"
-                        />
+                        <Play className="ml-0.5 h-3.5 w-3.5" fill="currentColor" />
                       </div>
                     </div>
                     {/* Progress bar */}
@@ -466,9 +425,7 @@ function OnDeckCarousel({
                     )}
                   </div>
                   <div className="mt-1.5 space-y-0.5">
-                    <div className="truncate text-xs font-semibold text-white/80">
-                      {title}
-                    </div>
+                    <div className="truncate text-xs font-semibold text-white/80">{title}</div>
                     {episodeMeta && (
                       <div className="truncate text-[11px] text-white/40">
                         {episodeMeta}
@@ -476,9 +433,7 @@ function OnDeckCarousel({
                       </div>
                     )}
                     {timeLeft > 0 && (
-                      <div className="text-[11px] text-white/30">
-                        {timeLeft} min left
-                      </div>
+                      <div className="text-[11px] text-white/30">{timeLeft} min left</div>
                     )}
                   </div>
                 </button>

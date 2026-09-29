@@ -1,7 +1,8 @@
 import { formatTime, preferredDateLocale } from "@/lib/datetime";
 
 interface UpcomingPresentationEvent {
-  type: "movie" | "episode" | "season_premiere";
+  /** "movie", "episode", or "season_premiere"; the v2 contract leaves this open. */
+  type: string;
   air_date: string;
   air_time?: string | null;
   air_at?: string | null;
@@ -36,9 +37,7 @@ export function upcomingBadgeClass(badge: string): string {
   }
 }
 
-export function formatUpcomingSubtitle(
-  event: UpcomingPresentationEvent,
-): string {
+export function formatUpcomingSubtitle(event: UpcomingPresentationEvent): string {
   if (
     (event.type === "episode" || event.type === "season_premiere") &&
     event.season_number != null
@@ -59,20 +58,14 @@ export function formatUpcomingSubtitle(
 }
 
 export function formatUpcomingDate(airDate: string): string {
-  return new Date(`${airDate}T00:00:00`).toLocaleDateString(
-    preferredDateLocale(),
-    {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    },
-  );
+  return new Date(`${airDate}T00:00:00`).toLocaleDateString(preferredDateLocale(), {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-export function formatUpcomingTime(
-  airTime?: string | null,
-  airAt?: string | null,
-): string | null {
+export function formatUpcomingTime(airTime?: string | null, airAt?: string | null): string | null {
   if (airAt) {
     const date = new Date(airAt);
     if (!Number.isNaN(date.getTime())) {

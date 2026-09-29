@@ -9,10 +9,8 @@ import {
 import { normalizeQuerySortField } from "@/lib/querySortOptions";
 
 const GROUP_MATCH_PATTERN = /^groups\[(\d+)\]\[match\]$/;
-const GROUP_RULE_PATTERN =
-  /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[(field|op|value)\]$/;
-const GROUP_RULE_VALUE_PATTERN =
-  /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[value\]\[(\d+)\]$/;
+const GROUP_RULE_PATTERN = /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[(field|op|value)\]$/;
+const GROUP_RULE_VALUE_PATTERN = /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[value\]\[(\d+)\]$/;
 
 export interface CatalogSearchState {
   source: CatalogSource;
@@ -28,6 +26,10 @@ export interface CatalogSearchState {
   // True when the UI is displaying a collection sort resolved by the server,
   // rather than an explicit sort read from the URL or chosen by the viewer.
   sort_from_server?: boolean;
+  // True when the sort was read from the URL or chosen by the viewer. Without
+  // it the client default sort is a placeholder and a query-source request
+  // leaves ordering to the server (relevance for text search).
+  explicit_sort?: boolean;
   query_definition: QueryDefinition;
 }
 
@@ -75,13 +77,12 @@ function isCollectionSource(source: CatalogSource): boolean {
 // Sources whose default ordering is the stored list order rather than a sort
 // field. The watchlist's stored order can mirror a watch provider's list
 // order (e.g. MDBList) via sort_index; favorites use their entry order.
-export function catalogSourceSupportsSourceOrder(
-  source: CatalogSource,
-): boolean {
+export function catalogSourceSupportsSourceOrder(source: CatalogSource): boolean {
   return (
     isCollectionSource(source) ||
     source === "watchlist" ||
-    source === "favorites"
+    source === "favorites" ||
+    source === "history"
   );
 }
 
@@ -89,9 +90,7 @@ export function catalogSourceAllowsOverlay(source: CatalogSource): boolean {
   return overlaySources.has(source);
 }
 
-export function parseCatalogSearchParams(
-  searchParams: URLSearchParams,
-): CatalogSearchState {
+export function parseCatalogSearchParams(searchParams: URLSearchParams): CatalogSearchState {
   const source = parseCatalogSource(searchParams.get("source"));
   const title = readString(searchParams.get("title"));
 
@@ -159,8 +158,7 @@ export function parseCatalogSearchParams(
   const rawOrder = readString(searchParams.get("order"));
   const sort = normalizeQuerySortField(rawSort);
   const hasExplicitSort = Boolean(rawSort || rawOrder);
-  const queryLimit =
-    parsePositiveInt(searchParams.get("query_limit")) ?? undefined;
+  const queryLimit = parsePositiveInt(searchParams.get("query_limit")) ?? undefined;
   const mediaScope =
     type === "movie" ||
     type === "series" ||
@@ -173,24 +171,20 @@ export function parseCatalogSearchParams(
 
   baseState.query_definition = normalizeQueryDefinition({
     library_ids: baseState.library_id ? [baseState.library_id] : [],
-    media_scope:
-      mediaScope === "episode" && isCollectionSource(source)
-        ? undefined
-        : mediaScope,
+    media_scope: mediaScope === "episode" && isCollectionSource(source) ? undefined : mediaScope,
     match: searchParams.get("match") === "any" ? "any" : "all",
     groups: [...implicitGroups, ...groups],
     sort:
       sort || hasExplicitSort
         ? {
             field: sort ?? "added_at",
-            order:
-              rawOrder === "asc" || rawOrder === "desc" ? rawOrder : undefined,
+            order: rawOrder === "asc" || rawOrder === "desc" ? rawOrder : undefined,
           }
         : undefined,
     limit: queryLimit,
   });
-  baseState.uses_source_order =
-    catalogSourceSupportsSourceOrder(source) && !hasExplicitSort;
+  baseState.uses_source_order = catalogSourceSupportsSourceOrder(source) && !hasExplicitSort;
+  baseState.explicit_sort = hasExplicitSort;
 
   return baseState;
 }
@@ -212,14 +206,8 @@ export function sameCatalogDestination(
       left.section_id === right.section_id
     );
   }
-  if (
-    left.source === "library_collection" &&
-    right.source === "library_collection"
-  ) {
-    return (
-      left.library_id === right.library_id &&
-      left.collection_id === right.collection_id
-    );
+  if (left.source === "library_collection" && right.source === "library_collection") {
+    return left.library_id === right.library_id && left.collection_id === right.collection_id;
   }
   if (left.source === "user_collection" && right.source === "user_collection") {
     return left.collection_id === right.collection_id;
@@ -237,24 +225,15 @@ export function buildCatalogHref(state: CatalogSearchState): string {
 // URL type makes Catalog reapply the user's saved default (normally `video`).
 // Keep this behavior scoped to filter updates so fresh search URLs can still
 // inherit that preference.
-export function buildCatalogFilterSearchParams(
-  state: CatalogSearchState,
-): URLSearchParams {
+export function buildCatalogFilterSearchParams(state: CatalogSearchState): URLSearchParams {
   const params = buildCatalogApiSearchParams(state);
-  if (
-    state.source === "query" &&
-    !state.type_override &&
-    !state.query_definition.media_scope
-  ) {
+  if (state.source === "query" && !state.type_override && !state.query_definition.media_scope) {
     params.set("type", "all");
   }
   return params;
 }
 
-export function buildCatalogQueryUpdateHref(
-  state: CatalogSearchState,
-  q: string,
-): string {
+export function buildCatalogQueryUpdateHref(state: CatalogSearchState, q: string): string {
   const params = buildCatalogFilterSearchParams({
     ...state,
     source: "query",
@@ -264,16 +243,12 @@ export function buildCatalogQueryUpdateHref(
 }
 
 export function buildQueryCatalogHref(q?: string): string {
-  return buildCatalogHref({
-    source: "query",
-    q,
-    query_definition: createEmptyQueryDefinition(),
-  });
+  const params = new URLSearchParams({ source: "query" });
+  if (q) params.set("q", q);
+  return `/catalog?${params.toString()}`;
 }
 
-export function buildPersonalCatalogHref(
-  source: "favorites" | "watchlist" | "history",
-): string {
+export function buildPersonalCatalogHref(source: "favorites" | "watchlist" | "history"): string {
   return buildCatalogHref({
     source,
     uses_source_order: catalogSourceSupportsSourceOrder(source),
@@ -282,18 +257,15 @@ export function buildPersonalCatalogHref(
 }
 
 export function buildPersonCatalogHref(personId: string): string {
-  return `/person/${personId}`;
+  return `/person/${encodeURIComponent(personId)}`;
 }
 
-export function buildSectionCatalogHref(
-  destination: SectionCatalogDestination,
-): string {
+export function buildSectionCatalogHref(destination: SectionCatalogDestination): string {
   return buildCatalogHref({
     source: "section",
     scope: destination.scope,
     section_id: destination.sectionId,
-    library_id:
-      destination.scope === "library" ? destination.libraryId : undefined,
+    library_id: destination.scope === "library" ? destination.libraryId : undefined,
     title: destination.title,
     query_definition: createEmptyQueryDefinition(),
   });
@@ -314,10 +286,7 @@ export function buildLibraryCollectionCatalogHref(
   });
 }
 
-export function buildUserCollectionCatalogHref(
-  collectionId: string,
-  title?: string,
-): string {
+export function buildUserCollectionCatalogHref(collectionId: string, title?: string): string {
   return buildCatalogHref({
     source: "user_collection",
     collection_id: collectionId,
@@ -327,9 +296,7 @@ export function buildUserCollectionCatalogHref(
   });
 }
 
-export function buildLegacyBrowseCatalogHref(
-  searchParams: URLSearchParams,
-): string | null {
+export function buildLegacyBrowseCatalogHref(searchParams: URLSearchParams): string | null {
   const source = searchParams.get("source");
 
   if (source === "collection") {
@@ -338,10 +305,7 @@ export function buildLegacyBrowseCatalogHref(
       return null;
     }
 
-    return buildLibraryCollectionCatalogHref(
-      collectionId,
-      readString(searchParams.get("title")),
-    );
+    return buildLibraryCollectionCatalogHref(collectionId, readString(searchParams.get("title")));
   }
 
   if (source !== "section") {
@@ -379,9 +343,7 @@ export function isSectionBrowseSupported(sectionType: string): boolean {
   return SECTION_BROWSE_SUPPORT_TYPES.has(sectionType);
 }
 
-export function buildCatalogApiSearchParams(
-  state: CatalogSearchState,
-): URLSearchParams {
+export function buildCatalogApiSearchParams(state: CatalogSearchState): URLSearchParams {
   const params = new URLSearchParams();
   params.set("source", state.source);
 
@@ -414,22 +376,15 @@ export function buildCatalogApiSearchParams(
     params.set("q", state.q);
   }
   const stateIsCollectionSource = isCollectionSource(state.source);
-  if (
-    state.type_override &&
-    !(stateIsCollectionSource && state.type_override === "episode")
-  ) {
+  if (state.type_override && !(stateIsCollectionSource && state.type_override === "episode")) {
     params.set("type", state.type_override);
   } else if (
     state.query_definition.media_scope &&
-    !(
-      stateIsCollectionSource &&
-      state.query_definition.media_scope === "episode"
-    )
+    !(stateIsCollectionSource && state.query_definition.media_scope === "episode")
   ) {
     params.set("type", state.query_definition.media_scope);
   }
-  const effectiveLibraryID =
-    state.library_id ?? state.query_definition.library_ids[0];
+  const effectiveLibraryID = state.library_id ?? state.query_definition.library_ids[0];
   if (state.library_id) {
     params.set("library_id", String(state.library_id));
   } else if (effectiveLibraryID) {
@@ -444,7 +399,10 @@ export function buildCatalogApiSearchParams(
     !state.sort_from_server &&
     state.query_definition.sort.field &&
     (state.query_definition.sort.field !== "added_at" ||
-      (state.source === "query" && effectiveLibraryID != null) ||
+      // A library browse defaults to Date Added; an unscoped query only sends
+      // it when the viewer or an editor chose it, so text search keeps the
+      // server's relevance ranking.
+      (state.source === "query" && (effectiveLibraryID != null || state.explicit_sort)) ||
       // These sources default to source order, so an explicit Date Added pick
       // must be sent to distinguish it (the server maps it to list added-at).
       // Dropping it would round-trip back through parse as source order and
@@ -456,20 +414,14 @@ export function buildCatalogApiSearchParams(
       params.set("order", state.query_definition.sort.order);
     }
   }
-  if (
-    state.query_definition.limit != null &&
-    state.query_definition.limit > 0
-  ) {
+  if (state.query_definition.limit != null && state.query_definition.limit > 0) {
     params.set("query_limit", String(state.query_definition.limit));
   }
 
   state.query_definition.groups.forEach((group, groupIndex) => {
     params.set(`groups[${groupIndex}][match]`, group.match);
     group.rules.forEach((rule, ruleIndex) => {
-      params.set(
-        `groups[${groupIndex}][rules][${ruleIndex}][field]`,
-        rule.field,
-      );
+      params.set(`groups[${groupIndex}][rules][${ruleIndex}][field]`, rule.field);
       params.set(`groups[${groupIndex}][rules][${ruleIndex}][op]`, rule.op);
       if (Array.isArray(rule.value)) {
         rule.value.forEach((entry, valueIndex) => {
@@ -479,10 +431,7 @@ export function buildCatalogApiSearchParams(
           );
         });
       } else {
-        params.set(
-          `groups[${groupIndex}][rules][${ruleIndex}][value]`,
-          String(rule.value),
-        );
+        params.set(`groups[${groupIndex}][rules][${ruleIndex}][value]`, String(rule.value));
       }
     });
   });
@@ -582,10 +531,7 @@ function parseCatalogGroups(searchParams: URLSearchParams): QueryGroup[] {
     .filter((group) => group.rules.length > 0);
 }
 
-function ensureGroup(
-  groups: Map<number, GroupBuilder>,
-  index: number,
-): GroupBuilder {
+function ensureGroup(groups: Map<number, GroupBuilder>, index: number): GroupBuilder {
   let group = groups.get(index);
   if (!group) {
     group = { rules: new Map<number, RuleBuilder>() };

@@ -11,11 +11,7 @@ import {
   useSettingsCapabilities,
 } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import {
-  parseCardPresentation,
-  parsePrimaryMenu,
-  parseShortcuts,
-} from "@/lib/uiCustomization";
+import { parseCardPresentation, parsePrimaryMenu, parseShortcuts } from "@/lib/uiCustomization";
 
 const UI_CUSTOMIZATION_KEYS = [
   SETTING_KEYS.NAV_PRIMARY_MENU,
@@ -38,17 +34,13 @@ export function UICustomizationProvider({ children }: { children: ReactNode }) {
   const isUnavailable =
     (!capabilitiesQuery.isLoading &&
       (capabilitiesQuery.isError || capabilitiesQuery.data === undefined)) ||
-    (isSupported &&
-      !query.isLoading &&
-      (query.isError || query.data === undefined));
+    (isSupported && !query.isLoading && (query.isError || query.data === undefined));
   // A disabled query may still expose data cached before a server downgrade or
   // reconnect. Ignore it until the connected server proves support.
   const primaryMenuValue = isSupported
     ? query.data?.[SETTING_KEYS.NAV_PRIMARY_MENU]?.value
     : undefined;
-  const shortcutsValue = isSupported
-    ? query.data?.[SETTING_KEYS.NAV_SHORTCUTS]?.value
-    : undefined;
+  const shortcutsValue = isSupported ? query.data?.[SETTING_KEYS.NAV_SHORTCUTS]?.value : undefined;
   const cardPresentationValue = isSupported
     ? query.data?.[SETTING_KEYS.UI_CARD_PRESENTATION]?.value
     : undefined;
@@ -66,8 +58,7 @@ export function UICustomizationProvider({ children }: { children: ReactNode }) {
       shortcuts: parseShortcuts(shortcutsValue),
       isSupported,
       supportsAtomicShortcuts,
-      isLoading:
-        capabilitiesQuery.isLoading || (isSupported && query.isLoading),
+      isLoading: capabilitiesQuery.isLoading || (isSupported && query.isLoading),
       isUnavailable,
     }),
     [
@@ -84,8 +75,6 @@ export function UICustomizationProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <UICustomizationContext.Provider value={value}>
-      {children}
-    </UICustomizationContext.Provider>
+    <UICustomizationContext.Provider value={value}>{children}</UICustomizationContext.Provider>
   );
 }

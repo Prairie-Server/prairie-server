@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -20,11 +21,13 @@ const (
 	skippedRetryHorizon      = 15 * time.Minute
 	claimCandidateWindow     = maxEnrichWorkers
 	defaultRateLimitCooldown = 15 * time.Minute
-	rateLimitCooldownEnv     = "SILO_EBOOK_RATE_LIMIT_COOLDOWN"
+	rateLimitCooldownEnv     = "PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN"
+	// legacyRateLimitCooldownEnv is the pre-rebrand name, still honored.
+	legacyRateLimitCooldownEnv = "SILO_EBOOK_RATE_LIMIT_COOLDOWN"
 )
 
 func rateLimitCooldownFloor() time.Duration {
-	if v := os.Getenv(rateLimitCooldownEnv); v != "" {
+	if v := envutil.FirstNonEmpty(rateLimitCooldownEnv, legacyRateLimitCooldownEnv); v != "" {
 		if parsed, err := time.ParseDuration(v); err == nil && parsed > 0 {
 			return parsed
 		}

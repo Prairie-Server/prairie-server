@@ -17,17 +17,8 @@ import type {
   MarkerSegment,
   SetMarkersRequest,
 } from "@/api/types";
-import {
-  MARKER_KINDS,
-  MARKER_LABELS,
-  formatClock,
-  parseClock,
-} from "@/lib/markers";
-import {
-  useItemMarkerHistory,
-  useItemMarkers,
-  useSetItemMarkers,
-} from "@/hooks/queries/markers";
+import { MARKER_KINDS, MARKER_LABELS, formatClock, parseClock } from "@/lib/markers";
+import { useItemMarkerHistory, useItemMarkers, useSetItemMarkers } from "@/hooks/queries/markers";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { formatTime, preferredDateLocale } from "@/lib/datetime";
 
@@ -65,11 +56,7 @@ function fieldsFromResponse(data: FileMarkersResponse): FieldState {
  * markers by typing timecodes. Edits save as source="manual" via the
  * authenticated markers API.
  */
-export function MarkerEditor({
-  itemId,
-  open,
-  onOpenChange,
-}: MarkerEditorProps) {
+export function MarkerEditor({ itemId, open, onOpenChange }: MarkerEditorProps) {
   const isAdmin = useIsActingAdmin();
   const { data, isLoading, isError } = useItemMarkers(itemId, {
     enabled: open,
@@ -85,8 +72,8 @@ export function MarkerEditor({
         <DialogHeader>
           <DialogTitle>Edit markers</DialogTitle>
           <DialogDescription>
-            Set intro, recap, credits, and preview times. Use m:ss or h:mm:ss;
-            leave both fields empty to remove a marker.
+            Set intro, recap, credits, and preview times. Use m:ss or h:mm:ss; leave both fields
+            empty to remove a marker.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,9 +82,7 @@ export function MarkerEditor({
             <Loader2 className="size-5 animate-spin" />
           </div>
         ) : isError || !data ? (
-          <p className="text-destructive py-6 text-center text-sm">
-            Failed to load markers.
-          </p>
+          <p className="text-destructive py-6 text-center text-sm">Failed to load markers.</p>
         ) : (
           // Keyed by file id so the form re-initializes from fresh data without
           // a state-syncing effect.
@@ -132,9 +117,7 @@ function MarkerEditorForm({
   onClose: () => void;
 }) {
   const setMarkers = useSetItemMarkers(itemId);
-  const [fields, setFields] = useState<FieldState>(() =>
-    fieldsFromResponse(data),
-  );
+  const [fields, setFields] = useState<FieldState>(() => fieldsFromResponse(data));
   const [error, setError] = useState<string | null>(null);
 
   const setField = (kind: MarkerKind, edge: "start" | "end", value: string) => {
@@ -164,15 +147,8 @@ function MarkerEditorForm({
 
       const start = parseClock(startStr);
       const end = parseClock(endStr);
-      if (
-        start == null ||
-        end == null ||
-        Number.isNaN(start) ||
-        Number.isNaN(end)
-      ) {
-        setError(
-          `${MARKER_LABELS[kind]}: enter both start and end (e.g. 1:30).`,
-        );
+      if (start == null || end == null || Number.isNaN(start) || Number.isNaN(end)) {
+        setError(`${MARKER_LABELS[kind]}: enter both start and end (e.g. 1:30).`);
         return;
       }
       if (end <= start) {
@@ -182,8 +158,7 @@ function MarkerEditorForm({
       // Inputs carry whole-second precision; round the (possibly fractional)
       // stored values before comparing so an untouched marker isn't resaved
       // as "manual" with a rounded timestamp.
-      const origStart =
-        original.start == null ? null : Math.round(original.start);
+      const origStart = original.start == null ? null : Math.round(original.start);
       const origEnd = original.end == null ? null : Math.round(original.end);
       if (origStart === start && origEnd === end) continue; // unchanged
       body[kind] = { start, end };
@@ -200,10 +175,7 @@ function MarkerEditorForm({
     <>
       <div className="grid gap-3 py-1">
         {MARKER_KINDS.map((kind) => (
-          <div
-            key={kind}
-            className="grid grid-cols-[5.5rem_1fr_1fr_auto] items-center gap-2"
-          >
+          <div key={kind} className="grid grid-cols-[5.5rem_1fr_1fr_auto] items-center gap-2">
             <span className="text-sm font-medium">{MARKER_LABELS[kind]}</span>
             <Input
               aria-label={`${MARKER_LABELS[kind]} start`}
@@ -232,9 +204,7 @@ function MarkerEditorForm({
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
-      {showHistory && (
-        <MarkerHistory rows={history} isLoading={historyLoading} />
-      )}
+      {showHistory && <MarkerHistory rows={history} isLoading={historyLoading} />}
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
@@ -250,25 +220,15 @@ function MarkerEditorForm({
   );
 }
 
-function MarkerHistory({
-  rows,
-  isLoading,
-}: {
-  rows: MarkerEditAuditEntry[];
-  isLoading: boolean;
-}) {
+function MarkerHistory({ rows, isLoading }: { rows: MarkerEditAuditEntry[]; isLoading: boolean }) {
   return (
     <div className="border-border mt-2 border-t pt-3">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-medium">Recent changes</h3>
-        {isLoading && (
-          <Loader2 className="text-muted-foreground size-4 animate-spin" />
-        )}
+        {isLoading && <Loader2 className="text-muted-foreground size-4 animate-spin" />}
       </div>
       {rows.length === 0 && !isLoading ? (
-        <p className="text-muted-foreground text-sm">
-          No marker edits recorded.
-        </p>
+        <p className="text-muted-foreground text-sm">No marker edits recorded.</p>
       ) : (
         <div className="max-h-48 overflow-y-auto">
           {rows.map((row) => (
@@ -282,8 +242,7 @@ function MarkerHistory({
               </div>
               <div className="text-sm">
                 <div className="font-medium">
-                  {row.action === "clear" ? "Cleared" : "Set"}{" "}
-                  {MARKER_LABELS[row.segment]}
+                  {row.action === "clear" ? "Cleared" : "Set"} {MARKER_LABELS[row.segment]}
                 </div>
                 <div className="text-muted-foreground font-mono text-xs">
                   {formatHistoryRange(row.before)}

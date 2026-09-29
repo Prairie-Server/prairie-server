@@ -27,7 +27,6 @@ const mocks = vi.hoisted(() => {
     useWatchedStateMutation: vi.fn(),
     useSeasons: vi.fn(),
     useItemEpisodes: vi.fn(),
-    useContinueWatching: vi.fn(),
     useSimilarItems: vi.fn(),
     useSetRating: vi.fn(),
     useDeleteRating: vi.fn(),
@@ -36,6 +35,9 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+vi.mock("@/pages/watchtogether/DetailWatchTogether", () => ({
+  useDetailWatchTogether: () => ({ menu: undefined, sheet: null }),
+}));
 vi.mock("@/hooks/useOnViewTranslation", () => ({
   useOnViewTranslation: () => ({ translating: false, onTranslate: undefined }),
 }));
@@ -63,10 +65,6 @@ vi.mock("@/hooks/queries/items", () => ({
 vi.mock("@/hooks/queries/episodes", () => ({
   useSeasons: mocks.useSeasons,
   useItemEpisodes: mocks.useItemEpisodes,
-}));
-
-vi.mock("@/hooks/queries/progress", () => ({
-  useContinueWatching: mocks.useContinueWatching,
 }));
 
 vi.mock("@/hooks/queries/recommendations", () => ({
@@ -201,14 +199,26 @@ describe("SeriesContent", () => {
     mocks.useItemEpisodes.mockReturnValue({
       data: { episodes: [{ content_id: "episode-1" }] },
     });
-    mocks.useContinueWatching.mockReturnValue({ items: [] });
-    mocks.useSimilarItems.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    });
+    mocks.useSimilarItems.mockReturnValue({ data: undefined, isLoading: false });
     mocks.useSetRating.mockReturnValue({ mutate: mocks.setRatingMutate });
     mocks.useDeleteRating.mockReturnValue({ mutate: mocks.deleteRatingMutate });
   });
+
+  it.each([false, true])(
+    "only reserves empty season navigation while loading (%s)",
+    (isLoading) => {
+      mocks.useSeasons.mockReturnValue({ data: { seasons: [] }, isLoading });
+      const markup = renderToStaticMarkup(
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>
+            <SeriesContent item={makeSeriesItem()} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      expect(markup.includes("series-detail-navigation")).toBe(isLoading);
+      expect(markup.includes('role="region" aria-label="Seasons and episodes"')).toBe(isLoading);
+    },
+  );
 
   it("passes rating state and change handler to ActionBar", () => {
     renderToStaticMarkup(
@@ -222,9 +232,7 @@ describe("SeriesContent", () => {
     expect(mocks.capturedActionBarProps.value).toMatchObject({
       rating: 4,
     });
-    expect(mocks.capturedActionBarProps.value?.onRatingChange).toBeTypeOf(
-      "function",
-    );
+    expect(mocks.capturedActionBarProps.value?.onRatingChange).toBeTypeOf("function");
   });
 
   it("sets and clears ratings through the existing mutations", () => {
@@ -236,8 +244,9 @@ describe("SeriesContent", () => {
       </QueryClientProvider>,
     );
 
-    const onRatingChange = mocks.capturedActionBarProps.value
-      ?.onRatingChange as ((rating: number | null) => void) | undefined;
+    const onRatingChange = mocks.capturedActionBarProps.value?.onRatingChange as
+      | ((rating: number | null) => void)
+      | undefined;
 
     expect(onRatingChange).toBeTypeOf("function");
 

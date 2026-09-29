@@ -1,6 +1,13 @@
+export type PersonalizedSorts = boolean | "date_viewed";
 export type QuerySortOrder = "asc" | "desc";
 export type QuerySortRelevanceScope =
-  "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga" | "all";
+  | "movie"
+  | "series"
+  | "episode"
+  | "audiobook"
+  | "ebook"
+  | "manga"
+  | "all";
 export type QuerySortField =
   | "title"
   | "added_at"
@@ -41,7 +48,7 @@ export interface QuerySortOption {
 }
 
 export interface QuerySortOptionsConfig {
-  includePersonalized?: boolean;
+  includePersonalized?: PersonalizedSorts;
   relevanceScope?: QuerySortRelevanceScope;
 }
 
@@ -59,11 +66,7 @@ interface QuerySortLike {
 // opt-in: a sort field must list "audiobook" or "ebook" in its
 // applicableMediaScopes to be eligible for book-only libraries.
 const ALL_VIDEO_SCOPES: ApplicableMediaScope[] = ["movie", "series", "episode"];
-const ALL_MEDIA_SCOPES: ApplicableMediaScope[] = [
-  ...ALL_VIDEO_SCOPES,
-  "audiobook",
-  "ebook",
-];
+const ALL_MEDIA_SCOPES: ApplicableMediaScope[] = [...ALL_VIDEO_SCOPES, "audiobook", "ebook"];
 // Manga series rows are file-less containers: technical sorts (Duration,
 // Bitrate) are meaningless there, so manga is opt-in per sort field instead
 // of being part of ALL_MEDIA_SCOPES.
@@ -215,9 +218,7 @@ export const QUERY_SORT_OPTIONS: QuerySortOption[] = [
   },
 ];
 
-const QUERY_SORT_OPTION_MAP = new Map(
-  QUERY_SORT_OPTIONS.map((option) => [option.value, option]),
-);
+const QUERY_SORT_OPTION_MAP = new Map(QUERY_SORT_OPTIONS.map((option) => [option.value, option]));
 
 const EBOOK_SORT_LABELS: Partial<Record<QuerySortField, string>> = {
   date_viewed: "Date Read",
@@ -245,22 +246,19 @@ function optionMatchesRelevanceScope(
   // so series-only sorts still get normalized away. Book scopes are
   // intentionally not part of this baseline; see ALL_VIDEO_SCOPES.
   if (relevanceScope === "all") {
-    return ALL_VIDEO_SCOPES.every((scope) =>
-      option.applicableMediaScopes.includes(scope),
-    );
+    return ALL_VIDEO_SCOPES.every((scope) => option.applicableMediaScopes.includes(scope));
   }
   return option.applicableMediaScopes.includes(relevanceScope);
 }
 
-export function getQuerySortOptions(
-  input: QuerySortOptionsInput = false,
-): QuerySortOption[] {
-  const { includePersonalized = false, relevanceScope } =
-    normalizeQuerySortOptionsConfig(input);
+export function getQuerySortOptions(input: QuerySortOptionsInput = false): QuerySortOption[] {
+  const { includePersonalized = false, relevanceScope } = normalizeQuerySortOptionsConfig(input);
 
   return QUERY_SORT_OPTIONS.filter(
     (option) =>
-      (includePersonalized || !option.personalized) &&
+      (includePersonalized === true ||
+        !option.personalized ||
+        option.value === includePersonalized) &&
       optionMatchesRelevanceScope(option, relevanceScope),
   ).map((option) => {
     const ebookLabel =
@@ -279,9 +277,7 @@ export function normalizeQuerySortForScope(
   const normalizedField = normalizeQuerySortField(sort?.field);
 
   if (normalizedField && normalizedField !== "relevance") {
-    const matchingOption = sortOptions.find(
-      (option) => option.value === normalizedField,
-    );
+    const matchingOption = sortOptions.find((option) => option.value === normalizedField);
     if (matchingOption) {
       return {
         field: matchingOption.value,
@@ -293,8 +289,7 @@ export function normalizeQuerySortForScope(
     }
   }
 
-  const fallbackOption =
-    sortOptions[0] ?? QUERY_SORT_OPTION_MAP.get("added_at");
+  const fallbackOption = sortOptions[0] ?? QUERY_SORT_OPTION_MAP.get("added_at");
   if (!fallbackOption) {
     return { field: "added_at", order: "desc" };
   }
@@ -330,9 +325,7 @@ export function normalizeQuerySortField(
   }
 }
 
-export function getDefaultQuerySortOrder(
-  field?: string | null,
-): QuerySortOrder {
+export function getDefaultQuerySortOrder(field?: string | null): QuerySortOrder {
   const normalized = normalizeQuerySortField(field);
   if (!normalized || normalized === "relevance") {
     return "desc";

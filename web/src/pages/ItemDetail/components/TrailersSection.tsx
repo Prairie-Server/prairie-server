@@ -4,6 +4,7 @@ import type { ItemVideo } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
 import { extraKindLabel } from "@/lib/extraKinds";
+import { THEME_MUSIC_INTERRUPT_EVENT } from "@/lib/themeMusic";
 import TrailerModal from "./TrailerModal";
 
 interface TrailersSectionProps {
@@ -17,20 +18,15 @@ interface TrailersSectionProps {
  * (trailers first, official first).
  */
 export default function TrailersSection({ videos }: TrailersSectionProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
   const [activeVideo, setActiveVideo] = useState<ItemVideo | null>(null);
 
-  const playable = videos.filter(
-    (video) => video.site.toLowerCase() === "youtube",
-  );
+  const playable = videos.filter((video) => video.site.toLowerCase() === "youtube");
   if (playable.length === 0) return null;
 
   return (
     <div>
-      <h2 className="mb-5 text-xl font-semibold tracking-tight">
-        Trailers &amp; More
-      </h2>
+      <h2 className="mb-5 text-xl font-semibold tracking-tight">Trailers &amp; More</h2>
       <div className="group/carousel relative">
         {canScrollPrev && (
           <button
@@ -43,22 +39,16 @@ export default function TrailersSection({ videos }: TrailersSectionProps) {
           </button>
         )}
 
-        <div
-          ref={emblaRef}
-          className="embla__viewport -mt-1 overflow-hidden pt-1"
-        >
-          <ul
-            role="list"
-            className="embla__container flex cursor-grab list-none gap-3"
-          >
+        <div ref={emblaRef} className="embla__viewport -mt-1 overflow-hidden pt-1">
+          <ul role="list" className="embla__container flex cursor-grab list-none gap-3">
             {playable.map((video) => (
-              <li
-                key={`${video.site}-${video.site_key}`}
-                className="embla__slide shrink-0"
-              >
+              <li key={`${video.site}-${video.site_key}`} className="embla__slide shrink-0">
                 <TrailerCard
                   video={video}
-                  onPlay={() => setActiveVideo(video)}
+                  onPlay={() => {
+                    document.dispatchEvent(new Event(THEME_MUSIC_INTERRUPT_EVENT));
+                    setActiveVideo(video);
+                  }}
                 />
               </li>
             ))}
@@ -77,21 +67,12 @@ export default function TrailersSection({ videos }: TrailersSectionProps) {
         )}
       </div>
 
-      <TrailerModal
-        video={activeVideo}
-        onOpenChange={(open) => !open && setActiveVideo(null)}
-      />
+      <TrailerModal video={activeVideo} onOpenChange={(open) => !open && setActiveVideo(null)} />
     </div>
   );
 }
 
-function TrailerCard({
-  video,
-  onPlay,
-}: {
-  video: ItemVideo;
-  onPlay: () => void;
-}) {
+function TrailerCard({ video, onPlay }: { video: ItemVideo; onPlay: () => void }) {
   const label = video.name || extraKindLabel(video.kind);
 
   return (
@@ -106,6 +87,7 @@ function TrailerCard({
           alt={label}
           className="h-full w-full object-cover transition-transform duration-300 group-hover/trailer:scale-105"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-200 group-hover/trailer:bg-black/30">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/60 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover/trailer:opacity-100 group-focus-visible/trailer:opacity-100">
@@ -114,9 +96,7 @@ function TrailerCard({
         </div>
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-[13px] font-medium">
-          {label}
-        </div>
+        <div className="text-foreground truncate text-[13px] font-medium">{label}</div>
         <div className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-[11px]">
           <span>{extraKindLabel(video.kind)}</span>
           {video.is_official && (

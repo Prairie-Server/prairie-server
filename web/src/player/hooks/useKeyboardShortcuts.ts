@@ -3,14 +3,15 @@ import { useEffect } from "react";
 /**
  * Registers keyboard shortcuts for the video player.
  * Space/K = play/pause, F = fullscreen, M = mute, C = toggle captions,
- * P = picture-in-picture, ArrowLeft/Right = seek ±10s, ArrowUp/Down = volume ±5%.
+ * P = picture-in-picture, ArrowLeft/Right = skip by the profile's intervals, ArrowUp/Down = volume ±5%.
  */
 export function useKeyboardShortcuts(
   videoRef: React.RefObject<HTMLVideoElement | null>,
-  containerRef: React.RefObject<HTMLElement | null>,
+  toggleFullscreen: () => void,
   handlePlayPause: () => void,
-  handleSeek: (time: number) => void,
+  skip: { back: () => void; forward: () => void },
   toggleCaptions: () => void,
+  toggleMuted: () => void,
   togglePiP?: () => void,
   enabled = true,
 ) {
@@ -23,11 +24,7 @@ export function useKeyboardShortcuts(
       if (e.defaultPrevented) return;
       // Don't intercept keys when typing in inputs.
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
         return;
       }
 
@@ -45,17 +42,15 @@ export function useKeyboardShortcuts(
         case "f":
         case "F":
           e.preventDefault();
-          if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
-          } else {
-            containerRef.current?.requestFullscreen().catch(() => {});
-          }
+          toggleFullscreen();
           break;
 
         case "m":
         case "M":
           e.preventDefault();
-          video.muted = !video.muted;
+          // Through the player, not the element: a room seek pre-roll mutes
+          // the element for itself and keeps the viewer's choice separately.
+          toggleMuted();
           break;
 
         case "c":
@@ -72,12 +67,12 @@ export function useKeyboardShortcuts(
 
         case "ArrowLeft":
           e.preventDefault();
-          handleSeek(Math.max(0, video.currentTime - 10));
+          skip.back();
           break;
 
         case "ArrowRight":
           e.preventDefault();
-          handleSeek(Math.min(video.duration || 0, video.currentTime + 10));
+          skip.forward();
           break;
 
         case "ArrowUp":
@@ -95,11 +90,12 @@ export function useKeyboardShortcuts(
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [
-    containerRef,
     enabled,
     handlePlayPause,
-    handleSeek,
+    skip,
     toggleCaptions,
+    toggleFullscreen,
+    toggleMuted,
     togglePiP,
     videoRef,
   ]);

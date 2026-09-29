@@ -6,9 +6,7 @@ export function compareActiveScans(left: ScanRun, right: ScanRun) {
   if (leftRank !== rightRank) {
     return leftRank - rightRank;
   }
-  const modeCompare = formatActiveScanMode(left).localeCompare(
-    formatActiveScanMode(right),
-  );
+  const modeCompare = formatActiveScanMode(left).localeCompare(formatActiveScanMode(right));
   if (modeCompare !== 0) {
     return modeCompare;
   }
@@ -51,6 +49,8 @@ export function formatActiveScanTrigger(trigger: string) {
     case "task:scan_libraries":
     case "task_scan_libraries":
       return "Scheduled";
+    case "realtime_monitor":
+      return "File change";
     default:
       return trigger.replace(/_/g, " ");
   }
@@ -90,10 +90,7 @@ export function formatActiveScanProgress(scan: ScanRun) {
   if (result.total_files && result.files_processed) {
     const percent = Math.max(
       0,
-      Math.min(
-        100,
-        Math.round((result.files_processed / result.total_files) * 100),
-      ),
+      Math.min(100, Math.round((result.files_processed / result.total_files) * 100)),
     );
     return `${result.message ?? "Processing files"} · ${result.files_processed.toLocaleString()} / ${result.total_files.toLocaleString()} (${percent}%)`;
   }

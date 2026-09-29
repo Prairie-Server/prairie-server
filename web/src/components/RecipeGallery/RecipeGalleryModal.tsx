@@ -42,15 +42,8 @@ interface Props {
   hideAdminOnly?: boolean;
 }
 
-export default function RecipeGalleryModal({
-  open,
-  onClose,
-  onPick,
-  hideAdminOnly,
-}: Props) {
-  const [catalog, setCatalog] = useState<
-    Partial<Record<Category, RecipeDefinition[]>>
-  >({});
+export default function RecipeGalleryModal({ open, onClose, onPick, hideAdminOnly }: Props) {
+  const [catalog, setCatalog] = useState<Partial<Record<Category, RecipeDefinition[]>>>({});
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
   const [error, setError] = useState<string | null>(null);
@@ -98,20 +91,12 @@ export default function RecipeGalleryModal({
       >
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <h2 className="text-base font-semibold">Add a section</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white/60 hover:text-white"
-          >
+          <button type="button" onClick={onClose} className="text-white/60 hover:text-white">
             ✕
           </button>
         </div>
 
-        {error && (
-          <div className="mt-3 text-sm text-red-400">
-            Error loading recipes: {error}
-          </div>
-        )}
+        {error && <div className="mt-3 text-sm text-red-400">Error loading recipes: {error}</div>}
 
         <input
           className="mt-4 w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
@@ -152,9 +137,7 @@ export default function RecipeGalleryModal({
           {flat.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-sm text-white/50">
               <div className="mb-2 text-3xl">🔍</div>
-              <div>
-                No recipes match {search ? `"${search}"` : "this filter"}.
-              </div>
+              <div>No recipes match {search ? `"${search}"` : "this filter"}.</div>
               <button
                 type="button"
                 onClick={() => {

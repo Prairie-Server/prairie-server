@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 // CalendarEvent represents a single calendar entry — a movie release,
@@ -35,7 +36,8 @@ type CalendarFilter struct {
 	LibraryID          *int
 	AllowedLibraryIDs  []int
 	DisabledLibraryIDs []int
-	MaxContentRating   string
+	// MaturityLimits mirrors AccessFilter.MaturityLimits.
+	access.MaturityLimits
 
 	// RestrictByIDs limits results to items whose movie content_id (movies) or
 	// series_id (episodes / season premieres) is in RestrictToIDs. When
@@ -232,10 +234,11 @@ LEFT JOIN episode_one_with_air_date e1
 WHERE e1.series_id IS NULL`
 }
 
-// appendContentRatingClause adds content rating ceiling enforcement.
+// appendContentRatingClause adds the viewer's maturity limits: the content
+// rating ceiling and the advisory-age limit.
 func (r *CalendarRepository) appendContentRatingClause(miAlias string, f CalendarFilter, conditions *[]string, args *[]any, argIdx *int) {
-	if f.MaxContentRating != "" {
-		applyAccessFilter(miAlias, AccessFilter{MaxContentRating: f.MaxContentRating}, conditions, args, argIdx)
+	if f.Active() {
+		applyAccessFilter(miAlias, AccessFilter{MaturityLimits: f.MaturityLimits}, conditions, args, argIdx)
 	}
 }
 

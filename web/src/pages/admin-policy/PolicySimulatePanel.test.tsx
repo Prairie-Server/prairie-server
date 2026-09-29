@@ -16,7 +16,7 @@ describe("PolicySimulatePanel", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>(async (input, init) => {
-        expect(String(input)).toBe("/api/v1/admin/policy/simulate");
+        expect(String(input)).toBe("/api/v2/admin/policy/simulate");
         expect(JSON.parse(String(init?.body))).toMatchObject({
           domain: "scope",
           source: "package prairie_custom.scope",
@@ -26,7 +26,9 @@ describe("PolicySimulatePanel", () => {
             schema_version: 1,
             unrestricted: false,
             allowed_library_ids: [1, 2],
-            max_content_rating: "PG",
+            // The override's ceiling arrives beside an unrestricted base one.
+            max_content_rating: "",
+            max_content_rating_override: "PG",
           },
           eval_time_ns: 14200,
           generation: 8,
@@ -52,9 +54,7 @@ describe("PolicySimulatePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
     expect(await screen.findByText(/14.2 µs/)).toBeInTheDocument();
-    expect(screen.getAllByText(/allowed_library_ids/).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.getAllByText(/allowed_library_ids/).length).toBeGreaterThan(0);
     expect(screen.getByText(/rating ≤ PG/)).toBeInTheDocument();
   });
 });

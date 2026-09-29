@@ -40,9 +40,7 @@ describe("staticRasterCandidates", () => {
   });
 
   it("orders AVIF → WebP → PNG from a webp canonical path", () => {
-    expect(
-      staticRasterCandidates("/images/collection-templates/trending.webp"),
-    ).toEqual([
+    expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
       "/images/collection-templates/trending.avif",
       "/images/collection-templates/trending.webp",
       "/images/collection-templates/trending.png",
@@ -52,9 +50,7 @@ describe("staticRasterCandidates", () => {
   it("respects a WebP-first capability preference", () => {
     resetImageFormatsCacheForTests();
     localStorage.setItem("prairie.imageFormats.v2", "webp,png");
-    expect(
-      staticRasterCandidates("/images/collection-templates/trending.webp"),
-    ).toEqual([
+    expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
       "/images/collection-templates/trending.webp",
       "/images/collection-templates/trending.png",
     ]);

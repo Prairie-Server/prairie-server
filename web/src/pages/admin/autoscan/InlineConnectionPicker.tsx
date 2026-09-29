@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Plus, XCircle } from "lucide-react";
 
-import type {
-  AutoscanConnectionTestInput,
-  AutoscanConnectionTestResult,
-} from "@/api/types";
+import type { AutoscanConnectionTestInput, AutoscanConnectionTestResult } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,10 +79,26 @@ export function InlineConnectionPicker({
   // would label a Radarr server "sonarr", and the connection test cannot catch
   // it because it probes only the URL and key.
   const [manualKind, setManualKind] = useState("");
-  const [testResult, setTestResult] =
-    useState<AutoscanConnectionTestResult | null>(null);
-  // Previous connection value to restore on cancel.
-  const [previousValue, setPreviousValue] = useState("");
+  const kindsScope = connectionKinds.join("/");
+  const testScope = useMemo(
+    () => ({ adding, name, baseUrl, apiKey, reuseId, manualKind, value, idPrefix, kindsScope }),
+    [adding, name, baseUrl, apiKey, reuseId, manualKind, value, idPrefix, kindsScope],
+  );
+  const activeDraft = useRef<object | null>(testScope);
+  useLayoutEffect(() => {
+    activeDraft.current = testScope;
+    return () => {
+      activeDraft.current = null;
+    };
+  }, [testScope]);
+  const [testOutcome, setTestOutcome] = useState<{
+    scope: object;
+    result: AutoscanConnectionTestResult;
+  } | null>(null);
+  const testResult = testOutcome?.scope === testScope ? testOutcome.result : null;
+  function setTestResult(result: AutoscanConnectionTestResult | null) {
+    setTestOutcome(result ? { scope: testScope, result } : null);
+  }
 
   // Requests integrations this source could bind, minus any already linked by a
   // saved connection — re-offering those would create a second connection to
@@ -100,8 +113,7 @@ export function InlineConnectionPicker({
     if (!integration.enabled) return false;
     const kind = integrationKind(integration);
     if (!kind) return false;
-    if (connectionKinds.length > 0 && !connectionKinds.includes(kind))
-      return false;
+    if (connectionKinds.length > 0 && !connectionKinds.includes(kind)) return false;
     return !linkedIntegrationIds.has(integration.id);
   });
 
@@ -120,10 +132,6 @@ export function InlineConnectionPicker({
 
   function handleSelect(next: string) {
     if (next === ADD_NEW) {
-      // Save the current value so cancel can restore it.
-      setPreviousValue(value);
-      // Clear the selected connection before entering draft mode.
-      onChange("");
       setAdding(true);
       // Pre-select a reusable Requests server so the common path is one click.
       setReuseId(reusable[0]?.id ?? "");
@@ -170,6 +178,7 @@ export function InlineConnectionPicker({
 
     createConnection.mutate(body, {
       onSuccess: (created) => {
+        if (activeDraft.current !== testScope) return;
         // Select what was just made, so the operator never has to find it.
         onChange(created.id);
         setAdding(false);
@@ -178,8 +187,7 @@ export function InlineConnectionPicker({
       onError: (err) =>
         setTestResult({
           ok: false,
-          error:
-            err instanceof Error ? err.message : "Failed to create connection",
+          error: err instanceof Error ? err.message : "Failed to create connection",
         }),
     });
   }
@@ -187,27 +195,18 @@ export function InlineConnectionPicker({
   const canTest = reuseId ? true : baseUrl.trim().length > 0;
   const canCreate = reuseId
     ? true
-    : name.trim().length > 0 &&
-      baseUrl.trim().length > 0 &&
-      apiKey.trim().length > 0;
+    : name.trim().length > 0 && baseUrl.trim().length > 0 && apiKey.trim().length > 0;
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={`${idPrefix}-select`}>
-        Which server?{required && " (required)"}
-      </Label>
+      <Label htmlFor={`${idPrefix}-select`}>Which server?{required && " (required)"}</Label>
 
-      <Select
-        value={adding ? ADD_NEW : value || NONE}
-        onValueChange={handleSelect}
-      >
+      <Select value={adding ? ADD_NEW : value || NONE} onValueChange={handleSelect}>
         <SelectTrigger id={`${idPrefix}-select`} className="w-full">
           <SelectValue placeholder="No connection" />
         </SelectTrigger>
         <SelectContent>
-          {!required && (
-            <SelectItem value={NONE}>— No server needed —</SelectItem>
-          )}
+          {!required && <SelectItem value={NONE}>— No server needed —</SelectItem>}
           {options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
               {option.name}
@@ -246,14 +245,11 @@ export function InlineConnectionPicker({
                       {integration.name} — already set up in Requests
                     </SelectItem>
                   ))}
-                  <SelectItem value="__manual__">
-                    Use different credentials…
-                  </SelectItem>
+                  <SelectItem value="__manual__">Use different credentials…</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Prairie already has these credentials — no need to enter them
-                again.
+                Prairie already has these credentials — no need to enter them again.
               </p>
             </div>
           )}
@@ -263,21 +259,14 @@ export function InlineConnectionPicker({
               {kindChoices.length > 0 && (
                 <div className="space-y-1.5">
                   <Label htmlFor={`${idPrefix}-kind`}>Service</Label>
-                  <Select
-                    value={effectiveManualKind}
-                    onValueChange={setManualKind}
-                  >
+                  <Select value={effectiveManualKind} onValueChange={setManualKind}>
                     <SelectTrigger id={`${idPrefix}-kind`} className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {kindChoices.map((kind) => (
                         <SelectItem key={kind} value={kind}>
-                          {kind === "sonarr"
-                            ? "Sonarr"
-                            : kind === "radarr"
-                              ? "Radarr"
-                              : kind}
+                          {kind === "sonarr" ? "Sonarr" : kind === "radarr" ? "Radarr" : kind}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -362,8 +351,6 @@ export function InlineConnectionPicker({
                 onClick={() => {
                   setAdding(false);
                   resetDraft();
-                  // Restore the previous connection value.
-                  onChange(previousValue);
                 }}
                 disabled={createConnection.isPending}
               >

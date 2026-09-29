@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ApiClientError } from "@/api/client";
+import { V2ProblemError } from "@/api/v2/request";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -70,13 +70,7 @@ const STATUS_PILL_STYLES: Record<StatusVariant, string> = {
   error: "bg-rose-500/15 text-rose-300 ring-rose-500/25",
 };
 
-function StatusPill({
-  variant,
-  children,
-}: {
-  variant: StatusVariant;
-  children: React.ReactNode;
-}) {
+function StatusPill({ variant, children }: { variant: StatusVariant; children: React.ReactNode }) {
   return (
     <span
       className={cn(
@@ -120,9 +114,7 @@ function ToggleRow({
         <Label htmlFor={id} className="text-sm font-medium">
           {label}
         </Label>
-        <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
-          {description}
-        </p>
+        <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{description}</p>
       </div>
       <Switch
         id={id}
@@ -199,22 +191,12 @@ function AuthCodeBlock({
           {session.user_code}
         </div>
         <Button type="button" variant="outline" size="sm" onClick={onCopy}>
-          {codeCopied ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Copy className="h-4 w-4" />
-          )}
+          {codeCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {codeCopied ? "Copied" : "Copy code"}
         </Button>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          asChild
-          className="sm:flex-1"
-        >
+        <Button type="button" variant="outline" size="sm" asChild className="sm:flex-1">
           <a href={session.verification_url} target="_blank" rel="noreferrer">
             <ExternalLink className="h-4 w-4" />
             Open {displayName} activation
@@ -247,18 +229,12 @@ function APIKeyBlock({
   providerKey: string;
   configSchemas: PluginConfigSchema[];
   pending: boolean;
-  onSubmit: (
-    apiKey: string,
-    connectionConfig: WatchProviderConnectionConfig,
-  ) => void;
+  onSubmit: (apiKey: string, connectionConfig: WatchProviderConnectionConfig) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState("");
-  const [connectionConfig, setConnectionConfig] =
-    useState<WatchProviderConnectionConfig>({});
-  const [configValidity, setConfigValidity] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [connectionConfig, setConnectionConfig] = useState<WatchProviderConnectionConfig>({});
+  const [configValidity, setConfigValidity] = useState<Record<string, boolean>>({});
   const trimmed = value.trim();
   const renderableSchemas = renderableConnectionSchemas(configSchemas);
   const configValid = connectionSchemasAreValid(
@@ -271,9 +247,7 @@ function APIKeyBlock({
     <div className="border-primary/30 bg-primary/5 rounded-xl border border-dashed p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-medium">
-            Paste your {displayName} API key
-          </div>
+          <div className="text-sm font-medium">Paste your {displayName} API key</div>
           <div className="text-muted-foreground mt-0.5 text-xs leading-snug">
             Find it under your account settings on the {displayName} site.
           </div>
@@ -291,9 +265,7 @@ function APIKeyBlock({
       {renderableSchemas.map((schema) => (
         <div key={schema.key} className="mt-4 space-y-2">
           <div>
-            <div className="text-sm font-medium">
-              {schema.title || schema.key}
-            </div>
+            <div className="text-sm font-medium">{schema.title || schema.key}</div>
             {schema.description ? (
               <div className="text-muted-foreground mt-0.5 text-xs leading-snug">
                 {schema.description}
@@ -334,18 +306,11 @@ function APIKeyBlock({
           size="sm"
           disabled={pending || trimmed.length === 0 || !configValid}
           onClick={() =>
-            onSubmit(
-              trimmed,
-              buildConnectionConfig(renderableSchemas, connectionConfig),
-            )
+            onSubmit(trimmed, buildConnectionConfig(renderableSchemas, connectionConfig))
           }
           className="sm:flex-none"
         >
-          {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Check className="h-4 w-4" />
-          )}
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           Connect
         </Button>
       </div>
@@ -359,6 +324,7 @@ interface ConnectedRunInfo {
     progress: number;
     favorites: number;
     watchlist: number;
+    ratings: number;
   };
   exported: {
     watched: number;
@@ -366,6 +332,7 @@ interface ConnectedRunInfo {
     favoriteRemovals: number;
     watchlist: number;
     watchlistRemovals: number;
+    ratings: number;
   };
   errorMessage?: string;
   errorHint?: string;
@@ -380,6 +347,7 @@ function deriveRunInfo(
     progress: latestRun?.inbound_progress_imported ?? 0,
     favorites: latestRun?.inbound_favorites_imported ?? 0,
     watchlist: latestRun?.inbound_watchlist_imported ?? 0,
+    ratings: latestRun?.inbound_ratings_imported ?? 0,
   };
   const exported = {
     watched: latestRun?.outbound_sent ?? 0,
@@ -387,6 +355,7 @@ function deriveRunInfo(
     favoriteRemovals: latestRun?.favorite_removals_sent ?? 0,
     watchlist: latestRun?.outbound_watchlist_sent ?? 0,
     watchlistRemovals: latestRun?.watchlist_removals_sent ?? 0,
+    ratings: latestRun?.outbound_ratings_sent ?? 0,
   };
   let errorMessage: string | undefined;
   let errorHint: string | undefined;
@@ -402,10 +371,7 @@ function deriveRunInfo(
   return { imported, exported, errorMessage, errorHint };
 }
 
-function formatLastSync(
-  connection: WatchProviderConnection,
-  latestRun?: WatchProviderSyncRun,
-) {
+function formatLastSync(connection: WatchProviderConnection, latestRun?: WatchProviderSyncRun) {
   const candidates = [
     latestRun?.completed_at,
     connection.last_inbound_sync_at,
@@ -423,8 +389,7 @@ function formatLastSync(
 }
 
 function WatchProviderCard({ providerKey }: { providerKey: string }) {
-  const { data: connection, isLoading } =
-    useWatchProviderConnection(providerKey);
+  const { data: savedConnection, isLoading, isFetching } = useWatchProviderConnection(providerKey);
   const updateConnection = useUpdateWatchProviderConnection(providerKey);
   const startAuth = useStartWatchProviderDeviceAuth(providerKey);
   const pollAuth = usePollWatchProviderDeviceAuth(providerKey);
@@ -433,13 +398,17 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
   const syncNow = useTriggerWatchProviderSync(providerKey);
   const { data: syncRunsData } = useWatchProviderSyncRuns(
     providerKey,
-    Boolean(connection?.connected),
+    Boolean(savedConnection?.connected),
   );
-  const [authSession, setAuthSession] = useState<DeviceAuthSession | null>(
-    null,
-  );
+  const [authSession, setAuthSession] = useState<DeviceAuthSession | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [apiKeyPrompt, setApiKeyPrompt] = useState(false);
+  const settingsConflict =
+    updateConnection.error instanceof V2ProblemError && updateConnection.error.status === 412;
+  const connection =
+    savedConnection && settingsConflict
+      ? { ...savedConnection, ...updateConnection.variables }
+      : savedConnection;
 
   if (isLoading || !connection) {
     return (
@@ -451,14 +420,12 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
   }
 
   const latestRun = syncRunsData?.runs?.[0];
-  const syncRunning =
-    latestRun?.status === "queued" || latestRun?.status === "running";
+  const syncRunning = latestRun?.status === "queued" || latestRun?.status === "running";
   const cooldownSeconds =
-    syncNow.error instanceof ApiClientError && syncNow.error.status === 429
-      ? syncNow.error.details?.retry_after_seconds
+    syncNow.error instanceof V2ProblemError && syncNow.error.status === 429
+      ? syncNow.error.retryAfterSeconds
       : undefined;
-  const syncDisabled =
-    syncNow.isPending || syncRunning || Boolean(cooldownSeconds);
+  const syncDisabled = syncNow.isPending || syncRunning || Boolean(cooldownSeconds);
   const syncButtonLabel = syncRunning
     ? "Syncing..."
     : cooldownSeconds
@@ -466,6 +433,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
       : "Sync now";
 
   const isBusy =
+    (connection.connected && !connection.etag) ||
     updateConnection.isPending ||
     startAuth.isPending ||
     pollAuth.isPending ||
@@ -475,14 +443,14 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
   const usesAPIKey = connection.auth_method === WatchProviderAuthMethod.APIKey;
   const showAuth = Boolean(authSession) && !connection.connected;
   const showAPIKey = usesAPIKey && apiKeyPrompt && !connection.connected;
-  const runInfo = connection.connected
-    ? deriveRunInfo(connection, latestRun)
-    : null;
+  const runInfo = connection.connected ? deriveRunInfo(connection, latestRun) : null;
   const hasError = Boolean(runInfo?.errorMessage);
   const favoritesSyncEnabled =
     connection.import_favorites_enabled || connection.export_favorites_enabled;
   const watchlistSyncEnabled =
     connection.import_watchlist_enabled || connection.export_watchlist_enabled;
+  const supportsRatings =
+    connection.capabilities.import_ratings || connection.capabilities.export_ratings;
 
   let statusVariant: StatusVariant;
   let statusLabel: string;
@@ -502,14 +470,12 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
 
   const subtitleText = (() => {
     if (showAuth) return "Waiting for you to enter the code below.";
-    if (showAPIKey)
-      return `Paste your ${displayName} API key to finish connecting.`;
+    if (showAPIKey) return `Paste your ${displayName} API key to finish connecting.`;
     if (connection.connected) {
       const username = connection.provider_username || displayName;
       return `${username} · ${formatLastSync(connection, latestRun)}`;
     }
-    if (!connection.credentials_configured)
-      return "Server credentials required.";
+    if (!connection.credentials_configured) return "Server credentials required.";
     if (usesAPIKey)
       return `Connect with your ${displayName} API key to import watch history and scrobble playback.`;
     return "Connect to start importing watch history and scrobbling playback.";
@@ -554,10 +520,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
     });
   };
 
-  const handleSubmitAPIKey = (
-    apiKey: string,
-    connectionConfig: WatchProviderConnectionConfig,
-  ) => {
+  const handleSubmitAPIKey = (apiKey: string, connectionConfig: WatchProviderConnectionConfig) => {
     connectAPIKey.mutate(
       { apiKey, connectionConfig },
       {
@@ -582,9 +545,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
             </h3>
             <StatusPill variant={statusVariant}>{statusLabel}</StatusPill>
           </div>
-          <p className="text-muted-foreground mt-1 text-[13px] leading-snug">
-            {subtitleText}
-          </p>
+          <p className="text-muted-foreground mt-1 text-[13px] leading-snug">{subtitleText}</p>
         </div>
         <div className="flex shrink-0 gap-2 sm:justify-end">
           {showAuth || showAPIKey ? null : connection.connected ? (
@@ -669,24 +630,26 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
       {connection.connected && runInfo ? (
         <div className="mt-4 space-y-4">
           {runInfo.errorMessage ? (
-            <ErrorBanner
-              message={runInfo.errorMessage}
-              hint={runInfo.errorHint}
-            />
+            <ErrorBanner message={runInfo.errorMessage} hint={runInfo.errorHint} />
           ) : null}
 
           <div className="bg-background/40 rounded-xl px-3 py-3 ring-1 ring-white/5 ring-inset">
             <div className="grid grid-cols-2 gap-3 sm:hidden">
               <StatCell
                 label="Last imported"
-                value={`${runInfo.imported.watched.toLocaleString()} watched · ${runInfo.imported.progress.toLocaleString()} progress · ${runInfo.imported.favorites.toLocaleString()} favorites · ${runInfo.imported.watchlist.toLocaleString()} watchlist`}
+                value={`${runInfo.imported.watched.toLocaleString()} watched · ${runInfo.imported.progress.toLocaleString()} progress · ${runInfo.imported.favorites.toLocaleString()} favorites · ${runInfo.imported.watchlist.toLocaleString()} watchlist${supportsRatings ? ` · ${runInfo.imported.ratings.toLocaleString()} ratings` : ""}`}
               />
               <StatCell
                 label="Last exported"
-                value={`${(runInfo.exported.watched + runInfo.exported.favorites + runInfo.exported.favoriteRemovals + runInfo.exported.watchlist + runInfo.exported.watchlistRemovals).toLocaleString()} sent`}
+                value={`${(runInfo.exported.watched + runInfo.exported.favorites + runInfo.exported.favoriteRemovals + runInfo.exported.watchlist + runInfo.exported.watchlistRemovals + runInfo.exported.ratings).toLocaleString()} sent`}
               />
             </div>
-            <div className="hidden grid-cols-5 gap-3 sm:grid">
+            <div
+              className={cn(
+                "hidden gap-3 sm:grid",
+                supportsRatings ? "grid-cols-6" : "grid-cols-5",
+              )}
+            >
               <StatCell
                 label="Watched"
                 value={`${runInfo.imported.watched.toLocaleString()} imported`}
@@ -703,13 +666,44 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
                 label="Watchlist"
                 value={`${runInfo.imported.watchlist.toLocaleString()} imported`}
               />
+              {supportsRatings ? (
+                <StatCell
+                  label="Ratings"
+                  value={`${runInfo.imported.ratings.toLocaleString()} imported`}
+                />
+              ) : null}
               <StatCell
                 label="Exported"
-                value={`${(runInfo.exported.watched + runInfo.exported.favorites + runInfo.exported.favoriteRemovals + runInfo.exported.watchlist + runInfo.exported.watchlistRemovals).toLocaleString()} sent`}
+                value={`${(runInfo.exported.watched + runInfo.exported.favorites + runInfo.exported.favoriteRemovals + runInfo.exported.watchlist + runInfo.exported.watchlistRemovals + runInfo.exported.ratings).toLocaleString()} sent`}
               />
             </div>
           </div>
 
+          {settingsConflict && (
+            <div role="alert" className="border-border mb-4 rounded-xl border p-4 text-sm">
+              <p>These settings changed elsewhere. Your change is still shown below.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  disabled={isFetching || updateConnection.isPending}
+                  onClick={() => {
+                    if (updateConnection.variables)
+                      updateConnection.mutate(updateConnection.variables);
+                  }}
+                >
+                  Apply my change
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isFetching}
+                  onClick={() => updateConnection.reset()}
+                >
+                  Use latest settings
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             <ToggleRow
               id={`watch-provider-${providerKey}-import-watched`}
@@ -717,9 +711,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description={`Bring completed ${displayName} plays into this profile.`}
               checked={connection.import_watched_enabled}
               disabled={isBusy}
-              onChange={(checked) =>
-                updateConnection.mutate({ import_watched_enabled: checked })
-              }
+              onChange={(checked) => updateConnection.mutate({ import_watched_enabled: checked })}
             />
             <ToggleRow
               id={`watch-provider-${providerKey}-import-progress`}
@@ -727,9 +719,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description={`Use newer ${displayName} resume points when local progress is older.`}
               checked={connection.import_progress_enabled}
               disabled={isBusy}
-              onChange={(checked) =>
-                updateConnection.mutate({ import_progress_enabled: checked })
-              }
+              onChange={(checked) => updateConnection.mutate({ import_progress_enabled: checked })}
             />
             <ToggleRow
               id={`watch-provider-${providerKey}-export-watched`}
@@ -737,9 +727,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description="Send local watched marks and completed plays to this provider."
               checked={connection.export_watched_enabled}
               disabled={isBusy}
-              onChange={(checked) =>
-                updateConnection.mutate({ export_watched_enabled: checked })
-              }
+              onChange={(checked) => updateConnection.mutate({ export_watched_enabled: checked })}
             />
             {connection.capabilities.export_unwatched ? (
               <ToggleRow
@@ -833,15 +821,43 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
                 }
               />
             ) : null}
+            {connection.capabilities.import_ratings ? (
+              <ToggleRow
+                id={`watch-provider-${providerKey}-import-ratings`}
+                label="Import ratings"
+                description={`Bring ${displayName} movie and show ratings in as stars. A 7/10 becomes 4 stars.`}
+                checked={connection.import_ratings_enabled}
+                disabled={isBusy}
+                onChange={(checked) => updateConnection.mutate({ import_ratings_enabled: checked })}
+              />
+            ) : null}
+            {connection.capabilities.export_ratings ? (
+              <ToggleRow
+                id={`watch-provider-${providerKey}-export-ratings`}
+                label="Send ratings"
+                description={`Send your star ratings to ${displayName} and clear ones you remove. 4 stars becomes 8/10.`}
+                checked={connection.export_ratings_enabled}
+                disabled={isBusy}
+                onChange={(checked) => updateConnection.mutate({ export_ratings_enabled: checked })}
+              />
+            ) : null}
+            {connection.capabilities.sync_dropped ? (
+              <ToggleRow
+                id={`watch-provider-${providerKey}-sync-dropped`}
+                label="Sync dropped shows"
+                description={`Hide shows you dropped on ${displayName} from Next Up and Continue Watching, and drop shows on ${displayName} when you remove their episodes from Home. Watching a show again undrops it.`}
+                checked={connection.sync_dropped_enabled}
+                disabled={isBusy}
+                onChange={(checked) => updateConnection.mutate({ sync_dropped_enabled: checked })}
+              />
+            ) : null}
             <ToggleRow
               id={`watch-provider-${providerKey}-scrobble`}
               label="Scrobble playback"
               description="Report starts, pauses, resumes, and stops live during playback."
               checked={connection.scrobble_enabled}
               disabled={isBusy}
-              onChange={(checked) =>
-                updateConnection.mutate({ scrobble_enabled: checked })
-              }
+              onChange={(checked) => updateConnection.mutate({ scrobble_enabled: checked })}
             />
           </div>
         </div>
@@ -869,12 +885,10 @@ export default function WatchProvidersSettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Watch Providers
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Watch Providers</h2>
         <p className="text-muted-foreground text-[13px] leading-relaxed sm:text-sm">
-          Connect external trackers to import watch history, sync paused
-          progress, and scrobble playback in real time.
+          Connect external trackers to import watch history, sync paused progress, and scrobble
+          playback in real time.
         </p>
       </div>
 

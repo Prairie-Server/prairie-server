@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FileVersion } from "@/api/types";
-import {
-  buildQualitySummary,
-  buildDetailLine,
-  sortByResolution,
-} from "./VersionFlyout";
+import { buildQualitySummary, buildDetailLine, sortByResolution } from "./VersionFlyout";
 
 function makeVersion(overrides: Partial<FileVersion> = {}): FileVersion {
   return {

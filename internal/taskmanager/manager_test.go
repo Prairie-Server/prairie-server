@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"reflect"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -22,22 +23,35 @@ type fakeTriggerRepository struct {
 func (r *fakeTriggerRepository) GetTriggers(_ context.Context, taskKey string) ([]taskmanager.TriggerConfig, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return append([]taskmanager.TriggerConfig(nil), r.triggers[taskKey]...), nil
+	return slices.Clone(r.triggers[taskKey]), nil
+}
+
+func (r *fakeTriggerRepository) GetOrCreateTriggers(_ context.Context, taskKey string, defaults []taskmanager.TriggerConfig) ([]taskmanager.TriggerConfig, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.triggers[taskKey]; !exists {
+		r.setTriggers(taskKey, defaults)
+	}
+	return slices.Clone(r.triggers[taskKey]), nil
 }
 
 func (r *fakeTriggerRepository) SetTriggers(_ context.Context, taskKey string, triggers []taskmanager.TriggerConfig) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.setTriggers(taskKey, triggers)
+	return nil
+}
+
+func (r *fakeTriggerRepository) setTriggers(taskKey string, triggers []taskmanager.TriggerConfig) {
 	if r.triggers == nil {
 		r.triggers = map[string][]taskmanager.TriggerConfig{}
 	}
 	if r.setCalls == nil {
 		r.setCalls = map[string][]taskmanager.TriggerConfig{}
 	}
-	copied := append([]taskmanager.TriggerConfig(nil), triggers...)
+	copied := append([]taskmanager.TriggerConfig{}, triggers...)
 	r.triggers[taskKey] = copied
 	r.setCalls[taskKey] = copied
-	return nil
 }
 
 type fakeExecutionRepository struct{}
@@ -80,14 +94,17 @@ func (r *recordingExecutionRepository) insertCount() int {
 // next is written by the manager's trigger loop (re-arming) while the test body
 // reads it, so it is mutex-guarded like the real triggers are.
 type fakeTrigger struct {
-	cfg    taskmanager.TriggerConfig
-	ch     chan struct{}
-	mu     sync.Mutex
-	next   time.Time
-	stopCh chan struct{}
+	mu      sync.Mutex
+	cfg     taskmanager.TriggerConfig
+	ch      chan struct{}
+	next    time.Time
+	stopCh  chan struct{}
+	started chan struct{}
 }
 
 func (t *fakeTrigger) Start(lastResult *taskmanager.ExecutionResult) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	interval := time.Minute
 	if t.cfg.IntervalMs > 0 {
 		interval = time.Duration(t.cfg.IntervalMs) * time.Millisecond
@@ -98,7 +115,12 @@ func (t *fakeTrigger) Start(lastResult *taskmanager.ExecutionResult) {
 	}
 	t.mu.Lock()
 	t.next = base.Add(interval)
-	t.mu.Unlock()
+	if t.started != nil {
+		select {
+		case t.started <- struct{}{}:
+		default:
+		}
+	}
 }
 
 func (t *fakeTrigger) Stop() {
@@ -116,7 +138,6 @@ func (t *fakeTrigger) NextRunTime() time.Time {
 	defer t.mu.Unlock()
 	return t.next
 }
-
 func (t *fakeTrigger) Config() taskmanager.TriggerConfig { return t.cfg }
 func (t *fakeTrigger) C() <-chan struct{}                { return t.ch }
 
@@ -336,6 +357,97 @@ func TestTaskManagerRunTaskNotifiesAfterTriggerRearm(t *testing.T) {
 	}
 }
 
+type libraryScopedStubTask struct {
+	stubTask
+	libraryType string
+}
+
+func (t libraryScopedStubTask) ServesLibrary(libraryType string) bool {
+	return libraryType == t.libraryType
+}
+
+type hiddenStubTask struct{ stubTask }
+
+func (hiddenStubTask) IsHidden() bool { return true }
+
+func TestTaskManagerListRelevantTasksOmitsLibraryScopedTasksWithoutLibrary(t *testing.T) {
+	newManager := func(lookup taskmanager.LibraryTypesFunc) *taskmanager.TaskManager {
+		manager := taskmanager.New(
+			&fakeTriggerRepository{triggers: map[string][]taskmanager.TriggerConfig{}},
+			fakeExecutionRepository{},
+			newFakeTrigger,
+			slog.New(slog.DiscardHandler),
+		)
+		manager.Register(stubTask{key: "always"})
+		manager.Register(hiddenStubTask{stubTask{key: "hidden"}})
+		manager.Register(libraryScopedStubTask{stubTask: stubTask{key: "ebooks"}, libraryType: "ebooks"})
+		if lookup != nil {
+			manager.SetLibraryTypes(lookup)
+		}
+		return manager
+	}
+	keys := func(infos []taskmanager.TaskInfo) []string {
+		out := make([]string, 0, len(infos))
+		for _, info := range infos {
+			out = append(out, info.Key)
+		}
+		return out
+	}
+	libraries := func(types ...string) taskmanager.LibraryTypesFunc {
+		return func(context.Context) ([]string, error) { return types, nil }
+	}
+	failing := func(context.Context) ([]string, error) { return nil, errors.New("database unavailable") }
+	relevant := func(m *taskmanager.TaskManager) []taskmanager.TaskInfo {
+		return m.ListRelevantTasks(context.Background())
+	}
+	visible := func(m *taskmanager.TaskManager) []taskmanager.TaskInfo { return m.ListTasks(false) }
+	all := func(m *taskmanager.TaskManager) []taskmanager.TaskInfo { return m.ListTasks(true) }
+
+	tests := []struct {
+		name   string
+		lookup taskmanager.LibraryTypesFunc
+		list   func(*taskmanager.TaskManager) []taskmanager.TaskInfo
+		want   []string
+	}{
+		{name: "no matching library", lookup: libraries("movies", "series"), list: relevant, want: []string{"always"}},
+		{name: "matching library", lookup: libraries("movies", "ebooks"), list: relevant, want: []string{"always", "ebooks"}},
+		{name: "lookup fails open", lookup: failing, list: relevant, want: []string{"always", "ebooks"}},
+		{name: "no lookup installed", list: relevant, want: []string{"always", "ebooks"}},
+		// The v1 list keeps its behavior: hidden flags only, no library scoping.
+		{name: "full list ignores library scoping", lookup: libraries("movies"), list: visible, want: []string{"always", "ebooks"}},
+		{name: "hidden-inclusive list", lookup: libraries("movies"), list: all, want: []string{"always", "ebooks", "hidden"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := keys(tt.list(newManager(tt.lookup)))
+			if !slices.Equal(got, tt.want) {
+				t.Fatalf("listed keys = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTaskManagerStartIgnoresSavedTriggersForManualOnlyTask(t *testing.T) {
+	const taskKey = "manual-repair"
+	saved := []taskmanager.TriggerConfig{{Type: taskmanager.TriggerTypeStartup}}
+	manager := taskmanager.New(
+		&fakeTriggerRepository{triggers: map[string][]taskmanager.TriggerConfig{taskKey: saved}},
+		fakeExecutionRepository{},
+		newFakeTrigger,
+		slog.New(slog.DiscardHandler),
+	)
+	manager.Register(manualOnlyStubTask{stubTask{key: taskKey}})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	manager.Start(ctx)
+	defer manager.Stop()
+
+	info := manager.GetTaskInfo(taskKey)
+	if len(info.Triggers) != 0 || info.NextRunAt != nil {
+		t.Fatalf("manual-only task loaded triggers %#v (next run %v), want none", info.Triggers, info.NextRunAt)
+	}
+}
+
 func TestTaskManagerRejectsScheduledTriggersForManualOnlyTask(t *testing.T) {
 	const taskKey = "manual-backfill"
 	triggerRepo := &fakeTriggerRepository{triggers: map[string][]taskmanager.TriggerConfig{}}
@@ -382,9 +494,10 @@ func TestTaskManagerTriggerSkipsConditionalTaskWithoutHistory(t *testing.T) {
 	var triggers []*fakeTrigger
 	factory := func(cfg taskmanager.TriggerConfig) taskmanager.Trigger {
 		tr := &fakeTrigger{
-			cfg:    cfg,
-			ch:     make(chan struct{}, 1),
-			stopCh: make(chan struct{}),
+			cfg:     cfg,
+			ch:      make(chan struct{}, 1),
+			stopCh:  make(chan struct{}),
+			started: make(chan struct{}, 2),
 		}
 		triggers = append(triggers, tr)
 		return tr
@@ -409,7 +522,11 @@ func TestTaskManagerTriggerSkipsConditionalTaskWithoutHistory(t *testing.T) {
 	if len(triggers) != 1 {
 		t.Fatalf("triggers = %d, want 1", len(triggers))
 	}
-	beforeTrigger := time.Now()
+	initialNextRun := triggers[0].NextRunTime()
+	select {
+	case <-triggers[0].started:
+	default:
+	}
 	triggers[0].ch <- struct{}{}
 
 	select {
@@ -418,17 +535,21 @@ func TestTaskManagerTriggerSkipsConditionalTaskWithoutHistory(t *testing.T) {
 		t.Fatal("scheduled preflight was not called")
 	}
 
-	time.Sleep(25 * time.Millisecond)
+	select {
+	case <-triggers[0].started:
+	case <-time.After(time.Second):
+		t.Fatal("trigger was not rearmed after skipped preflight error")
+	}
 	if got := task.executeCount(); got != 0 {
 		t.Fatalf("Execute calls = %d, want 0", got)
 	}
 	if got := historyRepo.insertCount(); got != 0 {
 		t.Fatalf("history inserts = %d, want 0", got)
 	}
-	if !triggers[0].NextRunTime().After(beforeTrigger) {
-		t.Fatalf("next run = %s, want rearmed after skip time %s",
+	if !triggers[0].NextRunTime().After(initialNextRun) {
+		t.Fatalf("next run = %s, want later than original run %s",
 			triggers[0].NextRunTime().Format(time.RFC3339Nano),
-			beforeTrigger.Format(time.RFC3339Nano))
+			initialNextRun.Format(time.RFC3339Nano))
 	}
 }
 
@@ -447,9 +568,10 @@ func TestTaskManagerTriggerSkipsConditionalTaskOnPreflightError(t *testing.T) {
 	var triggers []*fakeTrigger
 	factory := func(cfg taskmanager.TriggerConfig) taskmanager.Trigger {
 		tr := &fakeTrigger{
-			cfg:    cfg,
-			ch:     make(chan struct{}, 1),
-			stopCh: make(chan struct{}),
+			cfg:     cfg,
+			ch:      make(chan struct{}, 1),
+			stopCh:  make(chan struct{}),
+			started: make(chan struct{}, 2),
 		}
 		triggers = append(triggers, tr)
 		return tr
@@ -475,7 +597,11 @@ func TestTaskManagerTriggerSkipsConditionalTaskOnPreflightError(t *testing.T) {
 	if len(triggers) != 1 {
 		t.Fatalf("triggers = %d, want 1", len(triggers))
 	}
-	beforeTrigger := time.Now()
+	initialNextRun := triggers[0].NextRunTime()
+	select {
+	case <-triggers[0].started:
+	default:
+	}
 	triggers[0].ch <- struct{}{}
 
 	select {
@@ -484,12 +610,50 @@ func TestTaskManagerTriggerSkipsConditionalTaskOnPreflightError(t *testing.T) {
 		t.Fatal("scheduled preflight was not called")
 	}
 
-	time.Sleep(25 * time.Millisecond)
+	select {
+	case <-triggers[0].started:
+	case <-time.After(time.Second):
+		t.Fatal("trigger was not rearmed after skipped preflight error")
+	}
 	if got := task.executeCount(); got != 0 {
 		t.Fatalf("Execute calls = %d, want 0 (preflight errors must fail closed)", got)
 	}
-	if !triggers[0].NextRunTime().After(beforeTrigger) {
+	if !triggers[0].NextRunTime().After(initialNextRun) {
 		t.Fatalf("next run = %s, want rearmed after skipped preflight error",
 			triggers[0].NextRunTime().Format(time.RFC3339Nano))
+	}
+}
+
+type reservedTask struct {
+	stubTask
+	entered chan struct{}
+	done    chan struct{}
+}
+
+func (t reservedTask) Execute(ctx context.Context, _ taskmanager.ProgressReporter) error {
+	close(t.entered)
+	<-ctx.Done()
+	close(t.done)
+	return ctx.Err()
+}
+func TestStartTaskReservesBeforeAcknowledgment(t *testing.T) {
+	task := reservedTask{stubTask: stubTask{key: "reserved"}, entered: make(chan struct{}), done: make(chan struct{})}
+	manager := taskmanager.New(&fakeTriggerRepository{}, fakeExecutionRepository{}, nil, nil)
+	manager.Register(task)
+	info, err := manager.StartTask(task.Key())
+	if err != nil || info.State != taskmanager.TaskStateRunning {
+		t.Fatalf("start: %+v, %v", info, err)
+	}
+	t.Cleanup(manager.Stop)
+	if _, err := manager.StartTask(task.Key()); !errors.Is(err, taskmanager.ErrTaskAlreadyRunning) {
+		t.Fatalf("second start: %v", err)
+	}
+	if err := manager.CancelTask(task.Key()); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-task.done:
+	case <-time.After(time.Second):
+		t.Fatal("reserved work did not receive cancellation")
 	}
 }

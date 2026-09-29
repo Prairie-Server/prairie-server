@@ -28,9 +28,7 @@ describe("sidebar pin helpers", () => {
 
   it("still accepts the legacy JSON-string encoding", () => {
     expect(
-      parseSidebarPins(
-        '{"42":[{"type":"collection","id":"col-1","label":"Pinned Horror"}]}',
-      ),
+      parseSidebarPins('{"42":[{"type":"collection","id":"col-1","label":"Pinned Horror"}]}'),
     ).toEqual({
       "42": [{ type: "collection", id: "col-1", label: "Pinned Horror" }],
     });

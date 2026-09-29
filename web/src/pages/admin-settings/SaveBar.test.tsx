@@ -6,13 +6,7 @@ import { SaveBar } from "./SaveBar";
 
 function renderBar(props: Partial<Parameters<typeof SaveBar>[0]> = {}) {
   return render(
-    <SaveBar
-      dirtyCount={2}
-      onSave={vi.fn()}
-      onDiscard={vi.fn()}
-      isSaving={false}
-      {...props}
-    />,
+    <SaveBar dirtyCount={2} onSave={vi.fn()} onDiscard={vi.fn()} isSaving={false} {...props} />,
   );
 }
 
@@ -34,6 +28,17 @@ describe("SaveBar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onDiscard).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not pass the click event to a save callback that accepts selected keys", async () => {
+    const onSave = vi.fn((selectedKeys?: string[]) =>
+      selectedKeys?.includes("artwork.storage_backend"),
+    );
+    renderBar({ onSave });
+
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSave.mock.calls).toEqual([[]]);
   });
 
   it("uses the singular form for one change", () => {

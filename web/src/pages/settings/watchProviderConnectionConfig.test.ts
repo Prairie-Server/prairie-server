@@ -36,20 +36,14 @@ const optionalSchema: PluginConfigSchema = {
 describe("watch provider connection config", () => {
   it("omits an untouched optional schema without blocking Connect", () => {
     expect(activeConnectionSchemas([optionalSchema], {})).toEqual([]);
-    expect(
-      connectionSchemasAreValid([optionalSchema], {}, { optional: false }),
-    ).toBe(true);
+    expect(connectionSchemasAreValid([optionalSchema], {}, { optional: false })).toBe(true);
     expect(buildConnectionConfig([optionalSchema], {})).toEqual({});
   });
 
   it("validates and submits an optional schema after the user enters a value", () => {
     const drafts = { optional: { base_url: "https://floppy.example.com" } };
-    expect(
-      connectionSchemasAreValid([optionalSchema], drafts, { optional: false }),
-    ).toBe(false);
-    expect(
-      connectionSchemasAreValid([optionalSchema], drafts, { optional: true }),
-    ).toBe(true);
+    expect(connectionSchemasAreValid([optionalSchema], drafts, { optional: false })).toBe(false);
+    expect(connectionSchemasAreValid([optionalSchema], drafts, { optional: true })).toBe(true);
     expect(buildConnectionConfig([optionalSchema], drafts)).toEqual({
       optional: { base_url: "https://floppy.example.com" },
     });
@@ -61,9 +55,7 @@ describe("watch provider connection config", () => {
       key: "required",
       required: true,
     };
-    expect(activeConnectionSchemas([requiredSchema], {})).toEqual([
-      requiredSchema,
-    ]);
+    expect(activeConnectionSchemas([requiredSchema], {})).toEqual([requiredSchema]);
     expect(connectionSchemasAreValid([requiredSchema], {}, {})).toBe(false);
   });
 

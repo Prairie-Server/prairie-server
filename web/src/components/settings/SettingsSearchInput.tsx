@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from "react";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import { searchShortcutLabel } from "@/lib/keyboardShortcut";
+import { SEARCH_SHORTCUT_LABEL } from "@/lib/keyboardShortcut";
 import { cn } from "@/lib/utils";
 
 interface SettingsSearchInputProps {
@@ -35,7 +35,6 @@ export function SettingsSearchInput({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const hasQuery = value.trim().length > 0;
-  const shortcutHint = searchShortcutLabel();
   // Idle shows nothing: a "12 settings pages" style count under an untouched
   // box is noise. The line only speaks while a query is filtering.
   const status = hasQuery
@@ -49,8 +48,7 @@ export function SettingsSearchInput({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.metaKey || event.ctrlKey)) return;
       if (event.key.toLowerCase() !== "k") return;
-      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches)
-        return;
+      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -84,10 +82,7 @@ export function SettingsSearchInput({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={cn(
-            "h-11 rounded-xl pr-10 pl-9",
-            showShortcutHint && !hasQuery && "sm:pr-16",
-          )}
+          className={cn("h-11 rounded-xl pr-10 pl-9", showShortcutHint && !hasQuery && "sm:pr-16")}
           autoComplete="off"
         />
         {hasQuery ? (
@@ -104,16 +99,13 @@ export function SettingsSearchInput({
             aria-hidden="true"
             className="border-border/80 bg-surface text-muted-foreground pointer-events-none absolute top-1/2 right-2 hidden h-6 -translate-y-1/2 items-center rounded-md border px-1.5 font-sans text-[10px] font-medium sm:inline-flex"
           >
-            {shortcutHint}
+            {SEARCH_SHORTCUT_LABEL}
           </kbd>
         ) : null}
       </div>
       {/* Always mounted so the live region reliably announces count changes;
           visually collapses to nothing while idle. */}
-      <p
-        className={cn("text-muted-foreground text-xs", status && "mt-2")}
-        aria-live="polite"
-      >
+      <p className={cn("text-muted-foreground text-xs", status && "mt-2")} aria-live="polite">
         {status}
       </p>
     </div>

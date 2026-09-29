@@ -12,8 +12,11 @@ vi.mock("@/hooks/queries/recommendations", () => ({
   useDiscover: (...args: unknown[]) => mockUseDiscover(...args),
 }));
 
+const documentTitles = vi.hoisted(() => [] as string[]);
 vi.mock("@/hooks/useDocumentTitle", () => ({
-  useDocumentTitle: () => undefined,
+  useDocumentTitle: (title: string) => {
+    documentTitles.push(title);
+  },
 }));
 
 vi.mock("@/components/MediaCarousel", () => ({
@@ -77,7 +80,10 @@ describe("Recommendations", () => {
     const markup = renderPage();
 
     expect(markup).toContain('data-slot="skeleton"');
-    expect(markup).toContain("Recommendations");
+    // The viewer-facing name matches the native apps.
+    expect(markup).toContain("For You");
+    expect(markup).not.toContain(">Recommendations<");
+    expect(documentTitles.at(-1)).toBe("For You");
   });
 
   it("renders empty state when discover returns no rows", () => {
@@ -151,12 +157,8 @@ describe("Recommendations", () => {
     expect(markup).toContain("Popular in Action");
     expect(markup).toContain("Movie A");
     expect(markup).toContain("Movie B");
-    expect(markup).toContain(
-      'data-href="/recommendations/section/for-you-main"',
-    );
-    expect(markup).toContain(
-      'data-href="/recommendations/section/genre/Action"',
-    );
+    expect(markup).toContain('data-href="/recommendations/section/for-you-main"');
+    expect(markup).toContain('data-href="/recommendations/section/genre/Action"');
   });
 
   it("omits section href when row has no section_kind", () => {

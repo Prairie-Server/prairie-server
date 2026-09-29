@@ -33,10 +33,7 @@ export interface PrePlaySubtitleCandidateSections {
   all: PrePlaySubtitleCandidate[];
 }
 
-function normalizeTrackLabel(
-  track: VersionSubtitleTrack,
-  fallbackIndex: number,
-): string {
+function normalizeTrackLabel(track: VersionSubtitleTrack, fallbackIndex: number): string {
   return (
     track.title?.trim() ||
     track.embedded_title?.trim() ||
@@ -52,18 +49,11 @@ function normalizeDownloadedLabel(subtitle: DownloadedSubtitle): string {
   if (releaseName && provider) {
     return `${releaseName} (${provider})`;
   }
-  return (
-    releaseName ||
-    provider ||
-    getLanguageName(subtitle.language?.trim() || "unknown")
-  );
+  return releaseName || provider || getLanguageName(subtitle.language?.trim() || "unknown");
 }
 
 export function formatSubtitleCandidateSummary(
-  row: Pick<
-    VersionSubtitleInventoryRow,
-    "languageLabel" | "forced" | "hearingImpaired"
-  >,
+  row: Pick<VersionSubtitleInventoryRow, "languageLabel" | "forced" | "hearingImpaired">,
 ): string {
   return row.languageLabel;
 }
@@ -75,9 +65,7 @@ export function inferSubtitleFlagsFromTitle(title: string | undefined): {
 } {
   const normalized = title?.trim().toLowerCase() ?? "";
   const forced = normalized === "forced";
-  const hearingImpaired = ["sdh", "cc", "hi", "hearing impaired"].includes(
-    normalized,
-  );
+  const hearingImpaired = ["sdh", "cc", "hi", "hearing impaired"].includes(normalized);
   return { forced, hearingImpaired, flagOnly: forced || hearingImpaired };
 }
 
@@ -94,14 +82,10 @@ export interface SubtitlePillSummarySource {
  * (SDH)/(Forced) markers, and a human-readable subtitle format. Track titles
  * stay in the open selector, where meaningful details have room to display.
  */
-export function formatSubtitlePillSummary(
-  source: SubtitlePillSummarySource,
-): string {
-  const name =
-    source.languageLabel?.trim() || source.label?.trim() || "Unknown";
+export function formatSubtitlePillSummary(source: SubtitlePillSummarySource): string {
+  const name = source.languageLabel?.trim() || source.label?.trim() || "Unknown";
   const parts = [name];
-  if (source.hearingImpaired && !/\b(?:sdh|cc|hi)\b/i.test(name))
-    parts.push("(SDH)");
+  if (source.hearingImpaired && !/\b(?:sdh|cc|hi)\b/i.test(name)) parts.push("(SDH)");
   if (source.forced && !/forced/i.test(name)) parts.push("(Forced)");
   const text = parts.join(" ");
   const codec = source.codec?.trim();
@@ -109,20 +93,14 @@ export function formatSubtitlePillSummary(
   return format ? `${text} · ${format}` : text;
 }
 
-export function getAutoAudioTrackIndex(
-  version: FileVersion | null | undefined,
-): number {
+export function getAutoAudioTrackIndex(version: FileVersion | null | undefined): number {
   const tracks = version?.audio_tracks ?? [];
   if (tracks.length === 0) {
     return 0;
   }
 
   const effectiveIndex = version?.effective_audio_track_index;
-  if (
-    effectiveIndex != null &&
-    effectiveIndex >= 0 &&
-    effectiveIndex < tracks.length
-  ) {
+  if (effectiveIndex != null && effectiveIndex >= 0 && effectiveIndex < tracks.length) {
     return effectiveIndex;
   }
 
@@ -160,16 +138,11 @@ export function resolveSelectedAudioLanguage(
   version: FileVersion | null | undefined,
   explicitAudioTrackIndex: number | null | undefined,
 ): string | null {
-  const { activeIndex } = resolveAudioTrackSelection(
-    version,
-    explicitAudioTrackIndex,
-  );
+  const { activeIndex } = resolveAudioTrackSelection(version, explicitAudioTrackIndex);
   return resolveVersionAudioLanguage(version, activeIndex);
 }
 
-export function formatAudioTrackSummary(
-  track: VersionAudioTrack | undefined,
-): string {
+export function formatAudioTrackSummary(track: VersionAudioTrack | undefined): string {
   if (!track) {
     return "Unknown";
   }
@@ -201,10 +174,8 @@ export function subtitleSelectionEquals(
   if (!left || !right) return false;
   return (
     left.source === right.source &&
-    (left.downloaded_subtitle_id ?? null) ===
-      (right.downloaded_subtitle_id ?? null) &&
-    (left.external_subtitle_path ?? null) ===
-      (right.external_subtitle_path ?? null) &&
+    (left.downloaded_subtitle_id ?? null) === (right.downloaded_subtitle_id ?? null) &&
+    (left.external_subtitle_path ?? null) === (right.external_subtitle_path ?? null) &&
     (left.language ?? "") === (right.language ?? "") &&
     (left.codec ?? "") === (right.codec ?? "") &&
     (left.label ?? "") === (right.label ?? "") &&
@@ -220,19 +191,14 @@ export function buildPrePlaySubtitleCandidates(
   const inventory = buildVersionSubtitleInventory(tracks, downloaded);
   const all: PrePlaySubtitleCandidate[] = [];
 
-  const mapBuiltIn = (
-    rows: VersionSubtitleInventoryRow[],
-    source: "embedded" | "external",
-  ) =>
+  const mapBuiltIn = (rows: VersionSubtitleInventoryRow[], source: "embedded" | "external") =>
     rows.map((row, index) => {
       const track = (tracks ?? []).find(
         (candidate, candidateIndex) =>
           (candidate.external ? "external" : "embedded") === source &&
           (candidate.index ?? candidateIndex) === row.index,
       );
-      const label = track
-        ? normalizeTrackLabel(track, index)
-        : row.title || row.languageLabel;
+      const label = track ? normalizeTrackLabel(track, index) : row.title || row.languageLabel;
       const candidate: PrePlaySubtitleCandidate = {
         ...row,
         selection: {
@@ -253,12 +219,8 @@ export function buildPrePlaySubtitleCandidates(
   const embedded = mapBuiltIn(inventory.embedded, "embedded");
   const external = mapBuiltIn(inventory.external, "external");
   const downloadedRows = inventory.downloaded.map((row) => {
-    const match = (downloaded ?? []).find(
-      (subtitle) => subtitle.id === row.downloadedSubtitleId,
-    );
-    const label = match
-      ? normalizeDownloadedLabel(match)
-      : row.releaseName || row.languageLabel;
+    const match = (downloaded ?? []).find((subtitle) => subtitle.id === row.downloadedSubtitleId);
+    const label = match ? normalizeDownloadedLabel(match) : row.releaseName || row.languageLabel;
     const candidate: PrePlaySubtitleCandidate = {
       ...row,
       selection: {

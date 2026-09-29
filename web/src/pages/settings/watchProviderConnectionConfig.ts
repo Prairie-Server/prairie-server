@@ -1,9 +1,6 @@
 import type { PluginConfigSchema } from "@/api/types";
 import { adminFormForConfigSchema } from "@/components/admin/plugins/configSchemaAdminForm";
-import {
-  buildSchemaValues,
-  parseFieldTypes,
-} from "@/components/admin/plugins/schemaFormUtils";
+import { buildSchemaValues, parseFieldTypes } from "@/components/admin/plugins/schemaFormUtils";
 import type { WatchProviderConnectionConfig } from "@/hooks/queries/watchProviders";
 
 export type RenderableConnectionSchema = PluginConfigSchema & {
@@ -23,8 +20,7 @@ function hasEnteredValue(value: unknown): boolean {
   if (value == null) return false;
   if (typeof value === "string") return value.trim().length > 0;
   if (Array.isArray(value)) return value.some(hasEnteredValue);
-  if (typeof value === "object")
-    return Object.values(value).some(hasEnteredValue);
+  if (typeof value === "object") return Object.values(value).some(hasEnteredValue);
   return true;
 }
 
@@ -34,8 +30,7 @@ export function activeConnectionSchemas(
 ): RenderableConnectionSchema[] {
   return schemas.filter(
     (schema): schema is RenderableConnectionSchema =>
-      schema.admin_form != null &&
-      (schema.required || hasEnteredValue(drafts[schema.key])),
+      schema.admin_form != null && (schema.required || hasEnteredValue(drafts[schema.key])),
   );
 }
 
@@ -44,9 +39,7 @@ export function connectionSchemasAreValid(
   drafts: WatchProviderConnectionConfig,
   validity: Record<string, boolean>,
 ): boolean {
-  return activeConnectionSchemas(schemas, drafts).every(
-    (schema) => validity[schema.key] ?? false,
-  );
+  return activeConnectionSchemas(schemas, drafts).every((schema) => validity[schema.key] ?? false);
 }
 
 export function buildConnectionConfig(

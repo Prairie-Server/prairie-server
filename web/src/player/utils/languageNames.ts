@@ -1,6 +1,6 @@
 import { getLanguageName } from "@/lib/languageNames";
 
-export { getLanguageName, normalizeLanguageCode } from "@/lib/languageNames";
+export { canonicalLanguageTag, getLanguageName, normalizeLanguageCode } from "@/lib/languageNames";
 
 const COMMON_LANGUAGE_CODES = [
   "en",
@@ -9,6 +9,8 @@ const COMMON_LANGUAGE_CODES = [
   "de",
   "it",
   "pt",
+  "pt-BR",
+  "pt-PT",
   "nl",
   "pl",
   "ru",
@@ -49,9 +51,7 @@ export interface LanguageOption {
 }
 
 /** Sorted common-language list; labels come from the shared English CLDR resolver. */
-export const LANGUAGES: LanguageOption[] = COMMON_LANGUAGE_CODES.map(
-  (code) => ({
-    code,
-    label: getLanguageName(code),
-  }),
-).sort((a, b) => a.label.localeCompare(b.label));
+export const LANGUAGES: LanguageOption[] = COMMON_LANGUAGE_CODES.map((code) => ({
+  code,
+  label: getLanguageName(code),
+})).sort((a, b) => a.label.localeCompare(b.label));

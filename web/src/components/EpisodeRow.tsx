@@ -13,12 +13,7 @@ interface EpisodeRowProps {
   progress?: number;
 }
 
-export default function EpisodeRow({
-  episode,
-  rating,
-  watched,
-  progress,
-}: EpisodeRowProps) {
+export default function EpisodeRow({ episode, rating, watched, progress }: EpisodeRowProps) {
   const { prefs: overlayPrefs } = useOverlayPrefs();
   const watchedState = watched ?? episode.user_data?.played ?? false;
   const derivedProgress =
@@ -34,8 +29,7 @@ export default function EpisodeRow({
       return Math.max(0, Math.min(100, (position / duration) * 100));
     })();
 
-  const hasProgress =
-    derivedProgress != null && derivedProgress > 0 && derivedProgress < 100;
+  const hasProgress = derivedProgress != null && derivedProgress > 0 && derivedProgress < 100;
 
   // No srcSet means the URL has no variant segment to rewrite (third-party art),
   // and `sizes` without a srcSet is meaningless — same guard ArtworkImage uses.
@@ -63,6 +57,7 @@ export default function EpisodeRow({
             alt={episode.title || `Episode ${episode.episode_number}`}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="text-muted-foreground/50 flex h-full w-full items-center justify-center">
@@ -112,9 +107,7 @@ export default function EpisodeRow({
         </div>
         <div className="text-muted-foreground text-xs">
           {episode.air_date && <span>{episode.air_date}</span>}
-          {episode.air_date && episode.runtime > 0 && (
-            <span className="mx-1.5">&middot;</span>
-          )}
+          {episode.air_date && episode.runtime > 0 && <span className="mx-1.5">&middot;</span>}
           {episode.runtime > 0 && <span>{episode.runtime}m</span>}
         </div>
       </div>
@@ -123,9 +116,7 @@ export default function EpisodeRow({
       {rating != null && (
         <div className="flex shrink-0 items-center gap-1">
           <Star className="text-primary size-3 fill-current" />
-          <span className="text-primary text-[13px] font-semibold">
-            {rating.toFixed(1)}
-          </span>
+          <span className="text-primary text-[13px] font-semibold">{rating.toFixed(1)}</span>
         </div>
       )}
     </ViewTransitionLink>

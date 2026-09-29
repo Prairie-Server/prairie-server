@@ -9,10 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  useCollections,
-  useAddItemToCollection,
-} from "@/hooks/queries/collections";
+import { useCollections, useAddItemToCollection } from "@/hooks/queries/collections";
 import { useUserLibraries } from "@/hooks/queries/libraries";
 import { useQueries } from "@tanstack/react-query";
 import {
@@ -182,11 +179,7 @@ export default function AddToCollectionDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={addItem.isPending}
-          >
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={addItem.isPending}>
             <X />
             Cancel
           </Button>
@@ -195,11 +188,7 @@ export default function AddToCollectionDialog({
             disabled={!selectedId || addItem.isPending}
             className="gap-2"
           >
-            {addItem.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus />
-            )}
+            {addItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus />}
             Add
           </Button>
         </DialogFooter>

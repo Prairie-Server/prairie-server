@@ -29,9 +29,7 @@ vi.mock("@/components/catalog/CatalogFiltersPanel", () => ({
     <div>
       Filters
       {resultCountLoading ? <span>Loading item count</span> : null}
-      {!resultCountLoading && resultCountLabel ? (
-        <span>{resultCountLabel}</span>
-      ) : null}
+      {!resultCountLoading && resultCountLabel ? <span>{resultCountLabel}</span> : null}
     </div>
   ),
 }));
@@ -44,9 +42,7 @@ describe("LibraryBrowse", () => {
     mocks.useCatalogWindow.mockReturnValue({
       data: {
         totalItems: 1,
-        pages: new Map([
-          [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
-        ]),
+        pages: new Map([[0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]]]),
       },
       isLoading: false,
     });

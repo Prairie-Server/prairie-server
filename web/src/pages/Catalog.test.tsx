@@ -1,29 +1,29 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Outlet } from "react-router";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 let appInitialEntries = ["/catalog?source=query&q=heat"];
 let latestNavigateTo: string | null = null;
+let appProfile: { id: string } | null = { id: "profile-1" };
 
 const mockUseCatalogWindow = vi.fn();
 const mockUseCatalogFilters = vi.fn();
 const mockItemGrid = vi.fn();
 const mockUseCanRequest = vi.fn();
 const mockUseRequestSearch = vi.fn();
+const mockUsePersonSearch = vi.fn();
 
 vi.mock("react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router")>("react-router");
+  const actual = await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
     // App builds a data router from the real history; point it at the entry
     // under test instead.
-    createBrowserRouter: ((
-      routes: Parameters<typeof actual.createMemoryRouter>[0],
-    ) =>
+    createBrowserRouter: ((routes: Parameters<typeof actual.createMemoryRouter>[0]) =>
       actual.createMemoryRouter(routes, {
         initialEntries: appInitialEntries,
       })) as typeof actual.createBrowserRouter,
@@ -34,8 +34,7 @@ vi.mock("react-router", async () => {
       to: string | { pathname?: string; search?: string };
       replace?: boolean;
     }) => {
-      latestNavigateTo =
-        typeof to === "string" ? to : `${to.pathname ?? ""}${to.search ?? ""}`;
+      latestNavigateTo = typeof to === "string" ? to : `${to.pathname ?? ""}${to.search ?? ""}`;
       return <actual.Navigate to={to} replace={replace} />;
     },
   };
@@ -44,8 +43,11 @@ vi.mock("react-router", async () => {
 vi.mock("@/hooks/queries/catalog", () => ({
   useCatalogWindow: (...args: unknown[]) => mockUseCatalogWindow(...args),
   useCatalogFilters: (...args: unknown[]) => mockUseCatalogFilters(...args),
-  useCatalogMetadataFilters: (...args: unknown[]) =>
-    mockUseCatalogFilters(...args),
+  useCatalogMetadataFilters: (...args: unknown[]) => mockUseCatalogFilters(...args),
+}));
+
+vi.mock("@/hooks/queries/personSearch", () => ({
+  usePersonSearch: (...args: unknown[]) => mockUsePersonSearch(...args),
 }));
 
 vi.mock("@/hooks/useCanRequest", () => ({
@@ -61,13 +63,15 @@ vi.mock("@/components/RequestToAddSection", () => ({
     variant,
     query,
     libraryHadHits,
+    libraryResultsKnown,
   }: {
     variant: string;
     query: string;
     libraryHadHits: boolean;
+    libraryResultsKnown?: boolean;
   }) => (
     <div data-testid="request-section">
-      {`variant="${variant}" query="${query}" libraryHadHits="${String(libraryHadHits)}"`}
+      {`variant="${variant}" query="${query}" libraryHadHits="${String(libraryHadHits)}" libraryResultsKnown="${String(libraryResultsKnown)}"`}
     </div>
   ),
 }));
@@ -76,7 +80,7 @@ vi.mock("@/hooks/useAuth", () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useAuth: () => ({
     user: { id: 1, username: "alex", role: "admin" },
-    profile: { id: "profile-1" },
+    profile: appProfile,
     loading: false,
     setupLoading: false,
     setupRequired: false,
@@ -87,7 +91,7 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
   useOptionalAuth: () => ({
     user: { id: 1, username: "alex", role: "admin" },
-    profile: { id: "profile-1" },
+    profile: appProfile,
     loading: false,
     setupLoading: false,
     setupRequired: false,
@@ -111,9 +115,7 @@ vi.mock("@/components/ui/sonner", () => ({
 }));
 
 vi.mock("@/components/Layout", () => ({
-  default: ({ children }: { children: ReactNode }) => (
-    <div data-kind="app-layout">{children}</div>
-  ),
+  default: ({ children }: { children: ReactNode }) => <div data-kind="app-layout">{children}</div>,
 }));
 
 vi.mock("@/components/AdminLayout", () => ({
@@ -159,18 +161,12 @@ vi.mock("@/pages/AdminActivity", () => stubPage("Admin activity"));
 vi.mock("@/pages/AdminLogs", () => stubPage("Admin logs"));
 vi.mock("@/pages/AdminUsers", () => stubPage("Admin users"));
 vi.mock("@/pages/AdminLibraries", () => stubPage("Admin libraries"));
-vi.mock("@/pages/admin-settings/AdminSettingsLayout", () =>
-  stubPage("Admin settings"),
-);
+vi.mock("@/pages/admin-settings/AdminSettingsLayout", () => stubPage("Admin settings"));
 vi.mock("@/pages/AdminNodes", () => stubPage("Admin nodes"));
 vi.mock("@/pages/AdminSections", () => stubPage("Admin sections"));
 vi.mock("@/pages/AdminCollections", () => stubPage("Admin collections"));
-vi.mock("@/pages/AdminCollectionEditor", () =>
-  stubPage("Admin collection editor"),
-);
-vi.mock("@/pages/AdminPlaybackHistory", () =>
-  stubPage("Admin playback history"),
-);
+vi.mock("@/pages/AdminCollectionEditor", () => stubPage("Admin collection editor"));
+vi.mock("@/pages/AdminPlaybackHistory", () => stubPage("Admin playback history"));
 vi.mock("@/pages/AdminMaintenance", () => stubPage("Admin maintenance"));
 vi.mock("@/pages/AdminApiKeys", () => stubPage("Admin api keys"));
 vi.mock("@/pages/AdminUserDetail", () => stubPage("Admin user detail"));
@@ -186,61 +182,136 @@ vi.mock("@/pages/SettingsLayout", () => ({
     </div>
   ),
 }));
-vi.mock("@/pages/settings/PlaybackSettings", () =>
-  stubPage("Playback settings"),
-);
+vi.mock("@/pages/settings/PlaybackSettings", () => stubPage("Playback settings"));
+vi.mock("@/pages/settings/AccountSettings", () => stubPage("Account settings"));
 vi.mock("@/pages/settings/LibrarySettings", () => stubPage("Library settings"));
-vi.mock("@/pages/settings/HistoryImportSettings", () =>
-  stubPage("History import settings"),
-);
-vi.mock("@/pages/settings/WebhookSyncSettings", () =>
-  stubPage("Webhook sync settings"),
-);
-vi.mock("@/pages/settings/SubtitleAppearanceSettings", () =>
-  stubPage("Subtitle appearance"),
-);
-vi.mock("@/pages/settings/HomeScreenSettings", () =>
-  stubPage("Home screen settings"),
-);
+vi.mock("@/pages/settings/HistoryImportSettings", () => stubPage("History import settings"));
+vi.mock("@/pages/settings/WebhookSyncSettings", () => stubPage("Webhook sync settings"));
+vi.mock("@/pages/settings/SubtitleAppearanceSettings", () => stubPage("Subtitle appearance"));
+vi.mock("@/pages/settings/HomeScreenSettings", () => stubPage("Home screen settings"));
 vi.mock("@/pages/settings/PluginSettings", () => stubPage("Plugin settings"));
 vi.mock("@/pages/WatchRoute", () => stubPage("Watch"));
 
 import App from "../App";
 
+function resetCatalogMocks() {
+  appInitialEntries = ["/catalog?source=query&q=heat"];
+  latestNavigateTo = null;
+  appProfile = { id: "profile-1" };
+  mockUseCatalogWindow.mockReset();
+  mockUseCatalogFilters.mockReset();
+  mockItemGrid.mockReset();
+  mockUseCanRequest.mockReset();
+  mockUseRequestSearch.mockReset();
+  mockUsePersonSearch.mockReset();
+  mockUsePersonSearch.mockReturnValue({ data: [], isLoading: false, isError: false });
+  mockUseCanRequest.mockReturnValue({
+    discoveryEnabled: false,
+    isResolving: false,
+    submitDisabledReason: null,
+  });
+  mockUseRequestSearch.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+
+  mockUseCatalogWindow.mockReturnValue({
+    data: {
+      title: "Heat Search",
+      totalItems: 1,
+      pages: new Map([[0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]]]),
+    },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  });
+  mockUseCatalogFilters.mockReturnValue({
+    data: { genres: ["Drama"], content_ratings: ["R"] },
+    isLoading: false,
+  });
+}
+
 describe("Catalog page", () => {
-  beforeEach(() => {
-    appInitialEntries = ["/catalog?source=query&q=heat"];
-    latestNavigateTo = null;
-    mockUseCatalogWindow.mockReset();
-    mockUseCatalogFilters.mockReset();
-    mockItemGrid.mockReset();
-    mockUseCanRequest.mockReset();
-    mockUseRequestSearch.mockReset();
-    mockUseCanRequest.mockReturnValue({
-      discoveryEnabled: false,
-      isResolving: false,
-      submitDisabledReason: null,
+  beforeAll(async () => {
+    // Catalog is a lazy route, and a static render cannot wait for its chunk.
+    // Import the page first so the slow module load happens once, outside any
+    // render. The first render below then starts React.lazy on a cached
+    // module, and the next one shows the page rather than the route fallback.
+    await import("@/pages/Catalog");
+    resetCatalogMocks();
+    const renderApp = () =>
+      renderToStaticMarkup(
+        <QueryClientProvider client={new QueryClient()}>
+          <App />
+        </QueryClientProvider>,
+      );
+    renderApp();
+    await vi.waitFor(() => expect(renderApp()).not.toContain("Loading page"), {
+      timeout: 5_000,
     });
-    mockUseRequestSearch.mockReturnValue({
-      data: undefined,
+  }, 15_000);
+
+  beforeEach(() => {
+    resetCatalogMocks();
+  });
+
+  it("offers actor and director results with exact person links when no titles match", () => {
+    mockUseCatalogWindow.mockReturnValue({
+      data: { totalItems: 0, pages: new Map() },
+      isLoading: false,
+      isError: false,
+    });
+    mockUsePersonSearch.mockReturnValue({
+      data: [
+        { id: "137101642343383042", name: "Tom Hanks", photo_url: "/actor.jpg" },
+        { id: "137101697843200002", name: "Christopher Nolan" },
+      ],
       isLoading: false,
       isError: false,
     });
 
-    mockUseCatalogWindow.mockReturnValue({
-      data: {
-        title: "Heat Search",
-        totalItems: 1,
-        pages: new Map([
-          [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
-        ]),
-      },
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("People");
+    expect(markup).toContain('href="/person/137101642343383042"');
+    expect(markup).toContain('href="/person/137101697843200002"');
+    expect(markup).toContain("Tom Hanks");
+    expect(markup).toContain("Christopher Nolan");
+    expect(markup).toContain('src="/actor.jpg"');
+    expect(markup).toContain(">CN<");
+    expect(mockItemGrid).not.toHaveBeenCalled();
+  });
+
+  it("keeps title results visible when people search fails and offers a retry", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const refetch = vi.fn();
+    mockUsePersonSearch.mockReturnValue({
+      data: undefined,
       isLoading: false,
+      isError: true,
+      refetch,
     });
-    mockUseCatalogFilters.mockReturnValue({
-      data: { genres: ["Drama"], content_ratings: ["R"] },
-      isLoading: false,
-    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Could not load people results.")).toBeDefined();
+    expect(mockItemGrid).toHaveBeenCalledWith(expect.objectContaining({ totalItems: 1 }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry people search" }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it("does not search people when browsing a personal list", () => {
+    appInitialEntries = ["/catalog?source=favorites"];
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(mockUsePersonSearch).toHaveBeenCalledWith("", 20, false, undefined);
+    expect(markup).not.toContain('aria-label="People"');
   });
 
   it("renders catalog results from the new API route", () => {
@@ -283,32 +354,42 @@ describe("Catalog page", () => {
     );
   });
 
-  it.each(["favorites", "watchlist"])(
-    "uses narrow poster actions for the %s catalog",
-    (source) => {
-      appInitialEntries = [`/catalog?source=${source}`];
-      mockUseCatalogWindow.mockReturnValue({
-        data: {
-          title: source === "favorites" ? "Favorites" : "Watchlist",
-          totalItems: 1,
-          pages: new Map([
-            [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
-          ]),
-        },
-        isLoading: false,
-      });
+  it.each(["favorites", "watchlist"])("uses narrow poster actions for the %s catalog", (source) => {
+    appInitialEntries = [`/catalog?source=${source}`];
+    mockUseCatalogWindow.mockReturnValue({
+      data: {
+        title: source === "favorites" ? "Favorites" : "Watchlist",
+        totalItems: 1,
+        pages: new Map([[0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]]]),
+      },
+      isLoading: false,
+    });
 
-      renderToStaticMarkup(
-        <QueryClientProvider client={new QueryClient()}>
-          <App />
-        </QueryClientProvider>,
-      );
+    renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
 
-      expect(mockItemGrid).toHaveBeenCalledWith(
-        expect.objectContaining({ narrowPosterActions: true }),
-      );
-    },
-  );
+    expect(mockItemGrid).toHaveBeenCalledWith(
+      expect.objectContaining({ narrowPosterActions: true }),
+    );
+  });
+
+  it("browses an explicit library without requiring search text", () => {
+    appInitialEntries = ["/catalog?library_id=17&sort=title&order=asc"];
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(mockUseCatalogWindow).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "query", library_id: 17, q: undefined }),
+      expect.objectContaining({ includeTotal: true }),
+    );
+    expect(mockItemGrid).toHaveBeenCalled();
+    expect(markup).not.toContain("Find films, series, performances");
+  });
 
   it("renders the search-first landing for empty query catalog routes", () => {
     appInitialEntries = ["/catalog?source=query"];
@@ -348,9 +429,7 @@ describe("Catalog page", () => {
       </QueryClientProvider>,
     );
 
-    expect(latestNavigateTo).toBe(
-      "/catalog?source=user_collection&collection_id=col-7",
-    );
+    expect(latestNavigateTo).toBe("/catalog?source=user_collection&collection_id=col-7");
   });
 
   it("routes person detail URLs to the PersonDetail page", () => {
@@ -366,17 +445,47 @@ describe("Catalog page", () => {
     expect(latestNavigateTo).toBeNull();
   });
 
-  it("renders user settings inside the main app layout", () => {
+  it("renders user settings inside the main app layout", async () => {
     appInitialEntries = ["/settings/playback"];
 
-    const markup = renderToStaticMarkup(
+    render(
       <QueryClientProvider client={new QueryClient()}>
         <App />
       </QueryClientProvider>,
     );
 
-    expect(markup).toContain('data-kind="app-layout"');
-    expect(markup).toContain("Settings");
+    const settings = await screen.findByText("Playback settings");
+    expect(settings.closest('[data-kind="app-layout"]')).not.toBeNull();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+  });
+
+  it("lets an administrator without an active profile open account settings", async () => {
+    appInitialEntries = ["/settings/account"];
+    appProfile = null;
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Account settings")).toBeInTheDocument();
+    expect(latestNavigateTo).toBeNull();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByText("Account settings").closest('[data-kind="app-layout"]')).not.toBeNull();
+  });
+
+  it("keeps other personal settings behind profile selection", () => {
+    appInitialEntries = ["/settings/playback"];
+    appProfile = null;
+
+    renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(latestNavigateTo).toBe("/profiles?redirect=%2Fsettings%2Fplayback");
   });
 
   it("redirects the retired user plugins settings route back to playback settings", () => {
@@ -425,6 +534,7 @@ describe("Catalog page", () => {
     expect(markup).toContain('data-testid="request-section"');
     expect(markup).toContain("variant=&quot;grid&quot;");
     expect(markup).toContain("libraryHadHits=&quot;true&quot;");
+    expect(markup).toContain("libraryResultsKnown=&quot;true&quot;");
   });
 
   it("renders the request grid variant with libraryHadHits=false when library has 0 hits", () => {
@@ -463,6 +573,31 @@ describe("Catalog page", () => {
     );
 
     expect(markup).toContain("libraryHadHits=&quot;false&quot;");
+    expect(markup).toContain("libraryResultsKnown=&quot;true&quot;");
+  });
+
+  it("marks library results unknown when the local search failed", () => {
+    mockUseCanRequest.mockReturnValue({
+      discoveryEnabled: true,
+      isResolving: false,
+      submitDisabledReason: null,
+    });
+    mockUseCatalogWindow.mockReturnValue({
+      data: { title: 'Results for "heat"', totalItems: 0, pages: new Map() },
+      isLoading: false,
+      isError: true,
+      isPlaceholderData: false,
+      refetch: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("libraryHadHits=&quot;false&quot;");
+    expect(markup).toContain("libraryResultsKnown=&quot;false&quot;");
   });
 
   it("does not render the request section when source is not query", () => {
@@ -503,14 +638,13 @@ describe("Catalog page", () => {
       </QueryClientProvider>,
     );
 
-    const call =
-      mockUseRequestSearch.mock.calls[
-        mockUseRequestSearch.mock.calls.length - 1
-      ];
+    const call = mockUseRequestSearch.mock.calls[mockUseRequestSearch.mock.calls.length - 1];
     expect(call?.[3]).toEqual({
       enabled: false,
       requireProfile: true,
       staleTime: 5 * 60 * 1000,
+      gcTime: 30_000,
+      retry: false,
     });
   });
 
@@ -628,6 +762,50 @@ describe("Catalog page", () => {
     expect(markup).toContain('data-total="0"');
   });
 
+  it("hides stale results and explains a bounded search failure", () => {
+    mockUseCatalogWindow.mockReturnValue({
+      data: {
+        title: "Old Search",
+        totalItems: 1,
+        pages: new Map([[0, [{ content_id: "old", title: "Stale Result", type: "movie" }]]]),
+      },
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("Could not load search results.");
+    expect(markup).toContain("Retry search");
+    expect(markup).not.toContain('data-kind="item-grid"');
+    expect(markup).not.toContain("Stale Result");
+  });
+
+  it("uses catalog-specific copy for a non-search failure", () => {
+    appInitialEntries = ["/catalog?source=favorites"];
+    mockUseCatalogWindow.mockReturnValue({
+      data: { title: "Favorites", totalItems: 0, pages: new Map() },
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+
+    expect(markup).toContain("Could not load catalog results.");
+    expect(markup).toContain("Retry catalog");
+    expect(markup).not.toContain("Try a more specific title");
+  });
+
   it("applies the preferred media scope (default: video) when the URL has no type param", () => {
     renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
@@ -643,6 +821,7 @@ describe("Catalog page", () => {
       }),
       expect.anything(),
     );
+    expect(mockUsePersonSearch).toHaveBeenCalledWith("heat", 20, true, "video");
   });
 
   it("uses approximate totals for interactive query searches", () => {
@@ -678,6 +857,17 @@ describe("Catalog page", () => {
       }),
       expect.anything(),
     );
+    expect(mockUsePersonSearch).toHaveBeenCalledWith("heat", 20, true, undefined);
+  });
+
+  it.each(["movie", "series", "audiobook"])("scopes people to the explicit %s search", (scope) => {
+    appInitialEntries = [`/catalog?source=query&q=heat&type=${scope}`];
+    renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+    expect(mockUsePersonSearch).toHaveBeenCalledWith("heat", 20, true, scope);
   });
 
   it("renders the search scope chips on query results", () => {

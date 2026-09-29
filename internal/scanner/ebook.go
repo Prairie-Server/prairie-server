@@ -213,6 +213,15 @@ func parseEbookPDF(path string) (parsedEbook, error) {
 	if err != nil {
 		return book, err
 	}
+	stat, err := file.Stat()
+	if err != nil {
+		return book, err
+	}
+	// Embedded metadata is optional. If the trailer cannot establish that
+	// strings are unencrypted, let the caller use sidecar/path metadata.
+	if encrypted, err := pdfDocumentEncrypted(file, stat.Size()); err != nil || encrypted {
+		return book, nil
+	}
 	info := parsePDFInfoFields(head)
 	// A head match comes from a linearized PDF whose Info dictionary sits at
 	// the start of the file and is authoritative; non-linearized PDFs (the
@@ -284,15 +293,15 @@ func ebookFileFormat(path string) string {
 
 func (b *parsedEbook) sanitize() {
 	b.Format = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(b.Format)), ".")
-	b.Title = strings.TrimSpace(b.Title)
-	b.Description = cleanEbookDescription(b.Description)
-	b.Publisher = strings.TrimSpace(b.Publisher)
-	b.Language = strings.TrimSpace(b.Language)
+	b.Title = scrubEbookMetadataText(b.Title)
+	b.Description = scrubEbookMetadataText(cleanEbookDescription(b.Description))
+	b.Publisher = scrubEbookMetadataText(b.Publisher)
+	b.Language = scrubEbookMetadataText(b.Language)
 	b.ISBN = normalizeEbookISBN(b.ISBN)
-	b.Series = strings.TrimSpace(b.Series)
-	b.SeriesIndex = strings.TrimSpace(b.SeriesIndex)
-	b.Authors = uniqueTrimmedStrings(b.Authors)
-	b.Genres = uniqueTrimmedStrings(b.Genres)
+	b.Series = scrubEbookMetadataText(b.Series)
+	b.SeriesIndex = scrubEbookMetadataText(b.SeriesIndex)
+	b.Authors = uniqueTrimmedStrings(scrubEbookMetadataTexts(b.Authors))
+	b.Genres = uniqueTrimmedStrings(scrubEbookMetadataTexts(b.Genres))
 	if b.PageCount < 0 {
 		b.PageCount = 0
 	}
@@ -340,6 +349,38 @@ func cleanEbookDescription(value string) string {
 			}
 		}
 	}
+}
+
+// scrubEbookMetadataText removes control characters from extracted metadata.
+// Postgres rejects U+0000 anywhere in a text value and fails the whole
+// statement, and NUL is valid UTF-8, so a UTF-8 validity check does not catch
+// it. Normalize whitespace controls to word separators, then strip the other
+// controls so they cannot reach catalog text fields.
+func scrubEbookMetadataText(value string) string {
+	if !utf8.ValidString(value) {
+		value = strings.ToValidUTF8(value, "")
+	}
+	if strings.ContainsFunc(value, unicode.IsControl) {
+		value = strings.Join(strings.Fields(value), " ")
+		value = strings.Map(func(r rune) rune {
+			if unicode.IsControl(r) {
+				return -1
+			}
+			return r
+		}, value)
+	}
+	return strings.TrimSpace(value)
+}
+
+func scrubEbookMetadataTexts(values []string) []string {
+	if len(values) == 0 {
+		return values
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		out = append(out, scrubEbookMetadataText(value))
+	}
+	return out
 }
 
 func startsWithClosingPunctuation(value string) bool {
@@ -558,7 +599,7 @@ const maxMOBIHeaderScanSize = 256 * 1024
 // MOBI/AZW/AZW3 share the Palm Database (PDB) container: a PDB header, a record
 // offset list, then record 0 holding the PalmDOC header (16 bytes), the MOBI
 // header, and the optional EXTH metadata block. parseEbookMOBI extracts the
-// title, authors, and ISBN that Caliber and most tools write into EXTH, so these
+// title, authors, and ISBN that Calibre and most tools write into EXTH, so these
 // formats no longer fall back to the filename with no author or identifier.
 func parseEbookMOBI(path string) (parsedEbook, error) {
 	book := parsedEbook{Format: strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")}
@@ -884,6 +925,20 @@ func parsePDFInfoFields(data []byte) map[string]string {
 	return fields
 }
 
+// pdfInfoValueLooksBinary reports whether a decoded Info value carries control
+// characters that real metadata does not. Tab, newline, and carriage return
+// stay allowed because producers do emit them inside descriptions.
+func pdfInfoValueLooksBinary(value string) bool {
+	return strings.ContainsFunc(value, func(r rune) bool {
+		switch r {
+		case '\t', '\n', '\r':
+			return false
+		default:
+			return unicode.IsControl(r)
+		}
+	})
+}
+
 // pdfWhitespace is the PDF whitespace character set (ISO 32000-1, table 1).
 const pdfWhitespace = "\x00\t\n\f\r "
 
@@ -900,10 +955,15 @@ func isPDFTokenDelimiter(b byte) bool {
 }
 
 // findPDFInfoValue scans every occurrence of "/<key>" in the window and
-// returns the first whose token is properly delimited and whose value parses
-// as a PDF string. Raw byte search can match key-shaped noise inside
-// compressed streams, so a failed parse moves on to the next occurrence
-// instead of giving up.
+// returns the first whose token is properly delimited, whose value parses as a
+// PDF string, and whose value does not look like binary. Raw byte search can
+// match key-shaped noise inside compressed streams, so a failed parse moves on
+// to the next occurrence instead of giving up.
+//
+// Parsing is not enough on its own: compressed bytes regularly parse as a
+// well-formed hex string, which then reaches the catalog as a title or
+// description. Rejecting values that carry control characters skips those
+// matches and keeps scanning for the real Info dictionary.
 func findPDFInfoValue(data []byte, key string) (string, bool) {
 	token := []byte("/" + key)
 	for offset := 0; offset < len(data); {
@@ -925,6 +985,9 @@ func findPDFInfoValue(data []byte, key string) (string, bool) {
 			return "", false
 		}
 		if value, ok := readPDFString(trimmed); ok {
+			if pdfInfoValueLooksBinary(value) {
+				continue
+			}
 			return value, true
 		}
 	}
@@ -1209,11 +1272,11 @@ func parseEPUBOPFMetadata(opf []byte, book *parsedEbook) error {
 		name := strings.ToLower(strings.TrimSpace(firstNonEmpty(meta.Name, meta.Property)))
 		value := strings.TrimSpace(firstNonEmpty(meta.Content, meta.Value))
 		switch name {
-		case "caliber:series", "belongs-to-collection":
+		case "calibre:series", "belongs-to-collection":
 			book.Series = value
-		case "caliber:series_index", "group-position":
+		case "calibre:series_index", "group-position":
 			book.SeriesIndex = value
-		case "caliber:isbn", "isbn", "schema:isbn":
+		case "calibre:isbn", "isbn", "schema:isbn":
 			if book.ISBN == "" {
 				book.ISBN = normalizeEbookISBN(value)
 			}

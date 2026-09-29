@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  chipsToFilterConfig,
-  filterConfigToChips,
-  type FilterChipModel,
-} from "./filterEasyMode";
+import { chipsToFilterConfig, filterConfigToChips, type FilterChipModel } from "./filterEasyMode";
 
 describe("filterEasyMode conversion", () => {
   it("converts chips to a flat single-group FilterConfig", () => {
@@ -29,10 +25,7 @@ describe("filterEasyMode conversion", () => {
   });
 
   it("preserves matchMode when 'any'", () => {
-    const config = chipsToFilterConfig(
-      [{ field: "genre", op: "contains", value: "Drama" }],
-      "any",
-    );
+    const config = chipsToFilterConfig([{ field: "genre", op: "contains", value: "Drama" }], "any");
     expect(config.groups[0]!.match).toBe("any");
     expect(config.match).toBe("all"); // top-level always "all" for the wrapper
   });
@@ -97,11 +90,7 @@ describe("filterEasyMode conversion", () => {
   });
 
   it("treats nullish or malformed group lists as an empty easy-mode config", () => {
-    for (const config of [
-      undefined,
-      null,
-      { match: "all" as const, groups: "nope" },
-    ]) {
+    for (const config of [undefined, null, { match: "all" as const, groups: "nope" }]) {
       const result = filterConfigToChips(config as never);
       expect(result).toEqual({
         kind: "compatible",

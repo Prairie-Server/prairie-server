@@ -56,10 +56,8 @@ describe("GeneralSettings", () => {
   it("opens with the title alone: no breadcrumb, lede, or status strip", () => {
     renderPage();
 
-    expect(
-      screen.getByRole("heading", { name: "General" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Server name: Silo")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "General" })).toBeInTheDocument();
+    expect(screen.queryByText("Server name: Prairie")).not.toBeInTheDocument();
     expect(screen.queryByText(/Settings ›/)).not.toBeInTheDocument();
   });
 
@@ -67,9 +65,11 @@ describe("GeneralSettings", () => {
     renderPage();
 
     expect(useSettingsFormMock.mock.calls[0]?.[0]?.keys).toEqual([
+      "server.public_url",
       "branding.server_name",
       "branding.login_subtitle",
       "signup.enabled",
+      "password_reset.self_service_enabled",
       "server.log_level",
       "server.log_quiet",
     ]);
@@ -78,21 +78,33 @@ describe("GeneralSettings", () => {
   it("shows the public signup toggle in its saved state and links to invite codes", () => {
     renderPage();
 
-    expect(
-      screen.getByRole("switch", { name: /Public signups/i }),
-    ).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("switch", { name: /Public signups/i })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     // Deep-links straight to the Invite Codes tab rather than the Users tab.
-    expect(
-      screen.getByRole("link", { name: /Manage invite codes/i }),
-    ).toHaveAttribute("href", "/admin/users?tab=invite-codes");
+    expect(screen.getByRole("link", { name: /Manage invite codes/i })).toHaveAttribute(
+      "href",
+      "/admin/users?tab=invite-codes",
+    );
+  });
+
+  it("shows the self-service password reset toggle in its saved state", () => {
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "password_reset.self_service_enabled": "true" }),
+    );
+    renderPage();
+
+    expect(screen.getByRole("switch", { name: /Self-service password reset/i })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 
   it("keeps quiet log prefixes behind the advanced disclosure", () => {
     renderPage();
 
-    expect(
-      screen.queryByLabelText("Quiet log prefixes"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Quiet log prefixes")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Advanced/i })).toHaveAttribute(
       "aria-expanded",
       "false",

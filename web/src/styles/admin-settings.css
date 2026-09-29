@@ -14,17 +14,9 @@
 :root {
   --settings-accent: #a78bfa;
   /* 15% alpha variant for tinted bleeds and soft chip fills. */
-  --settings-accent-soft: color-mix(
-    in srgb,
-    var(--settings-accent) 15%,
-    transparent
-  );
+  --settings-accent-soft: color-mix(in srgb, var(--settings-accent) 15%, transparent);
   /* Slightly stronger, for 1px hairlines that still have to read as violet. */
-  --settings-accent-line: color-mix(
-    in srgb,
-    var(--settings-accent) 32%,
-    transparent
-  );
+  --settings-accent-line: color-mix(in srgb, var(--settings-accent) 32%, transparent);
 }
 
 /* ================================================================
@@ -62,10 +54,11 @@
  * A stack of settings rows, hairline-ruled between them and not after the last.
  * Each separator has exactly one owner: `SettingFieldRow` rules itself (its
  * `.settings-field-row` class opts it out here, so a row directly in a list is
- * never double-ruled), and this rule covers the custom blocks (action rows,
- * notes, wrappers) that sit between fields, which a row's own border cannot.
+ * never double-ruled), and this rule covers custom action rows and wrappers.
+ * Self-contained notices own their complete rounded border and opt out too;
+ * overriding only their bottom edge visibly breaks the lower corners.
  */
-.settings-field-list > *:not(.settings-field-row) {
+.settings-field-list > *:not(.settings-field-row):not(.settings-field-note) {
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 

@@ -28,11 +28,7 @@ vi.mock("@/components/admin/BrandingAssetField", () => ({
 }));
 
 vi.mock("@/components/theme/TokenEditor", () => ({
-  TokenEditor: ({
-    onSetVar,
-  }: {
-    onSetVar: (token: "primary", value: string) => void;
-  }) => (
+  TokenEditor: ({ onSetVar }: { onSetVar: (token: "primary", value: string) => void }) => (
     <button type="button" onClick={() => onSetVar("primary", "#112233")}>
       Set primary token
     </button>
@@ -40,13 +36,7 @@ vi.mock("@/components/theme/TokenEditor", () => ({
 }));
 
 vi.mock("@/components/theme/RawCssEditor", () => ({
-  RawCssEditor: ({
-    value,
-    onChange,
-  }: {
-    value: string;
-    onChange: (css: string) => void;
-  }) => (
+  RawCssEditor: ({ value, onChange }: { value: string; onChange: (css: string) => void }) => (
     <textarea
       aria-label="Custom CSS editor"
       value={value}
@@ -112,11 +102,7 @@ describe("AppearanceSettings", () => {
   it("renders every field group heading", () => {
     render(<AppearanceSettings />);
 
-    for (const heading of [
-      "Logos and icons",
-      "Colors and theme",
-      "Card overlays",
-    ]) {
+    for (const heading of ["Logos and icons", "Colors", "Card overlays"]) {
       expect(screen.getByRole("group", { name: heading })).toBeInTheDocument();
     }
   });
@@ -124,11 +110,10 @@ describe("AppearanceSettings", () => {
   it("renders the tab title and nothing else in the header", () => {
     render(<AppearanceSettings />);
 
-    expect(
-      screen.getByRole("heading", { name: "Appearance" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Default theme")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
     expect(screen.getByText("Accent color")).toBeInTheDocument();
+    // Cinema Dark is the only base theme; there is nothing to pick.
+    expect(screen.queryByText("Default theme")).not.toBeInTheDocument();
   });
 
   it("stages the union of appearance keys and leaves identity to General", () => {
@@ -138,16 +123,16 @@ describe("AppearanceSettings", () => {
     expect(keys).toEqual(
       expect.arrayContaining([
         "branding.accent_color",
-        "branding.default_theme",
         "ui.admin_theme_vars",
         "ui.admin_custom_css",
-        "theme.catalog_url",
         "overlays.enabled",
         "defaults.card_overlays",
       ]),
     );
     expect(keys).not.toContain("branding.server_name");
     expect(keys).not.toContain("branding.login_subtitle");
+    expect(keys).not.toContain("branding.default_theme");
+    expect(keys).not.toContain("theme.catalog_url");
   });
 
   it("stages the accent color and its theme tokens instead of saving immediately", () => {
@@ -156,10 +141,7 @@ describe("AppearanceSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use accent #10b981" }));
 
     expect(form.save).not.toHaveBeenCalled();
-    expect(form.setValue).toHaveBeenCalledWith(
-      "branding.accent_color",
-      "#10b981",
-    );
+    expect(form.setValue).toHaveBeenCalledWith("branding.accent_color", "#10b981");
     expect(form.setValue).toHaveBeenCalledWith(
       "ui.admin_theme_vars",
       JSON.stringify({
@@ -170,24 +152,42 @@ describe("AppearanceSettings", () => {
     );
   });
 
-  it("keeps the token editor, custom CSS and theme list behind one advanced disclosure", () => {
+  it("keeps the token editor and custom CSS behind one advanced disclosure", () => {
     render(<AppearanceSettings />);
 
-    expect(
-      screen.queryByRole("button", { name: "Set primary token" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Set primary token" })).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /Advanced · 3 settings/ }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Advanced · 2 settings/ }));
 
-    expect(
-      screen.getByRole("button", { name: "Set primary token" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: "Custom CSS editor" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Community theme list")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Set primary token" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Custom CSS editor" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Community theme list")).not.toBeInTheDocument();
+  });
+
+  it("offers no reset while the theme is stock Cinema Dark", () => {
+    render(<AppearanceSettings />);
+
+    expect(screen.getByRole("button", { name: /Reset to Cinema Dark/ })).toBeDisabled();
+  });
+
+  // Like restoring badge defaults, the reset is a staged edit confirmed
+  // through the SaveBar.
+  it("stages a reset of accent, tokens and CSS back to Cinema Dark", () => {
+    form = makeForm({
+      "branding.accent_color": "#10b981",
+      "ui.admin_theme_vars": JSON.stringify({ primary: "#10b981", background: "#000000" }),
+      "ui.admin_custom_css": "body { color: red; }",
+    });
+    render(<AppearanceSettings />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Reset to Cinema Dark/ }));
+    expect(form.setValue).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(form.setValue).toHaveBeenCalledWith("branding.accent_color", "");
+    expect(form.setValue).toHaveBeenCalledWith("ui.admin_theme_vars", "{}");
+    expect(form.setValue).toHaveBeenCalledWith("ui.admin_custom_css", "");
+    expect(form.save).not.toHaveBeenCalled();
   });
 
   // Show-only overlays (network, show status) are invisible against the movie
@@ -213,10 +213,7 @@ describe("AppearanceSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: /Restore defaults/ }));
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));
 
-    expect(form.setValue).toHaveBeenCalledWith(
-      "defaults.card_overlays",
-      BUILT_IN_OVERLAY_DEFAULTS,
-    );
+    expect(form.setValue).toHaveBeenCalledWith("defaults.card_overlays", BUILT_IN_OVERLAY_DEFAULTS);
     expect(form.save).not.toHaveBeenCalled();
   });
 
@@ -231,27 +228,20 @@ describe("AppearanceSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Restore" }));
 
     expect(form.setValue).toHaveBeenCalledTimes(1);
-    expect(form.setValue).not.toHaveBeenCalledWith(
-      "overlays.enabled",
-      expect.anything(),
-    );
+    expect(form.setValue).not.toHaveBeenCalledWith("overlays.enabled", expect.anything());
   });
 
   it("offers nothing to restore while the defaults already match the registry", () => {
     form = makeForm({ "defaults.card_overlays": BUILT_IN_OVERLAY_DEFAULTS });
     render(<AppearanceSettings />);
 
-    expect(
-      screen.getByRole("button", { name: /Restore defaults/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Restore defaults/ })).toBeDisabled();
   });
 
   it("stages sanitized CSS while the editor keeps showing what was typed", () => {
     render(<AppearanceSettings />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /Advanced · 3 settings/ }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /Advanced · 2 settings/ }));
     const editor = screen.getByRole("textbox", { name: "Custom CSS editor" });
     fireEvent.change(editor, {
       target: {
@@ -264,8 +254,6 @@ describe("AppearanceSettings", () => {
       "ui.admin_custom_css",
       "/* [blocked @import] */ .card { color: red; }",
     );
-    expect(editor).toHaveValue(
-      '@import "https://example.invalid/x.css"; .card { color: red; }',
-    );
+    expect(editor).toHaveValue('@import "https://example.invalid/x.css"; .card { color: red; }');
   });
 });

@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import type {
@@ -18,10 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useRateLimitConfig,
-  useUpdateRateLimitConfig,
-} from "@/hooks/queries/admin/rateLimits";
+import { useRateLimitConfig, useUpdateRateLimitConfig } from "@/hooks/queries/admin/rateLimits";
 import { useRestartKeys } from "@/hooks/useRestartKeys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useReportUnsavedChanges } from "@/hooks/useUnsavedChanges";
@@ -36,12 +34,14 @@ import {
   SettingFieldStatus,
 } from "./SettingField";
 
-// Sign-in lifetimes and proxy trust go through the batched settings endpoint.
-// Rate limits do not: they live behind /admin/rate-limits/config and the batch
-// endpoint rejects those keys, so this page drives two writers behind one save
-// bar rather than showing the admin two different Save buttons.
+// Sign-in lifetimes, proxy trust, and local media server access go through the
+// batched settings endpoint. Rate limits do not: they live behind
+// /admin/rate-limits/config and the batch endpoint rejects those keys, so this
+// page drives two writers behind one save bar rather than showing the admin two
+// different Save buttons.
 const SESSION_KEYS = ["auth.access_token_expiry", "auth.refresh_token_expiry"];
-const NETWORK_KEYS = ["clientip.trusted_proxies"];
+const LOCAL_MEDIA_SERVERS_KEY = "media_servers.allow_private_destinations";
+const NETWORK_KEYS = ["clientip.trusted_proxies", LOCAL_MEDIA_SERVERS_KEY];
 const KEYS = [...SESSION_KEYS, ...NETWORK_KEYS];
 
 const DEFAULT_TIER: RateLimitTierConfig = {
@@ -74,6 +74,7 @@ const DEFAULT_CONFIG: RateLimitConfig = {
     login: { requests_per_minute: 20, burst: 10 },
     signup: { requests_per_minute: 10, burst: 6 },
     setup: { requests_per_minute: 10, burst: 6 },
+    password_change: { requests_per_minute: 10, burst: 5 },
     device_start: { requests_per_minute: 20, burst: 10 },
     device_lookup: { requests_per_minute: 60, burst: 20 },
     device_poll: { requests_per_minute: 120, burst: 30 },
@@ -90,6 +91,7 @@ const AUTH_ENDPOINT_LABELS: Record<string, string> = {
   login: "Sign in",
   signup: "Sign up",
   setup: "First-run setup",
+  password_change: "Change password",
   device_start: "TV sign-in: start",
   device_lookup: "TV sign-in: code lookup",
   device_poll: "TV sign-in: waiting for approval",
@@ -115,10 +117,7 @@ function RateBox({
 }) {
   return (
     <span className="flex flex-col items-end gap-1">
-      <Label
-        htmlFor={id}
-        className="text-muted-foreground text-[11px] font-normal"
-      >
+      <Label htmlFor={id} className="text-muted-foreground text-[11px] font-normal">
         {caption}
       </Label>
       <Input
@@ -157,11 +156,7 @@ function RateTriadRow({
   const baseId = useId();
 
   return (
-    <SettingFieldRow
-      label={label}
-      htmlFor={`${baseId}-rpm`}
-      description={description}
-    >
+    <SettingFieldRow label={label} htmlFor={`${baseId}-rpm`} description={description}>
       <div className="flex flex-wrap items-end justify-end gap-2.5">
         {perSecond && (
           <RateBox
@@ -171,18 +166,8 @@ function RateTriadRow({
             disabled={disabled}
           />
         )}
-        <RateBox
-          id={`${baseId}-rpm`}
-          caption="Per minute"
-          field={perMinute}
-          disabled={disabled}
-        />
-        <RateBox
-          id={`${baseId}-burst`}
-          caption="Burst"
-          field={burst}
-          disabled={disabled}
-        />
+        <RateBox id={`${baseId}-rpm`} caption="Per minute" field={perMinute} disabled={disabled} />
+        <RateBox id={`${baseId}-burst`} caption="Burst" field={burst} disabled={disabled} />
       </div>
     </SettingFieldRow>
   );
@@ -191,15 +176,12 @@ function RateTriadRow({
 export default function SecurityAccessSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const restartKeys = useRestartKeys();
-  const allRestart = (keys: string[]) =>
-    keys.every((key) => restartKeys.has(key));
-  const { data: serverConfig, isLoading: rateLimitsLoading } =
-    useRateLimitConfig();
+  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
+  const { data: serverConfig, isLoading: rateLimitsLoading } = useRateLimitConfig();
   const updateConfig = useUpdateRateLimitConfig();
 
-  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes(
-    "clientip.trusted_proxies",
-  );
+  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes("clientip.trusted_proxies");
+  const localMediaServersAllowed = form.getValue(LOCAL_MEDIA_SERVERS_KEY) === "true";
 
   // The save endpoint rejects the Redis backend unless Redis is configured, so
   // mirror that rule on the option itself. The server stays the source of
@@ -213,14 +195,10 @@ export default function SecurityAccessSettings() {
   // without the flag, and a restart alone may not fix it, so the hint states
   // the mismatch instead of prescribing a restart.
   const savedBackend = serverConfig?.backend || "memory";
-  const limiterInactive =
-    serverConfig?.enabled === true && serverConfig.active === false;
-  const runningBackend =
-    serverConfig?.active === true ? serverConfig.active_backend : undefined;
-  const runningBackendDiffers =
-    Boolean(runningBackend) && runningBackend !== savedBackend;
-  const backendNoun = (backend?: string) =>
-    backend === "redis" ? "Redis" : "in-memory";
+  const limiterInactive = serverConfig?.enabled === true && serverConfig.active === false;
+  const runningBackend = serverConfig?.active === true ? serverConfig.active_backend : undefined;
+  const runningBackendDiffers = Boolean(runningBackend) && runningBackend !== savedBackend;
+  const backendNoun = (backend?: string) => (backend === "redis" ? "Redis" : "in-memory");
 
   const hydratedConfig = useMemo<RateLimitConfig>(() => {
     if (!serverConfig) return DEFAULT_CONFIG;
@@ -229,17 +207,13 @@ export default function SecurityAccessSettings() {
       backend: serverConfig.backend || "memory",
       global_requests_per_second: serverConfig.global_requests_per_second,
       tiers: {
-        standard:
-          serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
-        elevated:
-          serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
+        standard: serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
+        elevated: serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
       },
       ip_requests_per_second:
-        serverConfig.ip_requests_per_second ??
-        DEFAULT_CONFIG.ip_requests_per_second,
+        serverConfig.ip_requests_per_second ?? DEFAULT_CONFIG.ip_requests_per_second,
       ip_requests_per_minute:
-        serverConfig.ip_requests_per_minute ??
-        DEFAULT_CONFIG.ip_requests_per_minute,
+        serverConfig.ip_requests_per_minute ?? DEFAULT_CONFIG.ip_requests_per_minute,
       ip_burst: serverConfig.ip_burst ?? DEFAULT_CONFIG.ip_burst,
       auth_endpoints: Object.fromEntries(
         Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => [
@@ -254,20 +228,20 @@ export default function SecurityAccessSettings() {
 
   // Keyed on the hydrated snapshot so a refetch that actually changes the saved
   // config wins over a stale draft instead of silently resurrecting it.
-  const hydratedKey = JSON.stringify(hydratedConfig);
-  const [configState, setConfigState] = useState<{
-    key: string;
-    config: RateLimitConfig;
-  }>({
+  const hydratedKey = JSON.stringify([
+    hydratedConfig,
+    serverConfig?.etag,
+    serverConfig?.profileContext?.serverOrigin,
+    serverConfig?.profileContext?.authContextVersion,
+    serverConfig?.profileContext?.profileId,
+  ]);
+  const [configState, setConfigState] = useState<{ key: string; config: RateLimitConfig }>({
     key: hydratedKey,
     config: hydratedConfig,
   });
-  const config =
-    configState.key === hydratedKey ? configState.config : hydratedConfig;
+  const config = configState.key === hydratedKey ? configState.config : hydratedConfig;
 
-  function updateConfigState(
-    updater: (prev: RateLimitConfig) => RateLimitConfig,
-  ) {
+  function updateConfigState(updater: (prev: RateLimitConfig) => RateLimitConfig) {
     setConfigState((prev) => {
       const base = prev.key === hydratedKey ? prev.config : hydratedConfig;
       return { key: hydratedKey, config: updater(base) };
@@ -282,11 +256,7 @@ export default function SecurityAccessSettings() {
     };
   }
 
-  function handleTierChange(
-    tier: string,
-    field: keyof RateLimitTierConfig,
-    value: number,
-  ) {
+  function handleTierChange(tier: string, field: keyof RateLimitTierConfig, value: number) {
     updateConfigState((prev) => {
       const existing: RateLimitTierConfig = prev.tiers[tier] ?? DEFAULT_TIER;
       return {
@@ -314,7 +284,7 @@ export default function SecurityAccessSettings() {
     });
   }
 
-  const rateLimitsDirty = JSON.stringify(config) !== hydratedKey;
+  const rateLimitsDirty = JSON.stringify(config) !== JSON.stringify(hydratedConfig);
   // The rate-limit draft lives outside useSettingsForm, so it has to announce
   // itself to the unsaved-changes registry on its own — otherwise the
   // navigation guard and the reload prompt only know about the batched keys.
@@ -325,10 +295,7 @@ export default function SecurityAccessSettings() {
     JSON.stringify({ ...config, enabled: true }) !==
     JSON.stringify({ ...hydratedConfig, enabled: true });
   const advancedCount =
-    2 +
-    3 +
-    Object.keys(TIER_LABELS).length * 3 +
-    Object.keys(AUTH_ENDPOINT_LABELS).length * 2;
+    2 + 3 + Object.keys(TIER_LABELS).length * 3 + Object.keys(AUTH_ENDPOINT_LABELS).length * 2;
 
   /**
    * One Save, two writers — and they are ordered, not concurrent. The
@@ -338,14 +305,22 @@ export default function SecurityAccessSettings() {
    *
    * A failed writer keeps its own staged edits (neither mutation clears them on
    * error) and toasts the server's message, so the admin can fix the cause and
-   * hit Save again. The batch failing skips the rate-limit PUT for the same
+   * hit Save again. The batch failing skips the rate-limit PATCH for the same
    * reason it goes first: the settings it would be validated against are not
    * the ones on screen.
    */
   async function handleSave() {
+    const intent =
+      rateLimitsDirty && serverConfig
+        ? {
+            config: structuredClone(config),
+            etag: serverConfig.etag,
+            profileContext: serverConfig.profileContext,
+          }
+        : null;
     try {
       if (form.dirtyCount > 0) await form.save();
-      if (rateLimitsDirty) await updateConfig.mutateAsync(config);
+      if (intent) await updateConfig.mutateAsync(intent);
     } catch {
       // Both mutations already surface the failure as a toast; swallowing here
       // only stops it becoming an unhandled rejection out of the save bar.
@@ -380,10 +355,7 @@ export default function SecurityAccessSettings() {
       <SettingsPageHeader title="Security & Access" className="mb-8" />
 
       <div className="flex-1 space-y-5">
-        <FieldGroup
-          label="Sign-in sessions"
-          restartAll={allRestart(SESSION_KEYS)}
-        >
+        <FieldGroup label="Sign-in sessions" restartAll={allRestart(SESSION_KEYS)}>
           <SettingField
             label="Access token expiry"
             type="duration"
@@ -416,6 +388,23 @@ export default function SecurityAccessSettings() {
             disabled={trustedProxiesManaged}
             restartRequired={restartKeys.has("clientip.trusted_proxies")}
           />
+          <SettingField
+            label="Local servers for every account"
+            description="Lets every account import history from, and sync with, Plex, Emby, and Jellyfin servers at local network addresses such as 192.168.x.x or localhost. Admins always can."
+            type="toggle"
+            value={form.getValue(LOCAL_MEDIA_SERVERS_KEY)}
+            onChange={(v) => form.setValue(LOCAL_MEDIA_SERVERS_KEY, v)}
+            restartRequired={restartKeys.has(LOCAL_MEDIA_SERVERS_KEY)}
+          />
+          {localMediaServersAllowed && (
+            <div className="flex items-start gap-2 py-3 text-xs text-amber-500">
+              <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <p>
+                Anyone who can sign in can make this server send requests to devices on its local
+                network. Turn this on only if you trust every account on this server.
+              </p>
+            </div>
+          )}
         </FieldGroup>
 
         <FieldGroup label="Rate limiting">
@@ -423,15 +412,13 @@ export default function SecurityAccessSettings() {
             label="Enable rate limiting"
             type="toggle"
             value={config.enabled ? "true" : "false"}
-            onChange={(v) =>
-              updateConfigState((prev) => ({ ...prev, enabled: v === "true" }))
-            }
+            onChange={(v) => updateConfigState((prev) => ({ ...prev, enabled: v === "true" }))}
             disabled={savingRateLimits}
             status={
               limiterInactive ? (
                 <SettingFieldStatus tone="warn">
-                  Enabled, but no limiter is running in this process — it may
-                  have failed to start. Check the server logs.
+                  Enabled, but no limiter is running in this process — it may have failed to start.
+                  Check the server logs.
                 </SettingFieldStatus>
               ) : undefined
             }
@@ -448,15 +435,14 @@ export default function SecurityAccessSettings() {
               description={
                 redisSelectable
                   ? "Redis shares counters across servers, after a restart."
-                  : "Redis shares counters across servers, after a restart. Configure Redis under Infrastructure first."
+                  : "Redis shares counters across servers, after a restart. Configure Redis under Storage & Database first."
               }
               status={
                 runningBackendDiffers ? (
                   <SettingFieldStatus tone="warn">
-                    The running limiter is using {backendNoun(runningBackend)}{" "}
-                    counters, not the saved {backendNoun(savedBackend)} backend.
-                    If a restart does not fix it, check that the saved backend
-                    is reachable.
+                    The running limiter is using {backendNoun(runningBackend)} counters, not the
+                    saved {backendNoun(savedBackend)} backend. If a restart does not fix it, check
+                    that the saved backend is reachable.
                   </SettingFieldStatus>
                 ) : undefined
               }
@@ -468,10 +454,7 @@ export default function SecurityAccessSettings() {
                 }
                 disabled={savingRateLimits}
               >
-                <SelectTrigger
-                  id="rate-limit-backend"
-                  className={SETTINGS_CONTROL_WIDTH}
-                >
+                <SelectTrigger id="rate-limit-backend" className={SETTINGS_CONTROL_WIDTH}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -561,20 +544,15 @@ export default function SecurityAccessSettings() {
                   }}
                   burst={{
                     value: tierConfig.burst,
-                    onChange: setNumber((num) =>
-                      handleTierChange(tier, "burst", num),
-                    ),
+                    onChange: setNumber((num) => handleTierChange(tier, "burst", num)),
                   }}
                 />
               );
             })}
 
-            <SettingsSubheading>
-              Sign-in and webhook endpoints
-            </SettingsSubheading>
+            <SettingsSubheading>Sign-in and webhook endpoints</SettingsSubheading>
             {Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => {
-              const epConfig =
-                config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
+              const epConfig = config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
               return (
                 <RateTriadRow
                   key={endpoint}
@@ -583,18 +561,12 @@ export default function SecurityAccessSettings() {
                   perMinute={{
                     value: epConfig.requests_per_minute,
                     onChange: setNumber((num) =>
-                      handleAuthEndpointChange(
-                        endpoint,
-                        "requests_per_minute",
-                        num,
-                      ),
+                      handleAuthEndpointChange(endpoint, "requests_per_minute", num),
                     ),
                   }}
                   burst={{
                     value: epConfig.burst,
-                    onChange: setNumber((num) =>
-                      handleAuthEndpointChange(endpoint, "burst", num),
-                    ),
+                    onChange: setNumber((num) => handleAuthEndpointChange(endpoint, "burst", num)),
                   }}
                 />
               );

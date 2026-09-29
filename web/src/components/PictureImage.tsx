@@ -1,10 +1,7 @@
 import type { ImgHTMLAttributes } from "react";
 import { staticRasterFormats } from "@/lib/staticImageUrl";
 
-export type PictureImageProps = Omit<
-  ImgHTMLAttributes<HTMLImageElement>,
-  "src"
-> & {
+export type PictureImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   /** Canonical raster URL (.png / .webp / .avif). Sibling formats are preferred. */
   src: string;
 };

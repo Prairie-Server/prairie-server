@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	siloDeviceIDHeader                 = "X-Silo-Device-Id"
+	siloDeviceIDHeader                 = "X-Prairie-Device-Id"
 	policyInternalErrorCode            = "internal_error"
 	activeProfileVerificationFailedMsg = "Failed to verify active profile"
 	metadataCurationRequiredMsg        = "Metadata curation permission required"
 	markerEditRequiredMsg              = "Marker editing permission required"
+	itemIDRequiredMsg                  = "Item ID is required"
 )
 
 // PermissionDecider is the narrow policy decision interface used by route
@@ -34,7 +35,7 @@ func NewPolicyActingAdminMiddleware(pdp PermissionDecider, primaryChecker Primar
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := GetClaims(r.Context())
 			if claims == nil {
-				writeUnauthorized(w, "Authentication required")
+				writeUnauthorized(w, "Authentication required", ReasonAuthenticationRequired)
 				return
 			}
 
@@ -118,7 +119,7 @@ func (m *PolicyPermissionMiddleware) RequireMetadataCurationForItem(next http.Ha
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := GetClaims(r.Context())
 		if claims == nil {
-			writeUnauthorized(w, "Authentication required")
+			writeUnauthorized(w, "Authentication required", ReasonAuthenticationRequired)
 			return
 		}
 
@@ -152,7 +153,7 @@ func (m *PolicyPermissionMiddleware) RequireMetadataCurationForItem(next http.Ha
 
 		contentID := chi.URLParam(r, "id")
 		if contentID == "" {
-			writePermissionError(w, http.StatusBadRequest, "bad_request", "Item ID is required")
+			writePermissionErrorReason(w, http.StatusBadRequest, "bad_request", itemIDRequiredMsg, ReasonItemIDRequired)
 			return
 		}
 
@@ -233,7 +234,7 @@ func (m *PolicyPermissionMiddleware) RequireMarkerEdit(next http.Handler) http.H
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := GetClaims(r.Context())
 		if claims == nil {
-			writeUnauthorized(w, "Authentication required")
+			writeUnauthorized(w, "Authentication required", ReasonAuthenticationRequired)
 			return
 		}
 		if m == nil || m.users == nil || m.pdp == nil {

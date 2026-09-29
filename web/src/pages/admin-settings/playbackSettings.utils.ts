@@ -6,38 +6,14 @@ import type { HWAccelInfo } from "@/hooks/queries/admin/system";
 // toggles, with no selection meaning "auto" (server picks the first
 // available device). The setting is cluster-wide, so rows carry per-node
 // presence info when transcode nodes report their inventories.
+//
+// Parsing and toggling that list is the same problem as editing one node's
+// hw_device_override, so both live in @/lib/hwDevices and are re-exported here
+// for the callers (and tests) that already know them by these names.
 
-export function parseHWDeviceList(value: string | undefined): string[] {
-  if (!value) return [];
-  return value
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
-}
+import { parseHWDeviceList, toggleHWDevice } from "@/lib/hwDevices";
 
-/**
- * Toggles one device in the stored list, preserving the order devices are
- * detected in so the stored value stays stable regardless of click order.
- */
-export function toggleHWDevice(
-  value: string | undefined,
-  device: string,
-  detectedOrder: string[],
-): string {
-  const selected = new Set(parseHWDeviceList(value));
-  if (selected.has(device)) {
-    selected.delete(device);
-  } else {
-    selected.add(device);
-  }
-  const ordered = detectedOrder.filter((path) => selected.has(path));
-  // Preserve selected devices the current detection pass doesn't list (e.g.
-  // a temporarily unplugged GPU) rather than silently dropping them.
-  for (const path of selected) {
-    if (!detectedOrder.includes(path)) ordered.push(path);
-  }
-  return ordered.join(",");
-}
+export { parseHWDeviceList, toggleHWDevice };
 
 export interface HWDeviceRow {
   path: string;
@@ -59,9 +35,7 @@ export function buildHWDeviceRows(
   configured: string | undefined,
 ): HWDeviceRow[] {
   const detected = detectedDevices(detection);
-  const respondingNodes = (detection?.nodes ?? []).filter(
-    (node) => !node.error,
-  );
+  const respondingNodes = (detection?.nodes ?? []).filter((node) => !node.error);
   const missingOn = (path: string) =>
     respondingNodes
       .filter((node) => !(node.render_devices ?? []).includes(path))
@@ -90,9 +64,7 @@ export function buildHWDeviceRows(
  * inventories differ — the cluster-wide hw_device value is only safe for
  * paths present on every node, so the UI shows a warning.
  */
-export function nodeInventoriesDiverge(
-  detection: HWAccelInfo | undefined,
-): boolean {
+export function nodeInventoriesDiverge(detection: HWAccelInfo | undefined): boolean {
   const inventories = (detection?.nodes ?? [])
     .filter((node) => !node.error)
     .map((node) => [...(node.render_devices ?? [])].sort().join(","));
@@ -106,22 +78,15 @@ export function nodeInventoriesDiverge(
 
 export const CHAPTER_THUMBNAIL_EXECUTION_DEFAULT = "local";
 
-const NODE_BACKED_CHAPTER_THUMBNAIL_MODES = [
-  "prefer_transcode_nodes",
-  "transcode_nodes_only",
-];
+const NODE_BACKED_CHAPTER_THUMBNAIL_MODES = ["prefer_transcode_nodes", "transcode_nodes_only"];
 
 /**
  * True when at least one transcode node could take an extraction. Mirrors the
  * server's reservation rule (internal/chapterthumbs reserveRemoteNode): a node
  * counts only while it is both enabled and healthy.
  */
-export function hasUsableTranscodeNode(
-  nodes: StreamNode[] | undefined,
-): boolean {
-  return (nodes ?? []).some(
-    (node) => node.type === "transcode" && node.enabled && node.healthy,
-  );
+export function hasUsableTranscodeNode(nodes: StreamNode[] | undefined): boolean {
+  return (nodes ?? []).some((node) => node.type === "transcode" && node.enabled && node.healthy);
 }
 
 export interface ChapterThumbnailExecutionOption {
@@ -160,10 +125,7 @@ function detectedDevices(
   detection: HWAccelInfo | undefined,
 ): { path: string; description: string }[] {
   if (!detection) return [];
-  if (
-    detection.render_device_details &&
-    detection.render_device_details.length > 0
-  ) {
+  if (detection.render_device_details && detection.render_device_details.length > 0) {
     return detection.render_device_details;
   }
   // Older nodes report only render_devices paths.
@@ -171,4 +133,41 @@ function detectedDevices(
     path,
     description: "GPU",
   }));
+}
+
+/** The `playback.hw_accel` choices, in the order the select shows them. */
+export const HW_ACCEL_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "qsv", label: "Intel Quick Sync (QSV)" },
+  { value: "vaapi", label: "VA-API" },
+  { value: "nvenc", label: "NVIDIA NVENC" },
+  { value: "videotoolbox", label: "VideoToolbox (macOS)" },
+  { value: "none", label: "Software" },
+];
+
+/** Human name for a resolved hardware-acceleration backend. */
+export function formatResolved(resolved: string): string {
+  return HW_ACCEL_OPTIONS.find((option) => option.value === resolved)?.label ?? resolved;
+}
+
+/**
+ * One-line detection result, e.g. "Detected VA-API on renderD128". Returns
+ * undefined while nothing has been probed yet so the caller can show its own
+ * "detecting" state instead of an empty phrase.
+ */
+export function describeDetection(detection: HWAccelInfo | undefined): string | undefined {
+  if (!detection) return undefined;
+  if (detection.resolved === "none") return "No supported graphics hardware found";
+  const device = detection.render_devices?.[0];
+  const onNode = detection.source === "transcode_node" ? " (transcode node)" : "";
+  return `Detected ${formatResolved(detection.resolved)}${device ? ` on ${device}` : ""}${onNode}`;
+}
+
+/**
+ * Whether the probed executor inventory contains a validated hardware tone
+ * mapper. The server only lists capabilities it has actually verified, so an
+ * empty or missing list means hardware HDR-to-SDR is not available here.
+ */
+export function hasHardwareToneMapCapability(detection: HWAccelInfo | undefined): boolean {
+  return (detection?.tone_map_capabilities ?? []).some((cap) => cap.mode === "hardware");
 }

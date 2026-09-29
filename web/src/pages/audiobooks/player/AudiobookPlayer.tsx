@@ -60,8 +60,7 @@ export default function AudiobookPlayer({
     playback,
     prefs,
     expanded: mode === "now-listening",
-    onToggleExpanded: () =>
-      setMode((m) => (m === "mini" ? "now-listening" : "mini")),
+    onToggleExpanded: () => setMode((m) => (m === "mini" ? "now-listening" : "mini")),
     onCollapse: () => setMode("mini"),
   });
 

@@ -53,10 +53,7 @@ import {
   useAvailableScanSources,
 } from "@/hooks/queries/useAutoscan";
 import { useActiveScans } from "@/hooks/queries/admin/scans";
-import {
-  useAdminLibraries,
-  useCancelLibraryScans,
-} from "@/hooks/queries/admin/libraries";
+import { useAdminLibraries, useCancelLibraryScans } from "@/hooks/queries/admin/libraries";
 import {
   buildPluginDisplayNames,
   resolveEventSourceName,
@@ -70,10 +67,7 @@ import {
   formatActiveScanTrigger,
 } from "@/lib/scanRuns";
 import { cn } from "@/lib/utils";
-import {
-  formatTime as formatTimePreferred,
-  preferredDateLocale,
-} from "@/lib/datetime";
+import { formatTime as formatTimePreferred, preferredDateLocale } from "@/lib/datetime";
 
 const HISTORY_PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_HISTORY_PAGE_SIZE = 25;
@@ -107,17 +101,12 @@ function pollEventDuration(event: AutoscanEvent): string {
   if (event.status !== "running") {
     return formatDuration(event.duration_ms);
   }
-  const elapsed = Math.max(
-    0,
-    Date.now() - new Date(event.started_at).getTime(),
-  );
+  const elapsed = Math.max(0, Date.now() - new Date(event.started_at).getTime());
   return formatDuration(elapsed);
 }
 
 function pollEventTimestamp(event: AutoscanEvent): string {
-  return formatTimestamp(
-    event.status === "running" ? event.started_at : event.completed_at,
-  );
+  return formatTimestamp(event.status === "running" ? event.started_at : event.completed_at);
 }
 
 function eventStatusTone(status: AutoscanEventStatus): {
@@ -181,29 +170,17 @@ type PollSourceRef = {
   capability_id?: string;
 };
 
-function pollSourceName(
-  event: PollSourceRef,
-  lookups: SourceLabelLookups,
-): string {
+function pollSourceName(event: PollSourceRef, lookups: SourceLabelLookups): string {
   return (
-    resolveEventSourceName(event, lookups) ||
-    event.plugin_id ||
-    event.capability_id ||
-    "Autoscan"
+    resolveEventSourceName(event, lookups) || event.plugin_id || event.capability_id || "Autoscan"
   );
 }
 
-function scanSourceName(
-  scan: AutoscanScan,
-  lookups: SourceLabelLookups,
-): string {
+function scanSourceName(scan: AutoscanScan, lookups: SourceLabelLookups): string {
   return resolveEventSourceName(scan, lookups) || "Autoscan";
 }
 
-function libraryName(
-  librariesByID: Map<number, Library>,
-  libraryID: number,
-): string {
+function libraryName(librariesByID: Map<number, Library>, libraryID: number): string {
   return librariesByID.get(libraryID)?.name ?? `Library #${libraryID}`;
 }
 
@@ -212,24 +189,15 @@ function PollStatusBadge({ status }: { status: AutoscanEventStatus }) {
   const Icon = tone.icon;
   return (
     <Badge variant="outline" className={tone.className}>
-      <Icon
-        className={cn("h-3.5 w-3.5", status === "running" && "animate-spin")}
-      />
+      <Icon className={cn("h-3.5 w-3.5", status === "running" && "animate-spin")} />
       {tone.label}
     </Badge>
   );
 }
 
-function ScanStatusBadge({
-  status,
-}: {
-  status: AutoscanScanStatus | ScanRun["status"];
-}) {
+function ScanStatusBadge({ status }: { status: AutoscanScanStatus | ScanRun["status"] }) {
   return (
-    <Badge
-      variant="outline"
-      className={cn("capitalize tabular-nums", scanStatusClass(status))}
-    >
+    <Badge variant="outline" className={cn("capitalize tabular-nums", scanStatusClass(status))}>
       {scanStatusLabel(status)}
     </Badge>
   );
@@ -252,13 +220,7 @@ function DeliveryBadge({ event }: { event: AutoscanEvent }) {
 
 // Shared desktop table chrome so the queue, scan history, and poll log read as
 // one family: clipped rounded border, muted sticky-feeling header band.
-function DataTable({
-  head,
-  children,
-}: {
-  head: ReactNode;
-  children: ReactNode;
-}) {
+function DataTable({ head, children }: { head: ReactNode; children: ReactNode }) {
   return (
     <div className="hidden overflow-hidden rounded-lg border lg:block">
       <Table>
@@ -273,11 +235,7 @@ function DataTable({
 
 function RunList({ runs }: { runs: AutoscanEventScanRun[] }) {
   if (runs.length === 0) {
-    return (
-      <span className="text-muted-foreground text-xs">
-        No new scan rows were created.
-      </span>
-    );
+    return <span className="text-muted-foreground text-xs">No new scan rows were created.</span>;
   }
   return (
     <div className="space-y-2">
@@ -332,9 +290,7 @@ function QueueCard({
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <ScanStatusBadge status={scan.status} />
-            <span className="font-medium">
-              {libraryName(librariesByID, scan.library_id)}
-            </span>
+            <span className="font-medium">{libraryName(librariesByID, scan.library_id)}</span>
           </div>
           <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs">
             <span>{formatActiveScanMode(scan)}</span>
@@ -388,10 +344,7 @@ function AutoscanQueue({
   // synchronously, so derive the in-range page during render (no effect needed)
   // and the view self-heals when the queue shrinks below the current offset.
   const safePage = Math.min(page, pageCount - 1);
-  const rows = scans.slice(
-    safePage * QUEUE_PAGE_SIZE,
-    (safePage + 1) * QUEUE_PAGE_SIZE,
-  );
+  const rows = scans.slice(safePage * QUEUE_PAGE_SIZE, (safePage + 1) * QUEUE_PAGE_SIZE);
 
   if (scans.length === 0) {
     return (
@@ -534,9 +487,7 @@ function RunningPolls({
           <div key={poll.id} className="border-border rounded-lg border p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-medium">
-                  {pollSourceName(poll, lookups)}
-                </div>
+                <div className="font-medium">{pollSourceName(poll, lookups)}</div>
                 <div className="text-muted-foreground mt-1 text-xs [overflow-wrap:anywhere]">
                   {poll.plugin_id} · {poll.capability_id}
                 </div>
@@ -569,23 +520,17 @@ function ScanHistoryCard({
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <ScanStatusBadge status={scan.status} />
-            <span className="font-medium">
-              {libraryName(librariesByID, scan.library_id)}
-            </span>
+            <span className="font-medium">{libraryName(librariesByID, scan.library_id)}</span>
           </div>
           <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs">
             <span>{formatActiveScanMode(scan)}</span>
             <span>{scanSourceName(scan, lookups)}</span>
             <span>
-              {formatTimestamp(
-                scan.completed_at ?? scan.started_at ?? scan.requested_at,
-              )}
+              {formatTimestamp(scan.completed_at ?? scan.started_at ?? scan.requested_at)}
             </span>
           </div>
         </div>
-        {scan.event_status ? (
-          <PollStatusBadge status={scan.event_status} />
-        ) : null}
+        {scan.event_status ? <PollStatusBadge status={scan.event_status} /> : null}
       </div>
       <div className="text-muted-foreground mt-3 font-mono text-xs [overflow-wrap:anywhere]">
         {scan.path || "Entire library"}
@@ -642,13 +587,9 @@ function ScanHistoryTable({
             </TableCell>
             <TableCell className="font-medium">
               {libraryName(librariesByID, scan.library_id)}
-              <div className="text-muted-foreground mt-1 font-mono text-[11px]">
-                {scan.id}
-              </div>
+              <div className="text-muted-foreground mt-1 font-mono text-[11px]">{scan.id}</div>
             </TableCell>
-            <TableCell className="whitespace-nowrap">
-              {scanSourceName(scan, lookups)}
-            </TableCell>
+            <TableCell className="whitespace-nowrap">{scanSourceName(scan, lookups)}</TableCell>
             <TableCell className="max-w-xl">
               <div className="text-sm">{formatActiveScanMode(scan)}</div>
               <div className="text-muted-foreground mt-1 font-mono text-xs [overflow-wrap:anywhere]">
@@ -661,16 +602,10 @@ function ScanHistoryTable({
               ) : null}
             </TableCell>
             <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums">
-              {formatTimestamp(
-                scan.completed_at ?? scan.started_at ?? scan.requested_at,
-              )}
+              {formatTimestamp(scan.completed_at ?? scan.started_at ?? scan.requested_at)}
             </TableCell>
             <TableCell>
-              {scan.event_status ? (
-                <PollStatusBadge status={scan.event_status} />
-              ) : (
-                "-"
-              )}
+              {scan.event_status ? <PollStatusBadge status={scan.event_status} /> : "-"}
             </TableCell>
           </TableRow>
         ))}
@@ -679,22 +614,14 @@ function ScanHistoryTable({
   );
 }
 
-function PollEventCard({
-  event,
-  lookups,
-}: {
-  event: AutoscanEvent;
-  lookups: SourceLabelLookups;
-}) {
+function PollEventCard({ event, lookups }: { event: AutoscanEvent; lookups: SourceLabelLookups }) {
   return (
     <div className="border-border rounded-lg border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <PollStatusBadge status={event.status} />
-            <span className="font-medium">
-              {pollSourceName(event, lookups)}
-            </span>
+            <span className="font-medium">{pollSourceName(event, lookups)}</span>
             <DeliveryBadge event={event} />
           </div>
           <PollMetricStrip event={event} />
@@ -711,8 +638,7 @@ function PollEventCard({
       ) : null}
       <details className="mt-3">
         <summary className="text-muted-foreground cursor-pointer text-xs">
-          {event.scan_runs.length} linked scan{" "}
-          {event.scan_runs.length === 1 ? "run" : "runs"}
+          {event.scan_runs.length} linked scan {event.scan_runs.length === 1 ? "run" : "runs"}
         </summary>
         <div className="mt-2">
           <RunList runs={event.scan_runs} />
@@ -824,12 +750,8 @@ export default function ActivityPanel() {
   useEventChannel("scans");
   const [historyView, setHistoryView] = useState<HistoryView>("scans");
   const [historyQuery, setHistoryQuery] = useState("");
-  const [scanStatus, setScanStatus] = useState<AutoscanScanStatus | "all">(
-    "all",
-  );
-  const [pollStatus, setPollStatus] = useState<AutoscanEventStatus | "all">(
-    "all",
-  );
+  const [scanStatus, setScanStatus] = useState<AutoscanScanStatus | "all">("all");
+  const [pollStatus, setPollStatus] = useState<AutoscanEventStatus | "all">("all");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_HISTORY_PAGE_SIZE);
   const debouncedHistoryQuery = useDebounce(historyQuery.trim(), 300);
@@ -882,8 +804,7 @@ export default function ActivityPanel() {
   const activeRows = activeQuery.data?.rows ?? [];
   const activeTotal = activeQuery.data?.total ?? 0;
   const activeStatus = historyView === "scans" ? scanStatus : pollStatus;
-  const hasHistoryFilters =
-    debouncedHistoryQuery !== "" || activeStatus !== "all";
+  const hasHistoryFilters = debouncedHistoryQuery !== "" || activeStatus !== "all";
   const isRefreshing = status.isFetching || activeQuery.isFetching;
   const itemNoun = historyView === "scans" ? "scan" : "poll";
 
@@ -916,24 +837,12 @@ export default function ActivityPanel() {
   return (
     <div className="space-y-6">
       <div className="border-border grid gap-4 rounded-lg border p-4 sm:grid-cols-5">
-        <StatTile
-          label="Active"
-          value={queue?.active_scans ?? 0}
-          icon={ScanLine}
-        />
+        <StatTile label="Active" value={queue?.active_scans ?? 0} icon={ScanLine} />
         <StatTile label="Queued" value={queue?.accepted_scans ?? 0} />
         <StatTile label="Running scans" value={queue?.running_scans ?? 0} />
-        <StatTile
-          label="Polling"
-          value={queue?.running_polls?.length ?? 0}
-          icon={RefreshCw}
-        />
+        <StatTile label="Polling" value={queue?.running_polls?.length ?? 0} icon={RefreshCw} />
         <div className="flex items-start justify-between gap-3 sm:block">
-          <StatTile
-            label="Latest poll"
-            value={formatTime(queue?.latest_event_at)}
-            icon={Clock}
-          />
+          <StatTile label="Latest poll" value={formatTime(queue?.latest_event_at)} icon={Clock} />
           <Button
             variant="outline"
             size="icon"
@@ -1003,11 +912,7 @@ export default function ActivityPanel() {
                   setHistoryQuery(event.target.value);
                   setPage(0);
                 }}
-                placeholder={
-                  historyView === "scans"
-                    ? "Search scan history"
-                    : "Search poll log"
-                }
+                placeholder={historyView === "scans" ? "Search scan history" : "Search poll log"}
                 className="pr-9 pl-9"
               />
               {historyQuery ? (
@@ -1061,11 +966,7 @@ export default function ActivityPanel() {
                 </SelectContent>
               </Select>
             )}
-            <Button
-              variant="outline"
-              onClick={resetHistoryFilters}
-              disabled={!hasHistoryFilters}
-            >
+            <Button variant="outline" onClick={resetHistoryFilters} disabled={!hasHistoryFilters}>
               <RotateCcw />
               Reset
             </Button>
@@ -1076,15 +977,8 @@ export default function ActivityPanel() {
           <HistorySkeleton />
         ) : activeQuery.isError ? (
           <div className="border-destructive/30 bg-destructive/5 rounded-lg border p-8 text-center">
-            <p className="text-destructive text-sm">
-              Failed to load autoscan activity.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={refresh}
-            >
+            <p className="text-destructive text-sm">Failed to load autoscan activity.</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={refresh}>
               <RefreshCw />
               Try again
             </Button>
@@ -1108,10 +1002,7 @@ export default function ActivityPanel() {
                 lookups={labelLookups}
               />
             ) : (
-              <PollEventTable
-                events={activeRows as AutoscanEvent[]}
-                lookups={labelLookups}
-              />
+              <PollEventTable events={activeRows as AutoscanEvent[]} lookups={labelLookups} />
             )}
 
             <TablePagination

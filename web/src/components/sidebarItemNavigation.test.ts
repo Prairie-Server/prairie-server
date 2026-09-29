@@ -62,9 +62,7 @@ describe("sidebar collapse completion", () => {
 
 describe("sidebarDetailsRevealDelay", () => {
   it("uses the transition fallback for motion and reveals immediately for reduced motion", () => {
-    expect(sidebarDetailsRevealDelay(false)).toBe(
-      SIDEBAR_TRANSITION_FALLBACK_MS,
-    );
+    expect(sidebarDetailsRevealDelay(false)).toBe(SIDEBAR_TRANSITION_FALLBACK_MS);
     expect(sidebarDetailsRevealDelay(true)).toBe(0);
   });
 });
@@ -72,35 +70,23 @@ describe("sidebarDetailsRevealDelay", () => {
 describe("parseItemNavigationHref", () => {
   it("parses an encoded item id and optional library id", () => {
     expect(
-      parseItemNavigationHref(
-        "/item/movie%201%2Fpart?libraryId=12",
-        "http://localhost:5173",
-      ),
+      parseItemNavigationHref("/item/movie%201%2Fpart?libraryId=12", "http://localhost:5173"),
     ).toEqual({ contentId: "movie 1/part", libraryId: 12 });
   });
 
   it("accepts an item without a library id", () => {
-    expect(
-      parseItemNavigationHref("/item/movie-1", "http://localhost:5173"),
-    ).toEqual({
+    expect(parseItemNavigationHref("/item/movie-1", "http://localhost:5173")).toEqual({
       contentId: "movie-1",
       libraryId: undefined,
     });
   });
 
   it("rejects non-item, cross-origin, and malformed destinations", () => {
+    expect(parseItemNavigationHref("/library/1", "http://localhost:5173")).toBeNull();
     expect(
-      parseItemNavigationHref("/library/1", "http://localhost:5173"),
+      parseItemNavigationHref("https://example.com/item/movie-1", "http://localhost:5173"),
     ).toBeNull();
-    expect(
-      parseItemNavigationHref(
-        "https://example.com/item/movie-1",
-        "http://localhost:5173",
-      ),
-    ).toBeNull();
-    expect(
-      parseItemNavigationHref("/item/%E0%A4%A", "http://localhost:5173"),
-    ).toBeNull();
+    expect(parseItemNavigationHref("/item/%E0%A4%A", "http://localhost:5173")).toBeNull();
   });
 });
 

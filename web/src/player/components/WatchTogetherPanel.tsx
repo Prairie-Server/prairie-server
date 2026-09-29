@@ -5,10 +5,7 @@ import {
   type WatchTogetherConnectionState,
 } from "@/components/watchtogether/ConnectionStatusDot";
 import { EndWatchPartyDialog } from "@/components/watchtogether/EndWatchPartyDialog";
-import type {
-  GuestControlPolicy,
-  WatchTogetherRoomSnapshot,
-} from "@/lib/watchTogether";
+import type { GuestControlPolicy, WatchTogetherRoomSnapshot } from "@/lib/watchTogether";
 
 interface WatchTogetherPanelProps {
   room: WatchTogetherRoomSnapshot | null;
@@ -17,6 +14,7 @@ interface WatchTogetherPanelProps {
   onCopyInvite: () => void;
   onToggleGuestControl: (policy: GuestControlPolicy) => void;
   onEndRoom: () => void;
+  onStopPlayback: () => void;
 }
 
 export function WatchTogetherPanel({
@@ -26,6 +24,7 @@ export function WatchTogetherPanel({
   onCopyInvite,
   onToggleGuestControl,
   onEndRoom,
+  onStopPlayback,
 }: WatchTogetherPanelProps) {
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const isHost = room?.self_can_manage_room === true;
@@ -70,14 +69,35 @@ export function WatchTogetherPanel({
 
       {/* Policy */}
       {room ? (
-        <div className="mt-1.5 text-[11px] leading-snug text-white/50">
-          {policyLabel}
-        </div>
+        <div className="mt-1.5 text-[11px] leading-snug text-white/50">{policyLabel}</div>
       ) : (
-        <div className="mt-1.5 text-[11px] leading-snug text-white/50">
-          Syncing room state
-        </div>
+        <div className="mt-1.5 text-[11px] leading-snug text-white/50">Syncing room state</div>
       )}
+
+      {room?.members?.length ? (
+        <ul aria-label="Viewers" className="mt-3 max-h-40 space-y-1.5 overflow-y-auto text-xs">
+          {room.members.map((member) => (
+            <li
+              key={`${member.user_id}:${member.profile_id}`}
+              className="flex items-center justify-between gap-2"
+            >
+              <span className="truncate">
+                {member.display_name}
+                {member.is_self ? " (you)" : ""}
+              </span>
+              <span className="shrink-0 text-white/60">
+                {member.is_buffering
+                  ? "Buffering"
+                  : member.is_syncing
+                    ? "Syncing"
+                    : member.is_ready
+                      ? "Ready"
+                      : "Connected"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {/* Actions */}
       {isHost ? (
@@ -93,11 +113,7 @@ export function WatchTogetherPanel({
           <button
             type="button"
             onClick={() =>
-              onToggleGuestControl(
-                policy === "guest_play_pause"
-                  ? "host_only"
-                  : "guest_play_pause",
-              )
+              onToggleGuestControl(policy === "guest_play_pause" ? "host_only" : "guest_play_pause")
             }
             className="rounded-md bg-white/12 px-2.5 py-1 text-[11px] font-medium text-white/90 transition-colors hover:bg-white/20"
           >
@@ -105,8 +121,16 @@ export function WatchTogetherPanel({
           </button>
           <button
             type="button"
+            onClick={onStopPlayback}
+            title="Stop for everyone and go back to the room to pick something else"
+            className="ml-auto rounded-md bg-white/12 px-2.5 py-1 text-[11px] font-medium text-white/90 transition-colors hover:bg-white/20"
+          >
+            Stop
+          </button>
+          <button
+            type="button"
             onClick={() => setEndConfirmOpen(true)}
-            className="ml-auto rounded-md bg-red-500/25 px-2.5 py-1 text-[11px] font-medium text-red-100 transition-colors hover:bg-red-500/35"
+            className="rounded-md bg-red-500/25 px-2.5 py-1 text-[11px] font-medium text-red-100 transition-colors hover:bg-red-500/35"
           >
             End
           </button>

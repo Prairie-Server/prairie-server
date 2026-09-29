@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  describePlanTerminal,
-  describePlaybackTransportError,
-} from "./playback-errors";
+import { describePlanTerminal, describePlaybackTransportError } from "./playback-errors";
 import { PlayerFetchError } from "./player-fetch";
 
 describe("describePlanTerminal", () => {
@@ -16,8 +13,7 @@ describe("describePlanTerminal", () => {
       }),
     ).toEqual({
       title: "Transcoding is disabled",
-      message:
-        "Transcoding is disabled for your user. Ask your server administrator for access.",
+      message: "Transcoding is disabled for your user. Ask your server administrator for access.",
     });
   });
 
@@ -60,7 +56,7 @@ describe("describePlanTerminal", () => {
     ).toEqual({
       title: "That subtitle track can't be used",
       message:
-        "Silo couldn't prepare the selected subtitles for this device. Try a different track.",
+        "Prairie couldn't prepare the selected subtitles for this device. Try a different track.",
     });
   });
 
@@ -68,14 +64,12 @@ describe("describePlanTerminal", () => {
     expect(
       describePlanTerminal({
         reason: "no_alternate_version",
-        message:
-          "A lower-resolution source is required because 4K transcoding is disabled.",
+        message: "A lower-resolution source is required because 4K transcoding is disabled.",
         retryable: false,
       }),
     ).toEqual({
       title: "No playable version found",
-      message:
-        "A lower-resolution source is required because 4K transcoding is disabled.",
+      message: "A lower-resolution source is required because 4K transcoding is disabled.",
     });
   });
 
@@ -89,7 +83,7 @@ describe("describePlanTerminal", () => {
     ).toEqual({
       title: "No playable version found",
       message:
-        "Silo couldn't find a way to play this file on this device. Try another version if one is available.",
+        "Prairie couldn't find a way to play this file on this device. Try another version if one is available.",
     });
   });
 
@@ -97,14 +91,13 @@ describe("describePlanTerminal", () => {
     expect(
       describePlanTerminal({
         reason: "adaptation_exhausted",
-        message:
-          "All compatible playback recipes have already failed for this output route.",
+        message: "All compatible playback recipes have already failed for this output route.",
         retryable: false,
       }),
     ).toEqual({
       title: "No playable version found",
       message:
-        "Silo couldn't find a way to play this file on this device. Try another version if one is available.",
+        "Prairie couldn't find a way to play this file on this device. Try another version if one is available.",
     });
   });
 
@@ -130,8 +123,7 @@ describe("describePlanTerminal", () => {
       }),
     ).toEqual({
       title: "Playback unavailable",
-      message:
-        "The server couldn't start converting this file. Please try again.",
+      message: "The server couldn't start converting this file. Please try again.",
     });
   });
 
@@ -157,18 +149,14 @@ describe("describePlanTerminal", () => {
       }),
     ).toEqual({
       title: "Playback unavailable",
-      message: "Silo could not start playback.",
+      message: "Prairie could not start playback.",
     });
   });
 });
 
 describe("describePlaybackTransportError", () => {
   it("renders 426 as an update-required state", () => {
-    const error = new PlayerFetchError(
-      426,
-      "Client upgrade required",
-      "client_upgrade_required",
-    );
+    const error = new PlayerFetchError(426, "Client upgrade required", "client_upgrade_required");
 
     expect(describePlaybackTransportError(error)).toEqual({
       title: "Update required",
@@ -184,24 +172,29 @@ describe("describePlaybackTransportError", () => {
   it("distinguishes an expired playback session from a missing item", () => {
     expect(
       describePlaybackTransportError(
-        new PlayerFetchError(
-          404,
-          "Playback session not found",
-          "playback_session_not_found",
-        ),
+        new PlayerFetchError(404, "Playback session not found", "playback_session_not_found"),
       ),
     ).toEqual({
       title: "Playback session expired",
-      message:
-        "This playback session is no longer active. Start it again to keep watching.",
+      message: "This playback session is no longer active. Start it again to keep watching.",
+    });
+  });
+
+  it("describes 401 authentication errors distinctly from 403 permissions errors", () => {
+    expect(describePlaybackTransportError(new PlayerFetchError(401, "Unauthorized"))).toEqual({
+      title: "Authentication required",
+      message: "Your sign-in session has expired. Sign in again to continue playback.",
+    });
+
+    expect(describePlaybackTransportError(new PlayerFetchError(403, "Forbidden"))).toEqual({
+      title: "Playback unavailable",
+      message: "You do not have permission to play this item.",
     });
   });
 
   it("ignores 4xx statuses it has nothing specific to say about", () => {
     expect(
-      describePlaybackTransportError(
-        new PlayerFetchError(409, "Conflict", "stale_playback_plan"),
-      ),
+      describePlaybackTransportError(new PlayerFetchError(409, "Conflict", "stale_playback_plan")),
     ).toBeNull();
   });
 });

@@ -9,12 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -60,7 +61,7 @@ func mangaContentType() string {
 
 func mangaEnrichWorkers() int {
 	n := defaultEnrichWorkers
-	if v := os.Getenv("SILO_MANGA_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_WORKERS", "SILO_MANGA_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}
@@ -72,7 +73,7 @@ func mangaEnrichWorkers() int {
 }
 
 func mangaEnrichBatchSize() int {
-	if v := os.Getenv("SILO_MANGA_ENRICH_BATCH"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_BATCH", "SILO_MANGA_ENRICH_BATCH"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			return parsed
 		}
@@ -663,7 +664,6 @@ func collectMangaMetadata(ctx context.Context, item enrichmentItemRow, providers
 		admittedResult := *result
 		admittedResult.ProviderIDs = identity.ProviderIDs
 		result = &admittedResult
-		mergeEnrichmentProviderIDs(accumulator, result)
 		metadata.MergeMetadata(result, accumulator, nil, metadata.MergeFillEmpty)
 		// MergeMetadata does not propagate HasMetadata; without this a confident
 		// match carrying only genres/authors/status/year (no cover, no overview)
@@ -980,22 +980,6 @@ func buildMangaMetadataRequest(providerIDs map[string]string, language string) m
 		ProviderIDs: filterMangaProviderIDs(providerIDs),
 		ContentType: mangaContentType(),
 		Language:    language,
-	}
-}
-
-func mergeEnrichmentProviderIDs(dst *metadata.MetadataResult, src *metadata.MetadataResult) {
-	if src == nil || len(src.ProviderIDs) == 0 {
-		return
-	}
-	if dst.ProviderIDs == nil {
-		dst.ProviderIDs = make(map[string]string, len(src.ProviderIDs))
-	}
-	for k, v := range filterMangaProviderIDs(src.ProviderIDs) {
-		if v != "" {
-			if _, exists := dst.ProviderIDs[k]; !exists {
-				dst.ProviderIDs[k] = v
-			}
-		}
 	}
 }
 

@@ -93,22 +93,16 @@ describe("DeviceList", () => {
     ]);
 
     expect(screen.getByLabelText("Nothing changed")).toHaveTextContent("—");
-    expect(screen.getByLabelText("3 settings changed here")).toHaveTextContent(
-      "3",
-    );
+    expect(screen.getByLabelText("3 settings changed here")).toHaveTextContent("3");
     expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 
   it("selects a device when its row is clicked", async () => {
-    const { onSelect } = renderList([
-      device({ device_id: "tv", device_name: "Apple TV" }),
-    ]);
+    const { onSelect } = renderList([device({ device_id: "tv", device_name: "Apple TV" })]);
 
     await userEvent.click(screen.getByRole("button", { name: /Apple TV/ }));
 
-    expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ device_id: "tv" }),
-    );
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ device_id: "tv" }));
   });
 
   it("groups by person in the household view", () => {
@@ -140,9 +134,7 @@ describe("DeviceList", () => {
       device({
         device_id: `device-${index}`,
         device_name: `Device ${index}`,
-        last_seen_at: new Date(
-          NOW - index * 5 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        last_seen_at: new Date(NOW - index * 5 * 24 * 60 * 60 * 1000).toISOString(),
       }),
     );
     renderList(many);
@@ -259,9 +251,7 @@ describe("DeviceList at scale", () => {
 
     expect(screen.getByText("Silo-PR111-build-0")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(43);
-    expect(
-      screen.getByRole("button", { name: "Hide unused devices" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide unused devices" })).toBeInTheDocument();
   });
 
   // Searching means looking for something specific; hiding a device from its
@@ -279,9 +269,7 @@ describe("DeviceList at scale", () => {
     );
 
     expect(screen.getByText("Silo-PR111-build-7")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /unused devices/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /unused devices/ })).not.toBeInTheDocument();
   });
 
   it("keeps the current device visible even when it is old and unconfigured", () => {
@@ -304,12 +292,8 @@ describe("DeviceList at scale", () => {
   });
 
   it("offers no toggle when nothing is dormant", () => {
-    renderList([
-      device({ device_id: "a", device_name: "Recent", changed_count: 1 }),
-    ]);
-    expect(
-      screen.queryByRole("button", { name: /unused devices/ }),
-    ).not.toBeInTheDocument();
+    renderList([device({ device_id: "a", device_name: "Recent", changed_count: 1 })]);
+    expect(screen.queryByRole("button", { name: /unused devices/ })).not.toBeInTheDocument();
   });
 });
 
@@ -317,15 +301,9 @@ describe("DeviceList profile filter", () => {
   it("offers one chip per profile, plus everyone, with counts", () => {
     renderList(HOUSEHOLD, { groupByProfile: true });
 
-    expect(
-      screen.getByRole("button", { name: "Everyone, 3 devices" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Sam, 2 devices" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Robin, 1 device" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Everyone, 3 devices" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sam, 2 devices" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Robin, 1 device" })).toBeInTheDocument();
   });
 
   // At eight profiles, arrival order buried the person actually using the
@@ -355,9 +333,7 @@ describe("DeviceList profile filter", () => {
     const chips = screen
       .getByRole("group", { name: "Filter by profile" })
       .querySelectorAll("button");
-    const names = [...chips].map(
-      (chip) => chip.getAttribute("aria-label")?.split(",")[0],
-    );
+    const names = [...chips].map((chip) => chip.getAttribute("aria-label")?.split(",")[0]);
     expect(names).toEqual(["Everyone", "Sam", "Casey", "Zoe"]);
   });
 
@@ -365,16 +341,12 @@ describe("DeviceList profile filter", () => {
   // with a single option would be chrome that explains nothing.
   it("stays hidden outside the household view", () => {
     renderList(HOUSEHOLD, { groupByProfile: false });
-    expect(
-      screen.queryByRole("group", { name: "Filter by profile" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Filter by profile" })).not.toBeInTheDocument();
   });
 
   it("stays hidden when the household has only one profile", () => {
     renderList([HOUSEHOLD[0]!, HOUSEHOLD[1]!], { groupByProfile: true });
-    expect(
-      screen.queryByRole("group", { name: "Filter by profile" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Filter by profile" })).not.toBeInTheDocument();
   });
 
   it("reports the chosen profile", async () => {
@@ -382,9 +354,7 @@ describe("DeviceList profile filter", () => {
       groupByProfile: true,
     });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Robin, 1 device" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Robin, 1 device" }));
 
     expect(onProfileFilterChange).toHaveBeenCalledWith("profile-2");
   });
@@ -395,9 +365,7 @@ describe("DeviceList profile filter", () => {
       profileFilter: "profile-2",
     });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Robin, 1 device" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Robin, 1 device" }));
 
     expect(onProfileFilterChange).toHaveBeenCalledWith(null);
   });
@@ -415,38 +383,29 @@ describe("DeviceList profile filter", () => {
     renderList(HOUSEHOLD, { groupByProfile: true, profileFilter: "profile-2" });
 
     expect(screen.getByText("This week")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Robin" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Robin" })).not.toBeInTheDocument();
   });
 
   it("keeps chip counts stable while a filter is active", () => {
     renderList(HOUSEHOLD, { groupByProfile: true, profileFilter: "profile-2" });
 
     // Sam's chip still says 2 even though none of Sam's devices are listed.
-    expect(
-      screen.getByRole("button", { name: "Sam, 2 devices" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sam, 2 devices" })).toBeInTheDocument();
   });
 });
 
 describe("lastSeenLabel", () => {
   it("reads as plain language", () => {
-    expect(
-      lastSeenLabel(new Date(NOW - 30 * 60 * 1000).toISOString(), NOW),
-    ).toBe("Less than an hour ago");
-    expect(
-      lastSeenLabel(new Date(NOW - 3 * 60 * 60 * 1000).toISOString(), NOW),
-    ).toBe("3 hours ago");
-    expect(
-      lastSeenLabel(new Date(NOW - 24 * 60 * 60 * 1000).toISOString(), NOW),
-    ).toBe("Yesterday");
-    expect(
-      lastSeenLabel(
-        new Date(NOW - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        NOW,
-      ),
-    ).toBe("10 days ago");
+    expect(lastSeenLabel(new Date(NOW - 30 * 60 * 1000).toISOString(), NOW)).toBe(
+      "Less than an hour ago",
+    );
+    expect(lastSeenLabel(new Date(NOW - 3 * 60 * 60 * 1000).toISOString(), NOW)).toBe(
+      "3 hours ago",
+    );
+    expect(lastSeenLabel(new Date(NOW - 24 * 60 * 60 * 1000).toISOString(), NOW)).toBe("Yesterday");
+    expect(lastSeenLabel(new Date(NOW - 10 * 24 * 60 * 60 * 1000).toISOString(), NOW)).toBe(
+      "10 days ago",
+    );
     expect(lastSeenLabel("not-a-date", NOW)).toBe("Never used");
   });
 });

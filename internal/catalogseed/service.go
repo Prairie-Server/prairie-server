@@ -18,11 +18,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	pgvector "github.com/pgvector/pgvector-go"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/lang"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/titleutil"
 )
 
 var (
@@ -158,6 +160,8 @@ func (s *Service) ImportWithProgress(ctx context.Context, data []byte, opts Impo
 		itemRows := make([][]any, 0, len(bundle.Items))
 		for _, item := range bundle.Items {
 			studios, networks, countries, keywords := itemRecordStringArrays(item)
+			contentRatingAge := access.StoredRating(item.ContentRating)
+			advisoryAge, advisorySource := models.AdvisoryColumns(item.Type, item.AdvisoryAge, item.AdvisorySource)
 			itemRows = append(itemRows, []any{
 				item.ContentID, item.Type, item.Title, item.SortTitle, item.OriginalTitle, item.Year, item.Genres,
 				item.ContentRating, item.Runtime, item.Overview, item.Tagline,
@@ -168,6 +172,8 @@ func (s *Service) ImportWithProgress(ctx context.Context, data []byte, opts Impo
 				studios, networks, countries, keywords, item.OriginalLanguage, item.ReleaseDate, item.FirstAirDate, item.LastAirDate, item.AirTime, item.AirTimezone,
 				item.MatchedAt, item.LastRefreshed, item.RefreshFailures, item.LockedFields, item.Status,
 				item.CreatedAt, item.UpdatedAt,
+				contentRatingAge,
+				advisoryAge, advisorySource,
 			})
 		}
 		if err := copyInsertBatches(ctx, tx, "media_items",
@@ -181,6 +187,8 @@ func (s *Service) ImportWithProgress(ctx context.Context, data []byte, opts Impo
 				"studios", "networks", "countries", "keywords", "original_language", "release_date", "first_air_date", "last_air_date", "air_time", "air_timezone",
 				"matched_at", "last_refreshed", "refresh_failures", "locked_fields", "status",
 				"created_at", "updated_at",
+				"content_rating_age",
+				"advisory_age", "advisory_source",
 			},
 			itemRows, func(processed int) {
 				currentWork += processed
@@ -643,6 +651,57 @@ func (s *Service) schemaVersion(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("loading schema version: %w", err)
 	}
 	return version, nil
+}
+
+func itemToRecord(item *models.MediaItem) ItemRecord {
+	if strings.TrimSpace(item.SortTitle) == "" {
+		if derived := titleutil.DeriveDefaultSortTitle(item.Title); derived != "" {
+			item.SortTitle = derived
+		}
+	}
+	return ItemRecord{
+		ContentID:         item.ContentID,
+		Type:              item.Type,
+		Title:             item.Title,
+		SortTitle:         item.SortTitle,
+		OriginalTitle:     item.OriginalTitle,
+		Year:              item.Year,
+		Genres:            cloneStrings(item.Genres),
+		ContentRating:     item.ContentRating,
+		AdvisoryAge:       item.AdvisoryAge,
+		AdvisorySource:    item.AdvisorySource,
+		Runtime:           item.Runtime,
+		Overview:          item.Overview,
+		Tagline:           item.Tagline,
+		RatingIMDB:        item.RatingIMDB,
+		RatingTMDB:        item.RatingTMDB,
+		RatingRTCritic:    item.RatingRTCritic,
+		RatingRTAudience:  item.RatingRTAudience,
+		ImdbID:            item.ImdbID,
+		TmdbID:            item.TmdbID,
+		TvdbID:            item.TvdbID,
+		PosterPath:        item.PosterPath,
+		PosterThumbhash:   item.PosterThumbhash,
+		BackdropPath:      item.BackdropPath,
+		BackdropThumbhash: item.BackdropThumbhash,
+		LogoPath:          item.LogoPath,
+		MetadataS3Path:    item.MetadataS3Path,
+		MetadataEtag:      item.MetadataEtag,
+		SeasonCount:       item.SeasonCount,
+		Studios:           cloneStrings(item.Studios),
+		Networks:          cloneStrings(item.Networks),
+		Countries:         cloneStrings(item.Countries),
+		ReleaseDate:       item.ReleaseDate,
+		FirstAirDate:      item.FirstAirDate,
+		LastAirDate:       item.LastAirDate,
+		MatchedAt:         item.MatchedAt,
+		LastRefreshed:     item.LastRefreshed,
+		RefreshFailures:   item.RefreshFailures,
+		LockedFields:      cloneInts(item.LockedFields),
+		Status:            item.Status,
+		CreatedAt:         item.CreatedAt,
+		UpdatedAt:         item.UpdatedAt,
+	}
 }
 
 func decodeBundle(data []byte) (*Bundle, error) {
@@ -1572,6 +1631,8 @@ func batchImportItems(ctx context.Context, tx pgx.Tx, items []ItemRecord, mode C
 	contentIDs := make([]string, 0, len(items))
 	for _, item := range items {
 		studios, networks, countries, keywords := itemRecordStringArrays(item)
+		contentRatingAge := access.StoredRating(item.ContentRating)
+		advisoryAge, advisorySource := models.AdvisoryColumns(item.Type, item.AdvisoryAge, item.AdvisorySource)
 		contentIDs = append(contentIDs, item.ContentID)
 		rows = append(rows, []any{
 			item.ContentID, item.Type, item.Title, item.SortTitle, item.OriginalTitle, item.Year, item.Genres,
@@ -1583,10 +1644,12 @@ func batchImportItems(ctx context.Context, tx pgx.Tx, items []ItemRecord, mode C
 			studios, networks, countries, keywords, item.OriginalLanguage, item.ReleaseDate, item.FirstAirDate, item.LastAirDate, item.AirTime, item.AirTimezone,
 			item.MatchedAt, item.LastRefreshed, item.RefreshFailures, item.LockedFields, item.Status,
 			item.CreatedAt, item.UpdatedAt,
+			contentRatingAge,
+			advisoryAge, advisorySource,
 		})
 	}
 
-	const colCount = 43
+	const colCount = 46
 	prefix := `
 		INSERT INTO media_items (
 			content_id, type, title, sort_title, original_title, year, genres,
@@ -1597,7 +1660,9 @@ func batchImportItems(ctx context.Context, tx pgx.Tx, items []ItemRecord, mode C
 			metadata_s3_path, metadata_etag, season_count,
 			studios, networks, countries, keywords, original_language, release_date, first_air_date, last_air_date, air_time, air_timezone,
 			matched_at, last_refreshed, refresh_failures, locked_fields, status,
-			created_at, updated_at
+			created_at, updated_at,
+			content_rating_age,
+			advisory_age, advisory_source
 		) VALUES `
 
 	var suffix string
@@ -1646,6 +1711,9 @@ func batchImportItems(ctx context.Context, tx pgx.Tx, items []ItemRecord, mode C
 			refresh_failures = EXCLUDED.refresh_failures,
 			locked_fields = EXCLUDED.locked_fields,
 			status = EXCLUDED.status,
+			content_rating_age = EXCLUDED.content_rating_age,
+			advisory_age = EXCLUDED.advisory_age,
+			advisory_source = EXCLUDED.advisory_source,
 			updated_at = EXCLUDED.updated_at
 		RETURNING content_id, (xmax = 0)`
 	}
@@ -1775,6 +1843,13 @@ func sortLibraries(records []LibraryRecord) {
 	sort.Slice(records, func(i, j int) bool { return records[i].ExportedID < records[j].ExportedID })
 }
 
+func cloneStrings(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return append([]string(nil), values...)
+}
+
 func itemRecordStringArrays(item ItemRecord) ([]string, []string, []string, []string) {
 	return nonNilStrings(item.Studios),
 		nonNilStrings(item.Networks),
@@ -1787,6 +1862,13 @@ func nonNilStrings(values []string) []string {
 		return []string{}
 	}
 	return values
+}
+
+func cloneInts(values []int) []int {
+	if values == nil {
+		return []int{}
+	}
+	return append([]int(nil), values...)
 }
 
 func dedupeStrings(values []string) []string {

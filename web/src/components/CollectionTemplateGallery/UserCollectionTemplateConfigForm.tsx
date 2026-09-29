@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import type {
   ImportUserMDBListCollectionRequest,
   ImportUserTMDBCollectionRequest,
+  ImportUserTMDBListCollectionRequest,
   ImportUserTraktCollectionRequest,
   UserCollectionMediaFilter,
   UserCollectionSyncSchedule,
@@ -12,6 +13,7 @@ import type {
 import {
   useImportUserMDBListCollection,
   useImportUserTMDBCollection,
+  useImportUserTMDBListCollection,
   useImportUserTraktCollection,
 } from "@/hooks/queries/userCollectionImports";
 import { useUserLibraries } from "@/hooks/queries/libraries";
@@ -20,11 +22,10 @@ import {
   COLLECTION_WATCH_FILTER_OPTIONS,
   displayFiltersToQueryDefinition,
 } from "@/lib/collectionDisplayFilters";
-import {
-  COLLECTION_SOURCE_ORDER,
-  selectValueToSortConfig,
-} from "@/lib/collectionSortConfig";
+import { COLLECTION_SOURCE_ORDER, selectValueToSortConfig } from "@/lib/collectionSortConfig";
 import { CollectionDefaultSortField } from "@/components/collections/CollectionDefaultSortField";
+import { TMDBListURLField } from "@/components/collections/TMDBListURLField";
+import { isValidTMDBListURL } from "@/lib/tmdbList";
 import {
   COLLECTION_MAX_ITEMS,
   libraryEligibilityForMediaKind,
@@ -50,10 +51,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 
 import { MDBListBrowser } from "./MDBListBrowser";
-import {
-  TemplatePosterField,
-  type TemplatePosterMode,
-} from "./TemplatePosterField";
+import { TemplatePosterField, type TemplatePosterMode } from "./TemplatePosterField";
 
 import { Loader2, Plus, X } from "lucide-react";
 interface Props {
@@ -66,8 +64,7 @@ interface Props {
 // Select disallows empty-string SelectItem values, so we map this to "" only
 // at submit time when populating the request body.
 const MANUAL_SCHEDULE = "none" as const;
-type ScheduleChoice =
-  typeof MANUAL_SCHEDULE | Exclude<UserCollectionSyncSchedule, "">;
+type ScheduleChoice = typeof MANUAL_SCHEDULE | Exclude<UserCollectionSyncSchedule, "">;
 
 // SCHEDULE_OPTIONS is the user-allowed cadence set. It mirrors the
 // usercollections.AllowedSyncSchedules map on the backend, which caps user
@@ -79,9 +76,7 @@ const SCHEDULE_OPTIONS: Array<{ value: ScheduleChoice; label: string }> = [
   { value: "monthly", label: "Monthly" },
 ];
 
-function scheduleChoiceToRequest(
-  choice: ScheduleChoice,
-): UserCollectionSyncSchedule {
+function scheduleChoiceToRequest(choice: ScheduleChoice): UserCollectionSyncSchedule {
   return choice === MANUAL_SCHEDULE ? "" : choice;
 }
 
@@ -98,38 +93,30 @@ function templateDefaultSchedule(cron: string | undefined): ScheduleChoice {
   return "daily";
 }
 
-export function UserCollectionTemplateConfigForm({
-  template,
-  onCancel,
-  onCreated,
-}: Props) {
+export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated }: Props) {
   const tmdbMutation = useImportUserTMDBCollection();
   const traktMutation = useImportUserTraktCollection();
   const mdblistMutation = useImportUserMDBListCollection();
+  const tmdbListMutation = useImportUserTMDBListCollection();
   const { data: libraries = [] } = useUserLibraries();
 
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description);
-  const [limit, setLimit] = useState(
-    template.default_limit ? String(template.default_limit) : "",
-  );
+  const [limit, setLimit] = useState(template.default_limit ? String(template.default_limit) : "");
   const [schedule, setSchedule] = useState<ScheduleChoice>(
     templateDefaultSchedule(template.default_sync_schedule),
   );
   const [isShared, setIsShared] = useState(false);
   const [mdblistUrl, setMdblistUrl] = useState(template.mdblist?.url ?? "");
+  const [tmdbListUrl, setTmdbListUrl] = useState(template.tmdb_list?.url ?? "");
   const [libraryIds, setLibraryIds] = useState<number[]>([]);
-  const [watchFilter, setWatchFilter] =
-    useState<UserCollectionWatchFilter>("all");
-  const [mediaFilter, setMediaFilter] =
-    useState<UserCollectionMediaFilter>("all");
+  const [watchFilter, setWatchFilter] = useState<UserCollectionWatchFilter>("all");
+  const [mediaFilter, setMediaFilter] = useState<UserCollectionMediaFilter>("all");
   const [posterMode, setPosterMode] = useState<TemplatePosterMode>(() =>
     template.poster_path ? "default" : "custom",
   );
   const [customPosterUrl, setCustomPosterUrl] = useState("");
-  const [defaultSort, setDefaultSort] = useState<string>(
-    COLLECTION_SOURCE_ORDER,
-  );
+  const [defaultSort, setDefaultSort] = useState<string>(COLLECTION_SOURCE_ORDER);
 
   const eligibility = libraryEligibilityForMediaKind(template.media_kind);
   const pickerLibraries = libraries.map((lib) => ({
@@ -143,10 +130,11 @@ export function UserCollectionTemplateConfigForm({
   const isPending =
     tmdbMutation.isPending ||
     traktMutation.isPending ||
-    mdblistMutation.isPending;
-  const missingMDBListURL =
-    template.source === "mdblist" && mdblistUrl.trim().length === 0;
-  const submitDisabled = isPending || limitInvalid || missingMDBListURL;
+    mdblistMutation.isPending ||
+    tmdbListMutation.isPending;
+  const missingMDBListURL = template.source === "mdblist" && mdblistUrl.trim().length === 0;
+  const invalidTMDBListURL = template.source === "tmdb_list" && !isValidTMDBListURL(tmdbListUrl);
+  const submitDisabled = isPending || limitInvalid || missingMDBListURL || invalidTMDBListURL;
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -163,10 +151,7 @@ export function UserCollectionTemplateConfigForm({
           ? customPosterUrl.trim() || undefined
           : template.poster_path || undefined,
       library_ids: libraryIds.length > 0 ? libraryIds : undefined,
-      display_query_definition: displayFiltersToQueryDefinition(
-        watchFilter,
-        mediaFilter,
-      ),
+      display_query_definition: displayFiltersToQueryDefinition(watchFilter, mediaFilter),
       sort_config: selectValueToSortConfig(defaultSort),
     };
 
@@ -199,6 +184,15 @@ export function UserCollectionTemplateConfigForm({
       mdblistMutation.mutate(body, { onSuccess: onCreated });
       return;
     }
+
+    if (template.source === "tmdb_list") {
+      const body: ImportUserTMDBListCollectionRequest = {
+        ...sharedFields,
+        url: tmdbListUrl.trim(),
+      };
+      tmdbListMutation.mutate(body, { onSuccess: onCreated });
+      return;
+    }
   }
 
   return (
@@ -220,9 +214,7 @@ export function UserCollectionTemplateConfigForm({
               {mediaKindLabel(template.media_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs">
-            {template.description}
-          </p>
+          <p className="text-muted-foreground text-xs">{template.description}</p>
         </div>
       </div>
 
@@ -266,11 +258,19 @@ export function UserCollectionTemplateConfigForm({
               required
             />
             <p className="text-muted-foreground text-xs">
-              Pick a list above or paste any public MDBList list URL (with or
-              without <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
+              Pick a list above or paste any public MDBList list URL (with or without{" "}
+              <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
             </p>
           </div>
         </div>
+      ) : null}
+
+      {template.source === "tmdb_list" ? (
+        <TMDBListURLField
+          id="user-template-tmdb-list-url"
+          value={tmdbListUrl}
+          onChange={setTmdbListUrl}
+        />
       ) : null}
 
       <div className="space-y-2">
@@ -291,9 +291,7 @@ export function UserCollectionTemplateConfigForm({
           <Label htmlFor="user-template-watch-filter">Watch state</Label>
           <Select
             value={watchFilter}
-            onValueChange={(next) =>
-              setWatchFilter(next as UserCollectionWatchFilter)
-            }
+            onValueChange={(next) => setWatchFilter(next as UserCollectionWatchFilter)}
           >
             <SelectTrigger id="user-template-watch-filter">
               <SelectValue />
@@ -311,9 +309,7 @@ export function UserCollectionTemplateConfigForm({
           <Label htmlFor="user-template-media-filter">Content</Label>
           <Select
             value={mediaFilter}
-            onValueChange={(next) =>
-              setMediaFilter(next as UserCollectionMediaFilter)
-            }
+            onValueChange={(next) => setMediaFilter(next as UserCollectionMediaFilter)}
           >
             <SelectTrigger id="user-template-media-filter">
               <SelectValue />
@@ -329,14 +325,12 @@ export function UserCollectionTemplateConfigForm({
         </div>
       </div>
       <p className="text-muted-foreground text-xs">
-        Uses the active profile&rsquo;s watched state. Shared profiles may see
-        different results.
+        Uses the active profile&rsquo;s watched state. Shared profiles may see different results.
       </p>
 
       {template.requires_profile ? (
         <p className="text-muted-foreground text-xs">
-          This template uses your active profile&rsquo;s connected Trakt
-          account.
+          This template uses your active profile&rsquo;s connected Trakt account.
         </p>
       ) : null}
 
@@ -361,19 +355,12 @@ export function UserCollectionTemplateConfigForm({
             inputMode="numeric"
             value={limit}
             onChange={(event) => setLimit(event.target.value)}
-            placeholder={
-              template.default_limit
-                ? String(template.default_limit)
-                : "No limit"
-            }
+            placeholder={template.default_limit ? String(template.default_limit) : "No limit"}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="user-template-schedule">Auto Refresh</Label>
-          <Select
-            value={schedule}
-            onValueChange={(next) => setSchedule(next as ScheduleChoice)}
-          >
+          <Select value={schedule} onValueChange={(next) => setSchedule(next as ScheduleChoice)}>
             <SelectTrigger id="user-template-schedule">
               <SelectValue />
             </SelectTrigger>
@@ -406,12 +393,7 @@ export function UserCollectionTemplateConfigForm({
       </div>
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onCancel}
-          disabled={isPending}
-        >
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
           <X />
           Cancel
         </Button>

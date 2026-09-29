@@ -1,0 +1,18 @@
+{
+  "revision": "9c0aa5e2f9955f4de9965e7086939a6efceb72b3be7779268fbd693e2b9934bd",
+  "state": "available",
+  "allowed": true,
+  "guarded_annotations": false,
+  "reader_files": false,
+  "guarded_config": false,
+  "ordered_progress": true,
+  "kindle_conversion": false,
+  "source_formats": [
+    "mobi",
+    "azw",
+    "azw3"
+  ],
+  "served_format": "epub",
+  "header": "X-Prairie-Ebook-Conversion",
+  "header_failed_value": "failed"
+}

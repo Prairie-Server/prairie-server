@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { recKeys } from "@/hooks/queries/keys";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, History, Sparkles } from "lucide-react";
 import {
@@ -19,10 +21,8 @@ interface WatchTonightDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export default function WatchTonightDialog({
-  open,
-  onOpenChange,
-}: WatchTonightDialogProps) {
+export default function WatchTonightDialog({ open, onOpenChange }: WatchTonightDialogProps) {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("mode-select");
   const [mode, setMode] = useState<SwipeMode>("discover");
   const [genres, setGenres] = useState<string[]>([]);
@@ -41,13 +41,13 @@ export default function WatchTonightDialog({
   }, [open]);
 
   const swipeEnabled = open && step === "swipe-deck";
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useSwipeCards(swipeEnabled, mode, genres);
-
-  const cards = useMemo(
-    () => data?.pages.flatMap((p) => p.cards) ?? [],
-    [data],
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } = useSwipeCards(
+    swipeEnabled,
+    mode,
+    genres,
   );
+
+  const cards = useMemo(() => data?.pages.flatMap((p) => p.cards) ?? [], [data]);
 
   const hasMore = hasNextPage ?? false;
 
@@ -75,9 +75,10 @@ export default function WatchTonightDialog({
   }, [onOpenChange]);
 
   const handleReset = useCallback(() => {
+    queryClient.removeQueries({ queryKey: recKeys.watchTonightCards(mode, genres), exact: true });
     setStep("mode-select");
     setGenres([]);
-  }, []);
+  }, [queryClient, mode, genres]);
 
   // Dynamic dialog sizing based on step.
   const dialogClass =
@@ -95,8 +96,7 @@ export default function WatchTonightDialog({
           </DialogTitle>
           <DialogDescription>
             {step === "mode-select" && "What are you in the mood for?"}
-            {step === "genre-picker" &&
-              "Pick some genres to narrow things down"}
+            {step === "genre-picker" && "Pick some genres to narrow things down"}
             {step === "swipe-deck" &&
               (mode === "continue"
                 ? "Swipe through your in-progress titles"
@@ -111,7 +111,7 @@ export default function WatchTonightDialog({
               <button
                 type="button"
                 onClick={() => handleModeSelect("continue")}
-                className="group border-border hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-all"
+                className="border-border hover:border-primary/50 hover:bg-primary/5 group flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-all"
               >
                 <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
                   <History className="h-6 w-6" />
@@ -127,7 +127,7 @@ export default function WatchTonightDialog({
               <button
                 type="button"
                 onClick={() => handleModeSelect("discover")}
-                className="group border-border hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-all"
+                className="border-border hover:border-primary/50 hover:bg-primary/5 group flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-center transition-all"
               >
                 <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
                   <Sparkles className="h-6 w-6" />
@@ -154,11 +154,7 @@ export default function WatchTonightDialog({
                 >
                   Back
                 </button>
-                <Button
-                  onClick={handleGenresConfirm}
-                  size="sm"
-                  className="gap-1.5"
-                >
+                <Button onClick={handleGenresConfirm} size="sm" className="gap-1.5">
                   {genres.length === 0 ? "All Genres" : `Go (${genres.length})`}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -171,6 +167,7 @@ export default function WatchTonightDialog({
             <CardStack
               cards={cards}
               hasMore={hasMore}
+              pagingLimited={data?.pages[data.pages.length - 1]?.paging_limited}
               isFetching={isFetching || isFetchingNextPage}
               onNeedMore={handleNeedMore}
               onClose={handleClose}

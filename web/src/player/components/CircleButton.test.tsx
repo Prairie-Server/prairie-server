@@ -7,12 +7,7 @@ describe("CircleButton", () => {
   it("calls onClick when clicked", async () => {
     const onClick = vi.fn();
     render(
-      <CircleButton
-        size="sm"
-        variant="secondary"
-        ariaLabel="Test"
-        onClick={onClick}
-      >
+      <CircleButton size="sm" variant="secondary" ariaLabel="Test" onClick={onClick}>
         x
       </CircleButton>,
     );

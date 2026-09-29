@@ -6,6 +6,7 @@ import {
   useOnboardingProgress,
   useOnboardingState,
 } from "@/hooks/queries/onboarding";
+import { captureProfileRequestContext } from "@/api/client";
 import { clearTourSuppressed, isTourSuppressed } from "@/lib/onboarding";
 import { TourHost } from "./TourHost";
 
@@ -16,6 +17,17 @@ import { TourHost } from "./TourHost";
  * is an overlay, not a route, so nothing behind it unmounts.
  */
 export function OnboardingGate({ children }: { children: ReactNode }) {
+  const authority = captureProfileRequestContext();
+  return (
+    <ProfileOnboardingGate
+      key={`${authority?.serverOrigin}:${authority?.authContextVersion}:${authority?.profileId}`}
+    >
+      {children}
+    </ProfileOnboardingGate>
+  );
+}
+function ProfileOnboardingGate({ children }: { children: ReactNode }) {
+  const authority = captureProfileRequestContext();
   const { profile } = useAuth();
   const enabled = profile !== null;
   const state = useOnboardingState({ enabled });
@@ -24,8 +36,7 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
   // before the state refetch lands.
   const [dismissed, setDismissed] = useState(false);
 
-  const shouldShow =
-    enabled && !dismissed && state.data !== undefined && !state.data.done;
+  const shouldShow = enabled && !dismissed && state.data !== undefined && !state.data.done;
 
   // An invitation sent with show_tour=false plants a local suppress hint
   // (before any profile existed). Convert it into a server-side skip for
@@ -33,9 +44,15 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
   const suppressed = shouldShow && isTourSuppressed();
   useEffect(() => {
     if (!suppressed || !state.data) return;
-    progress.mutate({ tour_id: state.data.tour_id, skipped: true });
-    clearTourSuppressed();
-    setDismissed(true);
+    progress.mutate(
+      { tour_id: state.data.tour_id, skipped: true },
+      {
+        onSuccess: () => {
+          clearTourSuppressed();
+          setDismissed(true);
+        },
+      },
+    );
     // progress is a stable mutation handle; state.data is covered by `suppressed`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppressed]);
@@ -45,8 +62,13 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
+      {progress.isError && <div role="alert">Progress could not be saved. Reload to continue.</div>}
       {shouldShow && !suppressed && flow.data && flow.data.steps.length > 0 && (
-        <TourHost flow={flow.data} onDone={() => setDismissed(true)} />
+        <TourHost
+          key={`${authority?.authContextVersion}:${authority?.profileId}`}
+          flow={flow.data}
+          onDone={() => setDismissed(true)}
+        />
       )}
     </>
   );

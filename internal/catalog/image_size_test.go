@@ -23,10 +23,10 @@ func TestCachedImageVariantKeyMatchesPreImageSizeBehavior(t *testing.T) {
 		"small": {
 			"backdrop": "w300",
 			"logo":     "w500",
-			"poster":   "w300",
+			"poster":   "w200",
 			"still":    "w300",
-			"profile":  "w300",
-			"mystery":  "w300",
+			"profile":  "w200",
+			"mystery":  "w200",
 		},
 		"medium": {
 			"backdrop": "w1920",
@@ -55,14 +55,14 @@ func TestCachedImageVariantKeyMatchesPreImageSizeBehavior(t *testing.T) {
 	}
 }
 
-// "large" is the one genuinely new size; it must reach the widest cached rung
-// short of the original.
+// "large" must reach the widest cached rung short of the original. Prairie's
+// ladder has no w780/w1280 rung, so posters, stills and logos stop at w500.
 func TestCachedImageVariantKeyLarge(t *testing.T) {
 	want := map[string]string{
 		"backdrop": "w1920",
-		"logo":     "w1280",
-		"poster":   "w780",
-		"still":    "w780",
+		"logo":     "w500",
+		"poster":   "w500",
+		"still":    "w500",
 		"profile":  "w500",
 	}
 	for imageType, wantVariant := range want {
@@ -100,9 +100,9 @@ func TestCachedImageVariantPathRewritesKey(t *testing.T) {
 	const original = "tmdb/movies/550/poster/original.abc123.webp"
 	tests := map[string]string{
 		"":         "tmdb/movies/550/poster/w500.abc123.webp",
-		"small":    "tmdb/movies/550/poster/w300.abc123.webp",
+		"small":    "tmdb/movies/550/poster/w200.abc123.webp",
 		"medium":   "tmdb/movies/550/poster/w500.abc123.webp",
-		"large":    "tmdb/movies/550/poster/w780.abc123.webp",
+		"large":    "tmdb/movies/550/poster/w500.abc123.webp",
 		"original": original,
 	}
 	for size, wantPath := range tests {

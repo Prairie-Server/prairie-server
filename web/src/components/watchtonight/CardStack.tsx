@@ -24,6 +24,7 @@ const stackTransition = {
 interface CardStackProps {
   cards: SwipeCardType[];
   hasMore: boolean;
+  pagingLimited?: boolean;
   isFetching: boolean;
   onNeedMore: () => void;
   onClose: () => void;
@@ -44,6 +45,7 @@ export function playTargetForSwipeCard(card: SwipeCardType) {
 export default function CardStack({
   cards,
   hasMore,
+  pagingLimited = false,
   isFetching,
   onNeedMore,
   onClose,
@@ -61,12 +63,7 @@ export default function CardStack({
   // Prefetch next page when 3 cards remain.
   useEffect(() => {
     const remaining = cards.length - topIndex;
-    if (
-      remaining <= 3 &&
-      hasMore &&
-      !isFetching &&
-      !prefetchTriggered.current
-    ) {
+    if (remaining <= 3 && hasMore && !isFetching && !prefetchTriggered.current) {
       prefetchTriggered.current = true;
       onNeedMore();
     }
@@ -88,19 +85,14 @@ export default function CardStack({
       void navigate(target.href);
       return;
     }
-    playbackController.startPlayback({
-      contentId: card.content_id,
-      returnHref: `${location.pathname}${location.search}`,
-    });
-  }, [
-    cards,
-    topIndex,
-    onClose,
-    playbackController,
-    location.pathname,
-    location.search,
-    navigate,
-  ]);
+    playbackController.startPlayback(
+      {
+        contentId: card.content_id,
+        returnHref: `${location.pathname}${location.search}`,
+      },
+      "viewer",
+    );
+  }, [cards, topIndex, onClose, playbackController, location.pathname, location.search, navigate]);
 
   // Keyboard navigation.
   useEffect(() => {
@@ -135,7 +127,9 @@ export default function CardStack({
       <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
         <Tv className="text-muted-foreground h-12 w-12" />
         <p className="text-muted-foreground text-sm">
-          {"You've seen everything! Come back later for fresh picks."}
+          {pagingLimited
+            ? "You reached the end of this swipe session. Start over or choose different genres for more picks."
+            : "You've seen everything! Come back later for fresh picks."}
         </p>
         <button
           type="button"
@@ -189,12 +183,7 @@ export default function CardStack({
                 }}
                 transition={stackTransition}
               >
-                <SwipeCard
-                  card={card}
-                  isTop={isTop}
-                  onAccept={handlePlay}
-                  onReject={advance}
-                />
+                <SwipeCard card={card} isTop={isTop} onAccept={handlePlay} onReject={advance} />
               </motion.div>
             );
           })}
@@ -207,9 +196,7 @@ export default function CardStack({
           onReject={advance}
           onAccept={handlePlay}
           onPlay={handlePlay}
-          playLabel={
-            visibleCards[0]?.type === "audiobook" ? "Listen now" : "Play now"
-          }
+          playLabel={visibleCards[0]?.type === "audiobook" ? "Listen now" : "Play now"}
         />
       )}
 

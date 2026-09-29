@@ -4,14 +4,23 @@ import { describe, it, expect, vi } from "vitest";
 import RecipeConfigDrawer from "./RecipeConfigDrawer";
 
 vi.mock("@/api/client", () => ({
-  api: vi.fn(async (path: string) => {
-    if (path === "/libraries") {
-      return [
-        { id: 1, name: "Movies" },
-        { id: 2, name: "Shows" },
-      ];
-    }
-    return {};
+  api: vi.fn(async () => ({})),
+}));
+
+// The bulk-apply dialog lists libraries through the v2 listLibraries hook.
+vi.mock("@/hooks/queries/admin/libraries", () => ({
+  fetchAdminLibraries: vi.fn(async () => [
+    { id: 1, name: "Movies" },
+    { id: 2, name: "Shows" },
+  ]),
+}));
+
+vi.mock("@/hooks/queries/libraries", () => ({
+  useAvailableUserLibraries: () => ({
+    data: [
+      { id: 1, name: "Movies" },
+      { id: 2, name: "Shows" },
+    ],
   }),
 }));
 
@@ -39,28 +48,14 @@ const preset = def.presets[0]!;
 
 describe("RecipeConfigDrawer", () => {
   it("renders title prefilled with preset display_name", () => {
-    render(
-      <RecipeConfigDrawer
-        def={def}
-        preset={preset}
-        onCancel={() => {}}
-        onAdd={() => {}}
-      />,
-    );
+    render(<RecipeConfigDrawer def={def} preset={preset} onCancel={() => {}} onAdd={() => {}} />);
     const title = screen.getByLabelText(/title/i) as HTMLInputElement;
     expect(title.value).toBe("Recently Added");
   });
 
   it("calls onAdd with title, params, and limit", async () => {
     const onAdd = vi.fn();
-    render(
-      <RecipeConfigDrawer
-        def={def}
-        preset={preset}
-        onCancel={() => {}}
-        onAdd={onAdd}
-      />,
-    );
+    render(<RecipeConfigDrawer def={def} preset={preset} onCancel={() => {}} onAdd={onAdd} />);
     await userEvent.click(screen.getByRole("button", { name: /add section/i }));
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -69,6 +64,40 @@ describe("RecipeConfigDrawer", () => {
         config: {},
       }),
     );
+  });
+
+  it("filters a Recently Added row to the chosen libraries", async () => {
+    const onAdd = vi.fn();
+    render(
+      <RecipeConfigDrawer
+        def={def}
+        preset={preset}
+        showBulkApply={false}
+        onCancel={() => {}}
+        onAdd={onAdd}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Libraries" }));
+    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Shows" }));
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: /add section/i }));
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ config: { filter_library_ids: [2] } }),
+    );
+  });
+
+  it("hides the library picker for a section on a library page", () => {
+    render(
+      <RecipeConfigDrawer
+        def={def}
+        preset={preset}
+        libraryScoped
+        onCancel={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.queryByText("Libraries")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Libraries" })).toBeNull();
   });
 
   it("requires a collection before submitting collection presets", async () => {
@@ -104,9 +133,7 @@ describe("RecipeConfigDrawer", () => {
     const addButton = screen.getByRole("button", { name: /add section/i });
     expect(addButton).toBeDisabled();
     expect(screen.getByText(/choose a synced collection/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/no synced trakt recommended shows collection/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no synced trakt recommended shows collection/i)).toBeInTheDocument();
 
     await userEvent.click(addButton);
     expect(onAdd).not.toHaveBeenCalled();
@@ -143,9 +170,7 @@ describe("RecipeConfigDrawer", () => {
     );
 
     expect(screen.queryByText(/^Collection$/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/will be created automatically/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/will be created automatically/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /add section/i }));
     expect(onAdd).toHaveBeenCalledWith(
@@ -162,14 +187,7 @@ describe("RecipeConfigDrawer", () => {
 
   it("delegates manually selected bulk libraries to onAdd", async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
-    render(
-      <RecipeConfigDrawer
-        def={def}
-        preset={preset}
-        onCancel={() => {}}
-        onAdd={onAdd}
-      />,
-    );
+    render(<RecipeConfigDrawer def={def} preset={preset} onCancel={() => {}} onAdd={onAdd} />);
 
     await userEvent.click(screen.getByLabelText(/apply to all libraries/i));
     await userEvent.click(screen.getByRole("button", { name: /add section/i }));

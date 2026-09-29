@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { ItemDetail } from "@/api/types";
 import {
-  useMetadataAIStatus,
   useMetadataTranslationJobs,
   useTranslateItemMetadata,
   type MetadataTranslationJob,
 } from "@/hooks/queries/items";
+import { useMetadataAIStatus } from "@/hooks/queries/metadataAI";
 import { invalidateMediaSurfaceQueries } from "@/hooks/queries/mediaSurfaceRefresh";
 import { LANGUAGES } from "@/player/utils/languageNames";
 
@@ -37,15 +37,9 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
   const [watching, setWatching] = useState(false);
 
   const translateMutation = useTranslateItemMetadata(item.content_id);
-  const { data: jobsData } = useMetadataTranslationJobs(
-    item.content_id,
-    enabled && watching,
-  );
+  const { data: jobsData } = useMetadataTranslationJobs(item.content_id, enabled && watching);
 
-  const activeJob = useMemo(
-    () => (jobsData?.jobs ?? []).find(isActive),
-    [jobsData],
-  );
+  const activeJob = useMemo(() => (jobsData?.jobs ?? []).find(isActive), [jobsData]);
   const lastJob = jobsData?.jobs?.[0];
 
   // When the job we were watching reaches a terminal state, surface the
@@ -106,9 +100,8 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
         <span className="text-sm font-medium">Translate with AI</span>
       </div>
       <p className="text-muted-foreground text-xs">
-        {description} into the chosen language. Translations are served to
-        libraries using that metadata language; provider data replaces them when
-        it becomes available.
+        {description} into the chosen language. Translations are served to libraries using that
+        metadata language; provider data replaces them when it becomes available.
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
@@ -131,12 +124,7 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
           </select>
         </div>
         <div className="flex h-9 items-center gap-2">
-          <Switch
-            id="translate-force"
-            checked={force}
-            onCheckedChange={setForce}
-            disabled={busy}
-          />
+          <Switch id="translate-force" checked={force} onCheckedChange={setForce} disabled={busy} />
           <Label htmlFor="translate-force" className="text-xs">
             Re-translate existing
           </Label>

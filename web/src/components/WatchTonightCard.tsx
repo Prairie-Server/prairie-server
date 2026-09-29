@@ -6,11 +6,7 @@ import ViewTransitionLink from "@/components/ViewTransitionLink";
 import { Badge } from "@/components/ui/badge";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { parseWatchHref } from "@/pages/watchRouteHelpers";
-import {
-  buildItemHref,
-  buildMediaPlayHref,
-  isVideoWatchHref,
-} from "@/lib/mediaNavigation";
+import { buildItemHref, buildMediaPlayHref, isVideoWatchHref } from "@/lib/mediaNavigation";
 
 const sourceLabels: Record<string, string> = {
   continue_watching: "Continue",
@@ -23,10 +19,7 @@ interface WatchTonightCardProps {
   onPlay: () => void;
 }
 
-export default function WatchTonightCard({
-  item,
-  onPlay,
-}: WatchTonightCardProps) {
+export default function WatchTonightCard({ item, onPlay }: WatchTonightCardProps) {
   const location = useLocation();
   const playbackController = useWatchPlaybackController();
 
@@ -38,10 +31,8 @@ export default function WatchTonightCard({
   const source = item.watch_tonight_source ?? "";
   const isInProgress = source === "continue_watching";
   const isNextUp = source === "next_up";
-  const hasEpisodeMeta =
-    item.season_number != null && item.episode_number != null;
-  const heading =
-    hasEpisodeMeta && item.series_title ? item.series_title : item.title;
+  const hasEpisodeMeta = item.season_number != null && item.episode_number != null;
+  const heading = hasEpisodeMeta && item.series_title ? item.series_title : item.title;
   const progressPercent =
     isInProgress && (item.duration_seconds ?? 0) > 0
       ? ((item.position_seconds ?? 0) / (item.duration_seconds ?? 1)) * 100
@@ -58,12 +49,7 @@ export default function WatchTonightCard({
       : isInProgress && (item.duration_seconds ?? 0) > 0
         ? `${Math.max(0, Math.round(((item.duration_seconds ?? 0) - (item.position_seconds ?? 0)) / 60))} min left`
         : item.genres?.slice(0, 2).join(", ") || "\u00A0";
-  const playVerb =
-    item.type === "ebook"
-      ? "Read"
-      : item.type === "audiobook"
-        ? "Listen"
-        : "Play";
+  const playVerb = item.type === "ebook" ? "Read" : item.type === "audiobook" ? "Listen" : "Play";
 
   const handlePlayClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -87,13 +73,16 @@ export default function WatchTonightCard({
 
       event.preventDefault();
       onPlay();
-      playbackController.startPlayback({
-        contentId: parsed.contentId,
-        fileId: parsed.fileId,
-        libraryId: parsed.libraryId,
-        restart: parsed.restart,
-        returnHref: `${location.pathname}${location.search}`,
-      });
+      playbackController.startPlayback(
+        {
+          contentId: parsed.contentId,
+          fileId: parsed.fileId,
+          libraryId: parsed.libraryId,
+          restart: parsed.restart,
+          returnHref: `${location.pathname}${location.search}`,
+        },
+        "viewer",
+      );
     },
     [watchHref, location.pathname, location.search, playbackController, onPlay],
   );
@@ -166,14 +155,10 @@ export default function WatchTonightCard({
           )}
         </div>
         <ViewTransitionLink to={itemHref} className="min-w-0">
-          <div className="truncate text-[15px] leading-tight font-semibold">
-            {heading}
-          </div>
+          <div className="truncate text-[15px] leading-tight font-semibold">{heading}</div>
         </ViewTransitionLink>
         {episodeMeta && (
-          <div className="text-muted-foreground truncate text-[13px]">
-            {episodeMeta}
-          </div>
+          <div className="text-muted-foreground truncate text-[13px]">{episodeMeta}</div>
         )}
         <div className="text-muted-foreground text-[13px]">{subtitle}</div>
       </div>

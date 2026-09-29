@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSelection, type SelectionKind } from "./GroupsBoard";
+import { BulkSelectionCheckbox } from "@/components/BulkSelectionCheckbox";
 
 export interface CollectionRowProps {
   collection: LibraryCollection;
@@ -32,14 +33,7 @@ export function CollectionRow({
   isSyncing = false,
 }: CollectionRowProps) {
   const sortableId = `col:${collection.id}`;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sortableId,
     disabled: dragDisabled,
     data: { kind: "collection", id: collection.id },
@@ -52,9 +46,7 @@ export function CollectionRow({
 
   const { isSelected, selectOnly, toggleOne, selectRange } = useSelection();
   const selected = isSelected(collection.id);
-  const kind: SelectionKind = isInUserCollectionsGroup
-    ? "user_collection"
-    : "collection";
+  const kind: SelectionKind = isInUserCollectionsGroup ? "user_collection" : "collection";
   const syncable = collection.collection_type !== "manual";
 
   function onRowClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -70,6 +62,14 @@ export function CollectionRow({
     }
   }
 
+  function onSelectionChange(checked: boolean, extendRange: boolean) {
+    if (extendRange) {
+      selectRange(collection.id, kind, parentGroupID, parentCollectionIDs, checked);
+    } else {
+      toggleOne(collection.id, kind, parentGroupID);
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -80,6 +80,11 @@ export function CollectionRow({
         selected && "bg-primary/10 border-l-primary border-l-2",
       )}
     >
+      <BulkSelectionCheckbox
+        label={`Select ${collection.title}`}
+        selected={selected}
+        onSelectionChange={onSelectionChange}
+      />
       <button
         type="button"
         {...attributes}
@@ -101,9 +106,7 @@ export function CollectionRow({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <div className="truncate font-medium">{collection.title}</div>
-          {collection.featured ? (
-            <Badge variant="secondary">Featured</Badge>
-          ) : null}
+          {collection.featured ? <Badge variant="secondary">Featured</Badge> : null}
         </div>
         <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
           <span>{collection.item_count} items</span>
@@ -130,9 +133,7 @@ export function CollectionRow({
               onSync();
             }}
           >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
           </Button>
         ) : null}
         <Button

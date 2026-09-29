@@ -43,17 +43,12 @@ export function composeSourceLabel(parts: SourceLabelParts): SourceLabel {
 }
 
 /** Stable key for the (plugin, capability) -> manifest display_name map. */
-export function pluginDisplayNameKey(
-  pluginId: string,
-  capabilityId: string,
-): string {
+export function pluginDisplayNameKey(pluginId: string, capabilityId: string): string {
   return `${pluginId}:${capabilityId}`;
 }
 
 /** Build the (plugin, capability) -> display_name lookup from the picker list. */
-export function buildPluginDisplayNames(
-  available: AutoscanAvailableSource[],
-): Map<string, string> {
+export function buildPluginDisplayNames(available: AutoscanAvailableSource[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const a of available) {
     map.set(pluginDisplayNameKey(a.plugin_id, a.capability_id), a.display_name);
@@ -82,9 +77,7 @@ export function resolveEventSourceName(
   lookups: SourceLabelLookups,
 ): string {
   if (!ref.capability_id || !ref.plugin_id) return "";
-  const source = ref.source_id
-    ? lookups.sourceByID.get(ref.source_id)
-    : undefined;
+  const source = ref.source_id ? lookups.sourceByID.get(ref.source_id) : undefined;
   const connectionName = source?.connection_id
     ? lookups.connectionByID.get(source.connection_id)
     : undefined;

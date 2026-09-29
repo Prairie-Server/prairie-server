@@ -33,9 +33,7 @@ export function chipsToFilterConfig(
  * single-group configs; nested or multi-group configs are reported as
  * incompatible so the UI can fall back to Advanced Mode.
  */
-export function filterConfigToChips(
-  config: FilterConfig | undefined | null,
-): ConversionResult {
+export function filterConfigToChips(config: FilterConfig | undefined | null): ConversionResult {
   if (!config || !Array.isArray(config.groups) || config.groups.length === 0) {
     return { kind: "compatible", chips: [], matchMode: "all" };
   }

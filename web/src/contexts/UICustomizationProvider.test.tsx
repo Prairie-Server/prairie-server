@@ -12,29 +12,27 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", () => ({
-  useEffectiveSettings: (...args: unknown[]) =>
-    mocks.useEffectiveSettings(...args),
-  useSettingsCapabilities: (...args: unknown[]) =>
-    mocks.useSettingsCapabilities(...args),
+  useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
+  useSettingsCapabilities: (...args: unknown[]) => mocks.useSettingsCapabilities(...args),
   settingsCapabilitiesSupportKey: (
     capabilities:
       | {
           api_version: number;
-          revision: number;
+          manifest_revision: number;
           supports_batched_effective?: boolean;
           supports_idempotent_writes?: boolean;
         }
       | undefined,
   ) =>
     capabilities?.api_version === 1 &&
-    capabilities.revision >= 5 &&
+    capabilities.manifest_revision >= 5 &&
     capabilities.supports_batched_effective === true &&
     capabilities.supports_idempotent_writes === true,
   settingsCapabilitiesSupportAtomicShortcuts: (
     capabilities:
       | {
           api_version: number;
-          revision: number;
+          manifest_revision: number;
           supports_batched_effective?: boolean;
           supports_idempotent_writes?: boolean;
           supports_atomic_shortcuts?: boolean;
@@ -42,7 +40,7 @@ vi.mock("@/hooks/queries/settingValues", () => ({
       | undefined,
   ) =>
     capabilities?.api_version === 1 &&
-    capabilities.revision >= 5 &&
+    capabilities.manifest_revision >= 5 &&
     capabilities.supports_batched_effective === true &&
     capabilities.supports_idempotent_writes === true &&
     capabilities.supports_atomic_shortcuts === true,
@@ -83,7 +81,7 @@ describe("UICustomizationProvider capability gating", () => {
     mocks.useSettingsCapabilities.mockReturnValue({
       data: {
         api_version: 1,
-        revision: 4,
+        manifest_revision: 4,
         contract_etag: "revision-four",
         supports_batched_effective: true,
         supports_idempotent_writes: true,
@@ -110,10 +108,7 @@ describe("UICustomizationProvider capability gating", () => {
       ],
       enabled: false,
     });
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-supported",
-      "false",
-    );
+    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "false");
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
     expect(screen.getByRole("status")).toHaveTextContent("standard");
   });
@@ -122,7 +117,7 @@ describe("UICustomizationProvider capability gating", () => {
     mocks.useSettingsCapabilities.mockReturnValue({
       data: {
         api_version: 1,
-        revision: 5,
+        manifest_revision: 5,
         contract_etag: "revision-five",
         supports_batched_effective: true,
         supports_idempotent_writes: true,
@@ -142,10 +137,7 @@ describe("UICustomizationProvider capability gating", () => {
         enabled: true,
       }),
     );
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-supported",
-      "true",
-    );
+    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "true");
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
   });
 
@@ -153,7 +145,7 @@ describe("UICustomizationProvider capability gating", () => {
     mocks.useSettingsCapabilities.mockReturnValue({
       data: {
         api_version: 1,
-        revision: 5,
+        manifest_revision: 5,
         contract_etag: "revision-five-incomplete",
         supports_idempotent_writes: true,
         supports_atomic_shortcuts: true,
@@ -173,10 +165,7 @@ describe("UICustomizationProvider capability gating", () => {
         enabled: false,
       }),
     );
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-supported",
-      "false",
-    );
+    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "false");
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
   });
 
@@ -184,7 +173,7 @@ describe("UICustomizationProvider capability gating", () => {
     mocks.useSettingsCapabilities.mockReturnValue({
       data: {
         api_version: 1,
-        revision: 5,
+        manifest_revision: 5,
         contract_etag: "revision-five-atomic",
         supports_batched_effective: true,
         supports_idempotent_writes: true,
@@ -217,7 +206,7 @@ describe("UICustomizationProvider capability gating", () => {
     mocks.useSettingsCapabilities.mockReturnValue({
       data: {
         api_version: 1,
-        revision: 5,
+        manifest_revision: 5,
         contract_etag: "revision-five",
         supports_batched_effective: true,
         supports_idempotent_writes: true,
@@ -238,15 +227,9 @@ describe("UICustomizationProvider capability gating", () => {
       </UICustomizationProvider>,
     );
 
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-supported",
-      "true",
-    );
+    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "true");
     expect(screen.getByRole("status")).toHaveAttribute("data-loading", "false");
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-unavailable",
-      "true",
-    );
+    expect(screen.getByRole("status")).toHaveAttribute("data-unavailable", "true");
     expect(screen.getByRole("status")).toHaveTextContent("standard");
   });
 });

@@ -3,10 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { Check, ChevronsUpDown } from "lucide-react";
 
-import {
-  fetchCatalogFacetSearch,
-  type CatalogFacetName,
-} from "@/hooks/queries/catalog";
+import { fetchCatalogFacetSearch, type CatalogFacetName } from "@/hooks/queries/catalog";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { CatalogSearchState } from "@/pages/catalogSearchParams";
 import { cn } from "@/lib/utils";
@@ -29,7 +26,7 @@ interface FacetSearchSelectProps {
 /**
  * FacetSearchSelect is the typeahead counterpart to SearchableSelect for
  * high-cardinality catalog facets (Author, Narrator, Series). It debounces
- * the user's input then queries /api/v1/catalog/filters/search with the
+ * the user's input then queries /api/v2/catalog/filters/search with the
  * given facet + prefix. The dropdown lists matches in alphabetical order
  * with the currently selected value pinned first so users can clear it
  * without re-searching.
@@ -56,13 +53,7 @@ export function FacetSearchSelect({
   const debouncedQuery = useDebounce(search.trim(), 200);
 
   const query = useQuery({
-    queryKey: [
-      "catalogFacetSearch",
-      facet,
-      debouncedQuery,
-      limit,
-      state,
-    ] as const,
+    queryKey: ["catalogFacetSearch", facet, debouncedQuery, limit, state] as const,
     queryFn: ({ signal }) =>
       fetchCatalogFacetSearch(state, facet, debouncedQuery, limit, { signal }),
     enabled: open && debouncedQuery.length > 0,
@@ -155,9 +146,7 @@ export function FacetSearchSelect({
               aria-label="Search"
               aria-controls={listboxId}
               aria-activedescendant={
-                focusedIndex >= 0
-                  ? `${listboxId}-opt-${focusedIndex}`
-                  : undefined
+                focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined
               }
               className="border-input bg-background placeholder:text-muted-foreground flex h-8 w-full rounded-md border px-2 text-sm outline-none"
               autoFocus
@@ -170,9 +159,7 @@ export function FacetSearchSelect({
             className="max-h-60 overflow-y-auto overscroll-contain p-1"
           >
             {query.isLoading ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                Loading...
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">Loading...</p>
             ) : options.length === 0 ? (
               <p className="text-muted-foreground py-4 text-center text-sm">
                 {debouncedQuery ? "No matches" : "Start typing to search"}
@@ -195,10 +182,7 @@ export function FacetSearchSelect({
                   }}
                 >
                   <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      value ? "opacity-0" : "opacity-100",
-                    )}
+                    className={cn("mr-2 h-4 w-4 shrink-0", value ? "opacity-0" : "opacity-100")}
                   />
                   <span className="text-muted-foreground italic">Any</span>
                 </button>
@@ -213,8 +197,7 @@ export function FacetSearchSelect({
                     className={cn(
                       "hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm select-none",
                       value === option && "font-medium",
-                      focusedIndex === index + 1 &&
-                        "bg-accent text-accent-foreground",
+                      focusedIndex === index + 1 && "bg-accent text-accent-foreground",
                     )}
                     onClick={() => {
                       onChange(option);

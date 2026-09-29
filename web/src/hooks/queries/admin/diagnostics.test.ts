@@ -7,14 +7,31 @@ import type { DiagnosticReport } from "@/api/types";
 
 const mocks = vi.hoisted(() => ({
   api: vi.fn(),
-  apiResponse: vi.fn(),
+  update: vi.fn(),
+  bundle: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }));
 
 vi.mock("@/api/client", () => ({
-  api: mocks.api,
-  apiResponse: mocks.apiResponse,
+  captureProfileRequestContext: () => ({ profileId: "profile-a" }),
+  isCapturedProfileAuthorityActive: () => true,
+}));
+vi.mock("./settings", () => ({
+  useUpdateServerSetting: () => ({
+    mutateAsync: async (values: unknown) => {
+      try {
+        return await mocks.update(values);
+      } catch (error) {
+        mocks.toastError((error as Error).message);
+        throw error;
+      }
+    },
+  }),
+}));
+
+vi.mock("@/api/v2/adminDiagnosticDownload", () => ({
+  fetchAdminDiagnosticReportBundle: mocks.bundle,
 }));
 
 vi.mock("sonner", () => ({
@@ -24,10 +41,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-import {
-  downloadDiagnosticReport,
-  useUpdateDiagnosticsUploadsEnabled,
-} from "./diagnostics";
+import { downloadDiagnosticReport, useUpdateDiagnosticsUploadsEnabled } from "./diagnostics";
 
 const report = {
   id: "83fd3186-bd4f-42e1-8285-58107c503685",
@@ -37,51 +51,32 @@ const report = {
 describe("downloadDiagnosticReport", () => {
   beforeEach(() => {
     mocks.api.mockReset();
-    mocks.apiResponse.mockReset();
+    mocks.update.mockReset();
+    mocks.bundle.mockReset();
     mocks.toastError.mockReset();
     mocks.toastSuccess.mockReset();
   });
 
   it("streams the bundle through the proxy download path", async () => {
-    const objectURL = vi
-      .spyOn(URL, "createObjectURL")
-      .mockReturnValue("blob:diagnostic");
-    const revokeObjectURL = vi
-      .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => undefined);
+    const objectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:diagnostic");
+    const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(() => undefined);
-    // A string body, not a Blob: `new Response(blob)` reads the body via
-    // `blob.stream()`, which jsdom's Blob does not implement on Node 22 — the
-    // version the Dockerfile builds with — so the Blob form passes locally on
-    // Node 24 and throws "object.stream is not a function" in CI. Nothing here
-    // asserts on the body's contents, only that the object URL and filename
-    // reach the anchor, so the string is equivalent and version-independent.
-    mocks.apiResponse.mockResolvedValue(
-      new Response("bundle", {
-        headers: { "Content-Type": "application/gzip" },
-      }),
-    );
+    mocks.bundle.mockResolvedValue(new Blob(["bundle"], { type: "application/gzip" }));
 
     await downloadDiagnosticReport(report);
 
-    expect(mocks.apiResponse).toHaveBeenCalledWith(
-      "/admin/diagnostics/reports/83fd3186-bd4f-42e1-8285-58107c503685/download?proxy=1",
-    );
+    expect(mocks.bundle).toHaveBeenCalledWith("83fd3186-bd4f-42e1-8285-58107c503685");
     expect(click).toHaveBeenCalledOnce();
     expect(objectURL).toHaveBeenCalledOnce();
     // The click spy records `this` as the anchor the download helper clicked;
     // assert it carried the blob URL and expected filename before cleanup.
     const clickedAnchor = click.mock.contexts[0] as HTMLAnchorElement;
     expect(clickedAnchor.href).toBe("blob:diagnostic");
-    expect(clickedAnchor.download).toBe(
-      "prairie-diagnostics-ABCDEF123456.tar.gz",
-    );
+    expect(clickedAnchor.download).toBe("prairie-diagnostics-ABCDEF123456.tar.gz");
     expect(
-      document.querySelector(
-        'a[download="prairie-diagnostics-ABCDEF123456.tar.gz"]',
-      ),
+      document.querySelector('a[download="prairie-diagnostics-ABCDEF123456.tar.gz"]'),
     ).toBeNull();
 
     await new Promise((resolve) => window.setTimeout(resolve, 0));
@@ -92,9 +87,7 @@ describe("downloadDiagnosticReport", () => {
   });
 
   it("propagates request failures to the caller", async () => {
-    mocks.apiResponse.mockRejectedValue(
-      new Error("Diagnostic report bundle not found"),
-    );
+    mocks.bundle.mockRejectedValue(new Error("Diagnostic report bundle not found"));
 
     await expect(downloadDiagnosticReport(report)).rejects.toThrow(
       "Diagnostic report bundle not found",
@@ -105,65 +98,42 @@ describe("downloadDiagnosticReport", () => {
 describe("useUpdateDiagnosticsUploadsEnabled", () => {
   beforeEach(() => {
     mocks.api.mockReset();
-    mocks.apiResponse.mockReset();
+    mocks.update.mockReset();
+    mocks.bundle.mockReset();
     mocks.toastError.mockReset();
     mocks.toastSuccess.mockReset();
   });
 
   function createWrapper(queryClient: QueryClient) {
     return function Wrapper({ children }: { children: ReactNode }) {
-      return createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        children,
-      );
+      return createElement(QueryClientProvider, { client: queryClient }, children);
     };
   }
 
   it.each([
     [true, "true", "Client diagnostic uploads enabled"],
     [false, "false", "Client diagnostic uploads disabled"],
-  ] as const)(
-    "persists %s and refreshes diagnostics status",
-    async (enabled, value, message) => {
-      const queryClient = new QueryClient({
-        defaultOptions: {
-          mutations: { retry: false },
-          queries: { retry: false },
-        },
-      });
-      const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
-      mocks.api.mockResolvedValue({
-        key: "diagnostics.uploads_enabled",
-        value,
-      });
-      const { result } = renderHook(
-        () => useUpdateDiagnosticsUploadsEnabled(),
-        {
-          wrapper: createWrapper(queryClient),
-        },
-      );
+  ] as const)("persists %s and refreshes diagnostics status", async (enabled, value, message) => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
+    });
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+    mocks.update.mockResolvedValue({ key: "diagnostics.uploads_enabled", value });
+    const { result } = renderHook(() => useUpdateDiagnosticsUploadsEnabled(), {
+      wrapper: createWrapper(queryClient),
+    });
 
-      await act(async () => {
-        await result.current.mutateAsync(enabled);
-      });
+    await act(async () => {
+      await result.current.mutateAsync(enabled);
+    });
 
-      expect(mocks.api).toHaveBeenCalledWith(
-        "/admin/settings/diagnostics.uploads_enabled",
-        {
-          method: "PUT",
-          body: JSON.stringify({ value }),
-        },
-      );
-      expect(invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["diagnostics", "status"],
-      });
-      expect(invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["admin", "serverSettings"],
-      });
-      expect(mocks.toastSuccess).toHaveBeenCalledWith(message);
-    },
-  );
+    expect(mocks.update).toHaveBeenCalledWith({ key: "diagnostics.uploads_enabled", value });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["diagnostics", "status"] });
+    expect(mocks.toastSuccess).toHaveBeenCalledWith(message);
+  });
 
   it("surfaces storage validation errors", async () => {
     const queryClient = new QueryClient({
@@ -172,10 +142,8 @@ describe("useUpdateDiagnosticsUploadsEnabled", () => {
         queries: { retry: false },
       },
     });
-    const error = new Error(
-      "diagnostics uploads require configured private object storage",
-    );
-    mocks.api.mockRejectedValue(error);
+    const error = new Error("diagnostics uploads require configured private object storage");
+    mocks.update.mockRejectedValue(error);
     const { result } = renderHook(() => useUpdateDiagnosticsUploadsEnabled(), {
       wrapper: createWrapper(queryClient),
     });

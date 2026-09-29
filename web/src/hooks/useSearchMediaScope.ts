@@ -1,9 +1,6 @@
 import { useCallback } from "react";
 
-import {
-  useSettingValue,
-  useSetSettingValue,
-} from "@/hooks/queries/settingValues";
+import { useSettingValue, useSetSettingValue } from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 
@@ -15,12 +12,8 @@ export const DEFAULT_SEARCH_MEDIA_SCOPE: SearchMediaScope = "video";
 /** `search.media_scope` is profile-wide in the contract (no device scope). */
 const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
 
-export function parseSearchMediaScope(
-  value: string | null | undefined,
-): SearchMediaScope | null {
-  return value === "all" || value === "video" || value === "audiobook"
-    ? value
-    : null;
+export function parseSearchMediaScope(value: string | null | undefined): SearchMediaScope | null {
+  return value === "all" || value === "video" || value === "audiobook" ? value : null;
 }
 
 /**

@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { SideNavItem, SideNavSection } from "@/components/SideNav";
 import { PrairieBrand } from "@/components/PrairieBrand";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
 import {
   buildAdminNavSections,
   buildAdminPluginNavItems,
@@ -35,10 +36,7 @@ function useSessionCount() {
   return sessions.length;
 }
 
-export default function AdminSidebar({
-  onNavigate,
-  embedded = false,
-}: AdminSidebarProps) {
+export default function AdminSidebar({ onNavigate, embedded = false }: AdminSidebarProps) {
   const location = useLocation();
   const sessionCount = useSessionCount();
   const buildInfo = useBuildInfo();
@@ -54,23 +52,17 @@ export default function AdminSidebar({
   } else if (buildInfo.data?.available) {
     const buildNumber = buildInfo.data.build_number ?? 0;
     buildDisplay =
-      buildNumber > 0
-        ? `${buildNumber} · ${buildInfo.data.display}`
-        : buildInfo.data.display;
+      buildNumber > 0 ? `${buildNumber} · ${buildInfo.data.display}` : buildInfo.data.display;
   }
 
   const activityBadge =
-    sessionCount > 0 ? (
-      <span className="live-badge">{sessionCount} live</span>
-    ) : undefined;
+    sessionCount > 0 ? <span className="live-badge">{sessionCount} live</span> : undefined;
   const sections: SidebarSection[] = buildAdminNavSections({
     policyEditorAvailable: policyCapability.data?.editor_available === true,
   }).map((section) => ({
     ...section,
     items: section.items.map((item) =>
-      item.href === "/admin/activity"
-        ? { ...item, badge: activityBadge }
-        : item,
+      item.href === "/admin/activity" ? { ...item, badge: activityBadge } : item,
     ),
   }));
 
@@ -87,10 +79,7 @@ export default function AdminSidebar({
 
   function isActive(item: SidebarItem) {
     if (item.exact) return location.pathname === item.href;
-    return (
-      location.pathname === item.href ||
-      location.pathname.startsWith(`${item.href}/`)
-    );
+    return location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
   }
 
   return (
@@ -120,11 +109,7 @@ export default function AdminSidebar({
         className="sidebar-scroll flex-1 space-y-5 overflow-y-auto px-3"
       >
         {sections.map((section) => (
-          <SideNavSection
-            key={section.label}
-            label={section.label}
-            idPrefix="admin-nav"
-          >
+          <SideNavSection key={section.label} label={section.label} idPrefix="admin-nav">
             {section.items.map((item) =>
               item.external ? (
                 <SideNavItem
@@ -165,24 +150,22 @@ export default function AdminSidebar({
           </div>
           <div
             className="text-sidebar-foreground mt-1 font-mono text-[12px] leading-5"
-            title={
-              buildInfo.data?.built_at
-                ? `Built ${buildInfo.data.built_at}`
-                : undefined
-            }
+            title={buildInfo.data?.built_at ? `Built ${buildInfo.data.built_at}` : undefined}
           >
             {buildDisplay}
           </div>
         </div>
-        {/* Back to app */}
-        <Link
+        {/* Back to app — admin was almost always entered from the app, so this
+            plays the motion backwards rather than as a descent. */}
+        <ViewTransitionLink
           to="/"
+          up
           onClick={onNavigate}
           className="text-muted-foreground hover:text-foreground hover:bg-accent/70 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors duration-150"
         >
           <ArrowLeft className="h-[18px] w-[18px]" />
           <span>Back to App</span>
-        </Link>
+        </ViewTransitionLink>
       </div>
     </aside>
   );

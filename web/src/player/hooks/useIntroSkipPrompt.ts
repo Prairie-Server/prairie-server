@@ -16,10 +16,7 @@ const INTRO_PROMPT_MS = INTRO_PROMPT_SECONDS * 1_000;
  * offer the prompt a second time. A rejected promise counts as a refusal — the
  * prompt stays, which is the safe way to be wrong.
  */
-function settleSeek(
-  outcome: boolean | Promise<boolean>,
-  then: (accepted: boolean) => void,
-) {
+function settleSeek(outcome: boolean | Promise<boolean>, then: (accepted: boolean) => void) {
   if (typeof outcome === "boolean") {
     then(outcome);
     return;
@@ -90,9 +87,7 @@ export function useIntroSkipPrompt({
   enabled,
   onSeek,
 }: UseIntroSkipPromptOptions) {
-  const [activePrompt, setActivePromptState] = useState<ActivePrompt | null>(
-    null,
-  );
+  const [activePrompt, setActivePromptState] = useState<ActivePrompt | null>(null);
   const activePromptRef = useRef<ActivePrompt | null>(null);
   const resolvedKeysRef = useRef(new Set<string>());
   const contextRef = useRef<string | null>(null);
@@ -157,10 +152,7 @@ export function useIntroSkipPrompt({
         });
       }
 
-      expiryTimerRef.current = window.setTimeout(
-        () => expirePromptRef.current(),
-        boundedRemaining,
-      );
+      expiryTimerRef.current = window.setTimeout(() => expirePromptRef.current(), boundedRemaining);
     },
     [clearCountdownTimers, replacePrompt],
   );
@@ -199,12 +191,7 @@ export function useIntroSkipPrompt({
         deadlineRef.current = 0;
       }
     },
-    [
-      clearCountdownTimers,
-      clearPauseGraceTimer,
-      replacePrompt,
-      scheduleCountdown,
-    ],
+    [clearCountdownTimers, clearPauseGraceTimer, replacePrompt, scheduleCountdown],
   );
 
   useEffect(() => {
@@ -234,10 +221,7 @@ export function useIntroSkipPrompt({
       return;
     }
 
-    if (
-      pausedRemainingRef.current !== null ||
-      pauseGraceTimerRef.current !== null
-    ) {
+    if (pausedRemainingRef.current !== null || pauseGraceTimerRef.current !== null) {
       return;
     }
 
@@ -282,8 +266,7 @@ export function useIntroSkipPrompt({
       clearPrompt();
     }
 
-    const inside =
-      intro !== null && currentTime >= intro.start && currentTime < intro.end;
+    const inside = intro !== null && currentTime >= intro.start && currentTime < intro.end;
     if (!enabled || mode === "never" || !intro || !introKey) {
       wasInsideRef.current = false;
       clearPrompt();
@@ -314,7 +297,17 @@ export function useIntroSkipPrompt({
     // outside the range, but the undo prompt must remain available.
     startPrompt("undo", introKey);
     settleSeek(onSeekRef.current(intro.end), (accepted) => {
-      if (accepted) return;
+      if (accepted) {
+        // The skip itself resolves the intro, independently of the undo clock.
+        // A seek can reload the stream (a reanchor replan lands on a segment
+        // boundary just before the target), which disables the prompt and
+        // clears the undo before it expires. Without this the re-entry looked
+        // like a fresh intro and the hook skipped again, replanning in a loop.
+        // A reanchor reports asynchronously, so this waits for the replan to
+        // land rather than for the request to be sent.
+        resolvedKeysRef.current.add(introKey);
+        return;
+      }
       // Nothing moved, so there is no skip to undo and "Intro skipped" would be
       // a lie. The intro stays unresolved: whatever refused the seek may not
       // refuse the next one.
@@ -343,18 +336,12 @@ export function useIntroSkipPrompt({
   const select = useCallback(() => {
     const current = activePromptRef.current;
     if (!current || !intro) return false;
-    settleSeek(
-      onSeekRef.current(current.kind === "skip" ? intro.end : intro.start),
-      (accepted) => {
-        if (!accepted) return;
-        if (
-          !promptStillActive(activePromptRef.current, current.key, current.kind)
-        )
-          return;
-        resolvedKeysRef.current.add(current.key);
-        clearPrompt();
-      },
-    );
+    settleSeek(onSeekRef.current(current.kind === "skip" ? intro.end : intro.start), (accepted) => {
+      if (!accepted) return;
+      if (!promptStillActive(activePromptRef.current, current.key, current.kind)) return;
+      resolvedKeysRef.current.add(current.key);
+      clearPrompt();
+    });
     return true;
   }, [clearPrompt, intro]);
 

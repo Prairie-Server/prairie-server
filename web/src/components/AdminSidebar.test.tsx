@@ -11,7 +11,7 @@ interface MockBuildInfoResult {
 }
 
 const mockUseServerBranding = vi.fn(() => ({
-  serverName: "Silo",
+  serverName: "Prairie",
   loginSubtitle: "Sign in with an existing account.",
 }));
 const defaultBuildInfo: BuildInfo = {
@@ -82,14 +82,7 @@ describe("AdminSidebar", () => {
   it("renders the grouped navigation sections", () => {
     const markup = renderSidebar();
 
-    for (const section of [
-      "Overview",
-      "Content",
-      "Automation",
-      "Users",
-      "Settings",
-      "System",
-    ]) {
+    for (const section of ["Overview", "Content", "Automation", "Users", "Settings", "System"]) {
       expect(markup).toContain(`>${section}<`);
     }
   });

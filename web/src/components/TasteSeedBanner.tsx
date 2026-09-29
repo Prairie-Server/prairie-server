@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useFavorites } from "@/hooks/queries/favorites";
+import { useHasFavorites } from "@/hooks/queries/favorites";
 import {
   isTasteSeedBannerDismissed,
   isTasteSeedDismissed,
@@ -25,11 +25,11 @@ import {
  */
 export default function TasteSeedBanner() {
   const { profile } = useAuth();
-  const { data: favorites, isPending } = useFavorites();
+  const { data: hasFavorites, isPending } = useHasFavorites();
   const [hidden, setHidden] = useState(false);
 
   if (!profile || isPending) return null;
-  if ((favorites?.length ?? 0) > 0) return null;
+  if (hasFavorites) return null;
   if (!isTasteSeedDismissed(profile.id)) return null;
   if (isTasteSeedBannerDismissed(profile.id) || hidden) return null;
 
@@ -46,9 +46,7 @@ export default function TasteSeedBanner() {
           <Sparkles className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold sm:text-base">
-            Personalize your home
-          </p>
+          <p className="text-sm font-semibold sm:text-base">Personalize your home</p>
           <p className="text-muted-foreground text-xs sm:text-sm">
             Pick a few titles you love and we'll tailor your recommendations.
           </p>

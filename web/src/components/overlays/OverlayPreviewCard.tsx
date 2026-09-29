@@ -1,9 +1,5 @@
 import CardOverlays from "./CardOverlays";
-import {
-  SAMPLE_MOVIE_DATA,
-  SAMPLE_SHOW_DATA,
-  type CardOverlayPrefs,
-} from "@/lib/overlays";
+import { SAMPLE_MOVIE_DATA, SAMPLE_SHOW_DATA, type CardOverlayPrefs } from "@/lib/overlays";
 
 /** Which sample item the preview stands in for. Picked by <OverlayPreviewVariantToggle />. */
 export type OverlayPreviewVariant = "movie" | "show";
@@ -15,10 +11,7 @@ interface OverlayPreviewCardProps {
   showPosterOverlays?: boolean;
 }
 
-const SIZE_CLASSES: Record<
-  NonNullable<OverlayPreviewCardProps["size"]>,
-  string
-> = {
+const SIZE_CLASSES: Record<NonNullable<OverlayPreviewCardProps["size"]>, string> = {
   sm: "w-[140px]",
   md: "w-[180px]",
 };

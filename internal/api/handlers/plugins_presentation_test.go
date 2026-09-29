@@ -18,7 +18,7 @@ func TestToPluginPresentationJSONPreservesOperatorMetadata(t *testing.T) {
 		SourceUrl:           "https://github.com/Prairie-Server/example-plugin",
 		SupportUrl:          "https://github.com/Prairie-Server/example-plugin/issues",
 		ChangelogUrl:        "https://github.com/Prairie-Server/example-plugin/releases",
-		PublisherName:       "Silo",
+		PublisherName:       "Prairie",
 		PublisherUrl:        "https://github.com/Prairie-Server",
 		LicenseSpdx:         "AGPL-3.0-or-later",
 	})

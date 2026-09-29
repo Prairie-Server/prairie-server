@@ -92,13 +92,7 @@ describe("evaluateShowWhen", () => {
         default_value: true,
       },
     ];
-    expect(
-      evaluateShowWhen(
-        [{ field: "anime_enabled", equals: ["true"] }],
-        {},
-        fields,
-      ),
-    ).toBe(true);
+    expect(evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], {}, fields)).toBe(true);
   });
 });
 
@@ -456,26 +450,21 @@ describe("coerceFieldValue boolean coercion (CodeRabbit #4)", () => {
 
 describe("coerceFieldValue array:num coercion (CodeRabbit #5)", () => {
   it("coerces decimal numeric strings, not just integers", () => {
-    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:num")).toEqual([
-      1.5, 2,
-    ]);
+    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:num")).toEqual([1.5, 2]);
   });
   it("leaves array:int as integer-only and non-numeric strings untouched", () => {
-    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:int")).toEqual([
-      "1.5",
-      2,
-    ]);
-    expect(coerceFieldValue(numArrayField, ["abc"], "array:num")).toEqual([
-      "abc",
-    ]);
+    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:int")).toEqual(["1.5", 2]);
+    expect(coerceFieldValue(numArrayField, ["abc"], "array:num")).toEqual(["abc"]);
   });
 });
 
 describe("coerceFieldValue array:bool coercion", () => {
   it("coerces boolean multi-select values using their declared item type", () => {
-    expect(
-      coerceFieldValue(numArrayField, ["true", "false", true], "array:bool"),
-    ).toEqual([true, false, true]);
+    expect(coerceFieldValue(numArrayField, ["true", "false", true], "array:bool")).toEqual([
+      true,
+      false,
+      true,
+    ]);
   });
 });
 
@@ -513,21 +502,16 @@ describe("section visibility", () => {
   };
 
   it("does not validate required fields in a hidden section", () => {
-    expect(
-      validateSchemaValues(sectionDescriptor, { endpoint: "stale" }),
-    ).toEqual({});
-    expect(
-      validateSchemaValues(sectionDescriptor, { advanced_enabled: true })
-        .endpoint,
-    ).toMatch(/required/i);
+    expect(validateSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual({});
+    expect(validateSchemaValues(sectionDescriptor, { advanced_enabled: true }).endpoint).toMatch(
+      /required/i,
+    );
   });
 
   it("does not persist stale values from a hidden section", () => {
-    expect(buildSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual(
-      {
-        advanced_enabled: false,
-      },
-    );
+    expect(buildSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual({
+      advanced_enabled: false,
+    });
     expect(
       buildSchemaValues(sectionDescriptor, {
         advanced_enabled: true,

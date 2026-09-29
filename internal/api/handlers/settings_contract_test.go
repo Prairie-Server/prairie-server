@@ -134,7 +134,7 @@ type notScalarError struct{}
 func (*notScalarError) Error() string { return "not a scalar default" }
 
 // TestContractLoadsUnderTheServerBuild is a cheap canary: the handlers package
-// is linked into cmd/silo, so if the embedded manifest is self-inconsistent the
+// is linked into cmd/prairie, so if the embedded manifest is self-inconsistent the
 // failure shows up here rather than at a customer's startup.
 func TestContractLoadsUnderTheServerBuild(t *testing.T) {
 	manifest, err := settingscontract.Load()

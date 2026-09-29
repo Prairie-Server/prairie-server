@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,25 +21,33 @@ const SEASON_TABS = IMAGE_TABS.filter((tab) => tab.key === "poster");
 interface ImageSelectorTabProps {
   item: ItemDetail;
   enabled: boolean;
+  onImageApplied?: () => void;
+  onApplyPendingChange?: (pending: boolean) => void;
 }
 
 export default function ImageSelectorTab({
   item,
   enabled,
+  onImageApplied,
+  onApplyPendingChange,
 }: ImageSelectorTabProps) {
   const availableTabs = item.type === "season" ? SEASON_TABS : IMAGE_TABS;
   const [activeTab, setActiveTab] = useState<ImageTab>("poster");
   const [textlessOnly, setTextlessOnly] = useState(false);
   const [selectedImage, setSelectedImage] = useState<RemoteImage | null>(null);
   // Track which images were applied in this session (original_url per type).
-  const [appliedImages, setAppliedImages] = useState<Record<string, string>>(
-    {},
-  );
+  const [appliedImages, setAppliedImages] = useState<Record<string, string>>({});
 
   const { data, isLoading, isError } = useItemImages(item.content_id, enabled);
   const applyMutation = useApplyItemImage();
 
-  const images = data?.images;
+  const images = data?.images ?? [];
+
+  useEffect(() => {
+    onApplyPendingChange?.(applyMutation.isPending);
+    return () => onApplyPendingChange?.(false);
+  }, [applyMutation.isPending, onApplyPendingChange]);
+
   const current = data?.current;
   const providerErrors = data?.provider_errors;
 
@@ -82,6 +90,7 @@ export default function ImageSelectorTab({
       },
       {
         onSuccess: () => {
+          onImageApplied?.();
           setAppliedImages((prev) => ({
             ...prev,
             [selectedImage.type]: selectedImage.original_url,
@@ -90,7 +99,7 @@ export default function ImageSelectorTab({
         },
       },
     );
-  }, [selectedImage, applyMutation, item]);
+  }, [selectedImage, applyMutation, item, onImageApplied]);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -158,16 +167,12 @@ export default function ImageSelectorTab({
         </div>
       ) : isError ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
-            Failed to load images.
-          </p>
+          <p className="text-muted-foreground text-sm">Failed to load images.</p>
         </div>
       ) : filteredImages.length === 0 ? (
         <div className="flex flex-1 items-center justify-center">
           <p className="text-muted-foreground text-sm">
-            {textlessOnly
-              ? "No textless images available."
-              : "No images available."}
+            {textlessOnly ? "No textless images available." : "No images available."}
           </p>
         </div>
       ) : (
@@ -175,16 +180,13 @@ export default function ImageSelectorTab({
           <div
             className={cn(
               "grid gap-2 pr-3 pb-1",
-              activeTab === "poster"
-                ? "grid-cols-3 sm:grid-cols-4"
-                : "grid-cols-2 sm:grid-cols-3",
+              activeTab === "poster" ? "grid-cols-3 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3",
             )}
           >
             {filteredImages.map((img, index) => {
               const isSelected = selectedImage === img;
               const isCurrent =
-                img.original_url === currentOriginalUrl ||
-                img.original_url === currentStoredPath;
+                img.original_url === currentOriginalUrl || img.original_url === currentStoredPath;
 
               return (
                 <button

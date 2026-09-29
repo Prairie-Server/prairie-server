@@ -10,10 +10,7 @@ import {
   useCatalogSearchStatus,
   type CatalogSearchStatus,
 } from "@/hooks/queries/admin/settings";
-import {
-  useHWAccelDetection,
-  type HWAccelInfo,
-} from "@/hooks/queries/admin/system";
+import { useHWAccelDetection, type HWAccelInfo } from "@/hooks/queries/admin/system";
 
 /**
  * The settings pages the overview links to. The ids here are stable route
@@ -32,6 +29,7 @@ export const ADMIN_SETTINGS_PAGE_IDS = [
   "ai",
   "notifications",
   "compatibility",
+  "network-access",
 ] as const;
 
 export type AdminSettingsPageID = (typeof ADMIN_SETTINGS_PAGE_IDS)[number];
@@ -87,32 +85,21 @@ export function settingsPageHref(page: string): string {
 
 const TRUE_VALUES = new Set(["true", "1", "yes", "on"]);
 
-function readText(
-  settings: Record<string, string> | undefined,
-  key: string,
-): string {
+function readText(settings: Record<string, string> | undefined, key: string): string {
   return (settings?.[key] ?? "").trim();
 }
 
-function readBool(
-  settings: Record<string, string> | undefined,
-  key: string,
-): boolean {
+function readBool(settings: Record<string, string> | undefined, key: string): boolean {
   return TRUE_VALUES.has(readText(settings, key).toLowerCase());
 }
 
-function readInt(
-  settings: Record<string, string> | undefined,
-  key: string,
-): number | null {
+function readInt(settings: Record<string, string> | undefined, key: string): number | null {
   const parsed = Number.parseInt(readText(settings, key), 10);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 function join(parts: Array<string | null | undefined>): string {
-  return parts
-    .filter((part): part is string => Boolean(part && part.trim()))
-    .join(" · ");
+  return parts.filter((part): part is string => Boolean(part && part.trim())).join(" · ");
 }
 
 function sentenceCase(value: string): string {
@@ -137,10 +124,7 @@ function hwAccelLabel(value: string): string {
  * How transcoding is set up, in one phrase: the configured mode, and for
  * "auto" the mode detection actually resolved to.
  */
-function transcodeModeLabel(
-  configured: string,
-  detection: HWAccelInfo | undefined,
-): string {
+function transcodeModeLabel(configured: string, detection: HWAccelInfo | undefined): string {
   const mode = configured || "auto";
   if (mode !== "auto") return hwAccelLabel(mode);
   const resolved = detection?.resolved;
@@ -232,28 +216,16 @@ function buildTiles(input: SettingsOverviewInput): OverviewTile[] {
   // save already asked for can. Reporting "Not set up" in that window tells an
   // admin who just did the work that it did not take.
   const storageRestartPending =
-    !storageReady &&
-    publicBucket !== "" &&
-    settingsRestartPending(input.serverStatus, ["s3."]);
-  const storageState: OverviewState = storageReady
-    ? "ok"
-    : storageRestartPending
-      ? "warn"
-      : "off";
+    !storageReady && publicBucket !== "" && settingsRestartPending(input.serverStatus, ["s3."]);
+  const storageState: OverviewState = storageReady ? "ok" : storageRestartPending ? "warn" : "off";
 
   const maxConnections = readInt(settings, "database.max_connections");
-  const redisConfigured =
-    configured.has("redis.url") || readText(settings, "redis.url") !== "";
+  const redisConfigured = configured.has("redis.url") || readText(settings, "redis.url") !== "";
 
   const transcodeEnabled = readBool(settings, "playback.transcode_enabled");
-  const transcodeMode = transcodeModeLabel(
-    readText(settings, "playback.hw_accel"),
-    input.hwAccel,
-  );
+  const transcodeMode = transcodeModeLabel(readText(settings, "playback.hw_accel"), input.hwAccel);
   const renderDevice = input.hwAccel?.render_devices?.[0] ?? "";
-  const playbackRestartPending = settingsRestartPending(input.serverStatus, [
-    "playback.",
-  ]);
+  const playbackRestartPending = settingsRestartPending(input.serverStatus, ["playback."]);
   const transcodeState: OverviewState = playbackRestartPending
     ? "warn"
     : transcodeEnabled
@@ -261,17 +233,16 @@ function buildTiles(input: SettingsOverviewInput): OverviewTile[] {
       : "off";
 
   const activeSearch =
-    input.search?.active_provider ||
-    readText(settings, "catalog.search.provider") ||
-    "postgres";
+    input.search?.active_provider || readText(settings, "catalog.search.provider") || "postgres";
   const searchStatusResolved = input.search != null;
   const meiliConfigured = input.search?.meilisearch.configured ?? false;
   const meiliHealthy = input.search?.meilisearch.healthy ?? false;
+  const searchDegraded = input.search?.degraded ?? false;
   const searchState: OverviewState =
     activeSearch === "meilisearch"
       ? !searchStatusResolved
         ? "info"
-        : meiliHealthy
+        : meiliHealthy && !searchDegraded
           ? "ok"
           : "warn"
       : meiliConfigured
@@ -318,16 +289,12 @@ function buildTiles(input: SettingsOverviewInput): OverviewTile[] {
       id: "transcoding",
       label: "Transcoding",
       state: transcodeState,
-      stateText: playbackRestartPending
-        ? "Restart pending"
-        : transcodeEnabled
-          ? "Ready"
-          : "Off",
+      stateText: playbackRestartPending ? "Restart pending" : transcodeEnabled ? "Ready" : "Off",
       detail: playbackRestartPending
         ? "Saved changes apply after a restart"
         : transcodeEnabled
           ? join([transcodeMode, renderDevice])
-          : "Clients only get what they can already play",
+          : "Video plays as-is; remux and audio conversion still run",
       action: tileAction(transcodeState, "playback"),
     },
     {
@@ -339,9 +306,11 @@ function buildTiles(input: SettingsOverviewInput): OverviewTile[] {
         activeSearch === "meilisearch"
           ? !searchStatusResolved
             ? "Checking connection"
-            : meiliHealthy
-              ? "Meilisearch connected"
-              : "Meilisearch not reachable"
+            : searchDegraded
+              ? (input.search?.degraded_reason ?? "Search is running in a degraded mode")
+              : meiliHealthy
+                ? "Meilisearch connected"
+                : "Meilisearch not reachable"
           : meiliConfigured
             ? "Meilisearch configured but not active"
             : "Meilisearch not connected",
@@ -352,9 +321,7 @@ function buildTiles(input: SettingsOverviewInput): OverviewTile[] {
       label: "Email",
       state: emailState,
       stateText: mailReady ? "Ready" : "Not set up",
-      detail: mailReady
-        ? `SMTP · ${emailHost}`
-        : "Invites and resets can't send",
+      detail: mailReady ? `SMTP · ${emailHost}` : "Invites and resets can't send",
       action: tileAction(emailState, "notifications"),
     },
   ];
@@ -369,9 +336,7 @@ function buildCards(): OverviewCard[] {
 }
 
 /** Derives the whole overview model from already-fetched data. */
-export function buildSettingsOverview(
-  input: SettingsOverviewInput,
-): SettingsOverviewModel {
+export function buildSettingsOverview(input: SettingsOverviewInput): SettingsOverviewModel {
   const tiles = buildTiles(input);
   const cards = buildCards();
 
@@ -384,16 +349,14 @@ export function buildSettingsOverview(
  * the caches those pages go on to use.
  */
 export function useSettingsOverview(): SettingsOverviewModel {
-  const { data: settings, isLoading: settingsLoading } =
-    useAdminServerSettings();
+  const { data: settings, isLoading: settingsLoading } = useAdminServerSettings();
   const { data: sensitive } = useAdminSensitiveStatus();
   const { data: serverStatus } = useAdminServerStatus();
   const branding = useBranding();
 
   // Postgres search has no external service to check. Avoid paying for the
   // Meilisearch status request unless this server actually selected it.
-  const searchProvider =
-    (settings?.["catalog.search.provider"] ?? "").trim() || "postgres";
+  const searchProvider = (settings?.["catalog.search.provider"] ?? "").trim() || "postgres";
   const { data: search } = useCatalogSearchStatus(
     settings != null && searchProvider === "meilisearch",
   );

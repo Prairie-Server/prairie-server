@@ -4,17 +4,30 @@ import { CollectionSearchableSelect } from "@/components/CollectionSearchableSel
 import LibraryMultiSelect from "@/components/LibraryMultiSelect";
 import { useAllUserCollections } from "@/hooks/queries/useAllUserCollections";
 import { useAvailableUserLibraries } from "@/hooks/queries/libraries";
-import {
-  createCatalogSearchState,
-  fetchCatalogPage,
-} from "@/hooks/queries/catalog";
+import { createCatalogSearchState, fetchCatalogPage } from "@/hooks/queries/catalog";
 import { fetchWatchDetail } from "@/hooks/queries/items";
 import { catalogKeys, itemKeys } from "@/hooks/queries/keys";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { BrowseItem } from "@/api/types";
 import type { RecipeDefinition } from "@/lib/recipes";
+import {
+  LIBRARY_FILTER_SECTION_TYPES,
+  sectionLibraryFilterIds,
+  withSectionLibraryFilterIds,
+} from "@/lib/sectionLibraryFilter";
 
 export interface RecipeParamFieldsProps {
+  libraryCollectionsOnly?: boolean;
+  /**
+   * The section lives on a library page, whose library always overrides a
+   * config library filter, so the library picker is hidden.
+   */
+  libraryScoped?: boolean;
+  /**
+   * Libraries the library picker offers. Defaults to the current profile's
+   * libraries; the admin editor passes every library on the server.
+   */
+  libraries?: Array<{ id: number; name: string; type?: string }>;
   def: RecipeDefinition;
   params: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
@@ -24,9 +37,23 @@ export default function RecipeParamFields({
   def,
   params,
   onChange,
+  libraryCollectionsOnly = false,
+  libraryScoped = false,
+  libraries,
 }: RecipeParamFieldsProps) {
+  if (LIBRARY_FILTER_SECTION_TYPES.has(def.type)) {
+    return libraryScoped ? null : (
+      <LibraryFilterParamField params={params} onChange={onChange} libraries={libraries} />
+    );
+  }
   if (def.type === "collection") {
-    return <CollectionParamField params={params} onChange={onChange} />;
+    return (
+      <CollectionParamField
+        params={params}
+        onChange={onChange}
+        libraryCollectionsOnly={libraryCollectionsOnly}
+      />
+    );
   }
   if (def.type === "continue_watching") {
     return <ContinueTypeParamField params={params} onChange={onChange} />;
@@ -91,9 +118,7 @@ export default function RecipeParamFields({
           <span className="mb-1 block text-xs text-white/70">Subject type</span>
           <select
             value={subjectType}
-            onChange={(e) =>
-              onChange({ ...params, subject_type: e.target.value })
-            }
+            onChange={(e) => onChange({ ...params, subject_type: e.target.value })}
             className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
           >
             <option value="director">Director</option>
@@ -106,22 +131,16 @@ export default function RecipeParamFields({
           <input
             type="checkbox"
             checked={autoRotate}
-            onChange={(e) =>
-              onChange({ ...params, auto_rotate: e.target.checked })
-            }
+            onChange={(e) => onChange({ ...params, auto_rotate: e.target.checked })}
           />
           Auto-rotate
         </label>
         {autoRotate ? (
           <label className="block">
-            <span className="mb-1 block text-xs text-white/70">
-              Rotation cadence
-            </span>
+            <span className="mb-1 block text-xs text-white/70">Rotation cadence</span>
             <select
               value={cadence}
-              onChange={(e) =>
-                onChange({ ...params, rotation_cadence: e.target.value })
-              }
+              onChange={(e) => onChange({ ...params, rotation_cadence: e.target.value })}
               className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
             >
               <option value="daily">Daily</option>
@@ -152,9 +171,7 @@ export default function RecipeParamFields({
           className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
           placeholder="Auto-pick latest watched (leave blank)"
           value={anchor}
-          onChange={(e) =>
-            onChange({ ...params, anchor_item_id: e.target.value })
-          }
+          onChange={(e) => onChange({ ...params, anchor_item_id: e.target.value })}
         />
         <div className="mt-1 text-[11px] text-white/50">
           Leave blank to auto-pick the most recent watch.
@@ -166,9 +183,7 @@ export default function RecipeParamFields({
     const genre = (params.genre as string) ?? "";
     return (
       <div>
-        <label className="mb-1 block text-xs text-white/70">
-          Genre (optional)
-        </label>
+        <label className="mb-1 block text-xs text-white/70">Genre (optional)</label>
         <input
           className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
           placeholder="Auto-pick your strongest genre (leave blank)"
@@ -176,8 +191,7 @@ export default function RecipeParamFields({
           onChange={(e) => onChange({ ...params, genre: e.target.value })}
         />
         <div className="mt-1 text-[11px] text-white/50">
-          Leave blank to follow the profile&apos;s strongest taste
-          automatically.
+          Leave blank to follow the profile&apos;s strongest taste automatically.
         </div>
       </div>
     );
@@ -208,12 +222,9 @@ const PERSONAL_LIST_SORT_OPTIONS = [
 // watchlist" rail sorted by release date.
 function PersonalListFilterFields({ params, onChange }: ParamFieldProps) {
   const { data: libraries } = useAvailableUserLibraries();
-  const filterType =
-    typeof params.filter_type === "string" ? params.filter_type : "";
+  const filterType = typeof params.filter_type === "string" ? params.filter_type : "";
   const libraryIds = Array.isArray(params.filter_library_ids)
-    ? params.filter_library_ids.filter(
-        (id): id is number => typeof id === "number",
-      )
+    ? params.filter_library_ids.filter((id): id is number => typeof id === "number")
     : [];
   const sortField = typeof params.sort === "string" ? params.sort : "";
   const sortOrder =
@@ -233,8 +244,7 @@ function PersonalListFilterFields({ params, onChange }: ParamFieldProps) {
           onChange={(e) =>
             onChange({
               ...params,
-              filter_type:
-                e.target.value === "all" ? undefined : e.target.value,
+              filter_type: e.target.value === "all" ? undefined : e.target.value,
             })
           }
           className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
@@ -261,11 +271,7 @@ function PersonalListFilterFields({ params, onChange }: ParamFieldProps) {
       <label className="block md:col-span-2">
         <span className="mb-1 block text-xs text-white/70">Sort</span>
         <select
-          value={
-            PERSONAL_LIST_SORT_OPTIONS.some((o) => o.value === sortValue)
-              ? sortValue
-              : ""
-          }
+          value={PERSONAL_LIST_SORT_OPTIONS.some((o) => o.value === sortValue) ? sortValue : ""}
           onChange={(e) => {
             const [sort, order] = e.target.value.split(":");
             onChange({
@@ -287,18 +293,36 @@ function PersonalListFilterFields({ params, onChange }: ParamFieldProps) {
   );
 }
 
+// LibraryFilterParamField limits a Recently Added or Recently Released row to
+// chosen libraries, e.g. a home row for one TV library.
+function LibraryFilterParamField({
+  params,
+  onChange,
+  libraries: libraryOptions,
+}: ParamFieldProps & Pick<RecipeParamFieldsProps, "libraries">) {
+  const { data: profileLibraries } = useAvailableUserLibraries();
+  const libraries = libraryOptions ?? profileLibraries;
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs text-white/70">Libraries</span>
+      <LibraryMultiSelect
+        libraries={libraries ?? []}
+        value={sectionLibraryFilterIds(params)}
+        onChange={(next) => onChange(withSectionLibraryFilterIds(params, next))}
+      />
+    </label>
+  );
+}
+
 function ContinueTypeParamField({ params, onChange }: ParamFieldProps) {
-  const continueType =
-    params.continue_type === "listening" ? "listening" : "watching";
+  const continueType = params.continue_type === "listening" ? "listening" : "watching";
 
   return (
     <label className="block">
       <span className="mb-1 block text-xs text-white/70">Continue type</span>
       <select
         value={continueType}
-        onChange={(event) =>
-          onChange({ ...params, continue_type: event.target.value })
-        }
+        onChange={(event) => onChange({ ...params, continue_type: event.target.value })}
         className="w-full rounded border border-white/15 bg-white/5 px-3 py-2 text-sm"
       >
         <option value="watching">Watching</option>
@@ -377,10 +401,7 @@ function SeasonalParamField({ params, onChange }: ParamFieldProps) {
     }
   }
 
-  function commit(
-    nextEnabled: Set<string>,
-    nextTitles: Record<string, string>,
-  ) {
+  function commit(nextEnabled: Set<string>, nextTitles: Record<string, string>) {
     // Drop empty/whitespace-only titles and titles for disabled themes so the
     // saved config stays tidy.
     const cleanedTitles: Record<string, string> = {};
@@ -392,8 +413,7 @@ function SeasonalParamField({ params, onChange }: ParamFieldProps) {
     onChange({
       ...params,
       enabled_themes: Array.from(nextEnabled),
-      theme_titles:
-        Object.keys(cleanedTitles).length > 0 ? cleanedTitles : undefined,
+      theme_titles: Object.keys(cleanedTitles).length > 0 ? cleanedTitles : undefined,
       // Clear legacy fields so they don't shadow multi-theme resolution.
       theme: "",
       mode: "",
@@ -445,9 +465,9 @@ function SeasonalParamField({ params, onChange }: ParamFieldProps) {
         })}
       </div>
       <p className="text-[11px] text-white/50">
-        The section auto-cycles: it shows whichever enabled holiday is currently
-        in season, and hides itself when none match. Per-holiday titles override
-        the section name only while that holiday is active.
+        The section auto-cycles: it shows whichever enabled holiday is currently in season, and
+        hides itself when none match. Per-holiday titles override the section name only while that
+        holiday is active.
       </p>
     </div>
   );
@@ -469,8 +489,7 @@ function NumberParamField({
   hint?: string;
 }) {
   const raw = params[paramKey];
-  const value =
-    typeof raw === "number" && Number.isFinite(raw) ? String(raw) : "";
+  const value = typeof raw === "number" && Number.isFinite(raw) ? String(raw) : "";
   return (
     <div>
       <label className="mb-1 block text-xs text-white/70">{label}</label>
@@ -488,15 +507,11 @@ function NumberParamField({
           onChange({
             ...params,
             [paramKey]:
-              e.target.value && Number.isInteger(parsed) && parsed > 0
-                ? parsed
-                : undefined,
+              e.target.value && Number.isInteger(parsed) && parsed > 0 ? parsed : undefined,
           });
         }}
       />
-      {hint ? (
-        <div className="mt-1 text-[11px] text-white/50">{hint}</div>
-      ) : null}
+      {hint ? <div className="mt-1 text-[11px] text-white/50">{hint}</div> : null}
     </div>
   );
 }
@@ -538,8 +553,7 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
   const hydratedLabels: Record<string, string> = {};
   unlabeled.forEach((id, i) => {
     const detail = detailQueries[i]?.data;
-    if (detail)
-      hydratedLabels[id] = curatedItemLabel(detail.title, detail.year);
+    if (detail) hydratedLabels[id] = curatedItemLabel(detail.title, detail.year);
   });
 
   const searchState = useMemo(
@@ -556,8 +570,7 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
         offset: 0,
       }),
     ],
-    queryFn: ({ signal }) =>
-      fetchCatalogPage(searchState, CURATED_SEARCH_LIMIT, 0, { signal }),
+    queryFn: ({ signal }) => fetchCatalogPage(searchState, CURATED_SEARCH_LIMIT, 0, { signal }),
     enabled: debounced.length > 0,
     staleTime: 30 * 1000,
   });
@@ -603,9 +616,7 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
         {debounced.length === 0 ? null : results.isLoading ? (
           <div className="mt-2 text-xs text-white/50">Searching…</div>
         ) : results.isError ? (
-          <div className="mt-2 text-xs text-amber-300">
-            Search failed — try again.
-          </div>
+          <div className="mt-2 text-xs text-amber-300">Search failed — try again.</div>
         ) : found.length === 0 ? (
           <div className="mt-2 text-xs text-white/50">No matches.</div>
         ) : (
@@ -613,10 +624,7 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
             {found.map((item) => {
               const already = picked.has(item.content_id);
               return (
-                <li
-                  key={item.content_id}
-                  className="flex items-center gap-2 px-3 py-2 text-sm"
-                >
+                <li key={item.content_id} className="flex items-center gap-2 px-3 py-2 text-sm">
                   <span className="min-w-0 flex-1 truncate">
                     {item.title}
                     <span className="ml-1 text-xs text-white/40">
@@ -641,8 +649,8 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
 
       <div>
         <span className="mb-1 block text-xs text-white/70">
-          Curated list ({itemIDs.length}{" "}
-          {itemIDs.length === 1 ? "title" : "titles"}, shown in this order)
+          Curated list ({itemIDs.length} {itemIDs.length === 1 ? "title" : "titles"}, shown in this
+          order)
         </span>
         {itemIDs.length === 0 ? (
           <div className="rounded border border-dashed border-white/15 px-3 py-3 text-xs text-white/50">
@@ -651,10 +659,7 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
         ) : (
           <ul className="divide-y divide-white/10 rounded border border-white/10">
             {itemIDs.map((id, idx) => (
-              <li
-                key={id}
-                className="flex items-center gap-2 px-3 py-2 text-sm"
-              >
+              <li key={id} className="flex items-center gap-2 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">
                   {labels[id] ?? hydratedLabels[id] ?? id}
                 </span>
@@ -693,49 +698,42 @@ function CuratedItemsParamField({ params, onChange }: ParamFieldProps) {
   );
 }
 
-function CollectionParamField({ params, onChange }: ParamFieldProps) {
-  const { collections, isLoading } = useAllUserCollections();
+function CollectionParamField({
+  params,
+  onChange,
+  libraryCollectionsOnly,
+}: ParamFieldProps & { libraryCollectionsOnly: boolean }) {
+  const { collections: allCollections, isLoading } = useAllUserCollections();
+  const collections = libraryCollectionsOnly
+    ? allCollections.filter((collection) => collection.source === "library")
+    : allCollections;
   const libraryID = (params.library_collection_id as string) ?? "";
   const userID = (params.user_collection_id as string) ?? "";
   const value = userID || libraryID;
-  const sourceProvider =
-    typeof params.source_provider === "string" ? params.source_provider : "";
-  const sourcePreset =
-    typeof params.source_preset === "string" ? params.source_preset : "";
-  const mediaType =
-    typeof params.media_type === "string" ? params.media_type : "";
+  const sourceProvider = typeof params.source_provider === "string" ? params.source_provider : "";
+  const sourcePreset = typeof params.source_preset === "string" ? params.source_preset : "";
+  const mediaType = typeof params.media_type === "string" ? params.media_type : "";
   const isTraktPreset = sourceProvider === "trakt";
   const isAutoBackedTraktPreset =
-    isTraktPreset &&
-    (sourcePreset === "trending" || sourcePreset === "popular");
+    isTraktPreset && (sourcePreset === "trending" || sourcePreset === "popular");
   const collectionOptions = isTraktPreset
     ? collections.filter((collection) => {
-        if (
-          collection.source !== "library" ||
-          collection.collection_type !== "trakt"
-        ) {
+        if (collection.source !== "library" || collection.collection_type !== "trakt") {
           return false;
         }
         const sourceConfig = collection.source_config;
-        if (
-          !sourceConfig ||
-          typeof sourceConfig !== "object" ||
-          Array.isArray(sourceConfig)
-        ) {
+        if (!sourceConfig || typeof sourceConfig !== "object" || Array.isArray(sourceConfig)) {
           return false;
         }
-        return (
-          sourceConfig.preset === sourcePreset &&
-          sourceConfig.media_type === mediaType
-        );
+        return sourceConfig.preset === sourcePreset && sourceConfig.media_type === mediaType;
       })
     : collections;
 
   if (isAutoBackedTraktPreset && !value) {
     return (
       <p className="text-xs text-white/50">
-        A synced Trakt {sourcePreset} {mediaType === "tv" ? "shows" : "movies"}{" "}
-        collection will be created automatically.
+        A synced Trakt {sourcePreset} {mediaType === "tv" ? "shows" : "movies"} collection will be
+        created automatically.
       </p>
     );
   }
@@ -777,9 +775,8 @@ function CollectionParamField({ params, onChange }: ParamFieldProps) {
       />
       {isTraktPreset && !isLoading && collectionOptions.length === 0 ? (
         <p className="text-xs text-amber-300">
-          No synced Trakt {sourcePreset}{" "}
-          {mediaType === "tv" ? "shows" : "movies"} collection was found. Create
-          and sync one from Admin Collections first.
+          No synced Trakt {sourcePreset} {mediaType === "tv" ? "shows" : "movies"} collection was
+          found. Create and sync one from Admin Collections first.
         </p>
       ) : null}
     </div>

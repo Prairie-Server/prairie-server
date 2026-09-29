@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router";
 
@@ -34,6 +28,7 @@ import WatchSyncSettings from "./WatchSyncSettings";
 import AISettings from "./AISettings";
 import NotificationsAdminSettings from "./NotificationsAdminSettings";
 import CompatibilityProxiesSettings from "./CompatibilityProxiesSettings";
+import NetworkAccessSettings from "./NetworkAccessSettings";
 import InfrastructureSettings from "./InfrastructureSettings";
 import SettingsOverview from "./SettingsOverview";
 import "@/styles/admin-settings.css";
@@ -54,6 +49,7 @@ const SETTINGS_COMPONENTS: Record<string, ComponentType> = {
   ai: AISettings,
   notifications: NotificationsAdminSettings,
   compatibility: CompatibilityProxiesSettings,
+  "network-access": NetworkAccessSettings,
   infrastructure: InfrastructureSettings,
 };
 
@@ -88,9 +84,7 @@ export default function AdminSettingsLayout() {
   const requestedId = rawPageId ?? legacyTabId;
   const activeId = resolveAdminSettingsPageID(requestedId);
 
-  const active = activeId
-    ? SETTINGS_NAV.find((item) => item.id === activeId)
-    : undefined;
+  const active = activeId ? SETTINGS_NAV.find((item) => item.id === activeId) : undefined;
   const ActiveComponent = active?.component;
 
   useEffect(() => {
@@ -109,9 +103,7 @@ export default function AdminSettingsLayout() {
   }
   if (
     activeId &&
-    (rawPageId !== activeId ||
-      legacyTabId !== null ||
-      searchParams.toString() !== "")
+    (rawPageId !== activeId || legacyTabId !== null || searchParams.toString() !== "")
   ) {
     return <Navigate to={settingsPageHref(activeId)} replace />;
   }

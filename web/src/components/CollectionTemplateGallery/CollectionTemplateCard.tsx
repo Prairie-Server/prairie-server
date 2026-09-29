@@ -1,8 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  mediaKindLabel,
-  type CollectionTemplate,
-} from "@/lib/collectionTemplates";
+import { mediaKindLabel, type CollectionTemplate } from "@/lib/collectionTemplates";
 
 const SOURCE_LABEL: Record<CollectionTemplate["source"], string> = {
   tmdb: "TMDB",
@@ -10,6 +7,7 @@ const SOURCE_LABEL: Record<CollectionTemplate["source"], string> = {
   mdblist: "MDBList",
   tmdb_discover: "TMDB Discover",
   tmdb_collection: "TMDB Franchise",
+  tmdb_list: "TMDB List",
 };
 
 interface Props {
@@ -38,9 +36,7 @@ export function CollectionTemplateCard({ template, onPick }: Props) {
       <div className="mt-3 flex flex-1 flex-col gap-3">
         <div>
           <p className="text-sm leading-tight font-medium">{template.title}</p>
-          <p className="text-muted-foreground mt-1 line-clamp-3 text-xs">
-            {template.description}
-          </p>
+          <p className="text-muted-foreground mt-1 line-clamp-3 text-xs">{template.description}</p>
         </div>
         <div className="text-muted-foreground mt-auto flex items-center gap-2 text-[11px]">
           <span>{mediaKindLabel(template.media_kind)}</span>
@@ -61,10 +57,7 @@ export function CollectionTemplateCard({ template, onPick }: Props) {
 function TemplateBadges({ template }: { template: CollectionTemplate }) {
   return (
     <>
-      <Badge
-        variant="outline"
-        className="bg-background/80 text-[10px] tracking-wide uppercase"
-      >
+      <Badge variant="outline" className="bg-background/80 text-[10px] tracking-wide uppercase">
         {SOURCE_LABEL[template.source]}
       </Badge>
       {template.requires_profile ? (
@@ -78,8 +71,7 @@ function TemplateBadges({ template }: { template: CollectionTemplate }) {
 
 function scheduleDescription(cron: string): string {
   const [, hour, dom, month, dow, extra] = cron.trim().split(/\s+/);
-  if (!hour || !dom || !month || !dow || extra !== undefined)
-    return "on schedule";
+  if (!hour || !dom || !month || !dow || extra !== undefined) return "on schedule";
   const stepMatch = hour.match(/^\*\/(\d+)$/);
   if (stepMatch) return `every ${stepMatch[1]} hours`;
   if (hour === "*") return "hourly";

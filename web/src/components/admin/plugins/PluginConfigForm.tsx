@@ -10,10 +10,7 @@ import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction"
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import {
-  adminFormForConfigSchema,
-  humanizeConfigKey,
-} from "./configSchemaAdminForm";
+import { adminFormForConfigSchema, humanizeConfigKey } from "./configSchemaAdminForm";
 import { SchemaForm } from "./SchemaForm";
 import { buildSchemaValues } from "./schemaFormUtils";
 
@@ -26,11 +23,7 @@ type Props = {
   schema: PluginConfigSchema;
   value?: PluginConfigValue;
   configuredSecrets?: string[];
-  onSave: (
-    key: string,
-    value: PluginConfigValue,
-    clearSecrets: string[],
-  ) => void;
+  onSave: (key: string, value: PluginConfigValue, clearSecrets: string[]) => void;
   onTest?: (
     key: string,
     value: PluginConfigValue,
@@ -38,6 +31,11 @@ type Props = {
   ) => Promise<ConnectionCheckResponse>;
   isSaving?: boolean;
   isTesting?: boolean;
+  /**
+   * Leave out the form's own title, description, and border, for a page panel
+   * that already shows them.
+   */
+  bare?: boolean;
 };
 
 function defaultValueForField(field: PluginAdminFormField): string | boolean {
@@ -83,11 +81,9 @@ export function PluginConfigForm({
   onTest,
   isSaving = false,
   isTesting = false,
+  bare = false,
 }: Props) {
-  const inferredDescriptor = useMemo(
-    () => adminFormForConfigSchema(schema),
-    [schema],
-  );
+  const inferredDescriptor = useMemo(() => adminFormForConfigSchema(schema), [schema]);
   const fields = inferredDescriptor?.fields ?? EMPTY_FIELDS;
   const supported = inferredDescriptor != null;
 
@@ -97,8 +93,7 @@ export function PluginConfigForm({
     return {
       ...base,
       fields: base.fields.map((field) =>
-        configured.has(field.key) &&
-        (field.secret || field.control === "PASSWORD")
+        configured.has(field.key) && (field.secret || field.control === "PASSWORD")
           ? { ...field, placeholder: "Saved secret — leave blank to keep" }
           : field,
       ),
@@ -106,21 +101,13 @@ export function PluginConfigForm({
   }, [configuredSecrets, fields, inferredDescriptor]);
 
   const [values, setValues] = useState<PluginConfigValue>(() =>
-    Object.fromEntries(
-      fields.map((field) => [field.key, valueForField(field, value)]),
-    ),
+    Object.fromEntries(fields.map((field) => [field.key, valueForField(field, value)])),
   );
-  const [testResult, setTestResult] = useState<ConnectionCheckResponse | null>(
-    null,
-  );
+  const [testResult, setTestResult] = useState<ConnectionCheckResponse | null>(null);
   const [clearSecrets, setClearSecrets] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    setValues(
-      Object.fromEntries(
-        fields.map((field) => [field.key, valueForField(field, value)]),
-      ),
-    );
+    setValues(Object.fromEntries(fields.map((field) => [field.key, valueForField(field, value)])));
     setClearSecrets(new Set());
   }, [fields, value]);
 
@@ -146,17 +133,12 @@ export function PluginConfigForm({
 
     try {
       setTestResult(
-        await onTest(
-          schema.key,
-          buildSchemaValues(descriptor, values),
-          Array.from(clearSecrets),
-        ),
+        await onTest(schema.key, buildSchemaValues(descriptor, values), Array.from(clearSecrets)),
       );
     } catch (error) {
       setTestResult({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Connection check failed.",
+        message: error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -166,8 +148,7 @@ export function PluginConfigForm({
       <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
         <Label>{schema.title || schema.key}</Label>
         <p className="text-muted-foreground text-sm">
-          This plugin uses a configuration schema shape that the admin form does
-          not support yet.
+          This plugin uses a configuration schema shape that the admin form does not support yet.
         </p>
       </div>
     );
@@ -176,14 +157,16 @@ export function PluginConfigForm({
   return (
     <fieldset
       disabled={isSaving || isTesting}
-      className="space-y-3 rounded-md border p-3"
+      className={bare ? "space-y-3" : "space-y-3 rounded-md border p-3"}
     >
-      <div className="space-y-1">
-        <Label>{schema.title || schema.key}</Label>
-        {schema.description ? (
-          <p className="text-muted-foreground text-xs">{schema.description}</p>
-        ) : null}
-      </div>
+      {bare ? null : (
+        <div className="space-y-1">
+          <Label>{schema.title || schema.key}</Label>
+          {schema.description ? (
+            <p className="text-muted-foreground text-xs">{schema.description}</p>
+          ) : null}
+        </div>
+      )}
 
       <SchemaForm
         descriptor={descriptor}
@@ -199,17 +182,9 @@ export function PluginConfigForm({
             const clearing = clearSecrets.has(key);
             const required = field?.required === true;
             return (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-3 text-xs"
-              >
-                <span
-                  className={
-                    clearing ? "text-destructive" : "text-muted-foreground"
-                  }
-                >
-                  {field?.label || humanizeConfigKey(key)}:{" "}
-                  {clearing ? "will be cleared" : "saved"}
+              <div key={key} className="flex items-center justify-between gap-3 text-xs">
+                <span className={clearing ? "text-destructive" : "text-muted-foreground"}>
+                  {field?.label || humanizeConfigKey(key)}: {clearing ? "will be cleared" : "saved"}
                   {required ? " (required)" : ""}
                 </span>
                 {!required ? (
@@ -226,11 +201,7 @@ export function PluginConfigForm({
                       })
                     }
                   >
-                    {clearing ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <RotateCcw />
-                    )}
+                    {clearing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
                     {clearing ? "Keep saved secret" : "Clear saved secret"}
                   </Button>
                 ) : null}
@@ -254,11 +225,7 @@ export function PluginConfigForm({
           variant="outline"
           disabled={isSaving || isTesting}
           onClick={() =>
-            onSave(
-              schema.key,
-              buildSchemaValues(descriptor, values),
-              Array.from(clearSecrets),
-            )
+            onSave(schema.key, buildSchemaValues(descriptor, values), Array.from(clearSecrets))
           }
         >
           <Save />

@@ -233,17 +233,17 @@ type Dependencies struct {
 	CredValidator  ProfileCredentialValidator
 	AccessResolver AccessResolver
 	// UsernameResolver returns the display username for an ABS principal
-	// (userID, profileID) without re-authenticating. Optional; GET /me falls
-	// back to the userID when this is nil or returns "". Login gets the
-	// display name from the credential validator, but /me only has the token
-	// claims, so it needs this to show the real username instead of the id.
+	// (userID, profileID) without re-authenticating. Optional; token-based
+	// endpoints fall back to the userID when this is nil or returns "". Login
+	// gets the display name from the credential validator, while /me,
+	// /authorize, and /auth/refresh only have the token claims.
 	UsernameResolver func(ctx context.Context, userID, profileID string) string
 	Config           ConfigProvider
 	Publisher        EventPublisher // may be nil
 	Recommender      Recommender    // may be nil
 	LoginLimiter     *LoginLimiter  // may be nil — one is created if absent
 	// InstallID returns the current plugin install ID for building
-	// host-proxy-routable URLs. Defaults to "silo.audiobooks" when nil.
+	// host-proxy-routable URLs. Defaults to "prairie.audiobooks" when nil.
 	InstallID func() string
 	// ProgressStore provides access to user_watch_progress for ABS
 	// progress endpoints. May be nil; handlers degrade gracefully.
@@ -355,7 +355,7 @@ func New(deps Dependencies) *Handler {
 		deps.LoginLimiter = NewLoginLimiter()
 	}
 	if deps.InstallID == nil {
-		deps.InstallID = func() string { return "silo.audiobooks" }
+		deps.InstallID = func() string { return "prairie.audiobooks" }
 	}
 	return &Handler{deps: deps}
 }
@@ -758,8 +758,8 @@ func (h *Handler) publish(userID, event string, payload any) {
 // absBaseURL returns the server address prefix ABS clients should use to
 // resolve response-embedded URLs.
 //
-//   - Host-proxied (X-Silo-User-Id header present): returns the plugin-proxy
-//     path "<scheme>://<host>/api/v1/plugins/<installID>".
+//   - Host-proxied (X-Prairie-User-Id header present): returns the plugin-content
+//     path "<scheme>://<host>/api/v2/plugin-content/plugins/<installID>".
 //   - Standalone listener: returns "<scheme>://<host>" — origin only.
 //
 // Honors X-Forwarded-Proto / X-Forwarded-Host for TLS-terminating proxies.
@@ -776,8 +776,8 @@ func (h *Handler) absBaseURL(r *http.Request) string {
 	if host == "" {
 		host = r.Host
 	}
-	if r.Header.Get("X-Silo-User-Id") != "" {
-		return scheme + "://" + host + "/api/v1/plugins/" + h.deps.InstallID()
+	if r.Header.Get("X-Prairie-User-Id") != "" {
+		return scheme + "://" + host + "/api/v2/plugin-content/plugins/" + h.deps.InstallID()
 	}
 	return scheme + "://" + host
 }

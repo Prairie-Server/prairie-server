@@ -2,6 +2,7 @@ package buildinfo
 
 import (
 	"runtime/debug"
+	"strconv"
 	"strings"
 )
 
@@ -18,6 +19,10 @@ var (
 	revisionOverride string
 	dirtyOverride    string
 	versionOverride  string
+	// buildNumberOverride and builtAtOverride carry the CI container identity
+	// (upstream's BUILD_NUMBER / BUILD_DATE ldflags). Both are optional.
+	buildNumberOverride string
+	builtAtOverride     string
 )
 
 // Info describes the running Prairie build as embedded by Go's VCS metadata,
@@ -28,6 +33,10 @@ type Info struct {
 	Dirty     bool   `json:"dirty"`
 	VCSTime   string `json:"vcs_time"`
 	Available bool   `json:"available"`
+
+	// BuildNumber and BuiltAt identify the CI-built container, when stamped.
+	BuildNumber uint64 `json:"build_number"`
+	BuiltAt     string `json:"built_at"`
 
 	// Version is the stamped marketing semver when the binary was built from
 	// a release tag (BUILD_VERSION / versionOverride). Empty for plain SHA
@@ -49,11 +58,23 @@ func Current() Info {
 	overrideRevision, overrideDirty := parseOverrides(revisionOverride, dirtyOverride)
 	version := strings.TrimSpace(versionOverride)
 
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return buildInfo(overrideRevision, overrideDirty, "", version)
+	var current Info
+	if info, ok := debug.ReadBuildInfo(); ok {
+		current = resolve(info.Settings, overrideRevision, overrideDirty, version)
+	} else {
+		current = buildInfo(overrideRevision, overrideDirty, "", version)
 	}
-	return resolve(info.Settings, overrideRevision, overrideDirty, version)
+	current.BuildNumber = parseBuildNumber(buildNumberOverride)
+	current.BuiltAt = strings.TrimSpace(builtAtOverride)
+	return current
+}
+
+func parseBuildNumber(value string) uint64 {
+	buildNumber, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return buildNumber
 }
 
 func resolve(settings []debug.BuildSetting, fallbackRevision string, fallbackDirty bool, version string) Info {

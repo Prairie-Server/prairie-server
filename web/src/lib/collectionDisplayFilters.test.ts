@@ -36,13 +36,11 @@ describe("collection filter labels and presets", () => {
 
   it("filters option lists to allowed presets", () => {
     expect(
-      collectionWatchFilterOptionsFromPresets(["all", "unwatched"]).map(
-        (o) => o.value,
-      ),
+      collectionWatchFilterOptionsFromPresets(["all", "unwatched"]).map((o) => o.value),
     ).toEqual(["all", "unwatched"]);
-    expect(
-      collectionMediaFilterOptionsFromPresets(["movie"]).map((o) => o.value),
-    ).toEqual(["movie"]);
+    expect(collectionMediaFilterOptionsFromPresets(["movie"]).map((o) => o.value)).toEqual([
+      "movie",
+    ]);
   });
 });
 
@@ -54,33 +52,25 @@ describe("displayFiltersToQueryDefinition", () => {
   it("builds a single AND group with a watched=true rule for the watched preset", () => {
     expect(displayFiltersToQueryDefinition("watched", "all")).toEqual({
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "watched", op: "is", value: true }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "watched", op: "is", value: true }] }],
     });
   });
 
   it("builds a watched=false rule for the unwatched preset", () => {
     expect(displayFiltersToQueryDefinition("unwatched", "all")).toEqual({
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "watched", op: "is", value: false }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "watched", op: "is", value: false }] }],
     });
   });
 
   it("builds a type rule for the media preset", () => {
     expect(displayFiltersToQueryDefinition("all", "movie")).toEqual({
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "type", op: "is", value: "movie" }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "type", op: "is", value: "movie" }] }],
     });
     expect(displayFiltersToQueryDefinition("all", "series")).toEqual({
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "type", op: "is", value: "series" }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "type", op: "is", value: "series" }] }],
     });
   });
 
@@ -139,17 +129,13 @@ describe("queryDefinitionToDisplayFilters", () => {
   it("reads watched=true / watched=false back to presets", () => {
     const watched: DisplayQueryDefinition = {
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "watched", op: "is", value: true }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "watched", op: "is", value: true }] }],
     };
     expect(queryDefinitionToDisplayFilters(watched).watch).toBe("watched");
 
     const unwatched: DisplayQueryDefinition = {
       match: "all",
-      groups: [
-        { match: "all", rules: [{ field: "watched", op: "is", value: false }] },
-      ],
+      groups: [{ match: "all", rules: [{ field: "watched", op: "is", value: false }] }],
     };
     expect(queryDefinitionToDisplayFilters(unwatched).watch).toBe("unwatched");
   });

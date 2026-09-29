@@ -1,22 +1,29 @@
 import { useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, ApiClientError } from "@/api/client";
+import { v2 } from "@/api/v2/request";
 import {
   effectiveSettingsQueryKey,
   isDefinitiveSettingMutationRejection,
+  isSettingValueMissing,
   useClearSettingValue,
   useEffectiveSettings,
   useSetSettingValue,
+  useSettingsCapabilities,
   type EffectiveSettingsMap,
 } from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
-import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
+import { SETTING_KEYS, SETTINGS_API_VERSION, type SettingKey } from "@/lib/settingsContract";
 import { settingsKeys } from "@/hooks/queries/keys";
 import { storage } from "@/utils/storage";
 import {
+  isOverlaySupportedBy,
+  overlayPrefsForServer,
   parseOverlayPrefs,
   serializeOverlayPrefs,
+  storedOverlayIds,
   type CardOverlayPrefs,
+  type OverlayId,
+  type OverlayServerSupport,
 } from "@/lib/overlays";
 import {
   normalizeCardQuickActionMode,
@@ -33,13 +40,6 @@ const OVERLAY_KEYS = [
   SETTING_KEYS.UI_CARD_QUICK_ACTIONS_ENABLED,
 ] as const;
 
-interface OverlayConfig {
-  enabled: boolean;
-  defaults?: string;
-  quick_actions_enabled?: boolean;
-  quick_actions_default?: string;
-}
-
 // Overlay booleans are inherit-with-override, not a policy gate: the server
 // setting is only the default for profiles that have not chosen, and an
 // explicit profile choice wins in either direction.
@@ -53,7 +53,7 @@ function inheritBoolean(userValue: unknown, serverDefault: boolean): boolean {
 function useOverlayConfig() {
   return useQuery({
     queryKey: settingsKeys.overlayConfig(),
-    queryFn: () => api<OverlayConfig>("/settings/overlay-config"),
+    queryFn: () => v2("GET /api/v2/settings/overlay-config"),
     staleTime: 60_000,
   });
 }
@@ -68,6 +68,9 @@ export function useOverlayPrefs() {
     enabled: hasProfile,
   });
   const { data: config, isLoading: configLoading } = useOverlayConfig();
+  const { data: capabilities } = useSettingsCapabilities({ enabled: hasProfile });
+  const manifestRevision =
+    capabilities?.api_version === SETTINGS_API_VERSION ? capabilities.manifest_revision : undefined;
   const { mutate: setSettingValue } = useSetSettingValue();
   const clearValue = useClearSettingValue();
   const queryClient = useQueryClient();
@@ -88,13 +91,10 @@ export function useOverlayPrefs() {
       // Writing a stored value back unchanged is a no-op: skip the network
       // round-trip and the downstream re-render cascade.
       if (effective?.[key]?.value === value) return;
-      queryClient.setQueryData<EffectiveSettingsMap>(
-        effectiveQueryKey,
-        (current) => ({
-          ...current,
-          [key]: { key, value, source: "profile", scope: "profile" },
-        }),
-      );
+      queryClient.setQueryData<EffectiveSettingsMap>(effectiveQueryKey, (current) => ({
+        ...current,
+        [key]: { key, value, source: "profile", scope: "profile" },
+      }));
       setSettingValue(
         { key, value, identity: PROFILE_SCOPE },
         {
@@ -119,10 +119,12 @@ export function useOverlayPrefs() {
   // The contract default is null — "no preference expressed" — which is what
   // lets the server-wide admin default apply; a stored value wins outright.
   const userValue = effective?.[SETTING_KEYS.UI_CARD_OVERLAYS]?.value ?? null;
-  const overlaysEnabledUserValue =
-    effective?.[SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED]?.value;
-  const quickActionUserValue =
-    effective?.[SETTING_KEYS.UI_CARD_QUICK_ACTIONS]?.value ?? null;
+  const serverSupport = useMemo<OverlayServerSupport>(
+    () => ({ manifestRevision, storedIds: storedOverlayIds(userValue) }),
+    [manifestRevision, userValue],
+  );
+  const overlaysEnabledUserValue = effective?.[SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED]?.value;
+  const quickActionUserValue = effective?.[SETTING_KEYS.UI_CARD_QUICK_ACTIONS]?.value ?? null;
   const quickActionsEnabledUserValue =
     effective?.[SETTING_KEYS.UI_CARD_QUICK_ACTIONS_ENABLED]?.value;
 
@@ -134,10 +136,7 @@ export function useOverlayPrefs() {
 
   // Absent server config (including while it loads), overlays are on — the
   // shipped default — and quick actions are off.
-  const overlaysEnabled = inheritBoolean(
-    overlaysEnabledUserValue,
-    config?.enabled !== false,
-  );
+  const overlaysEnabled = inheritBoolean(overlaysEnabledUserValue, config?.enabled !== false);
   const quickActionsEnabled = inheritBoolean(
     quickActionsEnabledUserValue,
     config?.quick_actions_enabled === true,
@@ -148,24 +147,32 @@ export function useOverlayPrefs() {
 
   const setPrefs = useCallback(
     (next: CardOverlayPrefs) => {
+      // The server rejects the whole document over one overlay id it does not
+      // accept, so those ids never reach it.
+      const storable = overlayPrefsForServer(next, serverSupport);
       // Avoid a network round-trip and downstream re-render cascade when
       // the user toggles a control to its current value. Comparison goes
       // through the parser so key ordering in the stored JSON is irrelevant.
       if (
         userValue != null &&
-        serializeOverlayPrefs(parseOverlayPrefs(userValue)) ===
-          serializeOverlayPrefs(next)
+        serializeOverlayPrefs(
+          overlayPrefsForServer(parseOverlayPrefs(userValue), serverSupport),
+        ) === serializeOverlayPrefs(storable)
       ) {
         return;
       }
-      setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS, next);
+      setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS, storable);
     },
-    [userValue, setProfileValue],
+    [serverSupport, userValue, setProfileValue],
+  );
+
+  const isOverlaySupported = useCallback(
+    (id: OverlayId) => isOverlaySupportedBy(id, serverSupport),
+    [serverSupport],
   );
 
   const setOverlaysEnabled = useCallback(
-    (next: boolean) =>
-      setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED, next),
+    (next: boolean) => setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED, next),
     [setProfileValue],
   );
 
@@ -174,16 +181,14 @@ export function useOverlayPrefs() {
       // Compare against the mode the control displays, not a differently
       // normalized reading of the stored value: an unrecognized stored value
       // displays the admin default, which must stay selectable.
-      if (quickActionUserValue != null && configuredQuickActionMode === next)
-        return;
+      if (quickActionUserValue != null && configuredQuickActionMode === next) return;
       setProfileValue(SETTING_KEYS.UI_CARD_QUICK_ACTIONS, next);
     },
     [configuredQuickActionMode, quickActionUserValue, setProfileValue],
   );
 
   const setQuickActionsEnabled = useCallback(
-    (next: boolean) =>
-      setProfileValue(SETTING_KEYS.UI_CARD_QUICK_ACTIONS_ENABLED, next),
+    (next: boolean) => setProfileValue(SETTING_KEYS.UI_CARD_QUICK_ACTIONS_ENABLED, next),
     [setProfileValue],
   );
 
@@ -195,16 +200,13 @@ export function useOverlayPrefs() {
         } catch (error) {
           // A missing scoped value already means this part of the preference
           // is inheriting from the server default.
-          if (!(error instanceof ApiClientError && error.status === 404))
-            throw error;
+          if (!isSettingValueMissing(error)) throw error;
         }
       }),
     );
   }, [clearValue]);
 
-  const hasOverride = OVERLAY_KEYS.some(
-    (key) => effective?.[key]?.source === "profile",
-  );
+  const hasOverride = OVERLAY_KEYS.some((key) => effective?.[key]?.source === "profile");
 
   // While either query is in flight, report null prefs instead of built-in
   // defaults: rendering defaults first would flash badges that vanish (or
@@ -214,12 +216,11 @@ export function useOverlayPrefs() {
   return {
     prefs: overlaysEnabled && !isLoading ? prefs : null,
     setPrefs,
+    isOverlaySupported,
     overlaysEnabled,
     setOverlaysEnabled,
     quickActionMode:
-      quickActionsEnabled && !isLoading
-        ? configuredQuickActionMode
-        : ("none" as const),
+      quickActionsEnabled && !isLoading ? configuredQuickActionMode : ("none" as const),
     quickActionPreference: configuredQuickActionMode,
     setQuickActionMode,
     quickActionsEnabled,

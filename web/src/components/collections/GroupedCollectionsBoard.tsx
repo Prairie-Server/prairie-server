@@ -39,6 +39,8 @@ export interface GroupDef {
   sort_order: number;
 }
 
+type PreparedRename = { title: string; commit: (title: string) => void };
+
 export interface GroupedCollectionsBoardProps<T extends GroupedItem> {
   items: T[];
   groups: GroupDef[];
@@ -47,12 +49,14 @@ export interface GroupedCollectionsBoardProps<T extends GroupedItem> {
   readOnly?: boolean;
   hideEmptyGroups?: boolean;
   ungroupedTitle?: string;
+  onBeginDrag?: (id: string) => void;
   onReorderInGroup?: (groupId: string | null, orderedIds: string[]) => void;
   onMoveItemAcross?: (itemId: string, toGroupId: string | null) => void;
   onReorderGroups?: (orderedIds: string[]) => void;
   onAddGroup?: (title: string) => void;
   onRenameGroup?: (id: string, title: string) => void;
   onDeleteGroup?: (id: string) => void;
+  onPrepareRenameGroup?: (id: string) => Promise<PreparedRename | undefined>;
 }
 
 export function GroupedCollectionsBoard<T extends GroupedItem>({
@@ -69,6 +73,8 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
   onAddGroup,
   onRenameGroup,
   onDeleteGroup,
+  onPrepareRenameGroup,
+  onBeginDrag,
 }: GroupedCollectionsBoardProps<T>) {
   const sections: GroupedSection<T>[] = useMemo(
     () =>
@@ -81,8 +87,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
 
   const itemIdToGroup = useMemo(() => {
     const map = new Map<string, string>();
-    for (const item of items)
-      map.set(getItemId(item), item.group_id ?? UNGROUPED_LABEL);
+    for (const item of items) map.set(getItemId(item), item.group_id ?? UNGROUPED_LABEL);
     return map;
   }, [items, getItemId]);
 
@@ -90,9 +95,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
     () =>
       sections
         .map((s) => s.id)
-        .filter(
-          (id): id is string => id !== null && groups.some((g) => g.id === id),
-        ),
+        .filter((id): id is string => id !== null && groups.some((g) => g.id === id)),
     [sections, groups],
   );
 
@@ -137,8 +140,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
       if (fromGroup === toGroup) {
         if (!onReorderInGroup) return;
         const groupItems =
-          sections.find((s) => (s.id ?? UNGROUPED_LABEL) === fromGroup)
-            ?.items ?? [];
+          sections.find((s) => (s.id ?? UNGROUPED_LABEL) === fromGroup)?.items ?? [];
         const ids = groupItems.map(getItemId);
         const oldIndex = ids.indexOf(activeId);
         const newIndex = ids.indexOf(overId);
@@ -150,10 +152,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
         return;
       }
 
-      onMoveItemAcross?.(
-        activeId,
-        toGroup === UNGROUPED_LABEL ? null : toGroup,
-      );
+      onMoveItemAcross?.(activeId, toGroup === UNGROUPED_LABEL ? null : toGroup);
     },
     [
       sections,
@@ -170,6 +169,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
+      onDragStart={(event) => onBeginDrag?.(String(event.active.id))}
       onDragEnd={handleDragEnd}
     >
       <SortableContext
@@ -180,8 +180,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
           {sections.map((section) => {
             const sectionKey = section.id ?? UNGROUPED_LABEL;
             const isUngrouped = section.id === null;
-            const isExplicit =
-              section.id !== null && groups.some((g) => g.id === section.id);
+            const isExplicit = section.id !== null && groups.some((g) => g.id === section.id);
             return (
               <SectionBlock
                 key={sectionKey || "__ungrouped__"}
@@ -192,6 +191,7 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
                 isExplicit={isExplicit}
                 isUngrouped={isUngrouped}
                 onRenameGroup={onRenameGroup}
+                onPrepareRenameGroup={onPrepareRenameGroup}
                 onDeleteGroup={onDeleteGroup}
               />
             );
@@ -213,6 +213,7 @@ function SectionBlock<T extends GroupedItem>({
   isUngrouped,
   onRenameGroup,
   onDeleteGroup,
+  onPrepareRenameGroup,
 }: {
   section: GroupedSection<T>;
   renderItem: (item: T) => React.ReactNode;
@@ -222,6 +223,7 @@ function SectionBlock<T extends GroupedItem>({
   isUngrouped: boolean;
   onRenameGroup?: (id: string, title: string) => void;
   onDeleteGroup?: (id: string) => void;
+  onPrepareRenameGroup?: (id: string) => Promise<PreparedRename | undefined>;
 }) {
   // Whole section is droppable so empty groups still accept drops.
   const sectionKey = section.id ?? UNGROUPED_LABEL;
@@ -243,11 +245,7 @@ function SectionBlock<T extends GroupedItem>({
   };
 
   return (
-    <section
-      ref={sortableGroup.setNodeRef}
-      style={headerStyle}
-      className="space-y-4"
-    >
+    <section ref={sortableGroup.setNodeRef} style={headerStyle} className="space-y-4">
       <CollectionGroupHeader
         title={section.name}
         count={section.items.length}
@@ -256,15 +254,18 @@ function SectionBlock<T extends GroupedItem>({
         muted={isUngrouped}
         dragAttributes={sortableGroup.attributes}
         dragListeners={sortableGroup.listeners}
+        onPrepareRename={
+          isExplicit && onPrepareRenameGroup && section.id
+            ? () => onPrepareRenameGroup(section.id!)
+            : undefined
+        }
         onRename={
           isExplicit && onRenameGroup && section.id
             ? (title) => onRenameGroup(section.id!, title)
             : undefined
         }
         onDelete={
-          isExplicit && onDeleteGroup && section.id
-            ? () => onDeleteGroup(section.id!)
-            : undefined
+          isExplicit && onDeleteGroup && section.id ? () => onDeleteGroup(section.id!) : undefined
         }
       />
       <div
@@ -275,10 +276,7 @@ function SectionBlock<T extends GroupedItem>({
             : ""
         }`}
       >
-        <SortableContext
-          items={section.items.map(getItemId)}
-          strategy={rectSortingStrategy}
-        >
+        <SortableContext items={section.items.map(getItemId)} strategy={rectSortingStrategy}>
           {section.items.length === 0 ? (
             <EmptyGroupPlaceholder />
           ) : (
@@ -303,6 +301,7 @@ function CollectionGroupHeader({
   dragAttributes,
   dragListeners,
   onRename,
+  onPrepareRename,
   onDelete,
 }: {
   title: string;
@@ -313,14 +312,17 @@ function CollectionGroupHeader({
   dragAttributes: ReturnType<typeof useSortable>["attributes"];
   dragListeners: ReturnType<typeof useSortable>["listeners"];
   onRename?: (title: string) => void;
+  onPrepareRename?: () => Promise<PreparedRename | undefined>;
   onDelete?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [renameSnapshot, setRenameSnapshot] = useState({ commit: onRename });
   const [draft, setDraft] = useState(title);
 
   const commit = () => {
     const next = draft.trim();
-    if (next && next !== title && onRename) onRename(next);
+    if (next && next !== title) renameSnapshot.commit?.(next);
     setEditing(false);
   };
   const cancel = () => {
@@ -360,9 +362,7 @@ function CollectionGroupHeader({
           {title}
         </h2>
       )}
-      <span className="text-muted-foreground text-xs tabular-nums">
-        {count}
-      </span>
+      <span className="text-muted-foreground text-xs tabular-nums">{count}</span>
       <div className="ml-auto flex items-center gap-1">
         {editing ? (
           <>
@@ -387,15 +387,26 @@ function CollectionGroupHeader({
           </>
         ) : !readOnly && canManage ? (
           <div className="opacity-0 transition group-hover/header:opacity-100 [@media(pointer:coarse)]:opacity-100">
-            {onRename ? (
+            {onRename || onPrepareRename ? (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 aria-label="Rename group"
-                onClick={() => {
-                  setDraft(title);
-                  setEditing(true);
+                disabled={preparing}
+                onClick={async () => {
+                  setPreparing(true);
+                  try {
+                    const prepared = onPrepareRename
+                      ? await onPrepareRename()
+                      : { title, commit: onRename! };
+                    if (!prepared) return;
+                    setRenameSnapshot({ commit: prepared.commit });
+                    setDraft(prepared.title);
+                    setEditing(true);
+                  } finally {
+                    setPreparing(false);
+                  }
                 }}
               >
                 <Pencil className="h-3.5 w-3.5" />

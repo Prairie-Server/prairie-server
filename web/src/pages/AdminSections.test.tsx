@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  queryDefinitionFromSectionConfig,
-  queryDefinitionToSectionConfig,
-} from "@/api/types";
+import { queryDefinitionFromSectionConfig, queryDefinitionToSectionConfig } from "@/api/types";
 
 import AdminSections from "./AdminSections";
 

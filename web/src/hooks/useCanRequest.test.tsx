@@ -18,11 +18,7 @@ vi.mock("@/hooks/useCurrentProfile", () => ({
 
 import { useCanRequest } from "./useCanRequest";
 
-function CaptureHook({
-  onResult,
-}: {
-  onResult: (r: ReturnType<typeof useCanRequest>) => void;
-}) {
+function CaptureHook({ onResult }: { onResult: (r: ReturnType<typeof useCanRequest>) => void }) {
   const result = useCanRequest();
   onResult(result);
   return null;
@@ -32,9 +28,7 @@ function render(child: ReactNode) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return renderToStaticMarkup(
-    <QueryClientProvider client={client}>{child}</QueryClientProvider>,
-  );
+  return renderToStaticMarkup(<QueryClientProvider client={client}>{child}</QueryClientProvider>);
 }
 
 describe("useCanRequest", () => {

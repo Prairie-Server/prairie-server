@@ -15,11 +15,7 @@ interface SideNavSectionProps {
   children: ReactNode;
 }
 
-export function SideNavSection({
-  label,
-  idPrefix,
-  children,
-}: SideNavSectionProps) {
+export function SideNavSection({ label, idPrefix, children }: SideNavSectionProps) {
   const headingId = `${idPrefix}-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div role="group" aria-labelledby={headingId}>
@@ -43,7 +39,7 @@ interface SideNavItemProps {
   href?: string;
   /**
    * With href, render a plain <a> (full page navigation) instead of a
-   * react-router <Link>. Used for plugin routes mounted at /api/v1/plugins/...
+   * react-router <Link>. Used for plugin routes mounted at /api/v2/plugin-content/plugins/...
    */
   external?: boolean;
   /** Without href, the item renders as a <button>. */
@@ -86,31 +82,16 @@ export function SideNavItem({
     <li>
       {href ? (
         external ? (
-          <a
-            href={href}
-            onClick={onClick}
-            aria-current={ariaCurrent}
-            className={className}
-          >
+          <a href={href} onClick={onClick} aria-current={ariaCurrent} className={className}>
             {inner}
           </a>
         ) : (
-          <Link
-            to={href}
-            onClick={onClick}
-            aria-current={ariaCurrent}
-            className={className}
-          >
+          <Link to={href} onClick={onClick} aria-current={ariaCurrent} className={className}>
             {inner}
           </Link>
         )
       ) : (
-        <button
-          type="button"
-          onClick={onClick}
-          aria-current={ariaCurrent}
-          className={className}
-        >
+        <button type="button" onClick={onClick} aria-current={ariaCurrent} className={className}>
           {inner}
         </button>
       )}

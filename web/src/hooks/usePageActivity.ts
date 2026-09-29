@@ -9,12 +9,8 @@ export interface PageActivityState {
 }
 
 function readPageActivity(): PageActivityState {
-  const isVisible =
-    typeof document === "undefined"
-      ? true
-      : document.visibilityState === "visible";
-  const isFocused =
-    typeof document === "undefined" ? true : document.hasFocus();
+  const isVisible = typeof document === "undefined" ? true : document.visibilityState === "visible";
+  const isFocused = typeof document === "undefined" ? true : document.hasFocus();
   const isFrozen = false;
 
   return {
@@ -27,9 +23,7 @@ function readPageActivity(): PageActivityState {
 }
 
 export function usePageActivity() {
-  const [state, setState] = useState<PageActivityState>(() =>
-    readPageActivity(),
-  );
+  const [state, setState] = useState<PageActivityState>(() => readPageActivity());
 
   useEffect(() => {
     let frozen = false;

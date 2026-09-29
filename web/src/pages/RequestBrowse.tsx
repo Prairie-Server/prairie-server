@@ -12,10 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import {
-  useCreateMediaRequest,
-  useRequestBrowse,
-} from "@/hooks/queries/useRequests";
+import { useCreateMediaRequest, useRequestBrowse } from "@/hooks/queries/useRequests";
 import { requestInputFromMediaResult } from "@/lib/mediaRequests";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type {
@@ -46,19 +43,12 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
   const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
   const mediaTypeFromQuery = normalizeMediaType(searchParams.get("media_type"));
   const mediaType: RequestMediaType | undefined =
-    kind === "studio"
-      ? "movie"
-      : kind === "network"
-        ? "series"
-        : (mediaTypeFromQuery ?? "movie");
+    kind === "studio" ? "movie" : kind === "network" ? "series" : (mediaTypeFromQuery ?? "movie");
 
   const browse = useRequestBrowse({ kind, slug, mediaType, sort, page });
   const createRequest = useCreateMediaRequest();
   const pendingRequestKey = createRequest.variables
-    ? mediaRequestKey(
-        createRequest.variables.media_type,
-        createRequest.variables.tmdb_id,
-      )
+    ? mediaRequestKey(createRequest.variables.media_type, createRequest.variables.tmdb_id)
     : undefined;
 
   const title = browse.data?.display_name ?? humanizeSlug(slug);
@@ -95,14 +85,9 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
   if (browse.isError && (browse.error as { status?: number }).status === 404) {
     return (
       <div className="relative space-y-4 py-10 text-center">
-        <PageBack to="/requests" preferHistory={false} />
+        <PageBack to="/requests" up />
         <p className="text-foreground mt-10 text-lg font-semibold sm:mt-12">
-          {kind === "studio"
-            ? "Studio"
-            : kind === "network"
-              ? "Network"
-              : "Genre"}{" "}
-          not found.
+          {kind === "studio" ? "Studio" : kind === "network" ? "Network" : "Genre"} not found.
         </p>
       </div>
     );
@@ -110,19 +95,13 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
 
   return (
     <div className="relative space-y-6 py-6 sm:py-8">
-      <PageBack to="/requests" preferHistory={false} />
+      <PageBack to="/requests" up />
       <div className="mt-10 space-y-4 px-4 sm:mt-12 sm:px-6 lg:px-10 xl:px-12">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
-            <BrowseHeaderTile
-              browse={browse.data}
-              kind={kind}
-              fallback={title}
-            />
+            <BrowseHeaderTile browse={browse.data} kind={kind} fallback={title} />
             <div className="min-w-0">
-              <h1 className="text-foreground truncate text-2xl font-semibold">
-                {title}
-              </h1>
+              <h1 className="text-foreground truncate text-2xl font-semibold">{title}</h1>
               <p className="text-muted-foreground text-sm">
                 {browse.isLoading
                   ? "Loading..."
@@ -149,9 +128,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
         {kind === "genre" ? (
           <Tabs
             value={mediaType ?? "movie"}
-            onValueChange={(value) =>
-              updateMediaType(value as RequestMediaType)
-            }
+            onValueChange={(value) => updateMediaType(value as RequestMediaType)}
           >
             <TabsList>
               <TabsTrigger value="movie">Movies</TabsTrigger>
@@ -169,9 +146,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
             Could not load this browse page. Try a different sort or media type.
           </p>
         ) : results.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Nothing matched. Try a different sort.
-          </p>
+          <p className="text-muted-foreground text-sm">Nothing matched. Try a different sort.</p>
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">
             {results.map((item) => (
@@ -182,8 +157,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
                 onRequest={() => submitRequest(item)}
                 isSubmitting={
                   createRequest.isPending &&
-                  pendingRequestKey ===
-                    mediaRequestKey(item.media_type, item.tmdb_id)
+                  pendingRequestKey === mediaRequestKey(item.media_type, item.tmdb_id)
                 }
                 fluid
               />
@@ -194,11 +168,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
 
       {totalPages > 1 ? (
         <div className="flex items-center justify-center gap-3 px-4">
-          <Button
-            variant="outline"
-            disabled={page <= 1}
-            onClick={() => goToPage(page - 1)}
-          >
+          <Button variant="outline" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
             <ChevronLeft />
             Prev
           </Button>
@@ -271,9 +241,7 @@ function normalizeSort(value: string | null): BrowseSort {
     : "popularity";
 }
 
-function normalizeMediaType(
-  value: string | null,
-): RequestMediaType | undefined {
+function normalizeMediaType(value: string | null): RequestMediaType | undefined {
   return value === "movie" || value === "series" ? value : undefined;
 }
 

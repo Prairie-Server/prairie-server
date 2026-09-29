@@ -74,4 +74,4 @@ Existing indexes can be left in place during cutover, but Prairie defaults will 
 
 ## Headers and clients
 
-Prairie emits `X-Prairie-*` headers. The server accepts legacy `X-Silo-*` request headers for the rebranded header set during this phase, so older clients can continue to connect while native clients switch over.
+Prairie emits `X-Prairie-*` headers. The server accepts legacy `X-Prairie-*` request headers for the rebranded header set during this phase, so older clients can continue to connect while native clients switch over.

@@ -66,10 +66,7 @@ describe("buildMangaList", () => {
     expect(entry?.kind).toBe("section");
     if (entry?.kind === "section") {
       expect(entry.label).toBe("Volume 1");
-      expect(entry.chapters.map((c) => c.content_id)).toEqual([
-        "v1-c1",
-        "v1-c2",
-      ]);
+      expect(entry.chapters.map((c) => c.content_id)).toEqual(["v1-c1", "v1-c2"]);
     }
   });
 
@@ -81,12 +78,7 @@ describe("buildMangaList", () => {
       chapter({ content_id: "loose-3", chapter_index: 3, volume: "" }),
     ]);
 
-    expect(entries.map((e) => e.label)).toEqual([
-      "Volume 1",
-      "Chapter 3",
-      "Chapter 5",
-      "Volume 2",
-    ]);
+    expect(entries.map((e) => e.label)).toEqual(["Volume 1", "Chapter 3", "Chapter 5", "Volume 2"]);
   });
 
   it("orders a section by its minimum chapter index relative to other entries", () => {
@@ -101,9 +93,7 @@ describe("buildMangaList", () => {
   });
 
   it("labels a loose chapter without an index by its trimmed title", () => {
-    const entries = buildMangaList([
-      chapter({ content_id: "bonus", title: "  Bonus  " }),
-    ]);
+    const entries = buildMangaList([chapter({ content_id: "bonus", title: "  Bonus  " })]);
 
     expect(entries).toEqual([
       {
@@ -123,11 +113,7 @@ describe("buildMangaList", () => {
 
     expect(entries[0]?.kind).toBe("section");
     if (entries[0]?.kind === "section") {
-      expect(entries[0].chapters.map((c) => c.content_id)).toEqual([
-        "v1-c1",
-        "v1-c2",
-        "v1-cNull",
-      ]);
+      expect(entries[0].chapters.map((c) => c.content_id)).toEqual(["v1-c1", "v1-c2", "v1-cNull"]);
     }
   });
 

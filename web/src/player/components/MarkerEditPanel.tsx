@@ -90,9 +90,7 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
         <div className="flex items-start gap-2">
           <GripHorizontal className="mt-0.5 h-4 w-4 shrink-0 text-white/30" />
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-semibold tracking-tight">
-              Edit markers
-            </span>
+            <span className="text-sm font-semibold tracking-tight">Edit markers</span>
             <span className="text-[11px] leading-tight text-white/40">
               Drag the timeline handles, or set points to the playhead.
             </span>
@@ -131,9 +129,7 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
                   className={[
                     "shrink-0 rounded-full transition-all",
                     DOT_COLORS[kind],
-                    isActive
-                      ? "h-2.5 w-2.5 ring-2 ring-white/25"
-                      : "h-2 w-2 opacity-50",
+                    isActive ? "h-2.5 w-2.5 ring-2 ring-white/25" : "h-2 w-2 opacity-50",
                   ].join(" ")}
                 />
                 <span
@@ -150,22 +146,16 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
                     range ? "text-white/75" : "text-white/35",
                   ].join(" ")}
                 >
-                  {range
-                    ? `${formatTime(range.start)} – ${formatTime(range.end)}`
-                    : "Not set"}
+                  {range ? `${formatTime(range.start)} – ${formatTime(range.end)}` : "Not set"}
                 </span>
               </button>
 
               {isActive && (
                 <div className="mt-2 flex items-center gap-1.5">
-                  <EdgeButton
-                    onClick={() => editor.setEdge(kind, "start", currentTime)}
-                  >
+                  <EdgeButton onClick={() => editor.setEdge(kind, "start", currentTime)}>
                     Set start
                   </EdgeButton>
-                  <EdgeButton
-                    onClick={() => editor.setEdge(kind, "end", currentTime)}
-                  >
+                  <EdgeButton onClick={() => editor.setEdge(kind, "end", currentTime)}>
                     Set end
                   </EdgeButton>
                   <div className="ml-auto flex items-center gap-0.5">
@@ -248,13 +238,7 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
   );
 }
 
-function EdgeButton({
-  onClick,
-  children,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function EdgeButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"

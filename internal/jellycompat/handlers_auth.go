@@ -10,6 +10,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type authenticateByNameRequest struct {
@@ -73,6 +74,9 @@ type userDTOResponse struct {
 }
 
 type userConfigurationResponse struct {
+	AudioLanguagePreference    string   `json:"AudioLanguagePreference"`
+	SubtitleLanguagePreference string   `json:"SubtitleLanguagePreference"`
+	CastReceiverID             string   `json:"CastReceiverId"`
 	PlayDefaultAudioTrack      bool     `json:"PlayDefaultAudioTrack"`
 	DisplayMissingEpisodes     bool     `json:"DisplayMissingEpisodes"`
 	GroupedFolders             []string `json:"GroupedFolders"`
@@ -119,6 +123,7 @@ type AuthHandler struct {
 	loginResolver loginResolver
 	authenticator *Authenticator
 	liveTVEnabled bool
+	storeProvider userstore.UserStoreProvider
 }
 
 // NewAuthHandler creates a new auth handler. The config provider is invoked
@@ -165,11 +170,17 @@ func (h *AuthHandler) HandleAuthenticateByName(w http.ResponseWriter, r *http.Re
 		writeError(w, status, code, message)
 		return
 	}
+	attributeActivity(r, session)
 
+	user, err := h.resolvedUserDTO(r.Context(), session)
+	if err != nil {
+		writeCompatUpstreamError(w, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, authenticateByNameResponse{
 		AccessToken: session.Token,
 		ServerID:    h.cfg().JellyfinCompat.ServerID,
-		User:        h.userDTO(session),
+		User:        user,
 		SessionInfo: h.sessionInfo(session),
 	})
 }
@@ -181,7 +192,12 @@ func (h *AuthHandler) HandleCurrentUser(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return
 	}
-	writeJSON(w, http.StatusOK, h.userDTO(session))
+	user, err := h.resolvedUserDTO(r.Context(), session)
+	if err != nil {
+		writeCompatUpstreamError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 // HandleUsers serves GET /Users.
@@ -198,7 +214,12 @@ func (h *AuthHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return
 	}
-	writeJSON(w, http.StatusOK, []userDTOResponse{h.userDTO(session)})
+	user, err := h.resolvedUserDTO(r.Context(), session)
+	if err != nil {
+		writeCompatUpstreamError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, []userDTOResponse{user})
 }
 
 // HandleUserByID serves GET /Users/{id}.
@@ -213,7 +234,12 @@ func (h *AuthHandler) HandleUserByID(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "NotFound", "User not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, h.userDTO(session))
+	user, err := h.resolvedUserDTO(r.Context(), session)
+	if err != nil {
+		writeCompatUpstreamError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 // HandleLogout serves POST /Sessions/Logout.
@@ -303,8 +329,8 @@ func (h *AuthHandler) sessionInfo(session *Session) *sessionInfoResponse {
 		LastActivityDate:      now,
 		LastPlaybackCheckIn:   now,
 		IsActive:              true,
-		SupportsMediaControl:  true,
-		SupportsRemoteControl: true,
+		SupportsMediaControl:  false,
+		SupportsRemoteControl: false,
 		HasCustomDeviceName:   false,
 		SupportedCommands:     []string{},
 		ServerID:              h.cfg().JellyfinCompat.ServerID,

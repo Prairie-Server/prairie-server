@@ -4,10 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SIDEBAR_COLLAPSE_DURATION_MS } from "./components/sidebarItemNavigation";
-import {
-  SIDEBAR_RAIL_WIDTH,
-  SIDEBAR_SURFACE_WIDTH,
-} from "./components/AppSidebar.logic";
+import { SIDEBAR_RAIL_WIDTH, SIDEBAR_SURFACE_WIDTH } from "./components/AppSidebar.logic";
 
 /**
  * The sidebar-collapse behaviour lives mostly in CSS, so these are contract
@@ -19,10 +16,7 @@ import {
  * choice Chrome runs on the compositor — a clipping-path version of this was
  * swallowed whole by the detail page's render (267ms and 209ms frozen frames).
  */
-const css = readFileSync(
-  fileURLToPath(new URL("./app.css", import.meta.url)),
-  "utf8",
-);
+const css = readFileSync(fileURLToPath(new URL("./app.css", import.meta.url)), "utf8");
 
 /** Collapse whitespace so selector searches survive Prettier line breaks. */
 function cssFlat() {
@@ -39,10 +33,7 @@ function ruleBody(selector: string): string {
   // This anchor is intentionally after reduced motion, whose selector list
   // also contains `.sidebar-main-stage` but only declares transition: none.
   const from = flat.indexOf("@media (forced-colors: active)");
-  expect(
-    from,
-    "forced-colors anchor must remain after reduced motion",
-  ).toBeGreaterThan(-1);
+  expect(from, "forced-colors anchor must remain after reduced motion").toBeGreaterThan(-1);
   const selectorFlat = selector.replace(/\s+/g, " ");
   const start = flat.indexOf(selectorFlat, from);
   expect(start, `missing rule: ${selector}`).toBeGreaterThan(-1);
@@ -66,14 +57,10 @@ describe("sidebar collapse CSS", () => {
     const surface = ruleBody(".sidebar-surface {");
     expect(surface).toContain("overflow: hidden");
     expect(surface).toContain("transform: translateX(0)");
-    expect(surface).toMatch(
-      /transition:\s*transform var\(--duration-sidebar-collapse\)/,
-    );
+    expect(surface).toMatch(/transition:\s*transform var\(--duration-sidebar-collapse\)/);
     // Any layout property here would put the document back on the reflow path,
     // and any non-composited property would be starved by the route render.
-    expect(surface).not.toMatch(
-      /\b(width|margin-left|left|clip-path|grid-template-columns)\s*:/,
-    );
+    expect(surface).not.toMatch(/\b(width|margin-left|left|clip-path|grid-template-columns)\s*:/);
   });
 
   it("slides the frame left by exactly the 196px it has to give up", () => {
@@ -86,12 +73,8 @@ describe("sidebar collapse CSS", () => {
   it("counter-translates the contents by the same distance so nothing moves on screen", () => {
     const inner = ruleBody(".sidebar-inner {");
     expect(inner).toContain("transform: translateX(0)");
-    expect(inner).toMatch(
-      /transition:\s*transform var\(--duration-sidebar-collapse\)/,
-    );
-    expect(
-      ruleBody('.sidebar-surface[data-collapsed="true"] .sidebar-inner {'),
-    ).toContain(
+    expect(inner).toMatch(/transition:\s*transform var\(--duration-sidebar-collapse\)/);
+    expect(ruleBody('.sidebar-surface[data-collapsed="true"] .sidebar-inner {')).toContain(
       `transform: translateX(${SIDEBAR_SURFACE_WIDTH - SIDEBAR_RAIL_WIDTH}px)`,
     );
   });
@@ -99,12 +82,8 @@ describe("sidebar collapse CSS", () => {
   it("moves the main stage on the same compositor timeline as the sidebar", () => {
     const main = ruleBody(".sidebar-main-stage {");
     expect(main).toContain("transform: none");
-    expect(main).toMatch(
-      /transition:\s*transform var\(--duration-sidebar-collapse\)/,
-    );
-    const entering = ruleBody(
-      '.sidebar-main-stage[data-sidebar-target-collapsed="true"]:not(',
-    );
+    expect(main).toMatch(/transition:\s*transform var\(--duration-sidebar-collapse\)/);
+    const entering = ruleBody('.sidebar-main-stage[data-sidebar-target-collapsed="true"]:not(');
     expect(entering).toContain("transform: translateX(196px)");
     expect(entering).toContain("transition: none");
     expect(css).toMatch(
@@ -126,9 +105,9 @@ describe("sidebar collapse CSS", () => {
     expect(ruleBody(".sidebar-row-shift {")).toMatch(
       /transition:\s*transform var\(--duration-sidebar-collapse\)/,
     );
-    expect(
-      ruleBody('.sidebar-surface[data-collapsed="true"] .sidebar-row-shift {'),
-    ).toContain("transform: translateX(var(--sidebar-row-shift, 0px))");
+    expect(ruleBody('.sidebar-surface[data-collapsed="true"] .sidebar-row-shift {')).toContain(
+      "transform: translateX(var(--sidebar-row-shift, 0px))",
+    );
   });
 
   it("no longer animates any layout property, or any main-thread-only one", () => {
@@ -191,6 +170,28 @@ describe("sidebar collapse CSS", () => {
     );
   });
 
+  it("only reserves sidebar room for out-of-tree chrome while a shell is mounted", () => {
+    // The banner and the audiobook MiniBar render above every route, including
+    // /profiles, /login and /watch, which live outside Layout and have no
+    // sidebar. Layout publishes `data-app-shell` for exactly the sidebar's
+    // lifetime and AdminLayout publishes `data-admin-shell` for its own fixed
+    // 240px sidebar, so every desktop offset must hang off one of them; an
+    // unconditional 260px left a blank strip on the profile picker while
+    // impersonating (#1290).
+    expect(ruleBody(":root[data-app-shell] {")).toContain("--app-sidebar-offset: 260px");
+    expect(ruleBody(':root[data-app-shell][data-sidebar-collapsed="true"] {')).toContain(
+      "--app-sidebar-offset: 64px",
+    );
+    expect(ruleBody(":root[data-admin-shell] {")).toContain("--app-sidebar-offset: 240px");
+    // Nothing else may reintroduce a non-zero offset without a shell gate.
+    const desktopOffsets =
+      css.match(/^\s*([^{\n]+)\{\s*--app-sidebar-offset: (?:260|240|64)px;/gm) ?? [];
+    expect(desktopOffsets.length).toBe(3);
+    for (const rule of desktopOffsets) expect(rule).toMatch(/\[data-(?:app|admin)-shell\]/);
+    // Off-shell the variable stays at its 0px default.
+    expect(css).toMatch(/:root \{\s*--app-sidebar-offset: 0px;/);
+  });
+
   it("compensates the banner on the same breakpoint that moves its margin", () => {
     // `html[data-text-scale]` re-bases rem, so 64rem and 1024px diverge at large
     // text. The compensation must follow `--app-sidebar-offset`'s own query.
@@ -203,9 +204,7 @@ describe("sidebar collapse CSS", () => {
       return flat.slice(queryAt, flat.indexOf("{", queryAt)).trim();
     };
 
-    expect(nearestQueryBefore("--app-sidebar-offset: 64px")).toBe(
-      "@media (min-width: 1024px)",
-    );
+    expect(nearestQueryBefore("--app-sidebar-offset: 64px")).toBe("@media (min-width: 1024px)");
     expect(
       nearestQueryBefore(
         ':root[data-sidebar-collapsed="true"]:not([data-sidebar-visual-collapsed="true"])',

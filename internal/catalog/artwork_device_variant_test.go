@@ -52,7 +52,7 @@ func TestCachedImageVariantKeyForNonTVUnchanged(t *testing.T) {
 func TestExplicitSizeWinsOverDeviceClass(t *testing.T) {
 	ctx := tvCtx()
 	for _, tc := range []struct{ imageType, size, want string }{
-		{"poster", "small", "w300"},
+		{"poster", "small", "w200"},
 		{"poster", "original", "original"},
 		{"backdrop", "small", "w300"},
 		{"backdrop", "original", "original"},

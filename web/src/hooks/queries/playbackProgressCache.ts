@@ -1,10 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type {
-  ItemDetail,
-  LeafItemUserData,
-  ProgressListResponse,
-  WatchDetail,
-} from "@/api/types";
+import type { ItemDetail, LeafItemUserData, WatchDetail } from "@/api/types";
+import type { ProgressList } from "./progress";
 import { progressKeys } from "./keys";
 
 export interface PlaybackProgressSnapshot {
@@ -24,15 +20,12 @@ function mergeLeafProgress(
   snapshot: PlaybackProgressSnapshot,
 ): LeafItemUserData {
   const rawPosition = Math.max(0, snapshot.positionSeconds);
-  const durationSeconds =
-    snapshot.durationSeconds ?? existing?.duration_seconds;
+  const durationSeconds = snapshot.durationSeconds ?? existing?.duration_seconds;
   // Mirror the server model: played is a one-way latch (a rewatch keeps the
   // watched badge), completion clears the resume point, and any nonzero
   // position is an active resume point.
   const completedNow =
-    durationSeconds != null &&
-    durationSeconds > 0 &&
-    rawPosition >= durationSeconds;
+    durationSeconds != null && durationSeconds > 0 && rawPosition >= durationSeconds;
   const played = existing?.played === true || completedNow;
   const positionSeconds = completedNow ? 0 : rawPosition;
 
@@ -56,9 +49,7 @@ function applySnapshotToItemDetail(
   if (!existing) return existing;
 
   const currentUserData =
-    existing.user_data && "position_seconds" in existing.user_data
-      ? existing.user_data
-      : undefined;
+    existing.user_data && "position_seconds" in existing.user_data ? existing.user_data : undefined;
 
   return {
     ...existing,
@@ -85,38 +76,26 @@ export function applyPlaybackProgressToCache(
   for (const [queryKey, existing] of queryClient.getQueriesData<ItemDetail>({
     queryKey: ["catalog", "items", snapshot.contentId, "detail"],
   })) {
-    queryClient.setQueryData<ItemDetail>(
-      queryKey,
-      applySnapshotToItemDetail(existing, snapshot),
-    );
+    queryClient.setQueryData<ItemDetail>(queryKey, applySnapshotToItemDetail(existing, snapshot));
   }
   for (const [queryKey, existing] of queryClient.getQueriesData<ItemDetail>({
     queryKey: ["items", "detail", snapshot.contentId],
   })) {
-    queryClient.setQueryData<ItemDetail>(
-      queryKey,
-      applySnapshotToItemDetail(existing, snapshot),
-    );
+    queryClient.setQueryData<ItemDetail>(queryKey, applySnapshotToItemDetail(existing, snapshot));
   }
   for (const [queryKey, existing] of queryClient.getQueriesData<WatchDetail>({
     queryKey: ["items", "watchDetail", snapshot.contentId],
   })) {
-    queryClient.setQueryData<WatchDetail>(
-      queryKey,
-      applySnapshotToWatchDetail(existing, snapshot),
-    );
+    queryClient.setQueryData<WatchDetail>(queryKey, applySnapshotToWatchDetail(existing, snapshot));
   }
 
   const updatedAt = snapshot.updatedAt ?? new Date().toISOString();
-  for (const [
-    queryKey,
-    existing,
-  ] of queryClient.getQueriesData<ProgressListResponse>({
+  for (const [queryKey, existing] of queryClient.getQueriesData<ProgressList>({
     queryKey: progressKeys.all,
   })) {
     if (!existing) continue;
 
-    const nextProgress = existing.progress.map((entry) => {
+    const nextItems = existing.items.map((entry) => {
       if (entry.media_item_id !== snapshot.contentId) return entry;
       const rawPosition = Math.max(0, snapshot.positionSeconds);
       const duration = snapshot.durationSeconds ?? entry.duration_seconds;
@@ -131,9 +110,9 @@ export function applyPlaybackProgressToCache(
       };
     });
 
-    queryClient.setQueryData<ProgressListResponse>(queryKey, {
+    queryClient.setQueryData<ProgressList>(queryKey, {
       ...existing,
-      progress: nextProgress,
+      items: nextItems,
     });
   }
 }

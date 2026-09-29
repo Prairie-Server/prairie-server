@@ -72,10 +72,7 @@ describe("levelChainsFromResponse", () => {
 });
 
 describe("mergeChainWithDefaults", () => {
-  const item = (
-    slug: string,
-    over: Partial<LevelChainItem> = {},
-  ): LevelChainItem => ({
+  const item = (slug: string, over: Partial<LevelChainItem> = {}): LevelChainItem => ({
     plugin_installation_id: 1,
     capability_id: slug,
     provider_slug: slug,

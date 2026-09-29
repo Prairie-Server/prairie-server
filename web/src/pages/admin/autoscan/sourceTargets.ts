@@ -1,8 +1,4 @@
-import type {
-  AutoscanScanSourceDescriptor,
-  AutoscanSource,
-  Library,
-} from "@/api/types";
+import type { AutoscanScanSourceDescriptor, AutoscanSource, Library } from "@/api/types";
 
 import { configFields } from "./sourceDescriptor";
 
@@ -101,9 +97,9 @@ export function resolvedPathsFor(
  * - a webhook source reads paths out of each delivery payload;
  * - a source with a bound connection gets them from the provider's root folders
  *   (`SuggestRewrites` deliberately proposes nothing when a reported root
- *   already equals the Silo path, so "correctly configured" and "no rewrites"
+ *   already equals the Prairie path, so "correctly configured" and "no rewrites"
  *   are the same state);
- * - an `emits_native_paths` source returns Silo paths directly.
+ * - an `emits_native_paths` source returns Prairie paths directly.
  *
  * What remains is a source that must be handed its roots up front. It is only
  * worth warning about when the descriptor gives the operator a field to put
@@ -120,8 +116,7 @@ function targetsAreKnowable(
   // this purpose, and must still be warned about when its path fields are
   // empty. A `required` source with nothing bound is excluded because the row
   // already reports the missing connection, and that is the fault to fix first.
-  if (source.connection_id || descriptor.connection === "required")
-    return false;
+  if (source.connection_id || descriptor.connection === "required") return false;
   return configFields(descriptor).length > 0;
 }
 

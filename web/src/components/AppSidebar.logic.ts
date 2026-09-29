@@ -6,18 +6,11 @@ export const SIDEBAR_SURFACE_WIDTH = 260;
 /** Collapsed rail width in px — must match `lg:ml-16` / `ml-16` in Layout. */
 export const SIDEBAR_RAIL_WIDTH = 64;
 
-export function isSidebarExpanded(
-  collapsed: boolean,
-  hovered: boolean,
-  profileMenuOpen: boolean,
-) {
+export function isSidebarExpanded(collapsed: boolean, hovered: boolean, profileMenuOpen: boolean) {
   return !collapsed || hovered || profileMenuOpen;
 }
 
-export function isSidebarRailCollapsed(
-  collapsed: boolean,
-  sidebarExpanded: boolean,
-) {
+export function isSidebarRailCollapsed(collapsed: boolean, sidebarExpanded: boolean) {
   return collapsed && !sidebarExpanded;
 }
 

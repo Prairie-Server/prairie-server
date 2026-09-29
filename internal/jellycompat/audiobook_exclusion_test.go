@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
@@ -71,7 +72,7 @@ func TestCompatAccessFilterResolverStampsExclusions(t *testing.T) {
 	}
 
 	base := func(context.Context, int, string) catalog.AccessFilter {
-		return catalog.AccessFilter{MaxContentRating: "PG-13"}
+		return catalog.AccessFilter{MaturityLimits: access.MaturityLimits{MaxContentRating: "PG-13"}}
 	}
 	resolved = compatAccessFilterResolver(base)(context.Background(), 1, "p1")
 	if resolved.MaxContentRating != "PG-13" {

@@ -48,16 +48,8 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Settings" }),
-    ).toBeInTheDocument();
-    for (const group of [
-      "Playback",
-      "Appearance",
-      "Home & Discovery",
-      "Connections",
-      "Account",
-    ]) {
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    for (const group of ["Playback", "Appearance", "Home & Discovery", "Connections", "Account"]) {
       expect(screen.getByRole("heading", { name: group })).toBeInTheDocument();
     }
     expect(
@@ -65,9 +57,7 @@ describe("SettingsLayout", () => {
         name: /Playback.*Quality, languages, skipping/,
       }),
     ).toHaveAttribute("href", "/settings/playback");
-    expect(
-      screen.getByRole("link", { name: /Connect Apps.*Sign-in details/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Connect Apps.*Sign-in details/ })).toBeInTheDocument();
   });
 
   it("names each settings group exactly once", () => {
@@ -84,13 +74,7 @@ describe("SettingsLayout", () => {
         name: "Settings sections categories",
       }),
     ).not.toBeInTheDocument();
-    for (const group of [
-      "Playback",
-      "Appearance",
-      "Home & Discovery",
-      "Connections",
-      "Account",
-    ]) {
+    for (const group of ["Playback", "Appearance", "Home & Discovery", "Connections", "Account"]) {
       expect(screen.getAllByRole("heading", { name: group })).toHaveLength(1);
       expect(
         screen.queryByRole("link", {
@@ -107,9 +91,9 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    // Eighteen sections — every card the same height so no group is visually ranked above another.
+    // Seventeen sections — every card the same height so no group is visually ranked above another.
     expect(markup.match(/2xl:grid-cols-4/g)).toHaveLength(5);
-    expect(markup.match(/lg:h-28/g)).toHaveLength(18);
+    expect(markup.match(/lg:h-28/g)).toHaveLength(17);
     expect(markup).not.toContain("max-w-5xl");
   });
 
@@ -120,15 +104,8 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    for (const path of [
-      "devices",
-      "libraries",
-      "watch-providers",
-      "profiles",
-    ]) {
-      expect(
-        markup.match(new RegExp(`href="/settings/${path}"`, "g")),
-      ).toHaveLength(1);
+    for (const path of ["devices", "libraries", "watch-providers", "profiles"]) {
+      expect(markup.match(new RegExp(`href="/settings/${path}"`, "g"))).toHaveLength(1);
     }
   });
 
@@ -139,10 +116,7 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "All settings" })).toHaveAttribute(
-      "href",
-      "/settings",
-    );
+    expect(screen.getByRole("link", { name: "All settings" })).toHaveAttribute("href", "/settings");
   });
 
   it("does not include a plugins section in personal settings", () => {
@@ -209,6 +183,7 @@ describe("SettingsLayout", () => {
 
     expect(markup).not.toContain("/settings/profiles");
     expect(markup).not.toContain(">Profiles<");
+    expect(markup).not.toContain("/settings/account");
   });
 
   it("shows the profiles section for non-admin users on their primary profile", () => {
@@ -225,6 +200,7 @@ describe("SettingsLayout", () => {
 
     expect(markup).toContain("/settings/profiles");
     expect(markup).toContain(">Profiles<");
+    expect(markup).toContain("/settings/account");
   });
 
   it("filters personal settings sections from the search box", async () => {
@@ -234,24 +210,15 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    await userEvent.type(
-      screen.getByRole("searchbox", { name: "Search settings" }),
-      "pin",
-    );
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search settings" }), "pin");
 
     // "pin" hits Profiles (where PINs are set), Connect Apps (where the
     // password#PIN format is explained), and Navigation & Cards (where
     // libraries are pinned to the primary menu).
     expect(screen.getAllByRole("link", { name: /Profiles/ })).toHaveLength(1);
-    expect(screen.getAllByRole("link", { name: /Connect Apps/ })).toHaveLength(
-      1,
-    );
-    expect(
-      screen.getAllByRole("link", { name: /Navigation & Cards/ }),
-    ).toHaveLength(1);
-    expect(
-      screen.queryByRole("link", { name: /Playback/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Connect Apps/ })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: /Navigation & Cards/ })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: /Playback/ })).not.toBeInTheDocument();
     expect(screen.getByText("3 matches")).toBeInTheDocument();
   });
 
@@ -262,15 +229,10 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    await userEvent.type(
-      screen.getByRole("searchbox", { name: "Search settings" }),
-      "font family",
-    );
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search settings" }), "font family");
 
     expect(screen.getAllByRole("link", { name: /Subtitles/ })).toHaveLength(1);
-    expect(
-      screen.queryByRole("link", { name: /Playback/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Playback/ })).not.toBeInTheDocument();
   });
 
   it("focuses personal settings search with Cmd+K", () => {
@@ -284,6 +246,19 @@ describe("SettingsLayout", () => {
       name: "Search settings",
     });
     fireEvent.keyDown(document, { key: "k", metaKey: true });
+
+    expect(searchBox).toHaveFocus();
+  });
+
+  it("focuses personal settings search with Ctrl+K", () => {
+    render(
+      <MemoryRouter initialEntries={["/settings"]}>
+        <SettingsLayout />
+      </MemoryRouter>,
+    );
+
+    const searchBox = screen.getByRole("searchbox", { name: "Search settings" });
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
 
     expect(searchBox).toHaveFocus();
   });

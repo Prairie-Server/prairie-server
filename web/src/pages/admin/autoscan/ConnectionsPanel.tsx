@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   Loader2,
@@ -129,16 +129,25 @@ export default function ConnectionsPanel() {
   const testConnection = useTestAutoscanConnection();
 
   const [dialog, setDialog] = useState<DialogState>(BLANK_DIALOG);
-  const [deleteTarget, setDeleteTarget] = useState<AutoscanConnection | null>(
-    null,
-  );
-  const [testResult, setTestResult] =
-    useState<AutoscanConnectionTestResult | null>(null);
+  const activeDialog = useRef<DialogState | null>(dialog);
+  useLayoutEffect(() => {
+    activeDialog.current = dialog;
+    return () => {
+      activeDialog.current = null;
+    };
+  }, [dialog]);
+  const [deleteTarget, setDeleteTarget] = useState<AutoscanConnection | null>(null);
+  const [testOutcome, setTestOutcome] = useState<{
+    scope: DialogState;
+    result: AutoscanConnectionTestResult;
+  } | null>(null);
+  const testResult = testOutcome?.scope === dialog ? testOutcome.result : null;
+  function setTestResult(result: AutoscanConnectionTestResult | null) {
+    setTestOutcome(result ? { scope: dialog, result } : null);
+  }
 
   const arrIntegrations = (requestIntegrations.data ?? []).filter(isArrKind);
-  const enabledArrIntegrations = arrIntegrations.filter(
-    (integration) => integration.enabled,
-  );
+  const enabledArrIntegrations = arrIntegrations.filter((integration) => integration.enabled);
 
   // -------------------------------------------------------------------------
   // Dialog helpers
@@ -245,9 +254,7 @@ export default function ConnectionsPanel() {
       if (!dialog.requestIntegrationId) return;
       // Resolve name + kind from the selected integration for display purposes;
       // the backend can also derive them from the linked integration.
-      const linked = arrIntegrations.find(
-        (i) => i.id === dialog.requestIntegrationId,
-      );
+      const linked = arrIntegrations.find((i) => i.id === dialog.requestIntegrationId);
       body = {
         name: linked?.name ?? dialog.requestIntegrationId,
         kind: (linked && integrationKind(linked)) || "sonarr",
@@ -268,10 +275,18 @@ export default function ConnectionsPanel() {
     if (dialog.editing) {
       updateConnection.mutate(
         { id: dialog.editing.id, body },
-        { onSuccess: closeDialog },
+        {
+          onSuccess: () => {
+            if (activeDialog.current === dialog) closeDialog();
+          },
+        },
       );
     } else {
-      createConnection.mutate(body, { onSuccess: closeDialog });
+      createConnection.mutate(body, {
+        onSuccess: () => {
+          if (activeDialog.current === dialog) closeDialog();
+        },
+      });
     }
   }
 
@@ -307,9 +322,8 @@ export default function ConnectionsPanel() {
             <p className="text-muted-foreground px-6 py-4 text-sm">Loading…</p>
           ) : list.length === 0 ? (
             <p className="text-muted-foreground px-6 py-6 text-sm">
-              No connections yet. A connection holds credentials for a
-              server-based source (e.g. Sonarr/Radarr). Add one if your source
-              needs to reach a server.
+              No connections yet. A connection holds credentials for a server-based source (e.g.
+              Sonarr/Radarr). Add one if your source needs to reach a server.
             </p>
           ) : (
             <Table>
@@ -366,18 +380,13 @@ export default function ConnectionsPanel() {
       </Card>
 
       {/* Add / Edit Dialog */}
-      <Dialog
-        open={dialog.open}
-        onOpenChange={(open) => !open && closeDialog()}
-      >
+      <Dialog open={dialog.open} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {dialog.editing ? "Edit connection" : "Add connection"}
-            </DialogTitle>
+            <DialogTitle>{dialog.editing ? "Edit connection" : "Add connection"}</DialogTitle>
             <DialogDescription>
-              Reuse a server you already configured in Requests (Sonarr/Radarr),
-              or enter your own credentials.
+              Reuse a server you already configured in Requests (Sonarr/Radarr), or enter your own
+              credentials.
             </DialogDescription>
           </DialogHeader>
 
@@ -388,23 +397,16 @@ export default function ConnectionsPanel() {
                 <Label>Connection type</Label>
                 <Select
                   value={dialog.mode}
-                  onValueChange={(v) =>
-                    setDialog((d) => ({ ...d, mode: v as DialogMode }))
-                  }
+                  onValueChange={(v) => setDialog((d) => ({ ...d, mode: v as DialogMode }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem
-                      value="reuse"
-                      disabled={arrIntegrations.length === 0}
-                    >
+                    <SelectItem value="reuse" disabled={arrIntegrations.length === 0}>
                       Reuse a server from Requests
                     </SelectItem>
-                    <SelectItem value="own">
-                      Enter credentials manually
-                    </SelectItem>
+                    <SelectItem value="own">Enter credentials manually</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -415,13 +417,10 @@ export default function ConnectionsPanel() {
               <div className="space-y-1.5">
                 <Label>Requests integration</Label>
                 {requestIntegrations.isLoading ? (
-                  <p className="text-muted-foreground text-sm">
-                    Loading integrations…
-                  </p>
+                  <p className="text-muted-foreground text-sm">Loading integrations…</p>
                 ) : enabledArrIntegrations.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
-                    No enabled Sonarr/Radarr integrations found. Add one in the
-                    Requests page first.
+                    No enabled Sonarr/Radarr integrations found. Add one in the Requests page first.
                   </p>
                 ) : (
                   <Select
@@ -437,8 +436,7 @@ export default function ConnectionsPanel() {
                     <SelectContent>
                       {enabledArrIntegrations.map((integration) => (
                         <SelectItem key={integration.id} value={integration.id}>
-                          {integration.name} (
-                          {connectionKindLabel(integrationKind(integration))})
+                          {integration.name} ({connectionKindLabel(integrationKind(integration))})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -456,9 +454,7 @@ export default function ConnectionsPanel() {
                     id="conn-name"
                     placeholder="My Sonarr"
                     value={dialog.name}
-                    onChange={(e) =>
-                      setDialog((d) => ({ ...d, name: e.target.value }))
-                    }
+                    onChange={(e) => setDialog((d) => ({ ...d, name: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -500,9 +496,7 @@ export default function ConnectionsPanel() {
                   <Input
                     id="conn-key"
                     type="password"
-                    placeholder={
-                      dialog.editing?.has_api_key ? "••••••••" : "Enter API key"
-                    }
+                    placeholder={dialog.editing?.has_api_key ? "••••••••" : "Enter API key"}
                     value={dialog.apiKey}
                     onChange={(e) => {
                       setTestResult(null);
@@ -532,9 +526,7 @@ export default function ConnectionsPanel() {
               )}
               <span
                 className={
-                  testResult.ok
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-destructive"
+                  testResult.ok ? "text-green-600 dark:text-green-400" : "text-destructive"
                 }
               >
                 {testResult.ok
@@ -551,19 +543,11 @@ export default function ConnectionsPanel() {
               onClick={handleTest}
               disabled={!canTest || testConnection.isPending}
             >
-              {testConnection.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <ScanSearch />
-              )}
+              {testConnection.isPending ? <Loader2 className="animate-spin" /> : <ScanSearch />}
               {testConnection.isPending ? "Testing…" : "Test connection"}
             </Button>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={closeDialog}
-                disabled={isSaving}
-              >
+              <Button variant="outline" onClick={closeDialog} disabled={isSaving}>
                 <X />
                 Cancel
               </Button>
@@ -575,11 +559,7 @@ export default function ConnectionsPanel() {
                 ) : (
                   <Plus />
                 )}
-                {isSaving
-                  ? "Saving…"
-                  : dialog.editing
-                    ? "Save changes"
-                    : "Add connection"}
+                {isSaving ? "Saving…" : dialog.editing ? "Save changes" : "Add connection"}
               </Button>
             </div>
           </DialogFooter>
@@ -595,9 +575,8 @@ export default function ConnectionsPanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete connection?</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{deleteTarget?.name}&rdquo; will be removed. Any scan
-              sources bound to it will lose their connection and will need to be
-              reconfigured.
+              &ldquo;{deleteTarget?.name}&rdquo; will be removed. Deletion is blocked while scan
+              sources reference this connection. Reconfigure those sources first.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

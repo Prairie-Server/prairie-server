@@ -14,9 +14,7 @@ export default function DayGroup({ day, isSelected }: DayGroupProps) {
   const today = isToday(day.date);
   const title = formatDayHeading(day.date);
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
 
   return (
     // scroll-mt offsets the sticky header so the title isn't hidden when scrolled into view

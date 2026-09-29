@@ -47,19 +47,13 @@ const AXIS_LABELS: Record<AudiobookBrowseAxis, string> = {
   narrators: "Narrators",
 };
 
-const AXIS_GROUP_BY: Record<
-  Exclude<AudiobookBrowseAxis, "books">,
-  AudiobookGroupBy
-> = {
+const AXIS_GROUP_BY: Record<Exclude<AudiobookBrowseAxis, "books">, AudiobookGroupBy> = {
   series: "series",
   authors: "author",
   narrators: "narrator",
 };
 
-const AXIS_FILTER_FIELD: Record<
-  Exclude<AudiobookBrowseAxis, "books">,
-  string
-> = {
+const AXIS_FILTER_FIELD: Record<Exclude<AudiobookBrowseAxis, "books">, string> = {
   series: "series",
   authors: "author",
   narrators: "narrator",
@@ -193,10 +187,7 @@ export default function LibraryBrowse({
     const groupedAxis = audiobookAxis as Exclude<AudiobookBrowseAxis, "books">;
     return (
       <div className="space-y-5 py-2 sm:space-y-6">
-        <AudiobookAxisTabs
-          value={groupedAxis}
-          onChange={(axis) => onBrowseTypeChange(axis)}
-        />
+        <AudiobookAxisTabs value={groupedAxis} onChange={(axis) => onBrowseTypeChange(axis)} />
         <AudiobookGroupsView
           key={groupedAxis}
           libraryId={libraryId}
@@ -232,14 +223,10 @@ export default function LibraryBrowse({
     <div className="space-y-5 py-2 sm:space-y-6">
       {libraryType === "series" ? (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-muted-foreground text-sm font-medium">
-            Type
-          </span>
+          <span className="text-muted-foreground text-sm font-medium">Type</span>
           <Select
             value={browseType}
-            onValueChange={(value) =>
-              onBrowseTypeChange(value as LibraryBrowseType)
-            }
+            onValueChange={(value) => onBrowseTypeChange(value as LibraryBrowseType)}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
@@ -252,10 +239,7 @@ export default function LibraryBrowse({
         </div>
       ) : null}
       {audiobookAxis != null && (
-        <AudiobookAxisTabs
-          value={audiobookAxis}
-          onChange={(axis) => onBrowseTypeChange(axis)}
-        />
+        <AudiobookAxisTabs value={audiobookAxis} onChange={(axis) => onBrowseTypeChange(axis)} />
       )}
       <CatalogFiltersPanel
         state={state}

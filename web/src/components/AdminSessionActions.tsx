@@ -11,8 +11,16 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/api/client";
+import { StaleApiRequestContextError } from "@/api/client";
 import type { AdminSession } from "@/api/types";
+import {
+  allocateAdminPlaybackCommand,
+  captureAdminPlaybackCommandAuthority,
+  sendAdminPlaybackCommand,
+  terminateAdminPlaybackSession,
+  type AdminPlaybackCommandAction,
+} from "@/api/v2/adminPlaybackCommands";
+import { V2ProblemError } from "@/api/v2/request";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,10 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  getPrimaryPlaybackAction,
-  isSessionPaused,
-} from "./adminSessionActionModel";
+import { getPrimaryPlaybackAction, isSessionPaused } from "./adminSessionActionModel";
 
 type SessionActionKind = "pause" | "resume" | "stop" | "terminate" | "message";
 
@@ -46,11 +51,6 @@ interface AdminSessionActionsProps {
   showInlineTerminate?: boolean;
 }
 
-type SessionCommandResponse = {
-  command_id: string;
-  status: string;
-};
-
 const successMessages: Record<Exclude<SessionActionKind, "message">, string> = {
   pause: "Pause command sent",
   resume: "Resume command sent",
@@ -58,12 +58,8 @@ const successMessages: Record<Exclude<SessionActionKind, "message">, string> = {
   terminate: "Terminate command sent",
 };
 
-const fallbackMessages: Record<
-  Exclude<SessionActionKind, "message">,
-  string
-> = {
-  pause:
-    "Pause could not reach the player directly. Prairie will end the session shortly instead.",
+const fallbackMessages: Record<Exclude<SessionActionKind, "message">, string> = {
+  pause: "Pause could not reach the player directly. Prairie will end the session shortly instead.",
   resume:
     "Resume could not reach the player directly. Prairie will end the session shortly instead.",
   stop: "Stop could not reach the player directly. Prairie will end the session shortly instead.",
@@ -74,6 +70,45 @@ const fallbackMessages: Record<
 const unsupportedPlaybackControlCopy =
   "This session does not support live pause, resume, or messages. Stop and Terminate can still end playback.";
 
+const staleAuthorityCopy = "Your session changed. Reload and try again.";
+
+// Pause, resume, stop and message travel on the sequenced v2 commands: the
+// identity is allocated once per click and the server applies it once, so a
+// stale refusal means a newer command already won and the list should refresh.
+function describeTerminateReceipt(receipt: {
+  authority_revoked: boolean;
+  already_revoked: boolean;
+  client_notified: boolean;
+  durable_state: string;
+}): string {
+  const revoked = receipt.already_revoked
+    ? "Playback authority was already revoked"
+    : receipt.authority_revoked
+      ? "Playback authority revoked"
+      : "Playback authority was not revoked";
+  const notified = receipt.client_notified
+    ? "the player was told to stop"
+    : "the player could not be reached and will stop when it next contacts the server";
+  return `${revoked}; ${notified}.`;
+}
+
+function describeCommandFailure(
+  action: AdminPlaybackCommandAction | "terminate",
+  error: unknown,
+): string {
+  if (error instanceof StaleApiRequestContextError) return staleAuthorityCopy;
+  if (error instanceof V2ProblemError) {
+    if (error.problemType === "conflict" && error.status === 409) {
+      return `The ${action} command was not applied: ${error.problem.detail ?? "the session state changed"}`;
+    }
+    if (error.problemType === "not_found") return "This playback session has already ended.";
+    if (error.problemType === "dependency_unavailable")
+      return "Playback control is unavailable on this server.";
+    return error.problem.detail ?? error.message;
+  }
+  return error instanceof Error ? error.message : "Failed to send session command";
+}
+
 export function AdminSessionActions({
   session,
   compact = false,
@@ -82,14 +117,10 @@ export function AdminSessionActions({
   inlinePrefixActions,
   showInlineTerminate = false,
 }: AdminSessionActionsProps) {
-  const [pendingAction, setPendingAction] = useState<SessionActionKind | null>(
-    null,
-  );
+  const [pendingAction, setPendingAction] = useState<SessionActionKind | null>(null);
   const [messageOpen, setMessageOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [optimisticPaused, setOptimisticPaused] = useState<boolean | null>(
-    null,
-  );
+  const [optimisticPaused, setOptimisticPaused] = useState<boolean | null>(null);
   const supportsPlaybackControl = session.has_playback_control !== false;
 
   useEffect(() => {
@@ -110,28 +141,35 @@ export function AdminSessionActions({
   async function runAction(action: Exclude<SessionActionKind, "message">) {
     setPendingAction(action);
     try {
-      const response = await api<SessionCommandResponse>(
-        `/admin/sessions/${session.session_id}/${action}`,
-        {
-          method: "POST",
-        },
+      const profileContext = captureAdminPlaybackCommandAuthority();
+      if (action === "terminate") {
+        // Terminate revokes authority first and reports client notification
+        // separately; the toast shows both facts.
+        const receipt = await terminateAdminPlaybackSession(
+          session.session_id,
+          undefined,
+          profileContext,
+        );
+        toast.success(describeTerminateReceipt(receipt));
+        return;
+      }
+      const identity = allocateAdminPlaybackCommand(session.session_id);
+      const receipt = await sendAdminPlaybackCommand(
+        { sessionId: session.session_id, action, identity },
+        profileContext,
       );
-      if (response.status === "dispatched" && action === "pause") {
+      if (receipt.delivery === "dispatched" && action === "pause") {
         setOptimisticPaused(true);
-      } else if (response.status === "dispatched" && action === "resume") {
+      } else if (receipt.delivery === "dispatched" && action === "resume") {
         setOptimisticPaused(false);
       }
       toast.success(
-        response.status === "fallback_scheduled"
+        receipt.delivery === "fallback_scheduled"
           ? fallbackMessages[action]
           : successMessages[action],
       );
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to send session command",
-      );
+      toast.error(describeCommandFailure(action, error));
     } finally {
       setPendingAction(null);
     }
@@ -146,20 +184,17 @@ export function AdminSessionActions({
 
     setPendingAction("message");
     try {
-      await api<SessionCommandResponse>(
-        `/admin/sessions/${session.session_id}/message`,
-        {
-          method: "POST",
-          body: JSON.stringify({ message: trimmed }),
-        },
+      const profileContext = captureAdminPlaybackCommandAuthority();
+      const identity = allocateAdminPlaybackCommand(session.session_id);
+      await sendAdminPlaybackCommand(
+        { sessionId: session.session_id, action: "message", identity, message: trimmed },
+        profileContext,
       );
       toast.success("Message sent");
       setMessage("");
       setMessageOpen(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to send message",
-      );
+      toast.error(describeCommandFailure("message", error));
     } finally {
       setPendingAction(null);
     }
@@ -199,14 +234,10 @@ export function AdminSessionActions({
         {layout === "menu" ? (
           <>
             <DropdownMenuLabel>
-              {supportsPlaybackControl
-                ? "Playback Actions"
-                : "Limited Playback Actions"}
+              {supportsPlaybackControl ? "Playback Actions" : "Limited Playback Actions"}
             </DropdownMenuLabel>
             {supportsPlaybackControl ? (
-              <DropdownMenuItem
-                onSelect={() => void runAction(primaryAction.action)}
-              >
+              <DropdownMenuItem onSelect={() => void runAction(primaryAction.action)}>
                 {primaryAction.action === "pause" ? (
                   <Pause className="h-4 w-4" />
                 ) : (
@@ -252,10 +283,7 @@ export function AdminSessionActions({
         {showInlineTerminate ? null : (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => void runAction("terminate")}
-            >
+            <DropdownMenuItem variant="destructive" onSelect={() => void runAction("terminate")}>
               <OctagonAlert className="h-4 w-4" />
               Terminate
             </DropdownMenuItem>
@@ -279,16 +307,14 @@ export function AdminSessionActions({
 
       <Dialog
         open={supportsPlaybackControl && messageOpen}
-        onOpenChange={(nextOpen) =>
-          setMessageOpen(supportsPlaybackControl && nextOpen)
-        }
+        onOpenChange={(nextOpen) => setMessageOpen(supportsPlaybackControl && nextOpen)}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Send Message</DialogTitle>
             <DialogDescription>
-              Send a custom message to{" "}
-              {session.username || `User #${session.user_id}`} during playback.
+              Send a custom message to {session.username || `User #${session.user_id}`} during
+              playback.
             </DialogDescription>
           </DialogHeader>
           <textarea
@@ -307,10 +333,7 @@ export function AdminSessionActions({
               <X />
               Cancel
             </Button>
-            <Button
-              onClick={() => void sendMessage()}
-              disabled={pendingAction === "message"}
-            >
+            <Button onClick={() => void sendMessage()} disabled={pendingAction === "message"}>
               <Send />
               Send Message
             </Button>

@@ -49,8 +49,7 @@ export function buildSubtitleTranslateRequest(
   if (input.mode === "audio") {
     const audio = input.audioTracks?.[input.audioIndex];
     const sourceLanguage = normalizeLanguageCode(audio?.language);
-    const sameLanguage =
-      sourceLanguage !== "" && sourceLanguage === targetLanguage;
+    const sameLanguage = sourceLanguage !== "" && sourceLanguage === targetLanguage;
     return {
       media_file_id: input.mediaFileId,
       kind: sameLanguage ? "transcribe" : "transcribe_translate",
@@ -62,9 +61,7 @@ export function buildSubtitleTranslateRequest(
     };
   }
 
-  const source = input.sourceTracks?.find(
-    (track) => track.index === input.effectiveSourceIndex,
-  );
+  const source = input.sourceTracks?.find((track) => track.index === input.effectiveSourceIndex);
   return {
     media_file_id: input.mediaFileId,
     source_index: input.effectiveSourceIndex ?? -1,

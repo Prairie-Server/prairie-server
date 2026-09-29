@@ -1,21 +1,11 @@
 import type { CSSProperties } from "react";
 
 // Position on the poster card where a badge group is anchored.
-export const OVERLAY_POSITIONS = [
-  "top-left",
-  "top-right",
-  "bottom-left",
-  "bottom-right",
-] as const;
+export const OVERLAY_POSITIONS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
 export type OverlayPosition = (typeof OVERLAY_POSITIONS)[number];
 
 // Logical groupings used by the settings UI to organize controls.
-export const OVERLAY_CATEGORIES = [
-  "tech",
-  "ratings",
-  "metadata",
-  "ribbons",
-] as const;
+export const OVERLAY_CATEGORIES = ["tech", "ratings", "metadata", "ribbons"] as const;
 export type OverlayCategory = (typeof OVERLAY_CATEGORIES)[number];
 
 // Stable identifiers for every overlay the system knows about.
@@ -39,6 +29,7 @@ export type OverlayId =
   | "rating_rt"
   | "rating_rt_audience"
   | "content_rating"
+  | "advisory_age"
   // metadata
   | "year"
   | "runtime"
@@ -71,6 +62,7 @@ export interface OverlayData {
   rating_rt_critic?: number | null;
   rating_rt_audience?: number | null;
   content_rating?: string;
+  advisory_age?: number | null;
   year?: number | null;
   runtime?: number | null;
   original_language?: string;
@@ -147,6 +139,9 @@ export interface OverlayDef {
   defaultAccent?: string; // suggested accent color in palette pickers
   iconCapable: boolean; // whether the icon toggle should appear in settings
   availabilityNote?: string; // shown when data source isn't wired up yet
+  // Settings manifest revision whose card-overlays schema first accepts this
+  // id. Absent means every revision does.
+  introducedInManifest?: number;
   getValue: (data: OverlayData) => string | null;
   getIcon?: (data: OverlayData) => OverlayIconId | null; // dynamic icon by data
 }
@@ -171,6 +166,7 @@ export type OverlayIconId =
   | "volume"
   | "calendar"
   | "globe"
+  | "users"
   // brand marks (inline SVG)
   | "hdr10"
   | "hdr"

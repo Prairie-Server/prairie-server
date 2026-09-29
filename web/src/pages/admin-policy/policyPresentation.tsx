@@ -1,12 +1,6 @@
-import {
-  Eye,
-  KeyRound,
-  MonitorPlay,
-  ScrollText,
-  type LucideIcon,
-} from "lucide-react";
+import { Eye, KeyRound, MonitorPlay, ScrollText, type LucideIcon } from "lucide-react";
 
-import type { PolicyDocument } from "@/api/types";
+import type { PolicyDocument } from "@/api/adminPolicy";
 import { cn } from "@/lib/utils";
 
 import { formatPolicyDomain } from "./policyPageUtils";
@@ -96,18 +90,13 @@ export function policyDomainMeta(domain: string): PolicyDomainMeta {
 
 export type PolicyDocumentStatus = "live" | "draft" | "disabled";
 
-export function policyDocumentStatus(
-  document: PolicyDocument,
-): PolicyDocumentStatus {
+export function policyDocumentStatus(document: PolicyDocument): PolicyDocumentStatus {
   if (!document.enabled) return "disabled";
   return document.active_version_id ? "live" : "draft";
 }
 
-const STATUS_PRESENTATION: Record<
-  PolicyDocumentStatus,
-  { label: string; dot: string }
-> = {
-  live: { label: "Live", dot: "bg-emerald-400" },
+const STATUS_PRESENTATION: Record<PolicyDocumentStatus, { label: string; dot: string }> = {
+  live: { label: "Active", dot: "bg-emerald-400" },
   draft: { label: "Draft", dot: "bg-amber-400" },
   disabled: { label: "Disabled", dot: "bg-muted-foreground/50" },
 };
@@ -119,11 +108,7 @@ interface PolicyStatusPillProps {
   className?: string;
 }
 
-export function PolicyStatusPill({
-  status,
-  versionNumber,
-  className,
-}: PolicyStatusPillProps) {
+export function PolicyStatusPill({ status, versionNumber, className }: PolicyStatusPillProps) {
   const presentation = STATUS_PRESENTATION[status];
   return (
     <span
@@ -132,10 +117,7 @@ export function PolicyStatusPill({
         className,
       )}
     >
-      <span
-        aria-hidden
-        className={cn("size-1.5 rounded-full", presentation.dot)}
-      />
+      <span aria-hidden className={cn("size-1.5 rounded-full", presentation.dot)} />
       {presentation.label}
       {status === "live" && versionNumber !== undefined && (
         <span className="text-muted-foreground">v{versionNumber}</span>

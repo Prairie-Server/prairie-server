@@ -15,10 +15,7 @@
  * the signature).
  */
 
-import {
-  staticRasterCandidates,
-  staticRasterFormats,
-} from "@/lib/staticImageUrl";
+import { staticRasterCandidates, staticRasterFormats } from "@/lib/staticImageUrl";
 import { getImageFormats, orderRasterCandidates } from "@/lib/imageFormats";
 
 /**
@@ -86,9 +83,7 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
 export function isSignedArtworkURL(objectPath: string): boolean {
   if (isPrairieSignedArtworkURL(objectPath)) return false;
   // AWS SigV4, GCS, generic Signature, and Cloudflare WAF token (?verify=).
-  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig|verify)=/i.test(
-    objectPath,
-  );
+  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig|verify)=/i.test(objectPath);
 }
 
 /**
@@ -100,8 +95,7 @@ export function isSignedArtworkURL(objectPath: string): boolean {
  * and rewritten into a 403.
  */
 export function isPrairieSignedArtworkURL(objectPath: string): boolean {
-  if (!/[?&]sig=/.test(objectPath) || !/[?&]expires=/.test(objectPath))
-    return false;
+  if (!/[?&]sig=/.test(objectPath) || !/[?&]expires=/.test(objectPath)) return false;
   return pathnameOf(objectPath).includes("/artwork/");
 }
 
@@ -149,10 +143,7 @@ export function artworkCandidates(
   const avif = formats?.avif?.trim() ?? "";
   const png = formats?.png?.trim() ?? "";
   if (avif || png) {
-    return orderRasterCandidates(
-      { avif, webp: trimmed, png },
-      getImageFormats(),
-    );
+    return orderRasterCandidates({ avif, webp: trimmed, png }, getImageFormats());
   }
   if (!trimmed) return [];
   if (isSignedArtworkURL(trimmed)) return [trimmed];
@@ -180,14 +171,10 @@ function rewritePathWidthVariant(pathname: string, width: number): string {
  * to `w{width}`. Returns "" when the URL cannot safely be rewritten (signed or
  * unrecognized path shape).
  */
-export function artworkWidthVariant(
-  objectPath: string | null | undefined,
-  width: number,
-): string {
+export function artworkWidthVariant(objectPath: string | null | undefined, width: number): string {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed || !Number.isFinite(width) || width <= 0) return "";
-  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed))
-    return "";
+  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed)) return "";
 
   if (trimmed.includes("://")) {
     try {
@@ -224,8 +211,7 @@ export function artworkSrcSet(
 ): string {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed || widths.length === 0) return "";
-  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed))
-    return "";
+  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed)) return "";
 
   // Must look like an artwork variant path for any rewrite to make sense.
   const pathname = pathnameOf(trimmed);

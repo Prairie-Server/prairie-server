@@ -36,6 +36,12 @@ type NodeAwarePreparer struct {
 	capabilityMu     sync.Mutex
 	capabilities     map[string]remoteToneMapCapabilities
 	capabilityFlight singleflight.Group
+	// capabilityInvalidations counts how many times each node's inventory has
+	// been dropped. A fetch snapshots it before asking the node and refuses to
+	// install its answer if it has moved since — otherwise a probe already in
+	// flight when an operator changed the node's policy writes the report it
+	// was sent to collect, restoring the pre-edit inventory for a full TTL.
+	capabilityInvalidations map[string]uint64
 }
 
 // remoteToneMapCapabilities caches one node's validated inventory; an empty
@@ -116,7 +122,7 @@ func (p *NodeAwarePreparer) LocalFallbackAllowed(ctx context.Context) bool {
 		slog.WarnContext(ctx, "load local transcode fallback setting failed", "component", "downloads", "error", err)
 		return false
 	}
-	return !strings.EqualFold(values[config.PlaybackLocalTranscodeFallbackSettingKey], "false")
+	return !strings.EqualFold(values[config.DownloadLocalTranscodeFallbackSettingKey], "false")
 }
 
 // prepareLocally enforces the live local-fallback policy before delegating to
@@ -277,7 +283,7 @@ func (p *NodeAwarePreparer) ToneMapModeAvailable(ctx context.Context, mode tonem
 	capable := make(map[string]struct{})
 	for nodeURL, capabilities := range byNode {
 		if capabilities.Supports(mode, kind) {
-			capable[strings.TrimRight(nodeURL, "/")] = struct{}{}
+			capable[nodepool.NormalizeNodeURL(nodeURL)] = struct{}{}
 		}
 	}
 	available := selector.TranscodeWorkAvailableWith(func(candidate *nodepool.Node) bool {
@@ -335,7 +341,7 @@ func (p *NodeAwarePreparer) audioBoostCapableNodeURLs(ctx context.Context) map[s
 }
 
 func (p *NodeAwarePreparer) audioBoostCapabilityForNode(ctx context.Context, nodeURL string) (bool, error) {
-	nodeURL = strings.TrimRight(nodeURL, "/")
+	nodeURL = nodepool.NormalizeNodeURL(nodeURL)
 	if entry, ok := p.cachedRemoteCapabilitiesForNode(nodeURL, time.Now()); ok {
 		return supportsAudioBoostTransformation(entry.transformations), entry.err
 	}
@@ -398,7 +404,7 @@ func (p *NodeAwarePreparer) toneMapCapabilitiesByNode(ctx context.Context) (map[
 // toneMapCapabilitiesForNode returns a defensive copy of a fresh cached
 // inventory or retrieves the node's authenticated hardware capabilities.
 func (p *NodeAwarePreparer) toneMapCapabilitiesForNode(ctx context.Context, nodeURL string) (tonemap.Capabilities, error) {
-	nodeURL = strings.TrimRight(nodeURL, "/")
+	nodeURL = nodepool.NormalizeNodeURL(nodeURL)
 	if capabilities, err, ok := p.cachedToneMapCapabilitiesForNode(nodeURL, time.Now()); ok {
 		return capabilities, err
 	}
@@ -447,22 +453,25 @@ func (p *NodeAwarePreparer) cachedRemoteCapabilitiesForNode(nodeURL string, now 
 }
 
 func (p *NodeAwarePreparer) fetchToneMapCapabilitiesForNode(ctx context.Context, nodeURL string) (tonemap.Capabilities, error) {
+	// Snapshotted before the node is asked anything, so an invalidation landing
+	// during the request is visible at install time.
+	generation := p.capabilityInvalidationsFor(nodeURL)
 	cfg := p.config()
 	if cfg == nil || strings.TrimSpace(cfg.Auth.JWTSecret) == "" {
 		err := errors.New("transcode node credentials unavailable")
-		p.cacheToneMapCapabilityFailure(nodeURL, err)
+		p.cacheToneMapCapabilityFailure(nodeURL, generation, err)
 		return nil, err
 	}
 	requestCtx, cancel := context.WithTimeout(ctx, p.remoteToneMapProbeTimeout(nodeURL))
 	defer cancel()
 	info, status, err := transcodenode.FetchHWCapabilities(requestCtx, p.probeClient, nodeURL, cfg.Auth.JWTSecret)
 	if err != nil {
-		p.cacheToneMapCapabilityFailure(nodeURL, err)
+		p.cacheToneMapCapabilityFailure(nodeURL, generation, err)
 		return nil, err
 	}
 	if status != http.StatusOK {
 		err := fmt.Errorf("transcode node returned %d", status)
-		p.cacheToneMapCapabilityFailure(nodeURL, err)
+		p.cacheToneMapCapabilityFailure(nodeURL, generation, err)
 		return nil, err
 	}
 	entry := remoteToneMapCapabilities{
@@ -472,12 +481,28 @@ func (p *NodeAwarePreparer) fetchToneMapCapabilitiesForNode(ctx context.Context,
 		probeRequestTimeout: normalizeRemoteToneMapProbeTimeout(info.ProbeRequestTimeoutMillis),
 	}
 	p.capabilityMu.Lock()
-	if p.capabilities == nil {
-		p.capabilities = make(map[string]remoteToneMapCapabilities)
+	if p.capabilityInvalidations[nodeURL] == generation {
+		if p.capabilities == nil {
+			p.capabilities = make(map[string]remoteToneMapCapabilities)
+		}
+		p.capabilities[nodeURL] = entry
 	}
-	p.capabilities[nodeURL] = entry
 	p.capabilityMu.Unlock()
+	// The answer still goes back to the caller that is waiting on it, overtaken
+	// or not. Its request is already in flight, most policy edits do not remove
+	// the executor it is about to pick, and refusing would fail a download over
+	// a change that probably does not affect it. What must not happen is the
+	// durable part: nothing is written, so the next caller asks the node again
+	// rather than reading this answer for a minute.
 	return append(tonemap.Capabilities(nil), entry.capabilities...), nil
+}
+
+// capabilityInvalidationsFor reports how many times a node's inventory has been
+// dropped.
+func (p *NodeAwarePreparer) capabilityInvalidationsFor(nodeURL string) uint64 {
+	p.capabilityMu.Lock()
+	defer p.capabilityMu.Unlock()
+	return p.capabilityInvalidations[nodeURL]
 }
 
 // ToneMapCapabilityTimeout returns the complete cold-node capability budget
@@ -487,25 +512,110 @@ func (p *NodeAwarePreparer) ToneMapCapabilityTimeout() time.Duration {
 }
 
 func (p *NodeAwarePreparer) remoteToneMapProbeTimeout(nodeURL string) time.Duration {
-	nodeURL = strings.TrimRight(nodeURL, "/")
+	nodeURL = nodepool.NormalizeNodeURL(nodeURL)
 	p.capabilityMu.Lock()
 	timeout := p.capabilities[nodeURL].probeRequestTimeout
 	p.capabilityMu.Unlock()
-	if timeout > 0 {
-		return timeout
+	// The larger of what was learned from this node and what it currently
+	// describes; neither dominates.
+	//
+	// A learned budget is preserved across failures on purpose, so a cold retry
+	// is not cut short by a fallback — but it describes the node as it was, and
+	// an operator who widens hw_device_override leaves one behind that prices a
+	// smaller device set than the node now walks. Every retry would be canceled
+	// at that deadline, and since a budget is only ever learned from a read that
+	// completes, nothing would replace it.
+	//
+	// What the node currently describes is its own stored report and its own
+	// override — not the cluster setting, which says nothing about a node
+	// overridden onto four devices. Pricing four at the cluster's one cancels the
+	// matrix mid-walk, which drops the node from the capability map and sends the
+	// download local, or fails it outright where local fallback is off.
+	var node *nodepool.Node
+	if lookup, ok := p.planner.(transcodeNodeLookup); ok {
+		if found, ok := lookup.TranscodeNodeByURL(nodeURL); ok {
+			node = found
+		}
 	}
-	cfg := p.config()
-	if cfg == nil {
-		return tonemap.ProbeRequestTimeout("", "")
+	hwAccel, hwDevice := "", ""
+	if cfg := p.config(); cfg != nil {
+		hwAccel, hwDevice = cfg.Playback.HWAccel, cfg.Playback.HWDevice
 	}
-	return tonemap.ProbeRequestTimeout(cfg.Playback.HWAccel, cfg.Playback.HWDevice)
+	// The whole capability read, not just its tone-map half: the node runs a
+	// hardware walk first, and that walk scales with the device set it walks.
+	cold := playback.ColdCapabilityRequestTimeout(
+		node.StoredCapabilities(),
+		node.EffectiveHWAccel(hwAccel),
+		node.EffectiveHWDevice(hwDevice),
+		playback.CapabilityRequestTimeout(hwAccel, hwDevice),
+	)
+	if cold > timeout {
+		return cold
+	}
+	return timeout
+}
+
+// transcodeNodeLookup resolves the pooled record behind a transcode node URL,
+// which carries that node's stored capability report and its acceleration
+// override. Optional, like the planner's other capabilities: without it this
+// path falls back to the cluster-wide setting. *nodepool.Planner implements it.
+type transcodeNodeLookup interface {
+	TranscodeNodeByURL(nodeURL string) (*nodepool.Node, bool)
+}
+
+// InvalidateNodeCapabilities drops one node's cached inventory so the next
+// prepared download reads it again.
+//
+// It exists for the same reason the playback-v3 cache has one: an operator
+// changing a node's acceleration policy, or the health sweep noticing the node's
+// capability hash move, makes this cache wrong the moment it lands — and a
+// download planned from it selects the node for a tone-map executor it no longer
+// has, so the reconfigured worker rejects the recipe or the download falls back
+// locally for no reason. A minute of TTL is a minute of that.
+//
+// The learned probe budget survives, exactly as it does across a failure: how
+// long this node takes to answer has not changed, and the read the invalidation
+// triggers is the cold one that most needs the real number.
+func (p *NodeAwarePreparer) InvalidateNodeCapabilities(nodeURL string) {
+	if p == nil || nodeURL == "" {
+		return
+	}
+	nodeURL = nodepool.NormalizeNodeURL(nodeURL)
+	p.capabilityMu.Lock()
+	defer p.capabilityMu.Unlock()
+	// Counted whether or not anything is cached. A cold cache is the case where
+	// dropping an entry does nothing and a fetch is most likely to be in flight:
+	// the invalidation that follows a policy edit arrives while planning is
+	// already asking the node, and without a mark that fetch's answer would be
+	// installed after the edit as though it described the node afterwards.
+	if p.capabilityInvalidations == nil {
+		p.capabilityInvalidations = make(map[string]uint64)
+	}
+	p.capabilityInvalidations[nodeURL]++
+	entry, ok := p.capabilities[nodeURL]
+	if !ok {
+		return
+	}
+	p.capabilities[nodeURL] = remoteToneMapCapabilities{probeRequestTimeout: entry.probeRequestTimeout}
 }
 
 // cacheToneMapCapabilityFailure negatively caches an unreachable or invalid
 // node briefly so repeated artifact planning does not amplify the failure.
-func (p *NodeAwarePreparer) cacheToneMapCapabilityFailure(nodeURL string, err error) {
-	nodeURL = strings.TrimRight(nodeURL, "/")
+//
+// Fenced on the same invalidation count a successful result is, and for a
+// sharper reason: a negative entry does not merely go stale, it takes the node
+// out of planning entirely for its TTL. A fetch that failed because the node
+// was mid-reload — which is exactly what a policy edit causes — would otherwise
+// keep downloads off the node it was just reconfigured for, falling back
+// locally or failing outright where local fallback is off, after the change
+// that would have fixed it had already landed.
+func (p *NodeAwarePreparer) cacheToneMapCapabilityFailure(nodeURL string, generation uint64, err error) {
+	nodeURL = nodepool.NormalizeNodeURL(nodeURL)
 	p.capabilityMu.Lock()
+	defer p.capabilityMu.Unlock()
+	if p.capabilityInvalidations[nodeURL] != generation {
+		return
+	}
 	if p.capabilities == nil {
 		p.capabilities = make(map[string]remoteToneMapCapabilities)
 	}
@@ -516,7 +626,6 @@ func (p *NodeAwarePreparer) cacheToneMapCapabilityFailure(nodeURL string, err er
 		expiresAt:           time.Now().Add(remoteToneMapCapabilityErrorTTL),
 		probeRequestTimeout: probeRequestTimeout,
 	}
-	p.capabilityMu.Unlock()
 }
 
 func remotePreparedArtifact(node *nodepool.Node, result downloadprepare.Result) PreparedArtifact {

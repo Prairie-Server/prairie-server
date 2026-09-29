@@ -48,8 +48,7 @@ export default function LiveWatchRoute() {
   );
   const nowProgram = useMemo(() => {
     if (!channelId) return null;
-    return pickNowNext(guide.data?.programs ?? [], channelId, new Date(nowMs))
-      .now;
+    return pickNowNext(guide.data?.programs ?? [], channelId, new Date(nowMs)).now;
   }, [channelId, guide.data?.programs, nowMs]);
 
   const title = channel
@@ -120,30 +119,20 @@ export default function LiveWatchRoute() {
           }),
         });
         if (cancelled) {
-          await releaseSession
-            .mutateAsync(session.session_id)
-            .catch(() => undefined);
+          await releaseSession.mutateAsync(session.session_id).catch(() => undefined);
           return;
         }
         sessionIdRef.current = session.session_id;
         setActiveSessionId(session.session_id);
         const nextUrl = session.hls_url || session.stream_url || null;
-        setTransport(
-          session.transport === "hls" || Boolean(session.hls_url)
-            ? "hls"
-            : "mpegts",
-        );
+        setTransport(session.transport === "hls" || Boolean(session.hls_url) ? "hls" : "mpegts");
         setStreamURL(nextUrl);
         if (!nextUrl) {
-          setTuneError(
-            "Live TV session started but no stream URL was returned",
-          );
+          setTuneError("Live TV session started but no stream URL was returned");
         }
       } catch (err) {
         if (!cancelled) {
-          setTuneError(
-            err instanceof Error ? err.message : "Could not start Live TV",
-          );
+          setTuneError(err instanceof Error ? err.message : "Could not start Live TV");
         }
       } finally {
         if (!cancelled) setTuning(false);
@@ -163,10 +152,7 @@ export default function LiveWatchRoute() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
 
-  useLiveTVSessionHeartbeat(
-    activeSessionId,
-    Boolean(activeSessionId) && !tuneError,
-  );
+  useLiveTVSessionHeartbeat(activeSessionId, Boolean(activeSessionId) && !tuneError);
 
   // Closing the tab never runs React cleanup, so free the tuner with a beacon.
   useEffect(() => {
@@ -195,10 +181,7 @@ export default function LiveWatchRoute() {
   const bumpControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = window.setTimeout(
-      () => setControlsVisible(false),
-      3500,
-    );
+    hideTimerRef.current = window.setTimeout(() => setControlsVisible(false), 3500);
   }, []);
 
   useEffect(() => {
@@ -223,8 +206,7 @@ export default function LiveWatchRoute() {
     bumpControls();
   }, [bumpControls]);
 
-  const showSpinner =
-    tuning || (Boolean(streamURL) && playerStarting && !playerError);
+  const showSpinner = tuning || (Boolean(streamURL) && playerStarting && !playerError);
   const fatalError = tuneError || playerError;
 
   return (
@@ -266,16 +248,10 @@ export default function LiveWatchRoute() {
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 px-6">
             <div className="surface-panel-subtle flex max-w-md flex-col items-center gap-4 rounded-[1.8rem] px-8 py-8 text-center">
               <div className="space-y-2">
-                <p className="text-base font-semibold text-white">
-                  Playback unavailable
-                </p>
+                <p className="text-base font-semibold text-white">Playback unavailable</p>
                 <p className="text-sm text-white/60">{fatalError}</p>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => void exit()}
-              >
+              <Button type="button" variant="secondary" onClick={() => void exit()}>
                 Go Back
               </Button>
             </div>
@@ -284,9 +260,7 @@ export default function LiveWatchRoute() {
 
         <div
           className={`pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-black/50 transition-opacity duration-300 ${
-            controlsVisible || fatalError || showSpinner
-              ? "opacity-100"
-              : "opacity-0"
+            controlsVisible || fatalError || showSpinner ? "opacity-100" : "opacity-0"
           }`}
         />
 
@@ -352,12 +326,7 @@ export default function LiveWatchRoute() {
               <Play className="h-5 w-5" fill="currentColor" />
             )}
           </CircleButton>
-          <CircleButton
-            size="sm"
-            variant="secondary"
-            ariaLabel="Stop"
-            onClick={() => void exit()}
-          >
+          <CircleButton size="sm" variant="secondary" ariaLabel="Stop" onClick={() => void exit()}>
             <Square className="h-4 w-4" fill="currentColor" />
           </CircleButton>
         </div>

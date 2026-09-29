@@ -28,22 +28,16 @@ describe("createRestartKeyMatcher", () => {
   });
 
   it("treats a missing or malformed payload as 'nothing needs a restart'", () => {
+    expect(createRestartKeyMatcher(undefined).has("database.max_connections")).toBe(false);
     expect(
-      createRestartKeyMatcher(undefined).has("database.max_connections"),
-    ).toBe(false);
-    expect(
-      createRestartKeyMatcher({ keys: [], prefixes: [] }).has(
-        "database.max_connections",
-      ),
+      createRestartKeyMatcher({ keys: [], prefixes: [] }).has("database.max_connections"),
     ).toBe(false);
     // An older server can answer with nulls where the arrays should be.
     const malformed = { keys: null, prefixes: null } as unknown as {
       keys: string[];
       prefixes: string[];
     };
-    expect(createRestartKeyMatcher(malformed).has("auth.jwt_secret")).toBe(
-      false,
-    );
+    expect(createRestartKeyMatcher(malformed).has("auth.jwt_secret")).toBe(false);
   });
 
   it("ignores empty strings so a blank prefix cannot match everything", () => {

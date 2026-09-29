@@ -4,10 +4,7 @@ import { useAudiobookKeyboardShortcuts } from "./useAudiobookKeyboardShortcuts";
 import { makePlayback, makePrefs } from "./playerTestUtils";
 import type { AudiobookPlayback } from "./useAudiobookPlayback";
 
-function setup(
-  playbackOver: Partial<AudiobookPlayback> = {},
-  expanded = false,
-) {
+function setup(playbackOver: Partial<AudiobookPlayback> = {}, expanded = false) {
   const playback = makePlayback(playbackOver);
   const onToggleExpanded = vi.fn();
   const onCollapse = vi.fn();

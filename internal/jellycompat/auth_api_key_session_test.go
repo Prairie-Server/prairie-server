@@ -258,7 +258,7 @@ func TestPlaybackSessionAuth_APIKeyViaPlaySessionId(t *testing.T) {
 	keyAuth, _, _ := adminKeyAuthWithPrimary(t, clock)
 	sessions := NewSessionStore(time.Hour, clock)
 	playback := NewPlaybackSessionStore(time.Hour, clock)
-	playback.Put(PlaybackSession{ID: "ps1", CompatToken: "sa_test"})
+	playback.Put(PlaybackSession{ID: "ps1", CompatToken: "sa_test", RouteItemID: "x"})
 
 	var got *Session
 	h := PlaybackSessionAuth(sessions, playback, keyAuth)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -267,7 +267,7 @@ func TestPlaybackSessionAuth_APIKeyViaPlaySessionId(t *testing.T) {
 	}))
 
 	// No token header / no api_key — only PlaySessionId, like an HLS segment URL.
-	req := httptest.NewRequest(http.MethodGet, "/Videos/x/hls/p/seg0.ts?PlaySessionId=ps1", nil)
+	req := requestWithCompatRouteItem(httptest.NewRequest(http.MethodGet, "/Videos/x/hls/p/seg0.ts?PlaySessionId=ps1", nil), "x")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 
@@ -289,12 +289,12 @@ func TestPlaybackSessionAuth_RevokedAPIKeyViaPlaySessionId(t *testing.T) {
 	validator.key = nil // revoked
 	sessions := NewSessionStore(time.Hour, clock)
 	playback := NewPlaybackSessionStore(time.Hour, clock)
-	playback.Put(PlaybackSession{ID: "ps1", CompatToken: "sa_test"})
+	playback.Put(PlaybackSession{ID: "ps1", CompatToken: "sa_test", RouteItemID: "x"})
 
 	h := PlaybackSessionAuth(sessions, playback, keyAuth)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("handler should not run for a revoked key")
 	}))
-	req := httptest.NewRequest(http.MethodGet, "/Videos/x/hls/p/seg0.ts?PlaySessionId=ps1", nil)
+	req := requestWithCompatRouteItem(httptest.NewRequest(http.MethodGet, "/Videos/x/hls/p/seg0.ts?PlaySessionId=ps1", nil), "x")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {

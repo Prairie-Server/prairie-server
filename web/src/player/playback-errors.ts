@@ -15,15 +15,12 @@ export interface PlaybackPolicyErrorDescription {
  * "playback was refused" surface is reason-keyed, and the server's own
  * `terminal.message` is the fallback for reasons this table does not name.
  */
-export function describePlanTerminal(
-  terminal: TerminalV3,
-): PlaybackPolicyErrorDescription {
+export function describePlanTerminal(terminal: TerminalV3): PlaybackPolicyErrorDescription {
   switch (terminal.reason) {
     case "transcoding_disabled":
       return {
         title: "Transcoding is disabled",
-        message:
-          "Transcoding is disabled for your user. Ask your server administrator for access.",
+        message: "Transcoding is disabled for your user. Ask your server administrator for access.",
       };
     case "audio_transcoding_disabled":
       return {
@@ -41,7 +38,7 @@ export function describePlanTerminal(
       return {
         title: "This file hasn't finished scanning",
         message:
-          "Silo doesn't know enough about this file yet to plan playback. Try again once the scan finishes.",
+          "Prairie doesn't know enough about this file yet to plan playback. Try again once the scan finishes.",
       };
     case "client_hls_unsupported":
       return {
@@ -54,7 +51,7 @@ export function describePlanTerminal(
       return {
         title: "No playable version found",
         message:
-          "Silo couldn't find a way to play this file on this device. Try another version if one is available.",
+          "Prairie couldn't find a way to play this file on this device. Try another version if one is available.",
       };
     case "no_alternate_version":
       return {
@@ -64,7 +61,7 @@ export function describePlanTerminal(
         // missing message.
         message:
           terminal.message?.trim() ||
-          "Silo couldn't find a way to play this file on this device. Try another version if one is available.",
+          "Prairie couldn't find a way to play this file on this device. Try another version if one is available.",
       };
     case "hdr_transcode_unsupported":
     case "dv_conversion_unsupported":
@@ -77,8 +74,7 @@ export function describePlanTerminal(
     case "audio_conversion_unsupported":
       return {
         title: "This file can't be converted",
-        message:
-          "Silo can't convert this file into something this device can play.",
+        message: "Prairie can't convert this file into something this device can play.",
       };
     case "conversion_tool_unavailable":
     case "transcode_node_unavailable":
@@ -102,8 +98,7 @@ export function describePlanTerminal(
     case "session_expired":
       return {
         title: "Playback session expired",
-        message:
-          "This playback session is no longer active. Start it again to keep watching.",
+        message: "This playback session is no longer active. Start it again to keep watching.",
       };
     case "policy_denied":
       return {
@@ -123,12 +118,12 @@ export function describePlanTerminal(
         // unsupported); the generic sentence only covers a missing message.
         message:
           terminal.message?.trim() ||
-          "Silo couldn't prepare the selected subtitles for this device. Try a different track.",
+          "Prairie couldn't prepare the selected subtitles for this device. Try a different track.",
       };
     default:
       return {
         title: "Playback unavailable",
-        message: terminal.message?.trim() || "Silo could not start playback.",
+        message: terminal.message?.trim() || "Prairie could not start playback.",
       };
   }
 }
@@ -157,8 +152,7 @@ export function describePlaybackTransportError(
   if (error.code === "playback_session_not_found") {
     return {
       title: "Playback session expired",
-      message:
-        "This playback session is no longer active. Start it again to keep watching.",
+      message: "This playback session is no longer active. Start it again to keep watching.",
     };
   }
 
@@ -170,7 +164,14 @@ export function describePlaybackTransportError(
     };
   }
 
-  if (error.status === 401 || error.status === 403) {
+  if (error.status === 401) {
+    return {
+      title: "Authentication required",
+      message: "Your sign-in session has expired. Sign in again to continue playback.",
+    };
+  }
+
+  if (error.status === 403) {
     return {
       title: "Playback unavailable",
       message: "You do not have permission to play this item.",
@@ -180,7 +181,7 @@ export function describePlaybackTransportError(
   if (error.status >= 500) {
     return {
       title: "Playback unavailable",
-      message: "Silo could not start playback right now. Please try again.",
+      message: "Prairie could not start playback right now. Please try again.",
     };
   }
 

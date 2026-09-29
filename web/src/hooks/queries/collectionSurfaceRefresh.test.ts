@@ -24,13 +24,10 @@ describe("invalidateUserCollectionQueries", () => {
 
     await invalidateUserCollectionQueries(queryClient, "collection-1");
 
-    expect(
-      queryClient.getQueryState(collectionKeys.list())?.isInvalidated,
-    ).toBe(true);
-    expect(
-      queryClient.getQueryState(collectionKeys.items("collection-1"))
-        ?.isInvalidated,
-    ).toBe(true);
+    expect(queryClient.getQueryState(collectionKeys.list())?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(collectionKeys.items("collection-1"))?.isInvalidated).toBe(
+      true,
+    );
     expect(
       queryClient.getQueryState(
         catalogKeys.list({
@@ -61,9 +58,7 @@ describe("invalidateLibraryCollectionQueries", () => {
 
     await invalidateLibraryCollectionQueries(queryClient);
 
-    expect(
-      queryClient.getQueryState(libraryCollectionKeys.list(7))?.isInvalidated,
-    ).toBe(true);
+    expect(queryClient.getQueryState(libraryCollectionKeys.list(7))?.isInvalidated).toBe(true);
     expect(
       queryClient.getQueryState(
         catalogKeys.list({

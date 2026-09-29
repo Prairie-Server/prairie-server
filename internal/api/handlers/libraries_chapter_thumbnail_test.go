@@ -9,7 +9,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
-func TestHandleCreateLibrary_RejectsChapterThumbnailsWithoutArtworkStore(t *testing.T) {
+func TestHandleCreateLibrary_RejectsChapterThumbnailsWithoutArtworkStorage(t *testing.T) {
 	handler := &LibraryHandler{}
 	req := httptest.NewRequest(
 		http.MethodPost,
@@ -33,7 +33,7 @@ func TestHandleCreateLibrary_RejectsChapterThumbnailsWithoutArtworkStore(t *test
 	}
 }
 
-func TestHandleUpdateLibrary_RejectsChapterThumbnailsWithoutArtworkStore(t *testing.T) {
+func TestHandleUpdateLibrary_RejectsChapterThumbnailsWithoutArtworkStorage(t *testing.T) {
 	handler := &LibraryHandler{}
 	req := httptest.NewRequest(
 		http.MethodPut,

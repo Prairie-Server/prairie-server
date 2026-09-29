@@ -2,9 +2,11 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // present marks every display-ladder AVIF key for path as absent, which is what
@@ -120,4 +122,20 @@ func TestDisplayAVIFKeysExcludeTheOriginalKey(t *testing.T) {
 	if artworkkey.WebPAVIFSibling(path) == "" {
 		t.Fatalf("%q is not recognized as a WebP original", path)
 	}
+}
+
+// Bucket and ObjectExists let the shared blobstore fake stand in for the
+// AVIFSiblingReconciler's bucket-addressed checker.
+func (f *fakeObjectChecker) Bucket() string { return "test-bucket" }
+
+func (f *fakeObjectChecker) ObjectExists(ctx context.Context, _ string, key string) (bool, error) {
+	info, err := f.Stat(ctx, key)
+	if err != nil {
+		if errors.Is(err, blobstore.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	_ = info
+	return true, nil
 }

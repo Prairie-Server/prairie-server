@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { RotateCcw } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -7,10 +7,7 @@ import {
   AVAILABLE_FONTS,
   getComputedToken,
 } from "@/lib/themeTokens";
-import type { ThemeToken, TokenMeta } from "@/lib/themeTokens";
-import { useTheme } from "@/hooks/useTheme";
-import type { ThemeVarOverrides } from "@/hooks/useCustomTheme";
-import { ensureThemeFontsLoaded } from "@/lib/themeFonts";
+import type { ThemeToken, ThemeVarOverrides, TokenMeta } from "@/lib/themeTokens";
 import { cn } from "@/lib/utils";
 
 interface TokenEditorProps {
@@ -82,9 +79,7 @@ function ColorTokenInput({
             </button>
           )}
         </div>
-        <span className="text-muted-foreground font-mono text-[11px]">
-          {displayValue}
-        </span>
+        <span className="text-muted-foreground font-mono text-[11px]">{displayValue}</span>
       </div>
     </div>
   );
@@ -120,9 +115,7 @@ function RadiusInput({
             </button>
           )}
         </div>
-        <span className="text-muted-foreground font-mono text-[11px]">
-          {currentRem}rem
-        </span>
+        <span className="text-muted-foreground font-mono text-[11px]">{currentRem}rem</span>
       </div>
       <Slider
         value={[currentRem]}
@@ -135,23 +128,11 @@ function RadiusInput({
         <div className="rounded-sm border p-2" style={{ borderRadius: "0rem" }}>
           <div className="bg-muted h-3 w-6" />
         </div>
-        <div
-          className="rounded-sm border p-2"
-          style={{ borderRadius: `${currentRem}rem` }}
-        >
-          <div
-            className="bg-primary h-3 w-6"
-            style={{ borderRadius: `${currentRem}rem` }}
-          />
+        <div className="rounded-sm border p-2" style={{ borderRadius: `${currentRem}rem` }}>
+          <div className="bg-primary h-3 w-6" style={{ borderRadius: `${currentRem}rem` }} />
         </div>
-        <div
-          className="rounded-sm border p-2"
-          style={{ borderRadius: "1.5rem" }}
-        >
-          <div
-            className="bg-muted h-3 w-6"
-            style={{ borderRadius: "1.5rem" }}
-          />
+        <div className="rounded-sm border p-2" style={{ borderRadius: "1.5rem" }}>
+          <div className="bg-muted h-3 w-6" style={{ borderRadius: "1.5rem" }} />
         </div>
       </div>
     </div>
@@ -169,10 +150,7 @@ function FontInput({
   onSet: (value: string) => void;
   onReset: () => void;
 }) {
-  const currentFont =
-    value ??
-    computedValue.split(",")[0]?.replace(/["']/g, "").trim() ??
-    "Outfit";
+  const currentFont = value ?? computedValue.split(",")[0]?.replace(/["']/g, "").trim() ?? "Outfit";
   const isOverridden = value !== undefined;
 
   return (
@@ -213,14 +191,7 @@ function FontInput({
 }
 
 export function TokenEditor({ vars, onSetVar, onResetVar }: TokenEditorProps) {
-  const { theme } = useTheme();
-
-  // Theme editor exposes Outfit/Manrope/Urbanist even on prairie-dusk.
-  useEffect(() => {
-    ensureThemeFontsLoaded();
-  }, []);
-
-  // Recompute when the base theme changes so fallback values stay current
+  // The base theme is fixed, so the painted values only need reading once.
   const computedValues = useMemo(() => {
     const map: Partial<Record<ThemeToken, string>> = {};
     for (const group of Object.values(TOKEN_GROUPS)) {
@@ -229,17 +200,13 @@ export function TokenEditor({ vars, onSetVar, onResetVar }: TokenEditorProps) {
       }
     }
     return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme]);
+  }, []);
 
   const handleSet = useCallback(
     (token: ThemeToken) => (value: string) => onSetVar(token, value),
     [onSetVar],
   );
-  const handleReset = useCallback(
-    (token: ThemeToken) => () => onResetVar(token),
-    [onResetVar],
-  );
+  const handleReset = useCallback((token: ThemeToken) => () => onResetVar(token), [onResetVar]);
 
   return (
     <div className="space-y-6">
@@ -282,9 +249,7 @@ export function TokenEditor({ vars, onSetVar, onResetVar }: TokenEditorProps) {
                     <FontInput
                       key={meta.token}
                       value={vars[meta.token]}
-                      computedValue={
-                        computedValues[meta.token] ?? '"Outfit", sans-serif'
-                      }
+                      computedValue={computedValues[meta.token] ?? '"Outfit", sans-serif'}
                       onSet={handleSet(meta.token)}
                       onReset={handleReset(meta.token)}
                     />

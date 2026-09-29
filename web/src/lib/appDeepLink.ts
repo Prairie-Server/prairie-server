@@ -4,7 +4,8 @@
  * Prairie is self-hosted, so the store apps cannot pre-verify every server's
  * domain for App Links / Universal Links; a custom scheme is the only
  * universal way in. `server` carries the full origin so non-443 ports and
- * plain-http LAN servers need no extra convention.
+ * plain-http LAN servers need no extra convention. Watch Party joins use
+ * the same shape under the `watch-party` host.
  *
  * Custom-scheme URLs don't linkify in email or SMS and error when the app is
  * missing, so they are never sent anywhere: they only back an explicit
@@ -32,10 +33,20 @@ export function detectMobilePlatform(ua: string): MobilePlatform | null {
  * Builds the prairie:// deep link that opens the native invite claim flow.
  * Returns null for origins the apps can't talk to (non-http(s), userinfo).
  */
-export function buildInviteDeepLink(
-  pageOrigin: string,
-  token: string,
-): string | null {
+export function buildInviteDeepLink(pageOrigin: string, token: string): string | null {
+  return buildServerDeepLink("invite", pageOrigin, token);
+}
+
+/**
+ * Builds the prairie:// deep link that joins a Watch Party by its invite token:
+ * `prairie://watch-party?server=<url>&token=<token>`. The Apple app registers it
+ * (prairie-apple); Android does not yet. Same origin rules as invites.
+ */
+export function buildWatchPartyDeepLink(pageOrigin: string, token: string): string | null {
+  return buildServerDeepLink("watch-party", pageOrigin, token);
+}
+
+function buildServerDeepLink(host: string, pageOrigin: string, token: string): string | null {
   let origin: URL;
   try {
     origin = new URL(pageOrigin);
@@ -44,6 +55,7 @@ export function buildInviteDeepLink(
   }
   if (origin.username || origin.password) return null;
   if (origin.protocol !== "https:" && origin.protocol !== "http:") return null;
+  if (!token) return null;
   const server = encodeURIComponent(origin.origin);
-  return `prairie://invite?server=${server}&token=${encodeURIComponent(token)}`;
+  return `prairie://${host}?server=${server}&token=${encodeURIComponent(token)}`;
 }

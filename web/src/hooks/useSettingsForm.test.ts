@@ -6,7 +6,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useHasUnsavedChanges } from "./useUnsavedChanges";
 import { useSettingsForm } from "./useSettingsForm";
 
-const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+const { mutateAsync, authority } = vi.hoisted(() => ({
+  mutateAsync: vi.fn(),
+  authority: { profileId: "profile-a" },
+}));
+vi.mock("@/api/client", () => ({
+  captureProfileRequestContext: () => ({
+    serverOrigin: "https://example.invalid",
+    authContextVersion: 1,
+    profileId: authority.profileId,
+  }),
+}));
 
 // Stable identities: useSettingsForm's sync effect depends on the settings
 // object and keys array (pages memoize keys), so fresh objects per render
@@ -27,9 +37,23 @@ vi.mock("@/hooks/queries/admin/settings", () => ({
 afterEach(() => {
   cleanup();
   mutateAsync.mockReset();
+  authority.profileId = "profile-a";
 });
 
 describe("useSettingsForm save()", () => {
+  it("clears staged secrets when the acting profile changes", () => {
+    const { result, rerender } = renderHook(() =>
+      useSettingsForm({ keys: ["email.smtp_password"] }),
+    );
+    act(() => result.current.setValue("email.smtp_password", "draft-secret"));
+    expect(result.current.dirtyCount).toBe(1);
+    authority.profileId = "profile-b";
+    rerender();
+    expect(result.current.getValue("email.smtp_password")).toBe("");
+    expect(result.current.dirtyCount).toBe(0);
+    expect(result.current.restartRequired).toBe(false);
+  });
+
   it("does not flag a restart when no saved key requires one", async () => {
     mutateAsync.mockResolvedValue({
       values: { "branding.server_name": "Casa" },
@@ -49,6 +73,26 @@ describe("useSettingsForm save()", () => {
       "branding.server_name": "Casa",
     });
     expect(result.current.restartRequired).toBe(false);
+  });
+
+  it("can save selected dirty keys without clearing the remaining draft", async () => {
+    mutateAsync.mockResolvedValue({
+      values: { "branding.server_name": "Casa" },
+      restart_required: false,
+    });
+    const { result } = renderHook(() => useSettingsForm({ keys: KEYS }));
+
+    act(() => {
+      result.current.setValue("branding.server_name", "Casa");
+      result.current.setValue("database.max_connections", "40");
+    });
+    await act(async () => {
+      await result.current.save(["branding.server_name"]);
+    });
+
+    expect(mutateAsync).toHaveBeenCalledWith({ "branding.server_name": "Casa" });
+    expect(result.current.getValue("database.max_connections")).toBe("40");
+    expect(result.current.dirtyKeys).toEqual(["database.max_connections"]);
   });
 
   it("adopts canonical server values after save", async () => {
@@ -71,9 +115,7 @@ describe("useSettingsForm save()", () => {
 
   it("erases a sensitive draft after the server omits it from the response", async () => {
     mutateAsync.mockResolvedValue({ values: {}, restart_required: false });
-    const { result } = renderHook(() =>
-      useSettingsForm({ keys: ["email.smtp_password"] }),
-    );
+    const { result } = renderHook(() => useSettingsForm({ keys: ["email.smtp_password"] }));
 
     act(() => {
       result.current.setValue("email.smtp_password", "temporary-secret");
@@ -88,10 +130,7 @@ describe("useSettingsForm save()", () => {
 
   it("preserves edits made while a save is in flight", async () => {
     let resolveMutation:
-      | ((value: {
-          values: Record<string, string>;
-          restart_required: boolean;
-        }) => void)
+      | ((value: { values: Record<string, string>; restart_required: boolean }) => void)
       | undefined;
     mutateAsync.mockReturnValue(
       new Promise((resolve) => {
@@ -216,9 +255,7 @@ describe("useSettingsForm unsaved-changes guard", () => {
   });
 
   it("stops warning after the hook unmounts", () => {
-    const { result, unmount } = renderHook(() =>
-      useSettingsForm({ keys: KEYS }),
-    );
+    const { result, unmount } = renderHook(() => useSettingsForm({ keys: KEYS }));
 
     act(() => {
       result.current.setValue("branding.server_name", "Casa");

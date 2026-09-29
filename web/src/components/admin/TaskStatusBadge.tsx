@@ -1,28 +1,30 @@
 import type { ExecutionResult } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface TaskStatusBadgeProps {
-  result: Pick<ExecutionResult, "status" | "error_message">;
+  result: Pick<ExecutionResult, "status" | "error_message" | "task_key" | "result_data">;
   className?: string;
 }
 
 export function TaskStatusBadge({ result, className }: TaskStatusBadgeProps) {
+  const failed = result.result_data?.failed;
+  const completedWithErrors =
+    result.status === "completed" &&
+    result.task_key === "contribute_markers" &&
+    typeof failed === "number" &&
+    Number.isFinite(failed) &&
+    failed > 0;
   const variant =
-    result.status === "failed"
+    result.status === "failed" || completedWithErrors
       ? "destructive"
       : result.status === "cancelled"
         ? "outline"
         : "secondary";
   const badge = (
     <Badge variant={variant} className={cn("shrink-0", className)}>
-      {result.status}
+      {completedWithErrors ? "Completed with errors" : result.status}
     </Badge>
   );
   const errorMessage = result.error_message?.trim();
@@ -39,10 +41,7 @@ export function TaskStatusBadge({ result, className }: TaskStatusBadgeProps) {
             {badge}
           </span>
         </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          className="max-w-[min(28rem,80vw)] whitespace-pre-wrap"
-        >
+        <TooltipContent side="top" className="max-w-[min(28rem,80vw)] whitespace-pre-wrap">
           {errorMessage}
         </TooltipContent>
       </Tooltip>

@@ -9,17 +9,13 @@ import {
 } from "./useSettingsOverview";
 
 function tile(input: SettingsOverviewInput, id: string): OverviewTile {
-  const found = buildSettingsOverview(input).tiles.find(
-    (entry) => entry.id === id,
-  );
+  const found = buildSettingsOverview(input).tiles.find((entry) => entry.id === id);
   if (!found) throw new Error(`no tile ${id}`);
   return found;
 }
 
 function card(input: SettingsOverviewInput, id: string): OverviewCard {
-  const found = buildSettingsOverview(input).cards.find(
-    (entry) => entry.id === id,
-  );
+  const found = buildSettingsOverview(input).cards.find((entry) => entry.id === id);
   if (!found) throw new Error(`no card ${id}`);
   return found;
 }
@@ -29,7 +25,7 @@ describe("buildSettingsOverview health tiles", () => {
     const model = buildSettingsOverview({});
 
     expect(model.tiles).toHaveLength(5);
-    expect(model.cards).toHaveLength(12);
+    expect(model.cards).toHaveLength(13);
     expect(tile({}, "storage").stateText).toBe("Not set up");
     expect(card({}, "general")).toEqual({ id: "general" });
   });
@@ -171,15 +167,10 @@ describe("buildSettingsOverview health tiles", () => {
       serverStatus: {
         ...base.serverStatus,
         restart_required_reason: "jellyfin_compat",
-        restart_required_reasons: [
-          "setting:playback.hw_accel",
-          "jellyfin_compat",
-        ],
+        restart_required_reasons: ["setting:playback.hw_accel", "jellyfin_compat"],
       },
     };
-    expect(tile(playbackPending, "transcoding").stateText).toBe(
-      "Restart pending",
-    );
+    expect(tile(playbackPending, "transcoding").stateText).toBe("Restart pending");
     expect(tile(playbackPending, "storage").stateText).toBe("Not set up");
 
     const storagePending = {
@@ -230,10 +221,7 @@ describe("buildSettingsOverview health tiles", () => {
   });
 
   it("marks search as informational on Postgres and healthy on Meilisearch", () => {
-    const postgres = tile(
-      { settings: { "catalog.search.provider": "postgres" } },
-      "search",
-    );
+    const postgres = tile({ settings: { "catalog.search.provider": "postgres" } }, "search");
     expect(postgres.state).toBe("info");
     expect(postgres.stateText).toBe("Postgres");
     expect(postgres.detail).toBe("Meilisearch not connected");
@@ -252,20 +240,33 @@ describe("buildSettingsOverview health tiles", () => {
   });
 
   it("does not report Meilisearch as broken before its status resolves", () => {
-    const pending = tile(
-      { settings: { "catalog.search.provider": "meilisearch" } },
-      "search",
-    );
+    const pending = tile({ settings: { "catalog.search.provider": "meilisearch" } }, "search");
 
     expect(pending.state).toBe("info");
     expect(pending.detail).toBe("Checking connection");
     expect(pending.action).toBeUndefined();
   });
 
+  it("warns while Meilisearch serves a compatible stale index", () => {
+    const search = tile(
+      {
+        search: {
+          active_provider: "meilisearch",
+          degraded: true,
+          degraded_reason: "Search index rebuild required; using Meilisearch keyword search",
+          meilisearch: { configured: true, healthy: true },
+        } as SettingsOverviewInput["search"],
+      },
+      "search",
+    );
+
+    expect(search.state).toBe("warn");
+    expect(search.detail).toBe("Search index rebuild required; using Meilisearch keyword search");
+    expect(search.action).toEqual({ label: "Fix", page: "library" });
+  });
+
   it("only calls email ready when it is on with a host and a sender address", () => {
-    expect(
-      tile({ settings: { "email.enabled": "true" } }, "email").stateText,
-    ).toBe("Not set up");
+    expect(tile({ settings: { "email.enabled": "true" } }, "email").stateText).toBe("Not set up");
     // The server refuses to enable email without a from-address, but legacy
     // rows and single-key writes can still store this state — it cannot send.
     expect(
@@ -309,6 +310,7 @@ describe("buildSettingsOverview groups", () => {
       "ai",
       "notifications",
       "compatibility",
+      "network-access",
     ]);
   });
 

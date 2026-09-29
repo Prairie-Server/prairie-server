@@ -52,7 +52,7 @@ func TestPersonCreditPhotoHonorsImageSize(t *testing.T) {
 		wantPath    string
 		wantVariant string
 	}{
-		{imagesize.Small, "tmdb/people/287/profile/w300.abc123.webp", "card"},
+		{imagesize.Small, "tmdb/people/287/profile/w200.abc123.webp", "card"},
 		{imagesize.Medium, "tmdb/people/287/profile/w500.abc123.webp", "featured"},
 		{imagesize.Large, "tmdb/people/287/profile/w500.abc123.webp", "large"},
 		{imagesize.Original, testPhotoPath, "original"},

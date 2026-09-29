@@ -176,11 +176,7 @@ export function diceBearPresetId(styleId: string, seed: string) {
   return `dicebear:${styleId}:${seed}`;
 }
 
-export function buildDiceBearAvatarUrl(
-  styleId: string,
-  seed: string,
-  size = 128,
-) {
+export function buildDiceBearAvatarUrl(styleId: string, seed: string, size = 128) {
   const query = new URLSearchParams({
     seed,
     size: String(size),
@@ -203,19 +199,13 @@ export function parseDiceBearPresetId(presetId: string | null | undefined) {
   if (!styleId || !seed) {
     return null;
   }
-  if (
-    !PROFILE_AVATAR_STYLES.some((style) => style.id === styleId) ||
-    seed.trim() === ""
-  ) {
+  if (!PROFILE_AVATAR_STYLES.some((style) => style.id === styleId) || seed.trim() === "") {
     return null;
   }
   return { styleId, seed };
 }
 
-function createDiceBearPreset(
-  styleId: string,
-  seed: string,
-): ProfileAvatarPreset {
+function createDiceBearPreset(styleId: string, seed: string): ProfileAvatarPreset {
   return {
     id: diceBearPresetId(styleId, seed),
     label: titleCase(seed.replace(/-/g, " ")),
@@ -224,26 +214,19 @@ function createDiceBearPreset(
   };
 }
 
-export function buildProfileAvatarPresetBatch(
-  styleId: string,
-  batch = 0,
-): ProfileAvatarPreset[] {
-  const normalizedStyle = PROFILE_AVATAR_STYLES.some(
-    (style) => style.id === styleId,
-  )
+export function buildProfileAvatarPresetBatch(styleId: string, batch = 0): ProfileAvatarPreset[] {
+  const normalizedStyle = PROFILE_AVATAR_STYLES.some((style) => style.id === styleId)
     ? styleId
     : (PROFILE_AVATAR_STYLES[0]?.id ?? "identicon");
 
   return Array.from({ length: PROFILE_AVATAR_OPTION_COUNT }, (_, index) => {
     const adjective =
       PROFILE_AVATAR_SEED_ADJECTIVES[
-        (batch * 7 + index * 3 + normalizedStyle.length) %
-          PROFILE_AVATAR_SEED_ADJECTIVES.length
+        (batch * 7 + index * 3 + normalizedStyle.length) % PROFILE_AVATAR_SEED_ADJECTIVES.length
       ];
     const noun =
       PROFILE_AVATAR_SEED_NOUNS[
-        (batch * 11 + index * 5 + normalizedStyle.length * 2) %
-          PROFILE_AVATAR_SEED_NOUNS.length
+        (batch * 11 + index * 5 + normalizedStyle.length * 2) % PROFILE_AVATAR_SEED_NOUNS.length
       ];
     return createDiceBearPreset(normalizedStyle, `${adjective}-${noun}`);
   });
@@ -259,15 +242,10 @@ export function resolveProfileAvatarPreset(
   if (diceBear) {
     return createDiceBearPreset(diceBear.styleId, diceBear.seed);
   }
-  return (
-    LEGACY_PROFILE_AVATAR_PRESETS.find((preset) => preset.id === avatarRef) ??
-    null
-  );
+  return LEGACY_PROFILE_AVATAR_PRESETS.find((preset) => preset.id === avatarRef) ?? null;
 }
 
-export function parseProfileAvatarPresetRef(
-  avatarRef: string | null | undefined,
-) {
+export function parseProfileAvatarPresetRef(avatarRef: string | null | undefined) {
   if (!avatarRef) {
     return "";
   }
@@ -277,8 +255,6 @@ export function parseProfileAvatarPresetRef(
   return resolveProfileAvatarPreset(normalized)?.id ?? "";
 }
 
-export function resolveProfileAvatarImage(
-  profile: Pick<Profile, "avatar_url"> | null | undefined,
-) {
+export function resolveProfileAvatarImage(profile: Pick<Profile, "avatar_url"> | null | undefined) {
   return profile?.avatar_url ?? "";
 }

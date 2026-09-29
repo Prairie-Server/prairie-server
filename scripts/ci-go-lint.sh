@@ -26,7 +26,8 @@ if [[ ${#packages[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-args=(--timeout=5m)
+# A sync that touches every package needs more than the old 5m budget.
+args=(--timeout=20m)
 if [[ -n "${CI_GO_LINT_NEW_FROM_MERGE_BASE:-}" ]]; then
 	args+=(--new-from-merge-base="${CI_GO_LINT_NEW_FROM_MERGE_BASE}")
 elif [[ -n "${CI_GO_LINT_NEW_FROM_REV:-}" ]]; then

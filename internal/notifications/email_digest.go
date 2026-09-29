@@ -8,6 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
@@ -76,7 +78,9 @@ func (c *emailChannel) markFailure(ctx context.Context, tx pgx.Tx, profileID str
 // send composes and sends one profile's pending notifications. The
 // destination is re-read under the claim so a mid-pass address removal fails
 // cleanly instead of sending to a stale recipient.
-func (c *emailChannel) send(ctx context.Context, tx pgx.Tx, profileID string, mode string, rows []DeliveryRow) error {
+func (c *emailChannel) send(ctx context.Context, tx pgx.Tx, profileID string, mode string, rows []DeliveryRow) (sendErr error) {
+	ctx, finishObservation := telemetry.StartDependency(ctx, "notifications", "worker", "email")
+	defer func() { finishObservation(deliveryObservationError(ctx, sendErr == nil)) }()
 	email, userID, unsubscribeToken, err := c.prefs.destinationForSend(ctx, tx, profileID)
 	if err != nil {
 		return err
@@ -132,7 +136,7 @@ func emailUnsubscribeURL(baseURL, token string) string {
 	if baseURL == "" || token == "" {
 		return ""
 	}
-	return baseURL + "/api/v1/notifications/email/unsubscribe?token=" + token
+	return baseURL + "/api/v2/notifications/email/unsubscribe?token=" + token
 }
 
 // Errors surfaced by the email preference API layer to map to 4xx responses.

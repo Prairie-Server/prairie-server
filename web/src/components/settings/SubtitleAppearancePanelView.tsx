@@ -82,10 +82,7 @@ export function SubtitleAppearancePanelView({
       onClick={onClose}
     >
       {/* Backdrop — dims whatever's behind the panel. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-      />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
         role="document"
@@ -118,8 +115,7 @@ export function SubtitleAppearancePanelView({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-overlay"
             style={{
-              backgroundImage:
-                "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(rgba(255,255,255,0.7) 1px, transparent 1px)",
               backgroundSize: "3px 3px",
             }}
           />
@@ -234,9 +230,7 @@ export function SubtitleAppearancePanelView({
           ) : (
             <span aria-hidden="true" />
           )}
-          <div className="text-[11px] tracking-wide text-white/40 uppercase">
-            {status}
-          </div>
+          <div className="text-[11px] tracking-wide text-white/40 uppercase">{status}</div>
         </div>
       </div>
     </div>,
@@ -264,9 +258,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-      <div className="text-[13px] text-white/80 sm:w-24 sm:shrink-0">
-        {label}
-      </div>
+      <div className="text-[13px] text-white/80 sm:w-24 sm:shrink-0">{label}</div>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
@@ -353,13 +345,7 @@ function ColorSwatchRow({
   );
 }
 
-function OpacitySlider({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function OpacitySlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const pct = Math.max(0, Math.min(100, value));
   return (
     <div className="flex items-center gap-3">
@@ -376,9 +362,7 @@ function OpacitySlider({
         }}
         aria-label="Background opacity"
       />
-      <div className="w-10 text-right font-mono text-[11px] text-white/60 tabular-nums">
-        {pct}%
-      </div>
+      <div className="w-10 text-right font-mono text-[11px] text-white/60 tabular-nums">{pct}%</div>
     </div>
   );
 }

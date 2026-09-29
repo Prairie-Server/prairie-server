@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
+
 	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 const (
 	ebookMetadataExecutionBudget = 4 * time.Minute
-	ebookBackfillMaxClaimsEnv    = "SILO_EBOOK_BACKFILL_MAX_CLAIMS"
-	ebookBackfillBatchDelayEnv   = "SILO_EBOOK_BACKFILL_BATCH_DELAY"
+	ebookBackfillMaxClaimsEnv    = "PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS"
+	ebookBackfillBatchDelayEnv   = "PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY"
 )
 
 type ebookMetadataEnricher interface {
@@ -68,8 +70,8 @@ func NewSyncEbookMetadataTask(enricher ebookMetadataEnricher) *SyncEbookMetadata
 }
 
 func NewBackfillEbookMetadataTask(enricher ebookMetadataEnricher) *BackfillEbookMetadataTask {
-	maxClaims, maxClaimsErr := parseEbookBackfillMaxClaims(os.Getenv(ebookBackfillMaxClaimsEnv))
-	batchDelay, batchDelayErr := parseEbookBackfillBatchDelay(os.Getenv(ebookBackfillBatchDelayEnv))
+	maxClaims, maxClaimsErr := parseEbookBackfillMaxClaims(envutil.FirstNonEmpty(ebookBackfillMaxClaimsEnv, "SILO_EBOOK_BACKFILL_MAX_CLAIMS"))
+	batchDelay, batchDelayErr := parseEbookBackfillBatchDelay(envutil.FirstNonEmpty(ebookBackfillBatchDelayEnv, "SILO_EBOOK_BACKFILL_BATCH_DELAY"))
 	return &BackfillEbookMetadataTask{ebookMetadataTask: &ebookMetadataTask{
 		enricher:    enricher,
 		scope:       ebooks.EnrichmentScopeLegacy,
@@ -94,6 +96,15 @@ func (t *ebookMetadataTask) Category() taskmanager.TaskCategory {
 	return taskmanager.TaskCategoryMetadata
 }
 func (t *ebookMetadataTask) IsHidden() bool { return false }
+
+// IsHidden keeps the legacy backlog drain off the task list. Only the
+// ebook_enrichment_jobs migration fills its queue, so it drains on schedule
+// without an administrator and has no work at all on a new install.
+func (t *BackfillEbookMetadataTask) IsHidden() bool { return true }
+
+func (t *ebookMetadataTask) ServesLibrary(libraryType string) bool {
+	return librarykind.IsEbook(libraryType)
+}
 
 func (t *ebookMetadataTask) DefaultTriggers() []taskmanager.TriggerConfig {
 	return append([]taskmanager.TriggerConfig(nil), t.triggers...)

@@ -13,7 +13,7 @@ func TestTranscodeDirDefaultsToSiloPath(t *testing.T) {
 	}
 	schema := string(initialSchema)
 	if !strings.Contains(schema, "('playback.transcode_dir', '/tmp/silo-transcode')") {
-		t.Fatal("initial schema does not seed the Silo transcode directory")
+		t.Fatal("initial schema does not seed the Prairie transcode directory")
 	}
 	if strings.Contains(schema, "('playback.transcode_dir', '/tmp/streamapp-transcode')") {
 		t.Fatal("initial schema still seeds the legacy StreamApp transcode directory")

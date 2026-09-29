@@ -1,8 +1,5 @@
 import { useState } from "react";
-import {
-  parseSubtitleAppearance,
-  type SubtitleAppearance,
-} from "@/lib/subtitleAppearance";
+import { parseSubtitleAppearance, type SubtitleAppearance } from "@/lib/subtitleAppearance";
 import { SubtitleAppearancePanelView } from "@/components/settings/SubtitleAppearancePanelView";
 import type { AdminDeviceSetting } from "@/hooks/queries/admin/users";
 
@@ -90,8 +87,7 @@ export function AdminSubtitleAppearanceDialog({
 
   // Eyebrow gives admin context that the player panel lacks: which user +
   // device + profile the override is being scoped to.
-  const profileLabel =
-    setting.profile_name?.trim() || setting.profile_id || "default";
+  const profileLabel = setting.profile_name?.trim() || setting.profile_id || "default";
   const deviceLabel = setting.device_name?.trim() || "device";
   const eyebrow = `${profileLabel} · ${deviceLabel}`;
 

@@ -1,3 +1,4 @@
+import { usePlaybackBarHeight } from "@/hooks/usePlaybackBarHeight";
 import { X, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { SeekBar, formatTime } from "@/player/components/SeekBar";
 import { ChaptersMenu } from "@/player/components/ChaptersMenu";
@@ -31,19 +32,19 @@ export function MiniBar({
   onClose,
   onExpand,
 }: MiniBarProps) {
+  const barRef = usePlaybackBarHeight("audiobook");
   const hasChapters = playback.chapters.length > 0;
   const hasNextChapter =
-    playback.currentChapter != null &&
-    playback.currentChapter.index + 1 < playback.chapters.length;
+    playback.currentChapter != null && playback.currentChapter.index + 1 < playback.chapters.length;
   const { bottomOffset } = useVisualViewportOffset();
 
   return (
     <div
+      ref={barRef}
       className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-lg sm:px-6"
       style={{
         left: "var(--app-sidebar-offset, 0px)",
-        transform:
-          bottomOffset > 0 ? `translateY(-${bottomOffset}px)` : undefined,
+        transform: bottomOffset > 0 ? `translateY(-${bottomOffset}px)` : undefined,
       }}
     >
       <SeekBar
@@ -52,6 +53,10 @@ export function MiniBar({
         buffered={playback.buffered}
         chapters={playback.chapters}
         onSeek={playback.seekTo}
+        onSkip={{
+          back: () => playback.skip(-prefs.skipBack),
+          forward: () => playback.skip(prefs.skipForward),
+        }}
       />
 
       <div className="mt-1 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
@@ -101,11 +106,7 @@ export function MiniBar({
                 onClick={playback.prevChapter}
                 disabled={!playback.hasFile}
               >
-                <SkipBack
-                  className="h-4 w-4"
-                  strokeWidth={0}
-                  fill="currentColor"
-                />
+                <SkipBack className="h-4 w-4" strokeWidth={0} fill="currentColor" />
               </CircleButton>
             </span>
           )}
@@ -134,11 +135,7 @@ export function MiniBar({
             {playback.playing ? (
               <Pause className="h-5 w-5" strokeWidth={0} fill="currentColor" />
             ) : (
-              <Play
-                className="ml-[2px] h-5 w-5"
-                strokeWidth={0}
-                fill="currentColor"
-              />
+              <Play className="ml-[2px] h-5 w-5" strokeWidth={0} fill="currentColor" />
             )}
           </CircleButton>
 
@@ -164,11 +161,7 @@ export function MiniBar({
                 onClick={playback.nextChapter}
                 disabled={!playback.hasFile || !hasNextChapter}
               >
-                <SkipForward
-                  className="h-4 w-4"
-                  strokeWidth={0}
-                  fill="currentColor"
-                />
+                <SkipForward className="h-4 w-4" strokeWidth={0} fill="currentColor" />
               </CircleButton>
             </span>
           )}

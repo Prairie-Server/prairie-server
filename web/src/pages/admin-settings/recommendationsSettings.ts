@@ -146,13 +146,9 @@ export function parseRecommendationEmbeddingLock(
   const record = parsed as Record<string, unknown>;
   const model = typeof record.model === "string" ? record.model.trim() : "";
   const sourceDimensions =
-    typeof record.source_dimensions === "number"
-      ? record.source_dimensions
-      : null;
+    typeof record.source_dimensions === "number" ? record.source_dimensions : null;
   const storageDimensions =
-    typeof record.storage_dimensions === "number"
-      ? record.storage_dimensions
-      : null;
+    typeof record.storage_dimensions === "number" ? record.storage_dimensions : null;
 
   if (!model || sourceDimensions === null) {
     return null;

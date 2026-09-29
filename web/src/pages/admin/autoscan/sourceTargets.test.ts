@@ -1,17 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  AutoscanScanSourceDescriptor,
-  AutoscanSource,
-  Library,
-} from "@/api/types";
+import type { AutoscanScanSourceDescriptor, AutoscanSource, Library } from "@/api/types";
 
 import { DEFAULT_DESCRIPTOR } from "./sourceDescriptor";
-import {
-  describeTargets,
-  resolvedPathsFor,
-  sourceTargets,
-} from "./sourceTargets";
+import { describeTargets, resolvedPathsFor, sourceTargets } from "./sourceTargets";
 
 const libraries = [
   {
@@ -141,7 +133,7 @@ describe("sourceTargets", () => {
 
   it("treats a connection-backed poll source with no rewrites as unknown", () => {
     // Empty rewrites are a valid passthrough: the provider already reports
-    // paths that are valid Silo library paths, so nothing needs mapping.
+    // paths that are valid Prairie library paths, so nothing needs mapping.
     const got = sourceTargets(
       source({ connection_id: "c1" }),
       { delivery_modes: ["poll"], connection: "optional" },
@@ -250,18 +242,18 @@ describe("sourceTargets", () => {
 
 describe("describeTargets", () => {
   it("names the libraries a source feeds", () => {
-    expect(
-      describeTargets({ libraries, unresolvable: false, unknown: false }),
-    ).toBe("Movies, TV Shows");
+    expect(describeTargets({ libraries, unresolvable: false, unknown: false })).toBe(
+      "Movies, TV Shows",
+    );
   });
 
   it("reports the two failure states distinctly", () => {
-    expect(
-      describeTargets({ libraries: [], unresolvable: true, unknown: false }),
-    ).toBe("No paths configured");
-    expect(
-      describeTargets({ libraries: [], unresolvable: false, unknown: false }),
-    ).toBe("No matching library");
+    expect(describeTargets({ libraries: [], unresolvable: true, unknown: false })).toBe(
+      "No paths configured",
+    );
+    expect(describeTargets({ libraries: [], unresolvable: false, unknown: false })).toBe(
+      "No matching library",
+    );
   });
 });
 

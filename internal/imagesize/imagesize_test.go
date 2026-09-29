@@ -63,17 +63,21 @@ func TestFromRequest(t *testing.T) {
 }
 
 func TestVariantMatrix(t *testing.T) {
+	// Prairie's ladder (artworkkey.VariantWidths): posters and profiles carry
+	// a w200 TV rung and top out at w500; stills stop at w300; logos have a
+	// single w500 rung. There is no w780/w1280 rung, so Large resolves to the
+	// widest rung that exists.
 	want := map[string]map[Size]string{
 		"poster": {
-			Small:    "w300",
+			Small:    "w200",
 			Medium:   "w500",
-			Large:    "w780",
+			Large:    "w500",
 			Original: "original",
 		},
 		"still": {
 			Small:    "w300",
 			Medium:   "w500",
-			Large:    "w780",
+			Large:    "w500",
 			Original: "original",
 		},
 		"backdrop": {
@@ -85,11 +89,11 @@ func TestVariantMatrix(t *testing.T) {
 		"logo": {
 			Small:    "w500",
 			Medium:   "w500",
-			Large:    "w1280",
+			Large:    "w500",
 			Original: "original",
 		},
 		"profile": {
-			Small:    "w300",
+			Small:    "w200",
 			Medium:   "w500",
 			Large:    "w500",
 			Original: "original",
@@ -137,16 +141,17 @@ func TestNextLower(t *testing.T) {
 		want      string
 		wantOK    bool
 	}{
-		{"poster", "w780", "w500", true},
 		{"poster", "w500", "w300", true},
-		{"poster", "w300", "", false},
-		{"still", "w780", "w500", true},
-		{"logo", "w1280", "w500", true},
+		{"poster", "w300", "w200", true},
+		{"poster", "w200", "", false},
+		{"still", "w500", "w300", true},
+		{"still", "w300", "", false},
 		{"logo", "w500", "", false},
 		{"backdrop", "w1920", "w1280", true},
 		{"backdrop", "w1280", "w300", true},
 		{"backdrop", "w300", "", false},
 		{"profile", "w500", "w300", true},
+		{"profile", "w300", "w200", true},
 		{"poster", "original", "", false},
 		{"poster", "", "", false},
 		{"poster", "wide", "", false},

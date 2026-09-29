@@ -1,9 +1,4 @@
-import type {
-  BrowseItem,
-  EpisodeListItem,
-  OverlaySummary,
-  SectionItem,
-} from "@/api/types";
+import type { BrowseItem, EpisodeListItem, OverlaySummary, SectionItem } from "@/api/types";
 import type { OverlayData } from "./types";
 
 // BrowseItem and SectionItem share the fields the overlay system consumes;
@@ -17,6 +12,7 @@ interface OverlaySourceItem {
   rating_rt_critic?: number | null;
   rating_rt_audience?: number | null;
   content_rating?: string;
+  advisory_age?: number | null;
   year?: number | null;
   runtime?: number;
   original_language?: string;
@@ -53,6 +49,7 @@ function extract(item: OverlaySourceItem): OverlayData {
     rating_rt_critic: item.rating_rt_critic,
     rating_rt_audience: item.rating_rt_audience,
     content_rating: item.content_rating || undefined,
+    advisory_age: item.advisory_age ?? null,
     year: item.year || null,
     runtime: item.runtime ?? null,
     original_language: item.original_language,
@@ -74,8 +71,6 @@ export function overlayDataFromSectionItem(item: SectionItem): OverlayData {
   return extract(item);
 }
 
-export function overlayDataFromEpisodeListItem(
-  item: EpisodeListItem,
-): OverlayData {
+export function overlayDataFromEpisodeListItem(item: EpisodeListItem): OverlayData {
   return extract(item);
 }

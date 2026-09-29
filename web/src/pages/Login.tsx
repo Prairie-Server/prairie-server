@@ -1,25 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import QRCode from "react-qr-code";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
-import { api } from "@/api/client";
-import type {
-  DeviceLoginPollResponse,
-  DeviceLoginStartResponse,
-  Profile,
-} from "@/api/types";
-import { getBootstrapProfile, useAuth } from "@/hooks/useAuth";
+import { Link, Navigate, useSearchParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { sessionFromTokenPair } from "@/api/v2/account";
+import { v2, type V2Result } from "@/api/v2/request";
+import { useAuth } from "@/hooks/useAuth";
+import { usePasswordResetAvailable } from "@/hooks/queries/passwordReset";
+import { CHANGE_PASSWORD_PATH, usePostSignInNavigation } from "@/hooks/usePostSignInNavigation";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -36,6 +29,8 @@ import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 import { toast } from "sonner";
 
 import { Loader2, LogIn, QrCode, RotateCcw } from "lucide-react";
+type DeviceLoginSession = V2Result<"POST /api/v2/auth/device/start">;
+
 function detectPlatform() {
   const ua = navigator.userAgent;
   if (/AppleTV|tvOS/i.test(ua)) return "tvOS";
@@ -82,8 +77,7 @@ export default function Login() {
   const [provider, setProvider] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [startingDeviceLogin, setStartingDeviceLogin] = useState(false);
-  const [deviceSession, setDeviceSession] =
-    useState<DeviceLoginStartResponse | null>(null);
+  const [deviceSession, setDeviceSession] = useState<DeviceLoginSession | null>(null);
   const [deviceStatusMessage, setDeviceStatusMessage] = useState("");
   const [devicePolling, setDevicePolling] = useState(false);
   const [showDeviceFallback, setShowDeviceFallback] = useState(false);
@@ -91,16 +85,27 @@ export default function Login() {
     login,
     completeLogin,
     profile,
-    selectProfile,
     user,
+    pendingPasswordChange,
     loading,
     setupLoading,
     setupRequired,
     providers,
   } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { serverName, loginSubtitle } = useServerBranding();
+  // Always refetch on mount so a cached answer from before an admin closed
+  // signups can't show the link, and show it only from that fresh result.
+  const signupStatusQuery = useQuery({
+    queryKey: ["auth", "signup-status"],
+    queryFn: () => v2("GET /api/v2/auth/signup"),
+    refetchOnMount: "always",
+  });
+  const signupOpen =
+    signupStatusQuery.isSuccess &&
+    signupStatusQuery.isFetchedAfterMount &&
+    signupStatusQuery.data.enabled;
+  const { available: passwordResetAvailable } = usePasswordResetAvailable();
 
   useDocumentTitle("Sign In");
 
@@ -111,46 +116,20 @@ export default function Login() {
     [providers],
   );
   const oauthProviders = useMemo(
-    () =>
-      providers.filter(
-        (entry) => entry.mode === "oauth" && entry.installation_id,
-      ),
+    () => providers.filter((entry) => entry.mode === "oauth" && entry.installation_id),
     [providers],
   );
 
   const oauthError =
-    searchParams.get("error") === "oauth_failed"
-      ? searchParams.get("reason")
-      : null;
-  const nextParam = redirectTarget
-    ? `?next=${encodeURIComponent(redirectTarget)}`
-    : "";
+    searchParams.get("error") === "oauth_failed" ? searchParams.get("reason") : null;
+  const nextParam = redirectTarget ? `?next=${encodeURIComponent(redirectTarget)}` : "";
   const selectedProvider =
     provider ||
     credentialProviders.find((entry) => entry.default)?.id ||
     credentialProviders[0]?.id ||
     "";
 
-  const navigateAfterLogin = useCallback(async () => {
-    if (redirectTarget) {
-      void navigate(redirectTarget, { replace: true });
-      return;
-    }
-
-    try {
-      const profileList = await api<{ profiles: Profile[] }>("/profiles");
-      const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
-      if (soleProfile) {
-        selectProfile(soleProfile);
-        void navigate("/");
-        return;
-      }
-    } catch {
-      void navigate("/profiles");
-      return;
-    }
-    void navigate("/profiles");
-  }, [navigate, redirectTarget, selectProfile]);
+  const navigateAfterLogin = usePostSignInNavigation(redirectTarget);
 
   useEffect(() => {
     if (!deviceSession) {
@@ -166,46 +145,32 @@ export default function Login() {
       let shouldPollAgain = true;
       try {
         setDevicePolling(true);
-        const result = await api<DeviceLoginPollResponse>("/auth/device/poll", {
-          method: "POST",
-          body: JSON.stringify({ device_code: currentSession.device_code }),
+        const result = await v2("POST /api/v2/auth/device/poll", {
+          body: { device_code: currentSession.device_code },
         });
         if (cancelled) {
           return;
         }
 
-        if (
-          result.status === "approved" &&
-          result.access_token &&
-          result.refresh_token &&
-          result.user
-        ) {
+        if (result.status === "approved" && result.tokens) {
           shouldPollAgain = false;
-          completeLogin({
-            access_token: result.access_token,
-            refresh_token: result.refresh_token,
-            expires_in: result.expires_in ?? 0,
-            user: result.user,
-          });
+          const session = sessionFromTokenPair(result.tokens);
+          completeLogin(session);
           setDeviceStatusMessage("Signed in. Loading profiles...");
-          void navigateAfterLogin();
+          void navigateAfterLogin(session.user);
           return;
         }
 
         if (result.status === "denied") {
           shouldPollAgain = false;
-          setDeviceStatusMessage(
-            "Approval was denied. Start a new code to try again.",
-          );
+          setDeviceStatusMessage("Approval was denied. Start a new code to try again.");
           setDeviceSession(null);
           return;
         }
 
         if (result.status === "expired" || result.status === "consumed") {
           shouldPollAgain = false;
-          setDeviceStatusMessage(
-            "This code is no longer valid. Start a new one.",
-          );
+          setDeviceStatusMessage("This code is no longer valid. Start a new one.");
           setDeviceSession(null);
           return;
         }
@@ -213,9 +178,7 @@ export default function Login() {
         setDeviceStatusMessage("Waiting for approval on your phone...");
       } catch (error) {
         if (!cancelled) {
-          setDeviceStatusMessage(
-            error instanceof Error ? error.message : "Device sign-in failed",
-          );
+          setDeviceStatusMessage(error instanceof Error ? error.message : "Device sign-in failed");
         }
       } finally {
         if (!cancelled) {
@@ -254,17 +217,19 @@ export default function Login() {
   }
 
   if (user) {
-    return (
-      <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />
-    );
+    return <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />;
+  }
+  if (pendingPasswordChange) {
+    const redirect = redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : "";
+    return <Navigate to={`${CHANGE_PASSWORD_PATH}${redirect}`} replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await login(username, password, selectedProvider || undefined);
-      await navigateAfterLogin();
+      const signedIn = await login(username, password, selectedProvider || undefined);
+      await navigateAfterLogin(signedIn);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -275,17 +240,12 @@ export default function Login() {
   async function handleStartDeviceLogin() {
     setStartingDeviceLogin(true);
     try {
-      const data = await api<DeviceLoginStartResponse>("/auth/device/start", {
-        method: "POST",
-        body: JSON.stringify(buildDevicePayload()),
-      });
+      const data = await v2("POST /api/v2/auth/device/start", { body: buildDevicePayload() });
       setDeviceSession(data);
       setDeviceStatusMessage("Waiting for approval on your phone...");
       setShowDeviceFallback(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to start device login",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to start device login");
     } finally {
       setStartingDeviceLogin(false);
     }
@@ -294,6 +254,12 @@ export default function Login() {
   const signupHref = redirectTarget
     ? `/signup?redirect=${encodeURIComponent(redirectTarget)}`
     : "/signup";
+  // Only a local password can be reset here; an external provider owns its own.
+  const forgotPasswordShown =
+    passwordResetAvailable && (!selectedProvider || selectedProvider === "local");
+  const forgotPasswordHref = username.trim()
+    ? `/forgot-password?login=${encodeURIComponent(username.trim())}`
+    : "/forgot-password";
 
   return (
     <main className="auth-shell">
@@ -318,16 +284,10 @@ export default function Login() {
                   <form
                     key={entry.id}
                     method="post"
-                    action={`/api/v1/auth/oauth/${entry.installation_id}/init${nextParam}`}
+                    action={`/api/v2/auth/oauth/${entry.installation_id}/init${nextParam}`}
                   >
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      className="w-full justify-start gap-3"
-                    >
-                      {entry.icon_url && (
-                        <img src={entry.icon_url} alt="" className="h-5 w-5" />
-                      )}
+                    <Button type="submit" variant="outline" className="w-full justify-start gap-3">
+                      {entry.icon_url && <img src={entry.icon_url} alt="" className="h-5 w-5" />}
                       <span>{entry.display_name}</span>
                     </Button>
                   </form>
@@ -352,7 +312,17 @@ export default function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-baseline justify-between gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  {forgotPasswordShown && (
+                    <Link
+                      to={forgotPasswordHref}
+                      className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
                 <PasswordInput
                   id="password"
                   value={password}
@@ -390,8 +360,7 @@ export default function Login() {
                 <div>
                   <h2 className="text-sm font-semibold">Quick Connect</h2>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    Show a code, then approve from Settings → Quick Connect on a
-                    signed-in device.
+                    Show a code, then approve from Settings → Quick Connect on a signed-in device.
                   </p>
                 </div>
                 {!deviceSession ? (
@@ -402,22 +371,13 @@ export default function Login() {
                     disabled={startingDeviceLogin}
                     onClick={() => void handleStartDeviceLogin()}
                   >
-                    {startingDeviceLogin ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <QrCode />
-                    )}
-                    {startingDeviceLogin
-                      ? "Generating code..."
-                      : "Show Quick Connect code"}
+                    {startingDeviceLogin ? <Loader2 className="animate-spin" /> : <QrCode />}
+                    {startingDeviceLogin ? "Generating code..." : "Show Quick Connect code"}
                   </Button>
                 ) : (
                   <div className="border-border/60 bg-background/50 space-y-4 rounded-md border p-4">
                     <div className="flex justify-center rounded-md bg-white p-3">
-                      <QRCode
-                        value={deviceSession.verification_uri_complete}
-                        size={176}
-                      />
+                      <QRCode value={deviceSession.verification_uri_complete} size={176} />
                     </div>
                     <div className="space-y-2 text-center">
                       <div>
@@ -428,17 +388,14 @@ export default function Login() {
                           {deviceSession.user_code}
                         </div>
                         <p className="text-muted-foreground mt-1 text-xs">
-                          Enter this in Settings → Quick Connect on a signed-in
-                          device.
+                          Enter this in Settings → Quick Connect on a signed-in device.
                         </p>
                       </div>
                       <div>
                         <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
                           Match code
                         </div>
-                        <div className="text-lg font-semibold">
-                          {deviceSession.match_code}
-                        </div>
+                        <div className="text-lg font-semibold">{deviceSession.match_code}</div>
                       </div>
                       {showDeviceFallback ? (
                         <p className="text-muted-foreground text-xs break-all">
@@ -470,9 +427,7 @@ export default function Login() {
                         Start over
                       </Button>
                       <p className="text-muted-foreground text-center text-sm">
-                        {devicePolling
-                          ? "Checking for approval..."
-                          : deviceStatusMessage}
+                        {devicePolling ? "Checking for approval..." : deviceStatusMessage}
                       </p>
                     </div>
                   </div>
@@ -480,15 +435,14 @@ export default function Login() {
               </div>
             </div>
 
-            <p className="text-muted-foreground text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                to={signupHref}
-                className="text-foreground underline hover:no-underline"
-              >
-                Sign up
-              </Link>
-            </p>
+            {signupOpen && (
+              <p className="text-muted-foreground text-center text-sm">
+                Don&apos;t have an account?{" "}
+                <Link to={signupHref} className="text-foreground underline hover:no-underline">
+                  Sign up
+                </Link>
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

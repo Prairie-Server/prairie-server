@@ -1,10 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  useHasUnsavedChanges,
-  useReportUnsavedChanges,
-} from "./useUnsavedChanges";
+import { useHasUnsavedChanges, useReportUnsavedChanges } from "./useUnsavedChanges";
 
 function fireBeforeUnload(): boolean {
   const event = new Event("beforeunload", { cancelable: true });

@@ -4,9 +4,7 @@ import type { PluginConfigSchema } from "@/api/types";
 
 import { adminFormForConfigSchema } from "./configSchemaAdminForm";
 
-function schema(
-  overrides: Partial<PluginConfigSchema> = {},
-): PluginConfigSchema {
+function schema(overrides: Partial<PluginConfigSchema> = {}): PluginConfigSchema {
   return {
     key: "connection",
     title: "Connection",
@@ -35,9 +33,7 @@ describe("adminFormForConfigSchema", () => {
       }),
     );
 
-    expect(
-      form?.fields.map(({ key, default_value }) => ({ key, default_value })),
-    ).toEqual([
+    expect(form?.fields.map(({ key, default_value }) => ({ key, default_value }))).toEqual([
       { key: "base_url", default_value: "https://floppy.example.com" },
       { key: "port", default_value: 8080 },
       { key: "verify_tls", default_value: true },
@@ -95,11 +91,9 @@ describe("adminFormForConfigSchema", () => {
         },
       ],
     };
-    expect(
-      adminFormForConfigSchema(
-        schema({ json_schema: "", admin_form: explicit }),
-      ),
-    ).toBe(explicit);
+    expect(adminFormForConfigSchema(schema({ json_schema: "", admin_form: explicit }))).toBe(
+      explicit,
+    );
   });
 
   it("applies JSON Schema sensitivity to matching explicit fields", () => {

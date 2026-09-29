@@ -42,7 +42,7 @@ var restartRequiredKeys = map[string]bool{
 	// FFmpegPath/HWAccel and the boot *config.Config (for hw_device) when the
 	// compat router is built, so a Jellyfin-client transcode keeps the boot
 	// values until restart. ffmpeg_path has three more startup-frozen consumers
-	// in cmd/silo/main.go — the intro-marker analyzer, the scanner's own ffprobe
+	// in cmd/prairie/main.go — the intro-marker analyzer, the scanner's own ffprobe
 	// path, and the audiobook enricher. Keep these restart-required until those
 	// convert; converting them is what lets the badge go away.
 	//

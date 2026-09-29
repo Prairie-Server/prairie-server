@@ -149,5 +149,5 @@ Still tracked as follow-ups for the same hashing treatment:
 `watch_together_rooms.join_token`.
 
 Excluded (not a gap): `plex_sync_connections.*` is a dead table (zero Go
-references); `oauth_completion.token_ciphertext` is already AES-GCM;
+references); `oauth_completions.token_ciphertext` is already AES-GCM;
 `users.password_hash` and the `*_hash` columns are already hashed.

@@ -148,7 +148,7 @@ func TestRequestExecutionFingerprintBindsRecipeButNotArtifactHandle(t *testing.T
 		t.Fatal("byte-affecting software decode did not change execution fingerprint")
 	}
 	changed = base
-	changed.AudioRecipeVersion = "3"
+	changed.AudioRecipeVersion = base.AudioRecipeVersion + "-changed"
 	if got := changed.ExecutionFingerprint(); got == want {
 		t.Fatal("byte-affecting audio recipe version did not change execution fingerprint")
 	}
@@ -333,9 +333,9 @@ func TestHTTPPreparerStatRecoversToneMapAttestationFromHeaders(t *testing.T) {
 			t.Fatalf("method = %s, want HEAD", r.Method)
 		}
 		w.Header().Set("Content-Length", "42")
-		w.Header().Set("X-Silo-Tone-Map-Recipe-Version", "1")
-		w.Header().Set("X-Silo-Tone-Map-Mode", "software")
-		w.Header().Set("X-Silo-Tone-Map-Source-Revision-Fingerprint", "0123456789abcdef")
+		w.Header().Set("X-Prairie-Tone-Map-Recipe-Version", "1")
+		w.Header().Set("X-Prairie-Tone-Map-Mode", "software")
+		w.Header().Set("X-Prairie-Tone-Map-Source-Revision-Fingerprint", "0123456789abcdef")
 	}))
 	defer server.Close()
 
@@ -358,7 +358,7 @@ func TestHTTPPreparerStatRecoversToneMapAttestationFromHeaders(t *testing.T) {
 func TestHTTPPreparerStatRejectsOversizedAttestationHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Length", "42")
-		w.Header().Set("X-Silo-Tone-Map-Recipe-Version", strings.Repeat("x", 1025))
+		w.Header().Set("X-Prairie-Tone-Map-Recipe-Version", strings.Repeat("x", 1025))
 	}))
 	defer server.Close()
 
@@ -374,10 +374,10 @@ func TestSetResultHeadersOmitsOversizedAttestation(t *testing.T) {
 		ToneMapMode:                      tonemap.ModeSoftware,
 		ToneMapSourceRevisionFingerprint: "0123456789abcdef",
 	})
-	if got := header.Get("X-Silo-Tone-Map-Recipe-Version"); got != "" {
+	if got := header.Get("X-Prairie-Tone-Map-Recipe-Version"); got != "" {
 		t.Fatalf("oversized recipe header = %q", got)
 	}
-	if got := header.Get("X-Silo-Tone-Map-Mode"); got != string(tonemap.ModeSoftware) {
+	if got := header.Get("X-Prairie-Tone-Map-Mode"); got != string(tonemap.ModeSoftware) {
 		t.Fatalf("mode header = %q", got)
 	}
 }

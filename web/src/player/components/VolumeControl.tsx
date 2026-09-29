@@ -61,8 +61,7 @@ export function VolumeControl({
       const v = getVolumeFromEvent(e);
       onVolumeChange(v);
 
-      const handleMouseMove = (ev: MouseEvent) =>
-        onVolumeChange(getVolumeFromEvent(ev));
+      const handleMouseMove = (ev: MouseEvent) => onVolumeChange(getVolumeFromEvent(ev));
       const handleMouseUp = () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
@@ -153,16 +152,12 @@ export function VolumeControl({
   const buttonClass = surface
     ? "text-muted-foreground hover:text-foreground hover:bg-muted inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors"
     : "player-utility-btn";
-  const sliderFocusClass = surface
-    ? "focus-visible:ring-ring"
-    : "focus-visible:ring-white/70";
+  const sliderFocusClass = surface ? "focus-visible:ring-ring" : "focus-visible:ring-white/70";
   const trackClass = surface ? "bg-muted" : "bg-white/15";
   const fillClass = surface
     ? "bg-foreground"
     : "bg-white shadow-[0_0_8px_-1px_rgb(255_255_255/0.35)]";
-  const thumbClass = surface
-    ? "bg-foreground ring-border"
-    : "bg-white ring-black/10";
+  const thumbClass = surface ? "bg-foreground ring-border" : "bg-white ring-black/10";
 
   return (
     // Scroll-wheel still adjusts volume from anywhere in the group, but the

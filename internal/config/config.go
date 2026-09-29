@@ -13,6 +13,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// ArtworkBackendAuto selects S3 when a public bucket is configured and local
+// storage otherwise. It is the artwork.storage_backend default.
+const ArtworkBackendAuto = "auto"
+
+const artworkBackendAuto = ArtworkBackendAuto
+
 // ServerConfig holds HTTP server settings.
 type ServerConfig struct {
 	Listen    string `yaml:"listen"`
@@ -20,6 +26,7 @@ type ServerConfig struct {
 	LogLevel  string `yaml:"log_level"`
 	LogFormat string `yaml:"log_format"`
 	LogQuiet  string `yaml:"log_quiet"`
+	PublicURL string `yaml:"public_url"`
 }
 
 // DatabaseConfig holds the primary PostgreSQL connection settings.
@@ -133,6 +140,10 @@ type ScannerConfig struct {
 	MaxConcurrentScoped    int           `yaml:"max_concurrent_scoped"`
 	EmptyTrashAfterScan    bool          `yaml:"-"`
 	FileRemovalGrace       time.Duration `yaml:"-"`
+	// RealtimeMonitoring is the server-wide real-time monitoring switch
+	// (scanner.realtime_monitoring). It hot-reloads; each library also has
+	// its own switch.
+	RealtimeMonitoring bool `yaml:"-"`
 }
 
 // scannerConfigRaw is the raw YAML representation with duration strings.
@@ -142,6 +153,7 @@ type scannerConfigRaw struct {
 	MaxConcurrentLibraries int    `yaml:"max_concurrent_libraries"`
 	MaxConcurrentScoped    int    `yaml:"max_concurrent_scoped"`
 	EmptyTrashAfterScan    bool   `yaml:"empty_trash_after_scan"`
+	RealtimeMonitoring     bool   `yaml:"realtime_monitoring"`
 }
 
 // MatcherConfig holds metadata matching settings.
@@ -158,9 +170,10 @@ func (c MatcherConfig) TVSeriesRootQueueEnabled() bool {
 
 // PlaybackConfig holds transcoding and playback settings.
 type PlaybackConfig struct {
-	FFmpegPath   string `yaml:"ffmpeg_path"`
-	TranscodeDir string `yaml:"transcode_dir"`
-	HWAccel      string `yaml:"hw_accel"`
+	FFmpegPath              string `yaml:"ffmpeg_path"`
+	TranscodeDir            string `yaml:"transcode_dir"`
+	SegmentRetentionSeconds int    `yaml:"segment_retention_seconds"`
+	HWAccel                 string `yaml:"hw_accel"`
 	// HWDevice is the GPU render device for hardware transcodes. A single
 	// path pins every GPU workload to that device; a comma-separated list
 	// (e.g. "/dev/dri/renderD128,/dev/dri/renderD129") balances workloads
@@ -173,11 +186,12 @@ type PlaybackConfig struct {
 	// identical paths on every node; devices absent on a node fall out of
 	// that node's rotation. The admin hw-accel endpoint reports each node's
 	// inventory so the UI can flag divergence.
-	HWDevice                     string `yaml:"hw_device"`
-	ChapterThumbnailWorkers      int    `yaml:"chapter_thumbnail_workers"`
-	ChapterThumbnailExecution    string `yaml:"chapter_thumbnail_execution"`
-	ChapterThumbnailNodeCapacity int    `yaml:"chapter_thumbnail_node_capacity"`
-	TranscodeEnabled             bool   `yaml:"transcode_enabled"`
+	HWDevice                     string                `yaml:"hw_device"`
+	ChapterThumbnailWorkers      int                   `yaml:"chapter_thumbnail_workers"`
+	ChapterThumbnailExecution    string                `yaml:"chapter_thumbnail_execution"`
+	ChapterThumbnailNodeCapacity int                   `yaml:"chapter_thumbnail_node_capacity"`
+	TranscodeEnabled             bool                  `yaml:"transcode_enabled"`
+	Routing                      PlaybackRoutingPolicy `yaml:"-"`
 }
 
 // LiveTVConfig holds Live TV / OTA / DVR settings.
@@ -224,13 +238,6 @@ const (
 	DefaultLiveTVMaxResolution = "source"
 	DefaultLiveTVPlayMethod    = "auto"
 )
-
-// ArtworkConfig holds local artwork cache settings used when public S3 is off.
-type ArtworkConfig struct {
-	// LocalDir is the filesystem root for cached WebP/AVIF/PNG variants.
-	// Default: /var/lib/prairie/artwork
-	LocalDir string `yaml:"-"`
-}
 
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
@@ -391,6 +398,13 @@ type PolicyConfig struct {
 	DecisionLogRetentionDays   int    `yaml:"-"` // policy decision log retention window
 }
 
+// MarkersConfig holds local marker detection settings.
+type MarkersConfig struct {
+	// DetectionWorkers is how many seasons intro detection analyzes at once,
+	// which also bounds its ffmpeg processes.
+	DetectionWorkers int `yaml:"-"`
+}
+
 // MetadataConfig holds metadata pipeline settings.
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
@@ -410,6 +424,9 @@ type MetadataConfig struct {
 	AVIFNVENCSessions int `yaml:"-"`
 	// WebPEncoder is retained for admin settings compatibility; WebP encode uses libvips/bimg.
 	WebPEncoder string `yaml:"-"`
+	// ImageWorkers is how many artwork encodes run at once. Zero means one
+	// per CPU core.
+	ImageWorkers int `yaml:"-"`
 }
 
 // ClientIPConfig holds client IP resolution settings.
@@ -417,6 +434,11 @@ type ClientIPConfig struct {
 	// TrustedProxies is the comma-separated CIDR list of reverse proxies
 	// whose X-Forwarded-For headers are trusted ("" = built-in defaults).
 	TrustedProxies string `yaml:"-"`
+}
+
+type ArtworkConfig struct {
+	StorageBackend string `yaml:"storage_backend"`
+	LocalPath      string `yaml:"local_path"`
 }
 
 // Config is the top-level configuration for Prairie.
@@ -427,8 +449,9 @@ type Config struct {
 	UserDB               UserDBConfig               `yaml:"-"`
 	Scanner              ScannerConfig              `yaml:"-"`
 	Matcher              MatcherConfig              `yaml:"matcher"`
+	Artwork              ArtworkConfig              `yaml:"artwork"`
 	Metadata             MetadataConfig             `yaml:"-"`
-	Artwork              ArtworkConfig              `yaml:"-"`
+	Markers              MarkersConfig              `yaml:"-"`
 	Playback             PlaybackConfig             `yaml:"playback"`
 	LiveTV               LiveTVConfig               `yaml:"livetv"`
 	Redis                RedisConfig                `yaml:"redis"`
@@ -454,6 +477,7 @@ type configRaw struct {
 	S3             s3ConfigRaw             `yaml:"s3"`
 	UserDB         userDBConfigRaw         `yaml:"user_db"`
 	Scanner        scannerConfigRaw        `yaml:"scanner"`
+	Artwork        ArtworkConfig           `yaml:"artwork"`
 	Matcher        MatcherConfig           `yaml:"matcher"`
 	Playback       PlaybackConfig          `yaml:"playback"`
 	Redis          RedisConfig             `yaml:"redis"`
@@ -502,9 +526,9 @@ func EffectiveDownloadArtifactDir(artifactDir, transcodeDir string) string {
 	return filepath.Join(filepath.Dir(filepath.Clean(transcodeDir)), "silo-download-artifacts")
 }
 
-const DefaultJellyfinCompatEmulatedServerVersion = "10.12.0"
-const DefaultJellyfinWebVersion = "10.11.6"
-const DefaultJellyfinWebInstallDir = "/var/lib/silo/compat/jellyfin-web"
+const DefaultJellyfinCompatEmulatedServerVersion = "12.1.0"
+const DefaultJellyfinWebVersion = "12.1"
+const DefaultJellyfinWebInstallDir = "/var/lib/prairie/compat/jellyfin-web"
 const DefaultJellyfinWebDir = DefaultJellyfinWebInstallDir + "/current"
 
 // parseDuration parses a duration string that supports Go's time.ParseDuration
@@ -561,7 +585,9 @@ func setDefaults() *configRaw {
 			Workers:                8,
 			MaxConcurrentLibraries: 1,
 			MaxConcurrentScoped:    2,
+			RealtimeMonitoring:     true,
 		},
+		Artwork: ArtworkConfig{StorageBackend: artworkBackendAuto, LocalPath: "/var/lib/prairie/artwork"},
 		Matcher: MatcherConfig{
 			Workers:                 8,
 			BatchSize:               500,
@@ -570,6 +596,7 @@ func setDefaults() *configRaw {
 		Playback: PlaybackConfig{
 			FFmpegPath:                   "",
 			TranscodeDir:                 DefaultTranscodeDir,
+			SegmentRetentionSeconds:      600,
 			HWAccel:                      "auto",
 			ChapterThumbnailWorkers:      1,
 			ChapterThumbnailExecution:    "local",
@@ -590,7 +617,7 @@ func setDefaults() *configRaw {
 			PublicURL:             "http://127.0.0.1:8097",
 			EmulatedServerVersion: DefaultJellyfinCompatEmulatedServerVersion,
 			ServerID:              defaultJellyfinCompatServerID,
-			ServerName:            "Silo",
+			ServerName:            "Prairie",
 			WebEnabled:            true,
 			WebVersion:            DefaultJellyfinWebVersion,
 			WebDir:                DefaultJellyfinWebDir,
