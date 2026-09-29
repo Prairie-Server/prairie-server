@@ -44,8 +44,8 @@ func TestGetCollectionPresetTrendingSendsHeadersAndDecodesMovies(t *testing.T) {
 		t.Fatalf("headers api=%q version=%q", gotAPIKey, gotVersion)
 	}
 	// Trakt may block requests without an identifying User-Agent.
-	if !strings.HasPrefix(gotUserAgent, "Silo/") {
-		t.Fatalf("User-Agent = %q, want Silo/<build>", gotUserAgent)
+	if !strings.HasPrefix(gotUserAgent, "Prairie/") {
+		t.Fatalf("User-Agent = %q, want Prairie/<build>", gotUserAgent)
 	}
 	if len(results) != 1 || results[0].Title != "The Matrix" || results[0].TMDBID != 603 || results[0].IMDbID != "tt0133093" {
 		t.Fatalf("results = %+v", results)

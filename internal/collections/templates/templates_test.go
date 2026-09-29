@@ -105,11 +105,12 @@ func TestBuiltinTemplateAssetsHaveTemplates(t *testing.T) {
 
 	dirs := []struct {
 		path         string
-		ext          string
+		exts         []string
 		allowRetired bool
 	}{
-		{filepath.Join(webRoot, "public", "images", "collection-templates"), ".jpg", true},
-		{filepath.Join(webRoot, "assets-source", "collection-templates", "raw"), ".png", false},
+		// Prairie serves avif/webp/png siblings; .jpg is upstream's source plate.
+		{filepath.Join(webRoot, "public", "images", "collection-templates"), []string{".jpg", ".avif", ".webp", ".png"}, true},
+		{filepath.Join(webRoot, "assets-source", "collection-templates", "raw"), []string{".png"}, false},
 	}
 	for _, dir := range dirs {
 		entries, err := os.ReadDir(dir.path)
@@ -122,13 +123,19 @@ func TestBuiltinTemplateAssetsHaveTemplates(t *testing.T) {
 			if strings.HasPrefix(name, ".") || ignoredAssetDirEntries[name] {
 				continue
 			}
-			id, ok := strings.CutSuffix(name, dir.ext)
+			var id string
+			ok := false
+			for _, ext := range dir.exts {
+				if id, ok = strings.CutSuffix(name, ext); ok {
+					break
+				}
+			}
 			if ok {
 				found[id] = true
 			}
 			switch {
 			case entry.IsDir() || !ok:
-				t.Errorf("%s: unexpected entry %q; only {template id}%s files belong here", dir.path, name, dir.ext)
+				t.Errorf("%s: unexpected entry %q; only {template id}%v files belong here", dir.path, name, dir.exts)
 			case registered[id]:
 			case dir.allowRetired && retiredTemplatePosterIDs[id]:
 			case dir.allowRetired:
@@ -142,7 +149,7 @@ func TestBuiltinTemplateAssetsHaveTemplates(t *testing.T) {
 		}
 		for _, id := range retired {
 			if !found[id] {
-				t.Errorf("%s is missing; restore it, or drop %q from retiredTemplatePosterIDs once no stored poster path can point at it", filepath.Join(dir.path, id+dir.ext), id)
+				t.Errorf("%s is missing; restore it, or drop %q from retiredTemplatePosterIDs once no stored poster path can point at it", filepath.Join(dir.path, id+dir.exts[0]), id)
 			}
 		}
 	}

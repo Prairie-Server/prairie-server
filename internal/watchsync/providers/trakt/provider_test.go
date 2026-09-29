@@ -103,8 +103,8 @@ func TestStartDeviceAuthSendsTraktHeadersAndDecodesResponse(t *testing.T) {
 		t.Fatalf("got trakt api key %q, want client-id", gotHeaders.Get("trakt-api-key"))
 	}
 	// Trakt may block requests without an identifying User-Agent.
-	if ua := gotHeaders.Get("User-Agent"); !strings.HasPrefix(ua, "Silo/") {
-		t.Fatalf("got User-Agent %q, want Silo/<build>", ua)
+	if ua := gotHeaders.Get("User-Agent"); !strings.HasPrefix(ua, "Prairie/") {
+		t.Fatalf("got User-Agent %q, want Prairie/<build>", ua)
 	}
 	if gotBody["client_id"] != "client-id" {
 		t.Fatalf("got client_id %q, want client-id", gotBody["client_id"])
