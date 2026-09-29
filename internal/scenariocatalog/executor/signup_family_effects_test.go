@@ -19,7 +19,7 @@ func assertSignupEffects(t *testing.T, e *Env, id, transport string, resp respon
 	t.Helper()
 	username, email := "fixture-newcomer", "fixture-newcomer@silo.example.test"
 	if strings.TrimSuffix(id, ".r1") == "signup.user_meaning" {
-		username, email = "Fixture-Newcomer", "Fixture-Newcomer@Prairie.Example.Test"
+		username, email = "Fixture-Newcomer", "Fixture-Newcomer@Silo.Example.Test"
 	}
 	type row = map[string]json.RawMessage
 	rows := func(raw json.RawMessage) []row {

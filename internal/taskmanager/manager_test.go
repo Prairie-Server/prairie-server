@@ -113,7 +113,6 @@ func (t *fakeTrigger) Start(lastResult *taskmanager.ExecutionResult) {
 	if lastResult != nil && !lastResult.CompletedAt.IsZero() {
 		base = lastResult.CompletedAt
 	}
-	t.mu.Lock()
 	t.next = base.Add(interval)
 	if t.started != nil {
 		select {
