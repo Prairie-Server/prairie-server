@@ -17,5 +17,27 @@
     "**/node_modules/**",
     "web/vendor/**",
     "internal/compat/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Hold chi below v5.3: chi v5.3 changes the route tree that the upstream route tooling (route inventory, offline-routes, jellycompat route manifest) reads, failing TestOfflineRouteSet and TestMediaRouteManifest. Lift together with the huma rule once upstream silo-server moves to chi v5.3.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/go-chi/chi/v5"
+      ],
+      "allowedVersions": "<5.3.0"
+    },
+    {
+      "description": "Hold huma below v2.39: huma v2.39+ requires chi >= v5.3, which is held above.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/danielgtaylor/huma/v2"
+      ],
+      "allowedVersions": "<2.39.0"
+    }
   ]
 }
