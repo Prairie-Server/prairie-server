@@ -961,8 +961,8 @@ export function RequestServerEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {source?.name || "server"}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Prairie stops sending requests to it, and Autoscan connections that reuse it lose their
-              connection details.
+              Prairie stops sending requests to it, and Autoscan connections that reuse it lose
+              their connection details.
               {clearsFallback
                 ? ` Everything else for ${mediaTypePlural(clearsFallback)} goes with it, so those requests have nowhere to go until you add another server.`
                 : null}
