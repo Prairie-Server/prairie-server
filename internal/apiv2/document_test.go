@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -304,7 +305,7 @@ func TestGeneratedDocumentStatuses(t *testing.T) {
 	for _, id := range append(requestOperationIDs, requestLifecycleOperationIDs...) {
 		profileToken[id] = true
 	}
-	for _, id := range adminRequestOperationIDs {
+	for _, id := range slices.Concat(adminRequestOperationIDs, adminRequestRouteOperationIDs, adminRequestQueueOperationIDs, adminRequestGroupOperationIDs) {
 		profileToken[id] = true
 	}
 	expect[opCreateRequest] = map[int]bool{http.StatusCreated: true, http.StatusConflict: true, http.StatusTooManyRequests: true, http.StatusNotFound: true}

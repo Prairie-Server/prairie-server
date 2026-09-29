@@ -71,11 +71,12 @@ export function useMemberState(
   members: WatchTogetherRoomMember[],
   contentIds: string[],
 ) {
+  // A new array each render is fine: the memo is keyed by value.
+  const contentIdsKey = contentIds.join("\u0000");
   const ids = useMemo(
     () => Array.from(new Set(contentIds.filter(Boolean))).sort(),
-    // A new array each render is fine: the key is by value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [contentIds.join("\u0000")],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by contentIdsKey
+    [contentIdsKey],
   );
   const query = useQuery({
     queryKey: pickerKeys.memberState(roomId ?? "", members, ids),
@@ -200,6 +201,9 @@ export function useHomeShelfSections(enabled: boolean) {
       enabled,
     })),
   });
+  // results is a new array each render; its data is what matters, and
+  // dataUpdatedAt changes whenever a section's data does.
+  const resultsKey = results.map((result) => result.dataUpdatedAt).join(",");
   const sections = useMemo<ShelfSection[]>(
     () =>
       wanted.flatMap((section, index) => {
@@ -208,8 +212,8 @@ export function useHomeShelfSections(enabled: boolean) {
         const items = resolved.items.filter(isPickable);
         return items.length > 0 ? [{ id: section.id, title: resolved.title, items }] : [];
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- results is a new array each render; its data is what matters
-    [wanted, ...results.map((result) => result.data)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by resultsKey
+    [wanted, resultsKey],
   );
   const isFetching = layout.isFetching || results.some((result) => result.isFetching);
   return { sections, isFetching };

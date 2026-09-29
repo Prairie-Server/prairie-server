@@ -926,6 +926,9 @@ func (m *TranscodeManager) doReconstructTranscode(ctx context.Context, sessionID
 	// straight to requestedSegment avoids it. A negative requestedSegment (manifest
 	// path) carries no segment context, so the card position stands.
 	//
+	// The manifest window belongs to the session the client mounted, so it
+	// stays at the card's original start even when ffmpeg resumes later.
+	opts.PinManifestWindowStart(card.StartSegmentNumber)
 	if seg, seek, ok := fastResumeSeek(card, requestedSegment); ok {
 		opts.StartSegmentNumber = seg
 		opts.SeekSeconds = seek
