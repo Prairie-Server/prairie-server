@@ -21,9 +21,12 @@ describe("withoutHLSVariableSubstitutionV3", () => {
     );
   });
 
-  it.each(["/v2/s/master.m3u8", "/v2/s/master.m3u8?st=abc", "/v2/s/master.m3u8?xhls_vars=1&hls_vars=0"])(
-    "leaves a URL without the flag untouched: %s",
-    (url) => expect(withoutHLSVariableSubstitutionV3(url)).toBe(url),
+  it.each([
+    "/v2/s/master.m3u8",
+    "/v2/s/master.m3u8?st=abc",
+    "/v2/s/master.m3u8?xhls_vars=1&hls_vars=0",
+  ])("leaves a URL without the flag untouched: %s", (url) =>
+    expect(withoutHLSVariableSubstitutionV3(url)).toBe(url),
   );
 });
 
