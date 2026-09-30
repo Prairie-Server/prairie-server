@@ -208,8 +208,17 @@ func TestStartRemuxRejectsUnknownModeForAllProfiles(t *testing.T) {
 
 func TestBuildRemuxArgsDelaysMoovForCopiedAtmosConfiguration(t *testing.T) {
 	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, false, false)
-	if !argsContainPair(args, "-movflags", "frag_keyframe+delay_moov+default_base_moof") {
+	if !argsContainPair(args, "-movflags", "frag_keyframe+delay_moov") {
 		t.Fatalf("remux must delay moov until copied audio is parsed, args=%v", strings.Join(args, " "))
+	}
+}
+
+// Tizen's native player stalls after the first fragment when tfhd offsets are
+// moof-relative, so the progressive stream must not set default_base_moof.
+func TestBuildRemuxArgsOmitsDefaultBaseMoof(t *testing.T) {
+	args := buildRemuxArgs("/x.mkv", "mp4", 0, true, -1, 8, false, false)
+	if strings.Contains(strings.Join(args, " "), "default_base_moof") {
+		t.Fatalf("progressive remux must not use default_base_moof, args=%v", strings.Join(args, " "))
 	}
 }
 
