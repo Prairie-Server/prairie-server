@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPlaybackInfoSections,
+  formatAudioTrackLabel,
   formatProtocol,
+  formatStreamPath,
   formatStreamType,
   lowerQualityOption,
   qualityOptionsFromPlanV3,
@@ -403,5 +405,67 @@ describe("lowerQualityOption", () => {
     expect(lowerQualityOption(options, "original", 40_000)?.id).toBe("2160p-medium");
     // A copy delivery reports no bitrate; the top transcode rung is lower.
     expect(lowerQualityOption(options, "auto")?.id).toBe("2160p-medium");
+  });
+
+  it("adds the planner's reasoning, the stream path and live buffer health", () => {
+    const sections = buildPlaybackInfoSections({
+      streamUrl: "https://app.example.com/api/v2/stream/abc123/master.m3u8?st=secret&token=x",
+      plan: fixturePlanV3({
+        delivery: "server_transcode_hls",
+        session_id: "0123456789abcdef",
+        decision_reason: "audio_codec_unsupported",
+        effective_recipe: {
+          video_codec: "h264",
+          audio_codec: "aac",
+          width: 1920,
+          height: 1080,
+          frame_rate: 23.976,
+          bitrate_kbps: 8000,
+          audio_channels: 6,
+          audio_layout: "5.1",
+        },
+        transformations: [
+          {
+            name: "audio_to_aac",
+            executor: "server",
+            recipe_version: "v3.4",
+            validated_claims: [],
+          },
+        ],
+        applied_quirks: [{ id: "tizen_hls_ts", registry_revision: "1", action: "force" }],
+        degradation_warnings: [{ code: "dv_stripped", message: "Dolby Vision shown as HDR10" }],
+      }),
+      runtimeStats: { bufferAheadSeconds: 12.34, bandwidthEstimateKbps: 25_000 },
+      activeAudioTrack: { language: "eng", codec: "truehd", layout: "7.1", title: "Commentary" },
+      qualityPreference: "auto",
+    });
+
+    expect(rowValue(sections, "Player", "Stream path")).toBe("/api/v2/stream/abc123/master.m3u8");
+    expect(rowValue(sections, "Player", "Decision")).toBe("audio_codec_unsupported");
+    expect(rowValue(sections, "Player", "Quality")).toBe("Auto");
+    expect(rowValue(sections, "Player", "Session")).toBe("01234567");
+    expect(rowValue(sections, "Video Info", "Buffer health")).toBe("12.3 s");
+    expect(rowValue(sections, "Video Info", "Bandwidth estimate")).toBe("25.0 Mbps");
+    expect(rowValue(sections, "Playback Stream Info", "Resolution")).toBe("1920x1080 @ 23.976 fps");
+    expect(rowValue(sections, "Playback Stream Info", "Target bitrate")).toBe("8.0 Mbps");
+    expect(rowValue(sections, "Playback Stream Info", "Audio channels")).toBe("5.1 (6)");
+    expect(rowValue(sections, "Playback Stream Info", "Transformations")).toBe("audio_to_aac");
+    expect(rowValue(sections, "Playback Stream Info", "Quirks")).toBe("tizen_hls_ts");
+    expect(rowValue(sections, "Playback Stream Info", "Warning")).toBe(
+      "Dolby Vision shown as HDR10",
+    );
+    expect(rowValue(sections, "Current Source File", "Audio track")).toBe(
+      "eng · TrueHD · 7.1 · Commentary",
+    );
+  });
+
+  it("never shows a stream URL's query, which carries the grant", () => {
+    expect(formatStreamPath("/api/v2/stream/x/original?st=abc")).toBe("/api/v2/stream/x/original");
+    expect(formatStreamPath("https://h.example/p/q.m3u8#frag")).toBe("/p/q.m3u8");
+  });
+
+  it("labels an audio track from whatever it knows", () => {
+    expect(formatAudioTrackLabel(undefined)).toBe("—");
+    expect(formatAudioTrackLabel({ codec: "eac3", channels: 6 })).toBe("EAC3 · 6 ch");
   });
 });
