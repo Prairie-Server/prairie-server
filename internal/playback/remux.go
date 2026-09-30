@@ -153,7 +153,7 @@ const (
 
 // buildRemuxArgs constructs the ffmpeg argument list for a remux operation.
 // The args perform codec copy (-c copy) into the target container format,
-// using fragmented output for streaming (frag_keyframe+delay_moov+default_base_moof) and
+// using fragmented output for streaming (frag_keyframe+delay_moov) and
 // pipe:1 for stdout output.
 // When transcodeAudio is true, video is copied but audio is transcoded to
 // stereo AAC (handles cases like DTS/TrueHD that browsers cannot decode).
@@ -266,7 +266,14 @@ func buildRemuxArgsWithAudioV3(filePath, outputFormat string, seekSeconds float6
 		// delay_moov lets the MP4 muxer inspect the first audio packet before
 		// writing codec configuration. empty_moov fails immediately for copied
 		// E-AC-3/Atmos tracks because their frame size is not known at header time.
-		"-movflags", "frag_keyframe+delay_moov+default_base_moof",
+		//
+		// No default_base_moof: this is one progressive byte stream, not MSE/CMAF
+		// segments, so explicit tfhd base data offsets are correct and every
+		// progressive demuxer reads them. Samsung Tizen's native player does not
+		// follow moof-relative offsets: it plays the first fragment, then stalls
+		// with no audio (verified on a QN700B, Tizen 6.5, with the same copied
+		// HEVC + AAC 5.1 stream with and without the flag).
+		"-movflags", "frag_keyframe+delay_moov",
 		"pipe:1",
 	)
 
@@ -276,7 +283,7 @@ func buildRemuxArgsWithAudioV3(filePath, outputFormat string, seekSeconds float6
 // StartRemux starts an ffmpeg process that copies codecs to a new container.
 // When transcodeAudio is false the command is:
 //
-//	ffmpeg -i {input} -c copy -f {format} -movflags frag_keyframe+delay_moov+default_base_moof pipe:1
+//	ffmpeg -i {input} -c copy -f {format} -movflags frag_keyframe+delay_moov pipe:1
 //
 // When transcodeAudio is true video is copied but audio is transcoded to AAC.
 // The caller must call Close() when done to clean up resources.
