@@ -72,7 +72,13 @@ func TestObserveDoesNotRunGenericCaptureWhenRouteCaptureExists(t *testing.T) {
 }
 
 func TestObservedWriterPanicReleasesUnknownAndPropagates(t *testing.T) {
-	registry := NewRegistry(testConfig(), NewLocalStore(), nil)
+	// testConfig's 1ms retention lets Sweep prune the released session before
+	// it is read whenever the runner takes longer than that between the panic
+	// and the sweep, which made this test flaky in CI. This test inspects the
+	// released session, so keep it around.
+	cfg := testConfig()
+	cfg.Retention = time.Minute
+	registry := NewRegistry(cfg, NewLocalStore(), nil)
 	handler := registry.Observe(testRoute(ClassPlayback))(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		Attach(r.Context(), testAttachment("panic"))
 		panic("boom")
@@ -82,6 +88,9 @@ func TestObservedWriterPanicReleasesUnknownAndPropagates(t *testing.T) {
 			t.Fatal("panic did not propagate")
 		}
 		snapshot := registry.Sweep()
+		if len(snapshot.Sessions) != 1 {
+			t.Fatalf("sessions = %d, want 1", len(snapshot.Sessions))
+		}
 		if snapshot.Sessions[0].Outcomes[OutcomeUnknown] != 1 {
 			t.Fatalf("outcomes = %+v", snapshot.Sessions[0].Outcomes)
 		}

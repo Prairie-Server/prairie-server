@@ -70,6 +70,33 @@ jobs:
               - 'tools/fingerprint-compare-wasm/**'
               - '.github/workflows/ci.yml'
 
+  # TEMPORARY: regenerate the route inventory on a runner (the dev box OOMs on
+  # the type-check). Removed before merge.
+  regen-route-inventory:
+    name: TEMP regen route inventory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install libvips
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips-dev
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+      - run: make route-inventory
+      - uses: actions/upload-artifact@v4
+        with:
+          name: route-inventory
+          path: contracts/api/v2/route-inventory.json
+
   # Single lint job (not matrix-sharded): each shard still typechecks the module
   # graph, so 4-way split left wall clock ~2.5m while burning 4 runners. PRs lint
   # only packages with changed .go files; main/dispatch keep a full-module pass.
