@@ -34,9 +34,11 @@ const transcodeDeliveryPrefix = "/playback/transcode/"
 // got a 401 on every attempt and reported a connection failure.
 const progressiveDeliveryPrefix = "/stream/"
 
-// apiVersionPrefix anchors the progressive match so "/stream/" is only honored
-// at the top level of the API, never as a nested segment of another route.
-const apiVersionPrefix = "/api/v1"
+// apiVersionPrefixes anchor the progressive match so "/stream/" is only
+// honored at the top level of an API surface, never as a nested segment of
+// another route. /api/v2/stream/{session_id} is the native v2 delivery route
+// and serves the same bytes to the same native players.
+var apiVersionPrefixes = []string{"/api/v1", "/api/v2"}
 
 // Live TV HLS delivery lives at:
 //
@@ -143,7 +145,7 @@ func progressiveDeliverySession(urlPath string) (string, bool) {
 	// middleware sees "/stream/{id}" as often as "/api/v1/stream/{id}" -- which is
 	// also why the transcode matcher searches instead of anchoring. Requiring the
 	// API prefix rejected every real request and 401'd the player.
-	if before := urlPath[:idx]; before != "" && !strings.HasSuffix(before, apiVersionPrefix) {
+	if before := urlPath[:idx]; before != "" && !hasAPIVersionSuffix(before) {
 		return "", false
 	}
 	sessionID := urlPath[idx+len(progressiveDeliveryPrefix):]
@@ -211,4 +213,13 @@ func (am *AuthMiddleware) StreamTokenAuth(secret string) func(http.Handler) http
 func IsStreamTokenAuthorized(ctx context.Context) bool {
 	authorized, _ := ctx.Value(streamTokenAuthorizedKey).(bool)
 	return authorized
+}
+
+func hasAPIVersionSuffix(before string) bool {
+	for _, prefix := range apiVersionPrefixes {
+		if strings.HasSuffix(before, prefix) {
+			return true
+		}
+	}
+	return false
 }

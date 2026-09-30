@@ -157,7 +157,10 @@ func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 		// Progressive (direct-play / remux) delivery. Previously excluded because
 		// this middleware was HLS-only, which 401'd every native-player fetch of
 		// the stream_url the server itself had signed.
-		"/api/v1/stream/abc": "abc",
+		"/api/v1/stream/abc":             "abc",
+		"/api/v2/stream/abc":             "abc",
+		"/api/v3/stream/abc":             "",
+		"/api/v2/stream/abc/subtitles/2": "",
 		// chi trims the mount prefix for sub-routers, so the middleware sees this
 		// shape too. Requiring the API prefix here 401'd every real request.
 		"/stream/abc": "abc",
@@ -271,7 +274,8 @@ func TestStreamTokenDeliverySessionRejectsProgressiveSubResources(t *testing.T) 
 func TestStreamTokenDeliverySessionRejectsNestedStreamSegment(t *testing.T) {
 	for _, path := range []string{
 		"/api/v1/playback/transcode/sess-1/stream/evil",
-		"/api/v2/stream/abc-123",
+		"/api/v2/playback/transcode/sess-1/stream/evil",
+		"/api/v3/stream/abc-123",
 		"/internal/stream/abc-123",
 	} {
 		if sessionID, ok := streamTokenDeliverySession(path); ok {
