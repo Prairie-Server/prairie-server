@@ -2784,14 +2784,19 @@ func newChiRouter(deps Dependencies) chi.Router {
 		deps.v2Wiring(v2deps)
 	}
 	v2deps.ObserveRoutes = deps.v2RouteSnapshot
-	v2Handler := apiv2.NewHandler(v2deps)
 	if authMiddleware != nil && deps.Config != nil {
-		// v2's gate chain runs the same RequireAuth/RequireViewerAccess, which
-		// honor a verified stream token; mark /api/v2/stream/{session_id}
-		// requests that carry one, as on /api/v1.
-		v2Handler = authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret)(v2Handler)
+		// Marks media delivery requests that carry a valid session-bound stream
+		// token so RequireAuth and RequireViewerAccess let them through, on both
+		// /api/v1 and /api/v2 (v2's gate chain runs the same middleware). Native
+		// TV players fetch these bytes and cannot send a bearer or refresh one.
+		// Adds authorization only: it is a no-op for any request without a token
+		// that verifies for the session in its own delivery path. Mounted on the
+		// root router because /api/v2 must be registered as a direct
+		// apiv2.NewHandler call (route inventory). The 2026-08-28 sync dropped
+		// the original mount; see scripts/prairie-invariants.txt.
+		r.Use(authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret))
 	}
-	r.Handle("/api/v2/*", v2Handler)
+	r.Handle("/api/v2/*", apiv2.NewHandler(v2deps))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", healthHandler.ServeHTTP)
@@ -3093,15 +3098,6 @@ func newChiRouter(deps Dependencies) chi.Router {
 		// All remaining routes require auth.
 		if authMiddleware != nil {
 			r.Group(func(r chi.Router) {
-				// Must precede RequireAuth: it marks media delivery requests that
-				// carry a valid session-bound stream token so auth and viewer
-				// access let them through. Adds authorization only — a request
-				// that already passes bearer auth is unaffected. (Restored: the
-				// 2026-08-28 upstream sync dropped this mount, so native TV
-				// players 401'd whenever their pasted access token went stale.)
-				if deps.Config != nil {
-					r.Use(authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret))
-				}
 				r.Use(authMiddleware.RequireAuth)
 				if demoGuard != nil {
 					r.Use(demoGuard.Guard)

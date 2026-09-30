@@ -81,7 +81,8 @@
         "apimw.Metrics",
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
-        "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]"
+        "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]"
       ]
     },
     {
@@ -96,6 +97,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth"
       ]
     },
@@ -111,6 +113,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]"
       ]
@@ -127,6 +130,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]"
@@ -144,6 +148,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]",
@@ -162,6 +167,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]",
@@ -181,6 +187,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]",
@@ -200,6 +207,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]",
@@ -219,6 +227,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "demoGuard.Guard [when demoGuard != nil]",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]",
@@ -238,6 +247,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "deps.RateLimitMW.Handler [when deps.RateLimitMW != nil]"
       ]
@@ -254,6 +264,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "optionalProfileViewerAccess(viewerAccessMiddleware)"
       ]
@@ -270,6 +281,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "passwordChangeMiddlewares"
       ]
@@ -286,6 +298,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "requireActingAdmin"
       ]
@@ -302,6 +315,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "authMiddleware.RequireAuth",
         "viewerAccessMiddleware.RequireViewerAccess"
       ]
@@ -318,6 +332,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"autoscan_webhook\")"
       ]
     },
@@ -333,6 +348,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"device_lookup\")"
       ]
     },
@@ -348,6 +364,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"device_poll\")"
       ]
     },
@@ -363,6 +380,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"device_start\")"
       ]
     },
@@ -378,6 +396,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"invitation\")"
       ]
     },
@@ -393,6 +412,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"login\")"
       ]
     },
@@ -408,6 +428,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"setup\")"
       ]
     },
@@ -423,6 +444,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "deps.RateLimitMW.AuthEndpointHandler(\"signup\")"
       ]
     },
@@ -438,6 +460,7 @@
         "deviceclass.Middleware",
         "httpstream.CompressWithExclusions(5, skipNativeMediaCompression, apiv2.IdentityEncoded)",
         "activitylog.NewMiddleware(deps.ActivityLogWriter, deps.NodeID) [when deps.ActivityLogWriter != nil]",
+        "authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret) [when authMiddleware != nil && deps.Config != nil]",
         "displayMiddlewares"
       ]
     },

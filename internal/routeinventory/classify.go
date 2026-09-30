@@ -826,6 +826,13 @@ var infrastructureMiddleware = []string{
 	// token on every listener; it records the access path and never grants
 	// or changes authorization.
 	"netaccess.Middleware",
+	// StreamTokenAuth (Prairie) runs on the root router and lets a verified,
+	// session-bound stream token stand in for a bearer on the media delivery
+	// paths only, for native TV players that cannot send a header or refresh a
+	// token. It never changes a route's auth class (every other request falls
+	// through to RequireAuth/RequireViewerAccess), so it carries no trait and
+	// the auth-trait ledger is unaffected.
+	"StreamTokenAuth",
 	// deviceclass.Middleware (Prairie) records the client device class for
 	// artwork sizing; it never grants or changes authorization.
 	"deviceclass.Middleware",
