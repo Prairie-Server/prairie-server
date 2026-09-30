@@ -108,7 +108,12 @@ func NewStreamHandler(sessionMgr SessionManagerInterface, fileResolver FilePathR
 // For transcode: returns 400 (transcode uses manifest/segment endpoints).
 func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
-	if userID == 0 {
+	// A verified, session-bound stream token (StreamTokenAuth) authorizes
+	// delivery of this session's bytes without a user, exactly as it does for
+	// the HLS manifest and segments: native TV players fetch the plan URL and
+	// cannot send a bearer. The session load below still enforces the session's
+	// own media-authorization mode, and a present identity must still own it.
+	if userID == 0 && !apimw.IsStreamTokenAuthorized(r.Context()) {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
 		return
 	}
