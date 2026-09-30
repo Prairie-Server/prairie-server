@@ -30,7 +30,7 @@ import type { WatchTogetherRoomConnectionResult } from "../hooks/useWatchTogethe
 import { getPersistedVolume, persistVolume } from "./VolumeControl";
 import { playerV2 } from "../player-v2";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
-import { lowerQualityOption, qualityOptionsFromPlanV3 } from "../playback-info";
+import { formatDelivery, lowerQualityOption, qualityOptionsFromPlanV3 } from "../playback-info";
 import { preconnectToStreamOrigin } from "../stream-url";
 import { WatchTogetherPanel } from "./WatchTogetherPanel";
 import { readPlanInvalidatedPayload, VIDEO_PLAYBACK_COMMANDS } from "../realtime-protocol";
@@ -103,6 +103,7 @@ import {
   setWatchTogetherGuestControl,
 } from "@/lib/watchTogetherActions";
 import { toast } from "sonner";
+import { describeMediaEvent, LOGGED_MEDIA_EVENTS, PlaybackEventLog } from "../playback-events";
 
 let hlsJSModule: Promise<typeof HlsType> | null = null;
 
@@ -398,6 +399,8 @@ export function VideoPlayer({
   const hlsRef = useRef<HlsType | null>(null);
   const hlsStartupGuardRef = useRef<HlsStartupGuard | null>(null);
   const mediaRecoveryAttemptsRef = useRef(0);
+  // Kept for the stats overlay, which can be opened after the fact.
+  const [eventLog] = useState(() => new PlaybackEventLog());
   const lastRecoveryRef = useRef(0);
   const reportedPlanFailureKeyRef = useRef<string | null>(null);
   const transportFailedForPlanRevisionRef = useRef<number | null>(null);
@@ -638,6 +641,25 @@ export function VideoPlayer({
   // since `auto` is a valid preference that names no rung.
   const activeQualityId = qualityPreference;
   const qualityOptions = useMemo(() => qualityOptionsFromPlanV3(plan), [plan]);
+
+  useEffect(() => {
+    eventLog.add(
+      `plan ${formatDelivery(plan.delivery)}${plan.decision_reason ? ` (${plan.decision_reason})` : ""}`,
+    );
+  }, [eventLog, plan.plan_id, plan.delivery, plan.decision_reason]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onMediaEvent = (event: Event) => {
+      const message = describeMediaEvent(event.type, video);
+      if (message) eventLog.add(message);
+    };
+    for (const type of LOGGED_MEDIA_EVENTS) video.addEventListener(type, onMediaEvent);
+    return () => {
+      for (const type of LOGGED_MEDIA_EVENTS) video.removeEventListener(type, onMediaEvent);
+    };
+  }, [eventLog, plan.plan_id]);
 
   // The file the server actually planned against, which is not necessarily the
   // one that was asked for — a fallback to an alternate version shows up here.
@@ -1968,6 +1990,9 @@ export function VideoPlayer({
             });
 
             hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (!destroyed) {
+                eventLog.add(`hls ${data.fatal ? "fatal " : ""}${data.type}: ${data.details}`);
+              }
               if (!data.fatal || destroyed) return;
 
               console.error("[hls.js] Fatal error:", {
@@ -2023,6 +2048,16 @@ export function VideoPlayer({
                 }
                 hls?.destroy();
                 hlsRef.current = null;
+              }
+            });
+
+            hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
+              if (destroyed) return;
+              const level = hls?.levels[data.level];
+              if (level) {
+                eventLog.add(
+                  `hls level ${level.height ? `${level.height}p ` : ""}${Math.round(level.bitrate / 1000)} kbps`,
+                );
               }
             });
 
@@ -3958,6 +3993,10 @@ export function VideoPlayer({
           plan={plan}
           currentSourceVersion={effectiveVersion}
           requestedVersion={selectedVersion}
+          activeAudioTrack={audioTracks[activeAudioIndex]}
+          qualityPreference={activeQualityId}
+          hlsRef={hlsRef}
+          eventLog={eventLog}
           onClose={() => setShowPlaybackInfo(false)}
         />
       )}

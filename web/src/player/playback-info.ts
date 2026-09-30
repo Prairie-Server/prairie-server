@@ -22,6 +22,10 @@ export interface RuntimePlaybackStats {
   videoHeight?: number;
   droppedFrames?: number | null;
   corruptedFrames?: number | null;
+  /** Seconds buffered past the playhead. */
+  bufferAheadSeconds?: number;
+  /** hls.js bandwidth estimate; absent for progressive streams. */
+  bandwidthEstimateKbps?: number;
 }
 
 export interface PlaybackInfoRow {
@@ -40,6 +44,10 @@ interface BuildPlaybackInfoSectionsInput {
   currentSourceVersion?: PlayerFileVersion;
   requestedVersion?: PlayerFileVersion;
   runtimeStats: RuntimePlaybackStats;
+  /** The track the viewer picked; the source's default track otherwise. */
+  activeAudioTrack?: PlayerAudioTrack;
+  /** The quality preference in effect, e.g. "auto" or a ladder rung id. */
+  qualityPreference?: string;
 }
 
 export function buildPlaybackInfoSections({
@@ -48,9 +56,13 @@ export function buildPlaybackInfoSections({
   currentSourceVersion,
   requestedVersion,
   runtimeStats,
+  activeAudioTrack,
+  qualityPreference,
 }: BuildPlaybackInfoSectionsInput): PlaybackInfoSection[] {
   const videoTrack = currentSourceVersion ? pickVideoTrack(currentSourceVersion) : undefined;
-  const audioTrack = currentSourceVersion ? pickAudioTrack(currentSourceVersion) : undefined;
+  const audioTrack =
+    activeAudioTrack ?? (currentSourceVersion ? pickAudioTrack(currentSourceVersion) : undefined);
+  const plannerNotes = formatPlannerNotes(plan);
   const requestedSource =
     requestedVersion &&
     currentSourceVersion &&
@@ -66,6 +78,12 @@ export function buildPlaybackInfoSections({
         { label: "Play method", value: formatDelivery(plan.delivery) },
         { label: "Protocol", value: formatProtocol(streamUrl) },
         { label: "Stream type", value: formatStreamType(plan) },
+        { label: "Stream path", value: formatStreamPath(streamUrl) },
+        { label: "Decision", value: displayValue(plan.decision_reason) },
+        ...(qualityPreference
+          ? [{ label: "Quality", value: formatQualityPreference(plan, qualityPreference) }]
+          : []),
+        { label: "Session", value: formatShortId(plan.session_id) },
         ...(requestedSource ? [{ label: "Auto-switched from", value: requestedSource }] : []),
       ],
     },
@@ -88,6 +106,18 @@ export function buildPlaybackInfoSections({
           label: "Corrupted frames",
           value: formatFrameCount(runtimeStats.corruptedFrames),
         },
+        {
+          label: "Buffer health",
+          value: formatSeconds(runtimeStats.bufferAheadSeconds),
+        },
+        ...(runtimeStats.bandwidthEstimateKbps !== undefined
+          ? [
+              {
+                label: "Bandwidth estimate",
+                value: formatMbpsFromKbps(runtimeStats.bandwidthEstimateKbps),
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -101,6 +131,23 @@ export function buildPlaybackInfoSections({
           label: "Audio codec",
           value: formatDeliveredAudioCodec(plan),
         },
+        {
+          label: "Resolution",
+          value: formatRecipeVideo(plan),
+        },
+        {
+          label: "Target bitrate",
+          value: formatMbpsFromKbps(plan.effective_recipe.bitrate_kbps),
+        },
+        {
+          label: "Audio channels",
+          value: formatRecipeAudioChannels(plan),
+        },
+        {
+          label: "Transformations",
+          value: formatTransformations(plan),
+        },
+        ...plannerNotes,
       ],
     },
     {
@@ -136,6 +183,10 @@ export function buildPlaybackInfoSections({
         {
           label: "Color range",
           value: formatColorRange(videoTrack?.color_range),
+        },
+        {
+          label: "Audio track",
+          value: formatAudioTrackLabel(audioTrack),
         },
         {
           label: "Audio codec",
@@ -294,6 +345,87 @@ function formatQualityBitrate(kbps?: number): string {
     return mbps % 1 === 0 ? `${mbps} Mbps` : `${mbps.toFixed(1)} Mbps`;
   }
   return `${kbps} kbps`;
+}
+
+/**
+ * The path the player fetches, without its query: stream URLs carry signed
+ * grants that must not end up in a screenshot.
+ */
+export function formatStreamPath(streamUrl: string): string {
+  try {
+    const base = typeof window !== "undefined" ? window.location.href : "http://localhost";
+    const url = new URL(streamUrl, base);
+    return url.pathname || "—";
+  } catch {
+    return "—";
+  }
+}
+
+export function formatQualityPreference(plan: PlanV3, preference: string): string {
+  if (preference === "auto") return "Auto";
+  const rung = plan.available_qualities.find((quality) => quality.label === preference);
+  if (!rung) return preference;
+  return rung.display_name || qualityRungLabel(rung.label);
+}
+
+export function formatShortId(id?: string): string {
+  const trimmed = id?.trim();
+  if (!trimmed) return "—";
+  return trimmed.length > 8 ? trimmed.slice(0, 8) : trimmed;
+}
+
+export function formatSeconds(value?: number): string {
+  if (!Number.isFinite(value) || value == null || value < 0) return "—";
+  return `${value.toFixed(1)} s`;
+}
+
+export function formatRecipeVideo(plan: PlanV3): string {
+  const { width, height, frame_rate: frameRate, dynamic_range: range } = plan.effective_recipe;
+  if (!isPositive(width) || !isPositive(height)) return "—";
+  const parts = [`${Math.round(width)}x${Math.round(height)}`];
+  if (isPositive(frameRate)) parts.push(`@ ${Number(frameRate.toFixed(3))} fps`);
+  if (range?.trim()) parts.push(range.trim());
+  return parts.join(" ");
+}
+
+export function formatRecipeAudioChannels(plan: PlanV3): string {
+  const { audio_channels: channels, audio_layout: layout } = plan.effective_recipe;
+  if (layout?.trim())
+    return isPositive(channels) ? `${layout.trim()} (${channels})` : layout.trim();
+  return isPositive(channels) ? String(channels) : "—";
+}
+
+export function formatTransformations(plan: PlanV3): string {
+  const names = plan.transformations.map((transformation) =>
+    transformation.executor === "server" ? transformation.name : `${transformation.name} (client)`,
+  );
+  return names.length ? names.join(", ") : "None";
+}
+
+/** Quirks the planner applied and warnings it raised, one row each. */
+function formatPlannerNotes(plan: PlanV3): PlaybackInfoRow[] {
+  const rows: PlaybackInfoRow[] = [];
+  const quirks = (plan.applied_quirks ?? []).map((quirk) => quirk.id).filter(Boolean);
+  if (quirks.length) rows.push({ label: "Quirks", value: quirks.join(", ") });
+  const corrections = (plan.runtime_corrections ?? []).filter(Boolean);
+  if (corrections.length) rows.push({ label: "Corrections", value: corrections.join(", ") });
+  for (const warning of plan.degradation_warnings ?? []) {
+    rows.push({ label: "Warning", value: warning.message || warning.code });
+  }
+  return rows;
+}
+
+/** "English · TrueHD 7.1 · Commentary"-style label for the playing track. */
+export function formatAudioTrackLabel(track?: PlayerAudioTrack): string {
+  if (!track) return "—";
+  const codec = formatCodecLabel(track.codec);
+  const parts = [
+    track.language?.trim(),
+    codec === "—" ? undefined : codec,
+    track.layout?.trim() || (isPositive(track.channels) ? `${track.channels} ch` : undefined),
+    track.title?.trim() || track.embedded_title?.trim(),
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "—";
 }
 
 function formatRequestedSourceVersion(version: PlayerFileVersion): string {
