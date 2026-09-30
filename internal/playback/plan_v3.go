@@ -150,6 +150,9 @@ type PlannerResultV3 struct {
 	TranscodeAudio   bool
 	TargetVideoCodec string
 	TargetAudioCodec string
+	// CopyVideoMPEGTS packages an HLS remux's copied video as MPEG-TS instead
+	// of fMP4, for clients that claim copy_video_mpegts_v1.
+	CopyVideoMPEGTS bool
 	// SourceAudioChannels freezes the selected input track's channel count for
 	// source-sensitive encode recipes such as multichannel-to-stereo downmixing.
 	SourceAudioChannels int
@@ -203,6 +206,7 @@ func PlanPlaybackV3(input PlannerInputV3) (result PlannerResultV3) {
 		input.Now = time.Now()
 	}
 	source := SourceDescriptorFromFileV3(file, input.AudioTrackIndex)
+	defer func() { applyCopyVideoMPEGTSV3(&result, input.Request, file) }()
 	serverBitrateRequiresEncode := false
 	if input.ServerBitrateCapKbps > 0 {
 		if cap := optionalValueV3(input.Request.BandwidthCapKbps); cap == 0 || input.ServerBitrateCapKbps < cap {
@@ -933,6 +937,24 @@ func audioOnlyAACOutputChannelsV3(request StartRequestV3, source SourceDescripto
 // exceed the active delivery's ceiling. FFmpeg's planned AAC recipes support
 // mono, stereo, and 5.1; an intermediate ceiling therefore falls back from
 // 5.1 to stereo rather than advertising an output the encoder never creates.
+// applyCopyVideoMPEGTSV3 sets CopyVideoMPEGTS on an HLS remux plan when the
+// client claims copy_video_mpegts_v1. AV1 has no viable MPEG-TS mapping and
+// MPEG-2 copy is already TS, so only H.264/HEVC copies change packaging.
+func applyCopyVideoMPEGTSV3(result *PlannerResultV3, request StartRequestV3, file *models.MediaFile) {
+	if result == nil || result.Plan == nil || result.Plan.Delivery != DeliveryRemuxHLSV3 || file == nil {
+		return
+	}
+	codec := strings.ToLower(strings.TrimSpace(file.CodecVideo))
+	if codec != "h264" && codec != "hevc" {
+		return
+	}
+	delivery, ok := request.ClientPlaybackContext.Deliveries[DeliveryClassHLSV3]
+	if !ok || !delivery.Enabled || !containsFoldV3(delivery.ValidatedClaims, ClaimCopyVideoMPEGTSV3) {
+		return
+	}
+	result.CopyVideoMPEGTS = true
+}
+
 func aacOutputChannelsV3(request StartRequestV3, deliveryClass string, sourceChannels int, preserveSurround bool) int {
 	channels := 2
 	if sourceChannels == 1 {

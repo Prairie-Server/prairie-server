@@ -87,6 +87,10 @@ const (
 	// original bytes. Packaged server deliveries remain output-gated.
 	ClaimClientManagedDynamicRangeV3 = "client_managed_dynamic_range_v1"
 	ClaimClientSelectedAudioTrackV3  = "client_selected_audio_track_v1"
+	// ClaimCopyVideoMPEGTSV3 is Prairie-only and scoped to the hls delivery:
+	// the client's demuxer cannot take fragmented MP4 (Samsung Tizen), so an
+	// HLS remux that copies H.264/HEVC must package it as MPEG-TS instead.
+	ClaimCopyVideoMPEGTSV3 = "copy_video_mpegts_v1"
 	// ClaimClientDV8BaseLayerFallbackV3 is scoped to the original_http
 	// delivery. The executor decodes a single-layer Dolby Vision Profile 8
 	// stream through an ordinary HEVC decoder and presents its

@@ -49,6 +49,9 @@ type ExecutableRecipeV3 struct {
 	ExternalSubtitlePath string `json:"external_subtitle_path,omitempty"`
 	EmbeddedStreamIndex  int    `json:"embedded_stream_index,omitempty"`
 	DownloadedSubtitleID int    `json:"downloaded_subtitle_id,omitempty"`
+	// CopyVideoMPEGTS keeps a reanchored HLS remux in MPEG-TS; the segment
+	// bytes and extension must not change packaging mid-attempt.
+	CopyVideoMPEGTS bool `json:"copy_video_mpegts,omitempty"`
 }
 
 const (
@@ -99,6 +102,7 @@ func FreezeExecutableRecipeV3(result PlannerResultV3) ExecutableRecipeV3 {
 		SubtitleBurnIn:              result.SubtitleBurnIn,
 		SubtitleCodec:               result.SubtitleCodec,
 		DownloadedSubtitleID:        result.DownloadedSubtitleID,
+		CopyVideoMPEGTS:             result.CopyVideoMPEGTS,
 	}
 	if recipe.hasVersion2Fields() {
 		recipe.Version = executableRecipeVersionV3
@@ -123,7 +127,7 @@ func (r ExecutableRecipeV3) hasVersion2Fields() bool {
 }
 
 func (r ExecutableRecipeV3) hasVersion3Fields() bool {
-	return r.SourceAudioChannels != 0
+	return r.SourceAudioChannels != 0 || r.CopyVideoMPEGTS
 }
 
 // Valid reports whether an executable recipe is complete and internally consistent.
@@ -190,5 +194,6 @@ func (r ExecutableRecipeV3) PlannerResult(plan *PlanV3) PlannerResultV3 {
 		SubtitleBurnIn:              r.SubtitleBurnIn,
 		SubtitleCodec:               r.SubtitleCodec,
 		DownloadedSubtitleID:        r.DownloadedSubtitleID,
+		CopyVideoMPEGTS:             r.CopyVideoMPEGTS,
 	}
 }
