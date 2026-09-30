@@ -2784,7 +2784,14 @@ func newChiRouter(deps Dependencies) chi.Router {
 		deps.v2Wiring(v2deps)
 	}
 	v2deps.ObserveRoutes = deps.v2RouteSnapshot
-	r.Handle("/api/v2/*", apiv2.NewHandler(v2deps))
+	v2Handler := apiv2.NewHandler(v2deps)
+	if authMiddleware != nil && deps.Config != nil {
+		// v2's gate chain runs the same RequireAuth/RequireViewerAccess, which
+		// honor a verified stream token; mark /api/v2/stream/{session_id}
+		// requests that carry one, as on /api/v1.
+		v2Handler = authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret)(v2Handler)
+	}
+	r.Handle("/api/v2/*", v2Handler)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", healthHandler.ServeHTTP)
@@ -3086,6 +3093,15 @@ func newChiRouter(deps Dependencies) chi.Router {
 		// All remaining routes require auth.
 		if authMiddleware != nil {
 			r.Group(func(r chi.Router) {
+				// Must precede RequireAuth: it marks media delivery requests that
+				// carry a valid session-bound stream token so auth and viewer
+				// access let them through. Adds authorization only — a request
+				// that already passes bearer auth is unaffected. (Restored: the
+				// 2026-08-28 upstream sync dropped this mount, so native TV
+				// players 401'd whenever their pasted access token went stale.)
+				if deps.Config != nil {
+					r.Use(authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret))
+				}
 				r.Use(authMiddleware.RequireAuth)
 				if demoGuard != nil {
 					r.Use(demoGuard.Guard)
