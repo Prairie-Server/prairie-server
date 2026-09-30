@@ -1,4 +1,5 @@
 import {
+  FEATURE_HLS_VARIABLE_SUBSTITUTION_V3,
   FEATURE_PLAN_INVALIDATED_V3,
   FEATURE_PLAYBACK_PLAN_V3,
   PROTOCOL_V3,
@@ -35,6 +36,19 @@ const BASE_CLIENT_FEATURES_V3 = [FEATURE_PLAYBACK_PLAN_V3];
  * server names.
  */
 export const VIDEO_CLIENT_FEATURES_V3 = [FEATURE_PLAN_INVALIDATED_V3];
+
+/**
+ * The video watch page's features for one start or replan.
+ *
+ * HLS variable substitution is added only when the attempt is expected to play
+ * through hls.js (see `hlsJSEngineExpectedV3`); Safari and other native-HLS
+ * paths keep the per-segment manifest query every HLS stack resolves.
+ */
+export function videoClientFeaturesV3(hlsJSExpected: boolean): string[] {
+  return hlsJSExpected
+    ? [...VIDEO_CLIENT_FEATURES_V3, FEATURE_HLS_VARIABLE_SUBSTITUTION_V3]
+    : [...VIDEO_CLIENT_FEATURES_V3];
+}
 
 /**
  * `client_features` is the contract's single advertisement location, and a

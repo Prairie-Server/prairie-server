@@ -65,7 +65,8 @@ func ProtocolStreaming() []workerprotocol.Operation {
 			case kindManifest, kindSegment:
 				op.Description = "Node bearer protects the worker listener. A session carrying the deny marker returns410 and is neither served nor reconstructed. Missing process-local sessions may reconstruct through existing signed-token/stored-recipe, input and execution authority guards; a missing/refused reconstruction can return404. Reads refresh liveness; no durable session availability, unscoped reconstruction or native route is promised. "
 				if mount.kind == kindManifest {
-					op.Parameters = append(op.Parameters, &huma.Param{Name: playback.SourceTimelineQueryParam, In: queryParameter, Schema: &huma.Schema{Type: huma.TypeString}, Description: "Value1 requests source-aligned manifest; raw query is preserved in segment links."})
+					op.Parameters = append(op.Parameters, &huma.Param{Name: playback.SourceTimelineQueryParam, In: queryParameter, Schema: &huma.Schema{Type: huma.TypeString}, Description: "Value1 requests source-aligned manifest; raw query is preserved in segment links."},
+						&huma.Param{Name: playback.HLSVariableSubstitutionQueryParam, In: queryParameter, Schema: &huma.Schema{Type: huma.TypeString}, Description: "Value1 lets a large synthetic manifest carry the raw query once through EXT-X-DEFINE; otherwise every segment link repeats it."})
 					op.Description += "Build the playback manifest; unavailable manifest returns503. No-store response contains relative segment links."
 					op.Responses["200"] = &huma.Response{Description: "Playback manifest", Content: map[string]*huma.MediaType{"application/vnd.apple.mpegurl": text}}
 				} else {

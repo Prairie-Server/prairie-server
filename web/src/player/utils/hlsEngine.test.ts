@@ -1,6 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { isSafariBrowserV3, resolveHLSEngineV3, selectHLSEngineV3 } from "./hlsEngine";
+import {
+  hlsJSEngineExpectedV3,
+  isSafariBrowserV3,
+  resolveHLSEngineV3,
+  selectHLSEngineV3,
+  withoutHLSVariableSubstitutionV3,
+} from "./hlsEngine";
+
+describe("withoutHLSVariableSubstitutionV3", () => {
+  it("drops only the opt-in flag so a native player gets the legacy manifest", () => {
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?st=abc&hls_vars=1")).toBe(
+      "/v2/s/master.m3u8?st=abc",
+    );
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?hls_vars=1&st=abc#t")).toBe(
+      "/v2/s/master.m3u8?st=abc#t",
+    );
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?hls_vars=1")).toBe(
+      "/v2/s/master.m3u8",
+    );
+  });
+
+  it.each([
+    "/v2/s/master.m3u8",
+    "/v2/s/master.m3u8?st=abc",
+    "/v2/s/master.m3u8?xhls_vars=1&hls_vars=0",
+  ])("leaves a URL without the flag untouched: %s", (url) =>
+    expect(withoutHLSVariableSubstitutionV3(url)).toBe(url),
+  );
+});
 
 const safariUA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15";
@@ -80,5 +108,21 @@ describe("selectHLSEngineV3", () => {
       engine: "hlsjs",
       hlsjs,
     });
+  });
+});
+
+// The plan request advertises HLS variable substitution from this prediction,
+// so it must never claim hls.js for a path the player would play natively.
+describe("hlsJSEngineExpectedV3", () => {
+  it("expects hls.js for a non-Safari browser with Media Source", () => {
+    expect(hlsJSEngineExpectedV3(chromeUA, true)).toBe(true);
+  });
+
+  it("never expects hls.js for Safari, which stays on native HLS", () => {
+    expect(hlsJSEngineExpectedV3(safariUA, true)).toBe(false);
+  });
+
+  it("does not expect hls.js without Media Source", () => {
+    expect(hlsJSEngineExpectedV3(chromeUA, false)).toBe(false);
   });
 });

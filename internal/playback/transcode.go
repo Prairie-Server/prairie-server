@@ -346,9 +346,22 @@ const maxSyntheticManifestSegments = 50_000
 // and hls.js parsing. HLS variable substitution keeps the query once while
 // preserving the exact resolved segment URLs. Keep small playlists on the
 // simpler legacy form; below this byte threshold the saving is immaterial.
+//
+// Substitution is opt-in (see HLSVariableSubstitutionQueryParam): native HLS
+// stacks such as Tizen AVPlay ignore #EXT-X-DEFINE and request the literal
+// "?{$silo_query}" URI, which drops the stream token and 401s every segment.
 const minManifestQuerySubstitutionSavings = 64 * 1024
 
 const manifestQueryVariable = "silo_query"
+
+// HLSVariableSubstitutionQueryParam, set to "1" on a manifest URL, allows a
+// large synthetic manifest to carry its access query once through
+// #EXT-X-DEFINE instead of repeating it on every segment URI. The server adds
+// it only to plan URLs whose client advertised
+// FeatureHLSVariableSubstitutionV3, so it rides the URL through every serve
+// path (local, reconstructed, relayed, proxied) without session state. It is a
+// non-secret presentation hint: it grants nothing and is not signed.
+const HLSVariableSubstitutionQueryParam = "hls_vars"
 
 // remountStartOffsetSeconds is a positive, effectively-zero HLS start offset.
 // Media3 suppresses live-edge position projection for EVENT playlists only
@@ -2954,11 +2967,23 @@ func syntheticManifestQuery(segmentCount int, rawQuery string) (definition, suff
 	legacySuffix := "?" + rawQuery
 	variableSuffix := "?{$" + manifestQueryVariable + "}"
 	savingsPerSegment := len(legacySuffix) - len(variableSuffix)
-	if savingsPerSegment <= 0 || int64(segmentCount)*int64(savingsPerSegment) < minManifestQuerySubstitutionSavings || strings.ContainsAny(rawQuery, "\"\r\n") {
+	if !manifestQueryAllowsVariableSubstitution(rawQuery) || savingsPerSegment <= 0 || int64(segmentCount)*int64(savingsPerSegment) < minManifestQuerySubstitutionSavings || strings.ContainsAny(rawQuery, "\"\r\n") {
 		return "", legacySuffix, 0
 	}
 	definition = fmt.Sprintf("#EXT-X-DEFINE:NAME=\"%s\",VALUE=\"%s\"\n", manifestQueryVariable, rawQuery)
 	return definition, variableSuffix, 8
+}
+
+// manifestQueryAllowsVariableSubstitution reports whether the manifest request
+// opted into HLS variable substitution. Every other client gets the legacy
+// per-segment query, which all HLS players resolve.
+func manifestQueryAllowsVariableSubstitution(rawQuery string) bool {
+	for pair := range strings.SplitSeq(rawQuery, "&") {
+		if pair == HLSVariableSubstitutionQueryParam+"=1" {
+			return true
+		}
+	}
+	return false
 }
 
 // GetSegment returns the file path of a named segment if it exists.

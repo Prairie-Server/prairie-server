@@ -41,7 +41,11 @@ import type {
 import { resolvePendingSeekTime } from "../utils/pendingSeek";
 import { resolveVersionAudioLanguage } from "../utils/effectiveAudioLanguage";
 import { HlsStartupGuard } from "../utils/hlsStartupGuard";
-import { isSafariBrowserV3, resolveHLSEngineV3 } from "../utils/hlsEngine";
+import {
+  isSafariBrowserV3,
+  resolveHLSEngineV3,
+  withoutHLSVariableSubstitutionV3,
+} from "../utils/hlsEngine";
 import { isFirefoxUserAgent } from "../utils/browser";
 import { normalizeSubtitleMode } from "../utils/subtitleMode";
 import {
@@ -1918,7 +1922,9 @@ export function VideoPlayer({
     video.addEventListener("canplay", attemptAutoplayWhenReady);
 
     const attachNativeHLS = () => {
-      video.src = effectiveStreamUrl;
+      // The plan opted into HLS variable substitution for hls.js; the media
+      // element may not implement it, so ask for the legacy manifest.
+      video.src = withoutHLSVariableSubstitutionV3(effectiveStreamUrl);
       nativeHLSMetadataHandler = () => {
         video.currentTime = effectiveInitialPosition;
         attemptAutoplayWhenReady();

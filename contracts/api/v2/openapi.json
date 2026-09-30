@@ -158426,6 +158426,14 @@
             }
           },
           {
+            "description": "1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query.",
+            "in": "query",
+            "name": "hls_vars",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "Optional. When present, it must name a profile of the authenticated account.",
             "in": "header",
             "name": "X-Profile-Id",
@@ -158614,6 +158622,14 @@
             "description": "Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required.",
             "in": "query",
             "name": "st",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query.",
+            "in": "query",
+            "name": "hls_vars",
             "schema": {
               "type": "string"
             }
@@ -193497,6 +193513,14 @@
             "description": "Value1 requests source-aligned manifest; raw query is preserved in segment links.",
             "in": "query",
             "name": "source_timeline",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Value1 lets a large synthetic manifest carry the raw query once through EXT-X-DEFINE; otherwise every segment link repeats it.",
+            "in": "query",
+            "name": "hls_vars",
             "schema": {
               "type": "string"
             }

@@ -32,6 +32,8 @@ web/src/lib/adminNavigation.ts	1	[Ll]ive ?TV|livetv	admin Live TV entry
 
 # --- Tizen playback.
 internal/playback/transcode.go	1	func isUnsupportedTizenTag	strip HLS tags Tizen rejects (ba9188f, dropped by #174)
+internal/playback/transcode.go	1	!manifestQueryAllowsVariableSubstitution\(rawQuery\)	EXT-X-DEFINE manifests are opt-in: Tizen AVPlay ignores the tag and 401s every segment (#174 regression)
+internal/api/handlers/playback_v3.go	2	hlsVariableSubstitutionURLV3\(transport\.url	only plans whose client advertised hls_variable_substitution_v1 get hls_vars=1
 internal/playback/audio_channels.go	1	func EffectiveAudioChannels	client channel ceiling (#150)
 internal/playback/audio_select.go	1	func SelectClientPlayableAudioTrack	decodable companion track (#151)
 

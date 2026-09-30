@@ -15,6 +15,46 @@ export function isSafariBrowserV3(userAgent: string): boolean {
   );
 }
 
+/**
+ * Predicts, before a plan exists, whether the video player will play an HLS
+ * plan through hls.js rather than the media element. It mirrors the player's
+ * engine choice — Safari always stays native — and hls.js's own baseline, a
+ * Media Source implementation, without loading hls.js itself.
+ */
+export function hlsJSEngineExpectedV3(userAgent: string, mediaSourceAvailable: boolean): boolean {
+  return mediaSourceAvailable && !isSafariBrowserV3(userAgent);
+}
+
+/** {@link hlsJSEngineExpectedV3} for the running browser. */
+export function currentHLSJSEngineExpectedV3(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const scope = globalThis as { MediaSource?: unknown; ManagedMediaSource?: unknown };
+  return hlsJSEngineExpectedV3(
+    navigator.userAgent,
+    typeof scope.MediaSource === "function" || typeof scope.ManagedMediaSource === "function",
+  );
+}
+
+const hlsVariableSubstitutionFlag = "hls_vars=1";
+
+/**
+ * Drops the `hls_vars=1` opt-in from a manifest URL. The plan asks for HLS
+ * variable substitution only because it predicted hls.js; when the media
+ * element plays the stream instead (hls.js failed to load), the server must
+ * send the legacy manifest, whose segment URIs every native player resolves.
+ */
+export function withoutHLSVariableSubstitutionV3(streamUrl: string): string {
+  const queryStart = streamUrl.indexOf("?");
+  if (queryStart < 0) return streamUrl;
+  const hashStart = streamUrl.indexOf("#", queryStart);
+  const queryEnd = hashStart < 0 ? streamUrl.length : hashStart;
+  const pairs = streamUrl.slice(queryStart + 1, queryEnd).split("&");
+  const kept = pairs.filter((pair) => pair !== hlsVariableSubstitutionFlag);
+  if (kept.length === pairs.length) return streamUrl;
+  const query = kept.length > 0 ? `?${kept.join("&")}` : "";
+  return streamUrl.slice(0, queryStart) + query + streamUrl.slice(queryEnd);
+}
+
 function nativeHLSPreferred(nativeSupported: boolean, preferNativeHLS: boolean): boolean {
   return preferNativeHLS && nativeSupported;
 }

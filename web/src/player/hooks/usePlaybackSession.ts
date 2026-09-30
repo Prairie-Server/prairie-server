@@ -32,9 +32,10 @@ import {
   buildReplanRequestV3,
   buildStartRequestV3,
   routeEventPlanIdentityV3,
-  VIDEO_CLIENT_FEATURES_V3,
+  videoClientFeaturesV3,
   type ReplanOptions,
 } from "../playback-session-wire-v3";
+import { currentHLSJSEngineExpectedV3 } from "../utils/hlsEngine";
 import type {
   PlayerFileVersion,
   PlayerPlaybackVariant,
@@ -544,7 +545,7 @@ export function usePlaybackSession(
       subtitleTrackIndex: number | undefined,
     ): Promise<DecisionResponseV3> => {
       const body = buildStartRequestV3({
-        extraClientFeatures: VIDEO_CLIENT_FEATURES_V3,
+        extraClientFeatures: videoClientFeaturesV3(currentHLSJSEngineExpectedV3()),
         fileId: targetFileId,
         profileId: config.getProfileId() ?? "",
         playbackAttemptId,
@@ -989,7 +990,7 @@ export function usePlaybackSession(
 
       const body = buildReplanRequestV3({
         ...options,
-        extraClientFeatures: VIDEO_CLIENT_FEATURES_V3,
+        extraClientFeatures: videoClientFeaturesV3(currentHLSJSEngineExpectedV3()),
         plan,
         playbackAttemptId,
         replanRequestId: randomUUID(),

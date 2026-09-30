@@ -544,7 +544,7 @@ func TestRestartSeekTarget_MidStreamSeekUsesSegmentIndexNotZero(t *testing.T) {
 }
 
 func TestGenerateFullManifestCompactsRepeatedAuthenticationQuery(t *testing.T) {
-	rawQuery := "st=" + strings.Repeat("recipe", 80) + "&token=" + strings.Repeat("access", 40)
+	rawQuery := "st=" + strings.Repeat("recipe", 80) + "&token=" + strings.Repeat("access", 40) + "&" + HLSVariableSubstitutionQueryParam + "=1"
 	session := &TranscodeSession{opts: TranscodeOpts{
 		TargetCodecVideo: "h264",
 		SegmentDuration:  1,
@@ -568,6 +568,46 @@ func TestGenerateFullManifestCompactsRepeatedAuthenticationQuery(t *testing.T) {
 	legacyBytes := 300 * len("segment/seg_00000.ts?"+rawQuery+"\n")
 	if len(manifest) >= legacyBytes/4 {
 		t.Fatalf("compact manifest size = %d, want less than one quarter of legacy %d", len(manifest), legacyBytes)
+	}
+}
+
+// Native HLS stacks (Tizen AVPlay among them) ignore #EXT-X-DEFINE and would
+// request the literal "?{$silo_query}" URI without the stream token. Without
+// the explicit opt-in a large manifest must keep the per-segment query.
+func TestGenerateFullManifestKeepsPerSegmentQueryWithoutOptIn(t *testing.T) {
+	for _, rawQuery := range []string{
+		"st=" + strings.Repeat("recipe", 80) + "&token=" + strings.Repeat("access", 40),
+		"st=" + strings.Repeat("recipe", 80) + "&" + HLSVariableSubstitutionQueryParam + "=0",
+		"st=" + strings.Repeat("recipe", 80) + "&x" + HLSVariableSubstitutionQueryParam + "=1",
+	} {
+		for _, codec := range []string{"h264", "hevc"} {
+			session := &TranscodeSession{opts: TranscodeOpts{
+				TargetCodecVideo: codec,
+				SegmentDuration:  1,
+				TotalDuration:    300,
+			}}
+			manifest := string(session.GenerateFullManifest("segment/", rawQuery))
+			for _, forbidden := range []string{"#EXT-X-DEFINE", "{$", "#EXT-X-VERSION:8"} {
+				if strings.Contains(manifest, forbidden) {
+					t.Fatalf("%s manifest without opt-in contains %q", codec, forbidden)
+				}
+			}
+			segExt := hlsSegmentExtension(session.opts)
+			for _, want := range []string{
+				"segment/seg_00000" + segExt + "?" + rawQuery + "\n",
+				"segment/seg_00299" + segExt + "?" + rawQuery + "\n",
+			} {
+				if !strings.Contains(manifest, want) {
+					t.Fatalf("%s manifest missing legacy segment URI %q", codec, want)
+				}
+			}
+			if segExt == ".m4s" && !strings.Contains(manifest, "#EXT-X-MAP:URI=\"segment/init.mp4?"+rawQuery+"\"") {
+				t.Fatalf("%s manifest init map lost the per-URI query", codec)
+			}
+			if got := strings.Count(manifest, rawQuery); got != 300+strings.Count(manifest, "#EXT-X-MAP") {
+				t.Fatalf("%s manifest repeats the query %d times, want once per URI", codec, got)
+			}
+		}
 	}
 }
 

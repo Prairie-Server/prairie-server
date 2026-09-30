@@ -41,6 +41,8 @@ const (
 	playbackContentEncoding    = "Content-Encoding"
 )
 
+const hlsVariableSubstitutionParamDescription = "1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query."
+
 // PlaybackMediaHandlers shares the raw byte delivery protocols and the typed
 // font service. Token-carried reconstruction and deny markers live in these
 // shared operations; the v2 listener owns JSON envelopes and problem responses.
@@ -103,6 +105,9 @@ func registerPlaybackDelivery(reg *Registry) {
 			{Name: "session_id", In: playbackParamPath, Required: true, Schema: &huma.Schema{Type: huma.TypeString, MinLength: new(1)}},
 			{Name: playbackAccountToken, In: playbackParamQuery, Description: "Media-element fallback for the account bearer token when an Authorization header cannot be set. Header-authenticated media requires the Authorization header and the profile selector.", Schema: &huma.Schema{Type: huma.TypeString}},
 			{Name: "st", In: playbackParamQuery, Description: "Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required.", Schema: &huma.Schema{Type: huma.TypeString}},
+		}
+		if route.protocol == "hls" {
+			params = append(params, &huma.Param{Name: playback.HLSVariableSubstitutionQueryParam, In: playbackParamQuery, Description: hlsVariableSubstitutionParamDescription, Schema: &huma.Schema{Type: huma.TypeString}})
 		}
 		if route.id == playbackSegmentOperation {
 			params = append(params, &huma.Param{Name: playbackSegmentName, In: playbackParamPath, Required: true, Schema: &huma.Schema{Type: huma.TypeString, MinLength: new(1)}})

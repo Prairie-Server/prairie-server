@@ -701,8 +701,8 @@ parameter, and never carries a parameter across families.
 
 | Route family | Routes | Query parameters |
 | --- | --- | --- |
-| Media | `/stream/{session_id}`, `/playback/transcode/{session_id}/master.m3u8` and its segments | `seek` only — the progressive-remux start offset in seconds, present only when it is non-zero |
-| Media on a designated origin | `{proxy}/stream/v3/{session_id}`, `{proxy}/stream/v3/{session_id}/master.m3u8` and its `segment/{name}` children (§4.1) | `seek` only, with the same meaning; these routes never accept a credential parameter of any kind |
+| Media | `/stream/{session_id}`, `/playback/transcode/{session_id}/master.m3u8` and its segments | `seek` — the progressive-remux start offset in seconds, present only when it is non-zero; `hls_vars=1` on the HLS manifest of an attempt that advertised `hls_variable_substitution_v1` (below) |
+| Media on a designated origin | `{proxy}/stream/v3/{session_id}`, `{proxy}/stream/v3/{session_id}/master.m3u8` and its `segment/{name}` children (§4.1) | `seek` and `hls_vars`, with the same meanings; these routes never accept a credential parameter of any kind |
 | Subtitle artifact | `/stream/{session_id}/subtitles/{combined_index}{.ext}`, `/stream/{session_id}/subtitles/{combined_index}/fonts` | `file_id`, always; one identity pin: `embedded_stream_index`, `external_subtitle_key`, or `downloaded_subtitle_id` (§8); `original=1` on an original-SRT `.srt` URL (§8). VTT receivers may explicitly request `timestamp_offset` in seconds |
 
 A media route never carries `file_id` or `downloaded_subtitle_id` — the session
@@ -718,6 +718,19 @@ An attempt that did not opt into `header_authenticated_media_v1` additionally
 carries the signed stream token `st` on its media URLs — never on subtitle or
 font-bundle routes. It is an opaque transport credential rather than a playback
 parameter, and it is outside the table above.
+
+`hls_variable_substitution_v1` is a client declaration (the server does not
+advertise it) that the attempt's HLS engine implements `#EXT-X-DEFINE` variable
+substitution, as hls.js does. The server then adds `hls_vars=1` to the plan's
+HLS manifest URL, and a large synthetic transcode manifest may define its query
+once (`#EXT-X-DEFINE:NAME="silo_query"`, `EXT-X-VERSION:8`) and write every
+segment URI as `seg_NNNNN.ext?{$silo_query}` instead of repeating a
+token-bearing query on each of them. Without the flag every manifest keeps the
+per-segment query. The opt-in exists because native HLS stacks (Tizen AVPlay,
+and platform players generally) ignore the tag and would request segments
+without their `st` token, so a client that may play natively must not send it.
+The flag is not a credential and is not signed; segment links repeat the
+manifest query, flag included.
 
 ---
 
