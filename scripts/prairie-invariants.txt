@@ -1,0 +1,39 @@
+# Prairie-only code that upstream syncs have silently deleted before.
+#
+# One invariant per line, tab-separated:
+#   <path>  <min matches>  <extended regex>  <why / where it came from>
+#
+# scripts/check-prairie-invariants.sh fails CI when a file is missing or the
+# pattern matches fewer times than required. When you restore something a sync
+# dropped, add its anchor here in the same PR so the next sync cannot drop it
+# unnoticed. Keep patterns on stable identifiers, not on formatting.
+
+# --- Stream-token auth: native TV players cannot send a bearer or refresh one.
+internal/api/router.go	1	r\.Use\(authMiddleware\.StreamTokenAuth\(	stream-token auth mount; dropped by #174, restored #211 (single root mount in #213)
+internal/api/router.go	1	liveTVHandler\.JWTSecret	signs the live HLS stream token (#156)
+internal/api/middleware/stream_token.go	1	func liveHLSDeliverySession	live TV delivery matcher (#156)
+internal/api/middleware/stream_token.go	1	func progressiveDeliverySession	progressive /stream matcher (89324159)
+internal/api/middleware/stream_token.go	1	"/api/v2"	v2 /stream delivery (#211)
+internal/api/middleware/auth.go	1	IsStreamTokenAuthorized	RequireAuth honors the stream token
+internal/api/middleware/viewer_access.go	1	IsStreamTokenAuthorized	viewer access honors the stream token
+
+# --- Live TV server surface.
+internal/config/config.go	1	LiveTVConfig	config LiveTV block (dropped by the 2026-09-29 sync, #198)
+internal/jellycompat/router.go	2	\.SetLiveTV\(	Jellyfin-compat live TV wiring (dropped by the 2026-09-29 sync, #198)
+internal/livetv/stream_plan.go	1	func PlanLiveStream	per-client copy/encode decision for live sessions
+internal/livetv/gracenote/client.go	1	zpmc\.tmsimg\.com	emby.tmsimg.com is NXDOMAIN (#182)
+
+# --- Live TV web wiring (dropped by #174/#175, restored #205).
+web/src/App.tsx	1	/livetv	Live TV route
+web/src/App.tsx	1	watch/live/:channelId	live player route
+web/src/components/AppSidebar.tsx	1	[Ll]ive ?TV	sidebar nav link
+web/src/pages/Home.tsx	1	LiveTVOnNowRow	home "On now" row
+web/src/lib/adminNavigation.ts	1	[Ll]ive ?TV|livetv	admin Live TV entry
+
+# --- Tizen playback.
+internal/playback/transcode.go	1	func isUnsupportedTizenTag	strip HLS tags Tizen rejects (ba9188f, dropped by #174)
+internal/playback/audio_channels.go	1	func EffectiveAudioChannels	client channel ceiling (#150)
+internal/playback/audio_select.go	1	func SelectClientPlayableAudioTrack	decodable companion track (#151)
+
+# --- Wire names (decided 2026-09-29: prairie.* / X-Prairie-* everywhere).
+web/src/api/client.ts	1	X-Prairie-	client identity headers
