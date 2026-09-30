@@ -41,3 +41,4 @@ web/src/api/client.ts	1	X-Prairie-	client identity headers
 # --- Stats for nerds (event log + planner detail).
 web/src/player/components/PlaybackInfoOverlay.tsx	1	Recent events	web stats overlay shows the player event log
 web/src/player/components/VideoPlayer.tsx	1	new PlaybackEventLog\(	web player records events for the stats overlay
+internal/api/handlers/stream.go	1	userID == 0 && !apimw\.IsStreamTokenAuthorized\(	v2 progressive/direct delivery honors st (Tizen direct play)
