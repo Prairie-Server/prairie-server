@@ -9,7 +9,7 @@
 # unnoticed. Keep patterns on stable identifiers, not on formatting.
 
 # --- Stream-token auth: native TV players cannot send a bearer or refresh one.
-internal/api/router.go	2	StreamTokenAuth\(	mount before RequireAuth (v1 group) and around /api/v2; dropped by #174, restored #211
+internal/api/router.go	1	r\.Use\(authMiddleware\.StreamTokenAuth\(	stream-token auth mount; dropped by #174, restored #211 (single root mount in #213)
 internal/api/router.go	1	liveTVHandler\.JWTSecret	signs the live HLS stream token (#156)
 internal/api/middleware/stream_token.go	1	func liveHLSDeliverySession	live TV delivery matcher (#156)
 internal/api/middleware/stream_token.go	1	func progressiveDeliverySession	progressive /stream matcher (89324159)
