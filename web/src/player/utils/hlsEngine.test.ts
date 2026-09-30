@@ -5,7 +5,27 @@ import {
   isSafariBrowserV3,
   resolveHLSEngineV3,
   selectHLSEngineV3,
+  withoutHLSVariableSubstitutionV3,
 } from "./hlsEngine";
+
+describe("withoutHLSVariableSubstitutionV3", () => {
+  it("drops only the opt-in flag so a native player gets the legacy manifest", () => {
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?st=abc&hls_vars=1")).toBe(
+      "/v2/s/master.m3u8?st=abc",
+    );
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?hls_vars=1&st=abc#t")).toBe(
+      "/v2/s/master.m3u8?st=abc#t",
+    );
+    expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?hls_vars=1")).toBe(
+      "/v2/s/master.m3u8",
+    );
+  });
+
+  it.each(["/v2/s/master.m3u8", "/v2/s/master.m3u8?st=abc", "/v2/s/master.m3u8?xhls_vars=1&hls_vars=0"])(
+    "leaves a URL without the flag untouched: %s",
+    (url) => expect(withoutHLSVariableSubstitutionV3(url)).toBe(url),
+  );
+});
 
 const safariUA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15";

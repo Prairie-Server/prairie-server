@@ -35,6 +35,26 @@ export function currentHLSJSEngineExpectedV3(): boolean {
   );
 }
 
+const hlsVariableSubstitutionFlag = "hls_vars=1";
+
+/**
+ * Drops the `hls_vars=1` opt-in from a manifest URL. The plan asks for HLS
+ * variable substitution only because it predicted hls.js; when the media
+ * element plays the stream instead (hls.js failed to load), the server must
+ * send the legacy manifest, whose segment URIs every native player resolves.
+ */
+export function withoutHLSVariableSubstitutionV3(streamUrl: string): string {
+  const queryStart = streamUrl.indexOf("?");
+  if (queryStart < 0) return streamUrl;
+  const hashStart = streamUrl.indexOf("#", queryStart);
+  const queryEnd = hashStart < 0 ? streamUrl.length : hashStart;
+  const pairs = streamUrl.slice(queryStart + 1, queryEnd).split("&");
+  const kept = pairs.filter((pair) => pair !== hlsVariableSubstitutionFlag);
+  if (kept.length === pairs.length) return streamUrl;
+  const query = kept.length > 0 ? `?${kept.join("&")}` : "";
+  return streamUrl.slice(0, queryStart) + query + streamUrl.slice(queryEnd);
+}
+
 function nativeHLSPreferred(nativeSupported: boolean, preferNativeHLS: boolean): boolean {
   return preferNativeHLS && nativeSupported;
 }
