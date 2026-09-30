@@ -70,6 +70,22 @@ jobs:
               - 'tools/fingerprint-compare-wasm/**'
               - '.github/workflows/ci.yml'
 
+  # Build-free tripwire for Prairie-only code that upstream syncs have deleted
+  # before (stream-token auth, Live TV wiring, Tizen fixes). Unfiltered so it
+  # runs on every PR, including a sync that only touches files it resolves to
+  # upstream. See docs/upstream-sync.md.
+  prairie-invariants:
+    name: Prairie invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check Prairie invariants
+        run: scripts/check-prairie-invariants.sh
+
   # Single lint job (not matrix-sharded): each shard still typechecks the module
   # graph, so 4-way split left wall clock ~2.5m while burning 4 runners. PRs lint
   # only packages with changed .go files; main/dispatch keep a full-module pass.

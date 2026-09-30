@@ -140,6 +140,14 @@ issue is open on `Silo-Server/siloserver.org`.
 [Update the user manual](CONTRIBUTING.md#update-the-user-manual) covers when to open one and
 what goes in it.
 
+## Upstream syncs
+
+Merging upstream Silo is the main way Prairie loses work. Follow
+`docs/upstream-sync.md`: merge commit only, CI green before merge, and
+`scripts/check-prairie-invariants.sh` must pass (restore the code, never edit
+the manifest to pass). When you restore something a sync dropped, add its
+anchor to `scripts/prairie-invariants.txt` in the same PR.
+
 ## Building and verifying
 
 `make build`, `make dev-backend`, `make dev-frontend`, `make lint`, `make migrate-status` /
