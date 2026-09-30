@@ -104269,6 +104269,8 @@ export interface operations {
   getPlaybackManifest: {
     parameters: {
       query?: {
+        /** @description 1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query. */
+        hls_vars?: string;
         /** @description Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required. */
         st?: string;
         /** @description Media-element fallback for the account bearer token when an Authorization header cannot be set. Header-authenticated media requires the Authorization header and the profile selector. */
@@ -104393,6 +104395,8 @@ export interface operations {
   getPlaybackSegment: {
     parameters: {
       query?: {
+        /** @description 1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query. */
+        hls_vars?: string;
         /** @description Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required. */
         st?: string;
         /** @description Media-element fallback for the account bearer token when an Authorization header cannot be set. Header-authenticated media requires the Authorization header and the profile selector. */

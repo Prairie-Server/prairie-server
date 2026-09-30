@@ -137,6 +137,17 @@ export const FEATURE_OUTPUT_CHANGE_V3 = "output_change_v1";
  */
 export const FEATURE_PLAN_INVALIDATED_V3 = "plan_invalidated_v1";
 
+/**
+ * The client's HLS engine implements `#EXT-X-DEFINE` variable substitution, so
+ * a large transcode manifest may define its access query once instead of
+ * repeating it on every segment URI.
+ *
+ * Only an attempt that will play through hls.js may advertise it: a native HLS
+ * stack that ignores the tag requests segments without their stream token and
+ * every one of them is refused.
+ */
+export const FEATURE_HLS_VARIABLE_SUBSTITUTION_V3 = "hls_variable_substitution_v1";
+
 /** The `original` rung label, which always preserves the source. */
 export const QUALITY_ORIGINAL_V3 = "original";
 

@@ -15,6 +15,26 @@ export function isSafariBrowserV3(userAgent: string): boolean {
   );
 }
 
+/**
+ * Predicts, before a plan exists, whether the video player will play an HLS
+ * plan through hls.js rather than the media element. It mirrors the player's
+ * engine choice — Safari always stays native — and hls.js's own baseline, a
+ * Media Source implementation, without loading hls.js itself.
+ */
+export function hlsJSEngineExpectedV3(userAgent: string, mediaSourceAvailable: boolean): boolean {
+  return mediaSourceAvailable && !isSafariBrowserV3(userAgent);
+}
+
+/** {@link hlsJSEngineExpectedV3} for the running browser. */
+export function currentHLSJSEngineExpectedV3(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const scope = globalThis as { MediaSource?: unknown; ManagedMediaSource?: unknown };
+  return hlsJSEngineExpectedV3(
+    navigator.userAgent,
+    typeof scope.MediaSource === "function" || typeof scope.ManagedMediaSource === "function",
+  );
+}
+
 function nativeHLSPreferred(nativeSupported: boolean, preferNativeHLS: boolean): boolean {
   return preferNativeHLS && nativeSupported;
 }

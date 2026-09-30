@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { isSafariBrowserV3, resolveHLSEngineV3, selectHLSEngineV3 } from "./hlsEngine";
+import {
+  hlsJSEngineExpectedV3,
+  isSafariBrowserV3,
+  resolveHLSEngineV3,
+  selectHLSEngineV3,
+} from "./hlsEngine";
 
 const safariUA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15";
@@ -80,5 +85,21 @@ describe("selectHLSEngineV3", () => {
       engine: "hlsjs",
       hlsjs,
     });
+  });
+});
+
+// The plan request advertises HLS variable substitution from this prediction,
+// so it must never claim hls.js for a path the player would play natively.
+describe("hlsJSEngineExpectedV3", () => {
+  it("expects hls.js for a non-Safari browser with Media Source", () => {
+    expect(hlsJSEngineExpectedV3(chromeUA, true)).toBe(true);
+  });
+
+  it("never expects hls.js for Safari, which stays on native HLS", () => {
+    expect(hlsJSEngineExpectedV3(safariUA, true)).toBe(false);
+  });
+
+  it("does not expect hls.js without Media Source", () => {
+    expect(hlsJSEngineExpectedV3(chromeUA, false)).toBe(false);
   });
 });

@@ -6853,3 +6853,29 @@ func TestHEVCEncodedPlanCarriesHVC1ToTransport(t *testing.T) {
 		t.Fatalf("H264 carried HEVC tag=%q", got)
 	}
 }
+
+func TestHLSVariableSubstitutionURLV3IsOptIn(t *testing.T) {
+	optIn := []string{playback.FeaturePlaybackPlanV3, playback.FeatureHLSVariableSubstitutionV3}
+	legacy := []string{playback.FeaturePlaybackPlanV3, playback.FeatureSeekReanchorV3}
+	for _, test := range []struct {
+		name, url string
+		features  []string
+		want      string
+	}{
+		{"legacy client keeps signed URL", "/playback/transcode/s1/master.m3u8?st=tok", legacy, "/playback/transcode/s1/master.m3u8?st=tok"},
+		{"legacy client keeps tokenless URL", "/playback/transcode/s1/master.m3u8", nil, "/playback/transcode/s1/master.m3u8"},
+		{"opt-in appends after stream token", "/playback/transcode/s1/master.m3u8?st=tok", optIn, "/playback/transcode/s1/master.m3u8?st=tok&hls_vars=1"},
+		{"opt-in tokenless URL", "/playback/transcode/s1/master.m3u8", optIn, "/playback/transcode/s1/master.m3u8?hls_vars=1"},
+		{"opt-in proxy token route", "https://proxy.example/stream/transcode/tok/master.m3u8", optIn, "https://proxy.example/stream/transcode/tok/master.m3u8?hls_vars=1"},
+		{"opt-in proxy grant route", "https://proxy.example/stream/v3/s1/master.m3u8", optIn, "https://proxy.example/stream/v3/s1/master.m3u8?hls_vars=1"},
+		{"opt-in is idempotent", "/playback/transcode/s1/master.m3u8?st=tok&hls_vars=1", optIn, "/playback/transcode/s1/master.m3u8?st=tok&hls_vars=1"},
+		{"feature spelling is normalized", "/playback/transcode/s1/master.m3u8", []string{" HLS_Variable_Substitution_V1 "}, "/playback/transcode/s1/master.m3u8?hls_vars=1"},
+		{"progressive URL is untouched", "/stream/s1?st=tok", optIn, "/stream/s1?st=tok"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := hlsVariableSubstitutionURLV3(test.url, test.features); got != test.want {
+				t.Fatalf("hlsVariableSubstitutionURLV3(%q) = %q, want %q", test.url, got, test.want)
+			}
+		})
+	}
+}

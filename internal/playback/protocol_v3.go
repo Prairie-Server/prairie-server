@@ -69,6 +69,14 @@ const (
 	// the client's ordinary recovery then mints a fresh attempt that plans
 	// against the now-persisted verdict.
 	FeaturePlanInvalidatedV3 = "plan_invalidated_v1"
+	// FeatureHLSVariableSubstitutionV3 is the client's statement that its HLS
+	// player implements EXT-X-DEFINE variable substitution (hls.js does). Only
+	// then may a large synthetic transcode manifest carry its access query once
+	// as a variable instead of on every segment URI. It is opt-in because
+	// native players (Tizen AVPlay, most platform HLS stacks) ignore the tag
+	// and would request segments without the stream token. It is a client
+	// declaration only; the server does not advertise it.
+	FeatureHLSVariableSubstitutionV3 = "hls_variable_substitution_v1"
 	// FeatureSubripSidecarV3 is the client's statement that it parses SubRip
 	// itself, including {\anN} placement. An opted-in client receives
 	// external and downloaded SRT tracks as the original .srt bytes instead

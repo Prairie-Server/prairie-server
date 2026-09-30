@@ -13,6 +13,7 @@ import {
   buildStartRequestV3,
   routeEventPlanIdentityV3,
   VIDEO_CLIENT_FEATURES_V3,
+  videoClientFeaturesV3,
 } from "../playback-session-wire-v3";
 import { markPlaybackIntent } from "../first-frame";
 import { usePlaybackSession } from "./usePlaybackSession";
@@ -124,6 +125,19 @@ describe("buildStartRequestV3", () => {
       }).client_features,
     ).toEqual(["playback_plan_v3", "plan_invalidated_v1"]);
     expect(buildStartRequestV3(startBase).client_features).toEqual(["playback_plan_v3"]);
+  });
+
+  // A native HLS stack ignores #EXT-X-DEFINE and would request segments
+  // without their stream token, so only an hls.js attempt may advertise it.
+  it("advertises HLS variable substitution only for an hls.js attempt", () => {
+    expect(
+      buildStartRequestV3({ ...startBase, extraClientFeatures: videoClientFeaturesV3(true) })
+        .client_features,
+    ).toEqual(["playback_plan_v3", "plan_invalidated_v1", "hls_variable_substitution_v1"]);
+    expect(
+      buildStartRequestV3({ ...startBase, extraClientFeatures: videoClientFeaturesV3(false) })
+        .client_features,
+    ).toEqual(["playback_plan_v3", "plan_invalidated_v1"]);
   });
 
   it("declares the protocol version and the plan feature", () => {

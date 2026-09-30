@@ -2012,7 +2012,7 @@ func (h *PlaybackHandler) startPlannedPlaybackV3(r *http.Request, userID int, pr
 		abort()
 		return playback.DecisionResponseV3{}, subtitleArtifactErrorV3("Failed to freeze the selected subtitle identity.", frozenErr)
 	}
-	result.Plan.Stream.URL = transport.url
+	result.Plan.Stream.URL = hlsVariableSubstitutionURLV3(transport.url, req.ClientFeatures)
 	if err := h.attachSubtitleArtifactV3(r.Context(), session.ID, effectiveFile, result.Plan, result.SubtitleTrackIndex, &frozenRecipe, req.ClientFeatures); err != nil {
 		transport.rollback()
 		abort()
@@ -4181,6 +4181,37 @@ func (h *PlaybackHandler) grantManifestURLV3(ctx context.Context, card playback.
 	return base + "/stream/v3/" + card.SessionID + "/master.m3u8", true, prior
 }
 
+// hlsVariableSubstitutionURLV3 marks an HLS manifest URL as safe for HLS
+// variable substitution when the attempt's client advertised
+// hls_variable_substitution_v1 (see playback.HLSVariableSubstitutionQueryParam).
+// Every other URL is returned unchanged, so native players keep the legacy
+// per-segment query they can resolve.
+//
+// The opt-in is a plain query flag rather than session state because the
+// manifest is served from sessions that never saw the plan request: a session
+// reconstructed from its token recipe, the API relay to a transcode node (which
+// strips only st), and proxy token and grant routes (which forward the raw
+// query). The URL is the one thing all of them receive intact.
+func hlsVariableSubstitutionURLV3(streamURL string, clientFeatures []string) string {
+	if !playback.HasFeatureV3(clientFeatures, playback.FeatureHLSVariableSubstitutionV3) {
+		return streamURL
+	}
+	path, query, _ := strings.Cut(streamURL, "?")
+	if !strings.HasSuffix(path, "/master.m3u8") {
+		return streamURL
+	}
+	flag := playback.HLSVariableSubstitutionQueryParam + "=1"
+	if query == "" {
+		return path + "?" + flag
+	}
+	for pair := range strings.SplitSeq(query, "&") {
+		if pair == flag {
+			return streamURL
+		}
+	}
+	return streamURL + "&" + flag
+}
+
 // sourceExecutionMetadataV3 freezes the source facts used by a remote executor.
 func sourceExecutionMetadataV3(file *models.MediaFile, result playback.PlannerResultV3) playback.SourceExecutionMetadataV3 {
 	if result.FrozenSourceMetadata != nil {
@@ -5202,6 +5233,9 @@ func (h *PlaybackHandler) executeReplanV3(r *http.Request, record *playback.Atte
 		// receipt into the already validated recipe instead of rerunning a
 		// fallible subtitle-identity freeze after authority publication.
 		artifactRecipe.ToneMapMode = result.ToneMapMode
+		// A reused transport keeps its published URL verbatim; only a fresh one
+		// picks up the attempt's manifest-format opt-in.
+		transport.url = hlsVariableSubstitutionURLV3(transport.url, start.ClientFeatures)
 	}
 	result.Plan.Stream.URL = transport.url
 	response := playback.DecisionResponseV3{ProtocolVersion: playback.ProtocolV3, ServerFeatures: serverFeaturesForRequestV3(r.Context()), Outcome: playback.OutcomePlayableV3, SessionID: session.ID, PlaybackPlan: result.Plan}
