@@ -3458,7 +3458,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3494,7 +3493,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3530,7 +3528,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3566,7 +3563,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3602,7 +3598,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3638,7 +3633,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3674,7 +3668,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3710,7 +3703,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3746,7 +3738,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3782,7 +3773,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3818,7 +3808,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3854,7 +3843,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3890,7 +3878,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3926,7 +3913,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3962,7 +3948,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -3998,7 +3983,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4034,7 +4018,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4070,7 +4053,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4106,7 +4088,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4142,7 +4123,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4178,7 +4158,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4214,7 +4193,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4250,7 +4228,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4286,7 +4263,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4322,7 +4298,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4358,7 +4333,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4394,7 +4368,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4430,7 +4403,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4466,7 +4438,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4502,7 +4473,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4538,7 +4508,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4574,7 +4543,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4610,7 +4578,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4646,7 +4613,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4682,7 +4648,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4718,7 +4683,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4754,7 +4718,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4790,7 +4753,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4826,7 +4788,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4861,7 +4822,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4897,7 +4857,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4933,7 +4892,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -4969,7 +4927,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5005,7 +4962,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5041,7 +4997,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5077,7 +5032,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5113,7 +5067,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5149,7 +5102,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5185,7 +5137,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5221,7 +5172,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5257,7 +5207,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5293,7 +5242,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5329,7 +5277,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5365,7 +5312,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5401,7 +5347,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5437,7 +5382,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5473,7 +5417,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5509,7 +5452,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5545,7 +5487,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5581,7 +5522,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5617,7 +5557,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5652,7 +5591,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5687,7 +5625,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5722,7 +5659,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5757,7 +5693,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5792,7 +5727,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5827,7 +5761,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5863,7 +5796,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5899,7 +5831,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5935,7 +5866,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -5971,7 +5901,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6007,7 +5936,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6043,7 +5971,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6079,7 +6006,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6114,7 +6040,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6150,7 +6075,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6186,7 +6110,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6222,7 +6145,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6258,7 +6180,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6294,7 +6215,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6330,7 +6250,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6366,7 +6285,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6402,7 +6320,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6438,7 +6355,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6474,7 +6390,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6510,7 +6425,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6546,7 +6460,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6582,7 +6495,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6618,7 +6530,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6654,7 +6565,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6690,7 +6600,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6726,7 +6635,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6762,7 +6670,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6798,7 +6705,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6834,7 +6740,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6870,7 +6775,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6906,7 +6810,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6942,7 +6845,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -6978,7 +6880,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7014,7 +6915,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7050,7 +6950,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7086,7 +6985,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7122,7 +7020,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7158,7 +7055,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7194,7 +7090,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7230,7 +7125,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7266,7 +7160,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7302,7 +7195,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7337,7 +7229,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7373,7 +7264,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7409,7 +7299,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7445,7 +7334,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7481,7 +7369,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7517,7 +7404,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7552,7 +7438,6 @@
         "demo_guarded",
         "metadata_curation",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7588,7 +7473,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7623,7 +7507,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7658,7 +7541,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7693,7 +7575,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7728,7 +7609,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7763,7 +7643,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7798,7 +7677,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7834,7 +7712,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7870,7 +7747,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7906,7 +7782,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7942,7 +7817,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -7978,7 +7852,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8014,7 +7887,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8050,7 +7922,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8086,7 +7957,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8122,7 +7992,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8158,7 +8027,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8194,7 +8062,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8230,7 +8097,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8266,7 +8132,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8302,7 +8167,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8338,7 +8202,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8374,7 +8237,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8410,7 +8272,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8446,7 +8307,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8482,7 +8342,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8518,7 +8377,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8554,7 +8412,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8590,7 +8447,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8626,7 +8482,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8662,7 +8517,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8698,7 +8552,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8734,7 +8587,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8770,7 +8622,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8806,7 +8657,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8842,7 +8692,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8879,7 +8728,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8916,7 +8764,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8953,7 +8800,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -8990,7 +8836,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9026,7 +8871,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9062,7 +8906,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9098,7 +8941,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9134,7 +8976,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9170,7 +9011,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9206,7 +9046,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9242,7 +9081,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9278,7 +9116,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9313,7 +9150,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9348,7 +9184,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9384,7 +9219,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9420,7 +9254,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9456,7 +9289,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9492,7 +9324,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9528,7 +9359,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9564,7 +9394,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9600,7 +9429,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9636,7 +9464,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9672,7 +9499,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9708,7 +9534,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9744,7 +9569,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9780,7 +9604,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9816,7 +9639,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9852,7 +9674,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9888,7 +9709,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9924,7 +9744,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9960,7 +9779,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -9996,7 +9814,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10032,7 +9849,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10068,7 +9884,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10104,7 +9919,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10140,7 +9954,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10176,7 +9989,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10212,7 +10024,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10248,7 +10059,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10284,7 +10094,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10320,7 +10129,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10356,7 +10164,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10392,7 +10199,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10428,7 +10234,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10464,7 +10269,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10500,7 +10304,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10536,7 +10339,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10572,7 +10374,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10608,7 +10409,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10644,7 +10444,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10680,7 +10479,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10716,7 +10514,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10752,7 +10549,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10788,7 +10584,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10824,7 +10619,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10860,7 +10654,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10896,7 +10689,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10932,7 +10724,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -10968,7 +10759,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11004,7 +10794,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11040,7 +10829,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11076,7 +10864,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11112,7 +10899,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11148,7 +10934,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11184,7 +10969,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11220,7 +11004,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11256,7 +11039,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11292,7 +11074,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11328,7 +11109,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11364,7 +11144,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11400,7 +11179,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11436,7 +11214,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11473,7 +11250,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11509,7 +11285,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11545,7 +11320,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11581,7 +11355,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11617,7 +11390,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11653,7 +11425,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11688,7 +11459,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11723,7 +11493,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11758,7 +11527,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11793,7 +11561,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11829,7 +11596,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11865,7 +11631,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11901,7 +11666,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11937,7 +11701,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -11973,7 +11736,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12008,7 +11770,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12043,7 +11804,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12078,7 +11838,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12113,7 +11872,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12148,7 +11906,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12184,7 +11941,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12220,7 +11976,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12255,7 +12010,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12290,7 +12044,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12325,7 +12078,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12360,7 +12112,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12395,7 +12146,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12430,7 +12180,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12465,7 +12214,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12500,7 +12248,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12535,7 +12282,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12571,7 +12317,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12607,7 +12352,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12643,7 +12387,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12679,7 +12422,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12715,7 +12457,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12751,7 +12492,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12787,7 +12527,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12822,7 +12561,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12857,7 +12595,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12892,7 +12629,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12928,7 +12664,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -12964,7 +12699,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13000,7 +12734,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13036,7 +12769,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13072,7 +12804,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13108,7 +12839,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13144,7 +12874,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13179,7 +12908,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13214,7 +12942,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13249,7 +12976,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13284,7 +13010,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13319,7 +13044,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13354,7 +13078,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13389,7 +13112,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13425,7 +13147,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13460,7 +13181,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13496,7 +13216,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13532,7 +13251,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13568,7 +13286,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13601,8 +13318,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "demo_guarded",
-        "stream_token_delivery"
+        "demo_guarded"
       ],
       "conditions": [
         "apiKeyRepo != nil && authMiddleware != nil"
@@ -13632,8 +13348,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "demo_guarded",
-        "stream_token_delivery"
+        "demo_guarded"
       ],
       "conditions": [
         "apiKeyRepo != nil && authMiddleware != nil"
@@ -13663,8 +13378,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "demo_guarded",
-        "stream_token_delivery"
+        "demo_guarded"
       ],
       "conditions": [
         "apiKeyRepo != nil && authMiddleware != nil"
@@ -13694,8 +13408,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "demo_guarded",
-        "stream_token_delivery"
+        "demo_guarded"
       ],
       "conditions": [
         "apiKeyRepo != nil && authMiddleware != nil"
@@ -13728,7 +13441,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13763,7 +13475,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13798,7 +13509,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -13830,8 +13540,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "optional_viewer_access",
-        "stream_token_delivery"
+        "optional_viewer_access"
       ],
       "conditions": [
         "authHandler != nil",
@@ -13863,8 +13572,7 @@
       "auth_traits": [
         "authenticated",
         "optional_viewer_access",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -13893,9 +13601,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -13924,8 +13630,7 @@
       "middleware_chain": 16,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -13955,8 +13660,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -13987,7 +13691,6 @@
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -14018,9 +13721,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil"
       ],
@@ -14048,8 +13749,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14078,9 +13778,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14109,8 +13807,7 @@
       "middleware_chain": 17,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14139,9 +13836,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14170,8 +13865,7 @@
       "middleware_chain": 18,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14201,8 +13895,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14231,9 +13924,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14262,8 +13953,7 @@
       "middleware_chain": 20,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14293,8 +13983,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14324,8 +14013,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14354,9 +14042,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "oauthHandler != nil"
@@ -14384,9 +14070,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "oauthHandler != nil"
@@ -14414,9 +14098,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "oauthHandler != nil"
@@ -14446,8 +14128,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "optional_viewer_access",
-        "stream_token_delivery"
+        "optional_viewer_access"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14476,9 +14157,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil"
       ],
@@ -14505,9 +14184,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil"
       ],
@@ -14535,8 +14212,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14566,8 +14242,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14596,9 +14271,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil"
       ],
@@ -14625,9 +14298,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14656,8 +14327,7 @@
       "middleware_chain": 21,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14686,9 +14356,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil"
       ],
@@ -14715,9 +14383,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14746,8 +14412,7 @@
       "middleware_chain": 22,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -14776,9 +14441,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "autoscanHandler != nil",
         "!(deps.RateLimitMW != nil)"
@@ -14807,8 +14470,7 @@
       "middleware_chain": 15,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "autoscanHandler != nil",
@@ -14837,9 +14499,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "settingsRepo != nil",
         "brandingHandler != nil"
@@ -14872,7 +14532,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -14906,7 +14565,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -14940,7 +14598,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -14974,7 +14631,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15008,7 +14664,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15042,7 +14697,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15077,7 +14731,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15112,7 +14765,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15147,7 +14799,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15182,7 +14833,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15216,7 +14866,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15251,7 +14900,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15286,7 +14934,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15322,7 +14969,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15357,7 +15003,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15392,7 +15037,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15427,7 +15071,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15462,7 +15105,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15497,7 +15139,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15532,7 +15173,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15567,7 +15207,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15603,7 +15242,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15639,7 +15277,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15675,7 +15312,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15711,7 +15347,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15747,7 +15382,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15782,7 +15416,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15817,7 +15450,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15853,7 +15485,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15888,7 +15519,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15923,7 +15553,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15959,7 +15588,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -15994,7 +15622,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16029,7 +15656,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16064,7 +15690,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16099,7 +15724,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16134,7 +15758,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16169,7 +15792,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16204,7 +15826,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16237,8 +15858,7 @@
       "auth_class": "authenticated",
       "auth_traits": [
         "authenticated",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authMiddleware != nil"
@@ -16271,7 +15891,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16306,7 +15925,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16341,7 +15959,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16376,7 +15993,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16409,8 +16025,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16441,8 +16056,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16473,8 +16087,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16505,8 +16118,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16537,8 +16149,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16569,8 +16180,7 @@
       "auth_traits": [
         "authenticated",
         "demo_guarded",
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "diagnosticsHandler != nil && authMiddleware != nil"
@@ -16602,7 +16212,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16635,7 +16244,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16668,7 +16276,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16701,7 +16308,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16734,7 +16340,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16767,7 +16372,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16800,7 +16404,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16833,7 +16436,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16866,7 +16468,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16899,7 +16500,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16932,7 +16532,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16965,7 +16564,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -16998,7 +16596,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17031,7 +16628,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17064,7 +16660,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17097,7 +16692,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17130,7 +16724,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17163,7 +16756,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17196,7 +16788,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17229,7 +16820,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17262,7 +16852,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17295,7 +16884,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17328,7 +16916,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17362,7 +16949,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17397,7 +16983,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17432,7 +17017,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17467,7 +17051,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17502,7 +17085,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17537,7 +17119,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17572,7 +17153,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17607,7 +17187,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17642,7 +17221,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17677,7 +17255,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17712,7 +17289,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17746,7 +17322,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17780,7 +17355,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17815,7 +17389,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17850,7 +17423,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17885,7 +17457,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17920,7 +17491,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17955,7 +17525,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -17985,9 +17554,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [],
       "conditional": false,
       "request_kind": "none",
@@ -18016,7 +17583,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18050,7 +17616,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18084,7 +17649,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18118,7 +17682,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18152,7 +17715,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18186,7 +17748,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18220,7 +17781,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18255,7 +17815,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18290,7 +17849,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18325,7 +17883,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18360,7 +17917,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18395,7 +17951,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18430,7 +17985,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18465,7 +18019,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18499,7 +18052,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18528,9 +18080,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "invitationService != nil",
@@ -18560,8 +18110,7 @@
       "middleware_chain": 19,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -18591,9 +18140,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "authHandler != nil",
         "invitationService != nil",
@@ -18623,8 +18170,7 @@
       "middleware_chain": 19,
       "auth_class": "public",
       "auth_traits": [
-        "rate_limited",
-        "stream_token_delivery"
+        "rate_limited"
       ],
       "conditions": [
         "authHandler != nil",
@@ -18658,7 +18204,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18692,7 +18237,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18727,7 +18271,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18763,7 +18306,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18798,7 +18340,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18833,7 +18374,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18868,7 +18408,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18903,7 +18442,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18938,7 +18476,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -18973,7 +18510,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19008,7 +18544,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19043,7 +18578,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19078,7 +18612,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19113,7 +18646,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19148,7 +18680,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19183,7 +18714,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19218,7 +18748,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19253,7 +18782,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19288,7 +18816,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19323,7 +18850,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19358,7 +18884,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19393,7 +18918,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19428,7 +18952,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19463,7 +18986,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19498,7 +19020,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19533,7 +19054,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19568,7 +19088,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19603,7 +19122,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19638,7 +19156,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19673,7 +19190,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19707,7 +19223,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19741,7 +19256,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19776,7 +19290,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19811,7 +19324,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19846,7 +19358,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19880,7 +19391,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19914,7 +19424,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19949,7 +19458,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -19984,7 +19492,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20018,7 +19525,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20053,7 +19559,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20088,7 +19593,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20123,7 +19627,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20158,7 +19661,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20193,7 +19695,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20228,7 +19729,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20263,7 +19763,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20298,7 +19797,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20332,7 +19830,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20366,7 +19863,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20401,7 +19897,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20436,7 +19931,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20470,7 +19964,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20505,7 +19998,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20540,7 +20032,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20575,7 +20066,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20610,7 +20100,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20645,7 +20134,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20680,7 +20168,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20715,7 +20202,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20750,7 +20236,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20785,7 +20270,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20820,7 +20304,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20855,7 +20338,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20889,7 +20371,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20924,7 +20405,6 @@
         "demo_guarded",
         "marker_edit",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20959,7 +20439,6 @@
         "demo_guarded",
         "marker_edit",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -20993,7 +20472,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21028,7 +20506,6 @@
         "demo_guarded",
         "marker_edit",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21062,7 +20539,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21096,7 +20572,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21131,7 +20606,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21166,7 +20640,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21200,7 +20673,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21235,7 +20707,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21270,7 +20741,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21301,9 +20771,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.Notifications != nil"
       ],
@@ -21334,7 +20802,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21370,7 +20837,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21405,7 +20871,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21440,7 +20905,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21475,7 +20939,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21505,9 +20968,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.Notifications != nil"
       ],
@@ -21534,9 +20995,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.Notifications != nil"
       ],
@@ -21563,9 +21022,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.Notifications != nil"
       ],
@@ -21597,7 +21054,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21632,7 +21088,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21666,7 +21121,6 @@
         "authenticated",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21700,7 +21154,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21735,7 +21188,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21770,7 +21222,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21805,7 +21256,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21840,7 +21290,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21875,7 +21324,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21910,7 +21358,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21945,7 +21392,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -21980,7 +21426,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22015,7 +21460,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22050,7 +21494,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22085,7 +21528,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22120,7 +21562,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22155,7 +21596,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22190,7 +21630,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22225,7 +21664,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22260,7 +21698,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22295,7 +21732,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22330,7 +21766,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22365,7 +21800,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22399,7 +21833,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22433,7 +21866,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22467,7 +21899,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22501,7 +21932,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22535,7 +21965,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22570,7 +21999,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22604,7 +22032,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22639,7 +22066,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22673,7 +22099,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22707,7 +22132,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22741,7 +22165,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22775,7 +22198,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22810,7 +22232,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22845,7 +22266,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22880,7 +22300,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22914,7 +22333,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22948,7 +22366,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -22982,7 +22399,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23016,7 +22432,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23050,7 +22465,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23084,7 +22498,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23114,9 +22527,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "webhookSyncHandler != nil"
       ],
@@ -23143,9 +22554,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23172,9 +22581,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23201,9 +22608,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23230,9 +22635,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23259,9 +22662,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23288,9 +22689,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23317,9 +22716,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23346,9 +22743,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23375,9 +22770,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23404,9 +22797,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "deps.PluginHTTPProxy != nil"
       ],
@@ -23437,7 +22828,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23472,7 +22862,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23507,7 +22896,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23542,7 +22930,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23578,7 +22965,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23613,7 +22999,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23647,7 +23032,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23681,7 +23065,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23715,7 +23098,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23749,7 +23131,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23783,7 +23164,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23817,7 +23197,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23851,7 +23230,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23885,7 +23263,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23920,7 +23297,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23955,7 +23331,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -23991,7 +23366,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24027,7 +23401,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24063,7 +23436,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24094,9 +23466,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [],
       "conditional": false,
       "request_kind": "none",
@@ -24126,7 +23496,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24161,7 +23530,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24196,7 +23564,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24231,7 +23598,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24266,7 +23632,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24301,7 +23666,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24336,7 +23700,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24371,7 +23734,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24406,7 +23768,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24441,7 +23802,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24476,7 +23836,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24511,7 +23870,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24546,7 +23904,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24581,7 +23938,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24616,7 +23972,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24651,7 +24006,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24686,7 +24040,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24721,7 +24074,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24756,7 +24108,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24791,7 +24142,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24826,7 +24176,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24861,7 +24210,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24896,7 +24244,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24931,7 +24278,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -24966,7 +24312,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25001,7 +24346,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25036,7 +24380,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25071,7 +24414,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25106,7 +24448,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25141,7 +24482,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25176,7 +24516,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25211,7 +24550,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25245,7 +24583,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25278,7 +24615,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25311,7 +24647,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25345,7 +24680,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25380,7 +24714,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25415,7 +24748,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25451,7 +24783,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25486,7 +24817,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25521,7 +24851,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25556,7 +24885,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25591,7 +24919,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25626,7 +24953,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25660,7 +24986,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25695,7 +25020,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25729,7 +25053,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25764,7 +25087,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25799,7 +25121,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25835,7 +25156,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25870,7 +25190,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25906,7 +25225,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25942,7 +25260,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -25978,7 +25295,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26014,7 +25330,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26050,7 +25365,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26086,7 +25400,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26121,7 +25434,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26155,7 +25467,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26189,7 +25500,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26223,7 +25533,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26257,7 +25566,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26291,7 +25599,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26325,7 +25632,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26359,7 +25665,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26394,7 +25699,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26429,7 +25733,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26464,7 +25767,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26498,7 +25800,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26533,7 +25834,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26568,7 +25868,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26603,7 +25902,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26638,7 +25936,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26673,7 +25970,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26708,7 +26004,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26743,7 +26038,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26777,7 +26071,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26811,7 +26104,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26845,7 +26137,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26879,7 +26170,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26913,7 +26203,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26947,7 +26236,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -26981,7 +26269,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27016,7 +26303,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27046,9 +26332,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "settingsRepo != nil"
       ],
@@ -27075,9 +26359,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "settingsRepo != nil",
         "brandingHandler != nil"
@@ -27106,8 +26388,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "settingsRepo != nil",
@@ -27138,8 +26419,7 @@
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "settingsRepo != nil",
@@ -27169,8 +26449,7 @@
       "middleware_chain": 2,
       "auth_class": "authenticated",
       "auth_traits": [
-        "authenticated",
-        "stream_token_delivery"
+        "authenticated"
       ],
       "conditions": [
         "settingsRepo != nil",
@@ -27203,7 +26482,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27238,7 +26516,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27273,7 +26550,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27308,7 +26584,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27343,7 +26618,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27378,7 +26652,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27413,7 +26686,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27448,7 +26720,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27483,7 +26754,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27518,7 +26788,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27553,7 +26822,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27588,7 +26856,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27623,7 +26890,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27658,7 +26924,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27693,7 +26958,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27728,7 +26992,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27763,7 +27026,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27798,7 +27060,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27833,7 +27094,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27868,7 +27128,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27903,7 +27162,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27938,7 +27196,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -27972,7 +27229,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28006,7 +27262,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28041,7 +27296,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28076,7 +27330,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28111,7 +27364,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28146,7 +27398,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28181,7 +27432,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28216,7 +27466,6 @@
         "demo_guarded",
         "profile_required",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28250,7 +27499,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28284,7 +27532,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28318,7 +27565,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28352,7 +27598,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28386,7 +27631,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28420,7 +27664,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28454,7 +27697,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28488,7 +27730,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
@@ -28518,9 +27759,7 @@
       "handler_resolved": true,
       "middleware_chain": 1,
       "auth_class": "public",
-      "auth_traits": [
-        "stream_token_delivery"
-      ],
+      "auth_traits": [],
       "conditions": [
         "webhookSyncHandler != nil"
       ],
@@ -28551,7 +27790,6 @@
         "authenticated",
         "demo_guarded",
         "rate_limited",
-        "stream_token_delivery",
         "viewer_access"
       ],
       "conditions": [
