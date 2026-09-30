@@ -493,6 +493,21 @@ jobs:
 
   # Kept as a named check for branch-protection compatibility; work lives in
   # go-test-coverage. Must not treat a failed coverage job as a successful skip.
+  # A skipped matrix job reports under its unexpanded name ("Go tests
+  # (${{ matrix.shard }})"), so a PR that touches no Go would never satisfy
+  # the required "Go tests (http)" / "Go tests (rest)" checks. These stubs
+  # report the same names as passing when the real shards are filtered out.
+  go-test-full-skipped:
+    name: Go tests (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.go != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [http, rest]
+    steps:
+      - run: echo "No Go changes; shard ${{ matrix.shard }} not needed."
+
   go-vulncheck:
     name: Go vulnerability check
     needs: [changes, go-test-coverage]
@@ -559,6 +574,18 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
+
+  # See go-test-full-skipped: same unexpanded-name problem for web shards.
+  web-test-coverage-skipped:
+    name: Web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.web != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - run: echo "No web changes; shard ${{ matrix.shard }}/4 not needed."
 
   web-coverage-report:
     name: Web coverage gate
