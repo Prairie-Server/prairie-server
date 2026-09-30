@@ -798,6 +798,12 @@ var traitOnlyRules = []authRule{
 	{marker: "demoGuard", trait: "demo_guarded"},
 	{marker: "meterEgress", trait: "egress_metered"},
 	{marker: "cors.Handler", trait: "cors"},
+	// StreamTokenAuth (Prairie) lets a verified, session-bound stream token
+	// stand in for a bearer on the media delivery paths only, for native TV
+	// players that cannot send a header or refresh a token. It never changes
+	// a route's auth class: every other request falls through to the usual
+	// RequireAuth/RequireViewerAccess.
+	{marker: "StreamTokenAuth", trait: "stream_token_delivery"},
 	{marker: "optionalProfileViewerAccess", trait: traitOptionalView},
 	// router.go builds `passwordChangeMiddlewares` for POST
 	// /api/v1/auth/account/password: optionalProfileViewerAccess plus, when a
