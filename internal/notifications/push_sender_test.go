@@ -558,7 +558,7 @@ func TestPushSenderRegistersRelayOnFirstSendWithoutCredential(t *testing.T) {
 	sender.developmentRelayURL = server.URL
 	device := &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-auto",
 	}
 
@@ -672,7 +672,7 @@ func newRejectedCredentialSender(t *testing.T, relay *rejectingRelay) (*pushSend
 func sendTestPush(sender *pushSender, attemptID string) pushSendResult {
 	return sender.send(context.Background(), PushDeliveryAttempt{ID: attemptID}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-rejected",
 	}, strings.Repeat("a", 64))
 }

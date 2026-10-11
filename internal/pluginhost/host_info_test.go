@@ -49,7 +49,7 @@ func (f *fakeInstanceState) WriteInstanceState(_ context.Context, installationID
 func apiHostInfo(listeners ...pluginhost.HostListener) pluginhost.HostInfoFunc {
 	return func(context.Context) (pluginhost.HostInfo, error) {
 		return pluginhost.HostInfo{
-			PublicBaseURL:       "https://silo.example/",
+			PublicBaseURL:       "https://prairie.example/",
 			PluginContentPrefix: "/api/v2/plugin-content",
 			Role:                pluginhost.HostRoleAPI,
 			Name:                "Living Room",
@@ -72,7 +72,7 @@ func TestRuntimeHostServer_GetHostInfo_ReportsListenersAndIngressToken(t *testin
 		),
 		NetworkAccess:         broker,
 		Logger:                hclog.NewNullLogger(),
-		PluginID:              "silo.tailscale",
+		PluginID:              "prairie.tailscale",
 		InstallationID:        9,
 		NetworkAccessProvider: "tailscale",
 	})
@@ -84,13 +84,13 @@ func TestRuntimeHostServer_GetHostInfo_ReportsListenersAndIngressToken(t *testin
 	if resp.GetHostRole() != "api" || resp.GetHostName() != "Living Room" || resp.GetNodeId() != 0 {
 		t.Fatalf("role/name/node = %q/%q/%d", resp.GetHostRole(), resp.GetHostName(), resp.GetNodeId())
 	}
-	if resp.GetPublicBaseUrl() != "https://silo.example" {
+	if resp.GetPublicBaseUrl() != "https://prairie.example" {
 		t.Fatalf("public_base_url = %q", resp.GetPublicBaseUrl())
 	}
 	if resp.GetInternalBaseUrl() != "http://127.0.0.1:8080" {
 		t.Fatalf("internal_base_url = %q", resp.GetInternalBaseUrl())
 	}
-	if resp.GetPluginProxyBaseUrl() != "https://silo.example/api/v2/plugin-content/plugins/9" {
+	if resp.GetPluginProxyBaseUrl() != "https://prairie.example/api/v2/plugin-content/plugins/9" {
 		t.Fatalf("plugin_proxy_base_url = %q", resp.GetPluginProxyBaseUrl())
 	}
 	if resp.GetIngressToken() != token {
@@ -195,8 +195,8 @@ func TestRuntimeHostServer_ReportNetworkAccessStatus(t *testing.T) {
 	})
 	ctx := context.Background()
 	_, err = srv.ReportNetworkAccessStatus(ctx, &pluginv1.ReportNetworkAccessStatusRequest{Status: &pluginv1.NetworkAccessStatus{
-		State: "connected", Hostname: "silo.tail1234.ts.net", Origin: "https://silo.tail1234.ts.net",
-		Listeners: []*pluginv1.NetworkAccessListener{{Name: "api", Origin: "https://silo.tail1234.ts.net"}, {Name: "abs", Origin: "https://silo.tail1234.ts.net:13378"}},
+		State: "connected", Hostname: "prairie.tail1234.ts.net", Origin: "https://prairie.tail1234.ts.net",
+		Listeners: []*pluginv1.NetworkAccessListener{{Name: "api", Origin: "https://prairie.tail1234.ts.net"}, {Name: "abs", Origin: "https://prairie.tail1234.ts.net:13378"}},
 		AuthUrl:   "https://login.tailscale.com/a/secret", ProviderVersion: "tsnet 1.0", DesiredConnected: true,
 	}})
 	if err != nil {
@@ -207,7 +207,7 @@ func TestRuntimeHostServer_ReportNetworkAccessStatus(t *testing.T) {
 		t.Fatalf("cached status = %+v, %v", got, ok)
 	}
 	origins := broker.Status.ConnectedOrigins()
-	if len(origins) != 2 || origins[0] != "https://silo.tail1234.ts.net" || origins[1] != "https://silo.tail1234.ts.net:13378" {
+	if len(origins) != 2 || origins[0] != "https://prairie.tail1234.ts.net" || origins[1] != "https://prairie.tail1234.ts.net:13378" {
 		t.Fatalf("connected origins = %v", origins)
 	}
 

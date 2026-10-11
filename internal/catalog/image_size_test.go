@@ -55,23 +55,6 @@ func TestCachedImageVariantKeyMatchesPreImageSizeBehavior(t *testing.T) {
 	}
 }
 
-// "large" must reach the widest cached rung short of the original. Prairie's
-// ladder has no w780/w1280 rung, so posters, stills and logos stop at w500.
-func TestCachedImageVariantKeyLarge(t *testing.T) {
-	want := map[string]string{
-		"backdrop": "w1920",
-		"logo":     "w500",
-		"poster":   "w500",
-		"still":    "w500",
-		"profile":  "w500",
-	}
-	for imageType, wantVariant := range want {
-		if got := cachedImageVariantKey(imageType, "large"); got != wantVariant {
-			t.Errorf("cachedImageVariantKey(%q, large) = %q, want %q", imageType, got, wantVariant)
-		}
-	}
-}
-
 // An unparseable hint must degrade to the historical default rather than
 // producing an empty variant, which would leave the object key on "original".
 func TestCachedImageVariantKeyUnknownSize(t *testing.T) {

@@ -27,7 +27,7 @@ type UserIdentityLookup interface {
 }
 
 // PgUserIdentityLookup reads username from `users` and profile name +
-// is_primary from `user_profiles`. Hits the same tables silo's web
+// is_primary from `user_profiles`. Hits the same tables prairie's web
 // client uses for `/auth/me` and `/profiles`, so the plugin proxy returns
 // the same names operators see in the main UI.
 type PgUserIdentityLookup struct {

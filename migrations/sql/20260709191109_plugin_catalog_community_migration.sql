@@ -47,7 +47,7 @@ BEGIN
         managed_key,
         source_kind
     ) VALUES (
-        'https://raw.githubusercontent.com/prairie-server/prairie-plugins/main/manifest.json',
+        'https://raw.githubusercontent.com/Prairie-Server/prairie-plugins/main/manifest.json',
         true,
         'Prairie maintained',
         'official',

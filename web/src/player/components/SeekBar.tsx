@@ -1,5 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { MarkerKind, MarkerRegionView, PlayerChapter, PlayerTrickplay } from "../types";
+import { PreviewImage } from "./PreviewImage";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MarkerKind, MarkerRegionView, PlayerChapter } from "../types";
+import { trickplayTile, type PlayerTrickplay } from "../trickplay";
+import { formatTime } from "../utils/formatTime";
 
 interface SeekBarProps {
   currentTime: number;
@@ -18,7 +21,26 @@ interface SeekBarProps {
   onSeek: (seconds: number) => void;
   /** Unmodified arrow keys skip by the profile's intervals; Shift+Arrow nudges 5s. */
   onSkip: { back: () => void; forward: () => void };
+  /** Seek-bar previews of the file being played, when it has them. */
+  trickplay?: PlayerTrickplay | null;
+  /** Successful manifest refreshes retry sheets even when URLs stay unchanged. */
+  trickplayUpdatedAt?: number;
+  /** A preview sheet failed to load, as when its URL expired. */
+  onTrickplayError?: () => void;
 }
+
+/** Half the width of the preview bubble when it shows an image (w-44). */
+const WIDE_PREVIEW_HALF_WIDTH = 88;
+
+const NO_SHEETS: ReadonlySet<string> = new Set();
+
+interface SheetState {
+  source: PlayerTrickplay | null;
+  loaded: ReadonlySet<string>;
+  failed: ReadonlySet<string>;
+}
+
+const NO_SHEET_STATE: SheetState = { source: null, loaded: NO_SHEETS, failed: NO_SHEETS };
 
 /** Region tint per marker kind (normal playback). */
 const REGION_COLORS: Record<MarkerKind, string> = {
@@ -108,7 +130,7 @@ function findChapterAtTime(chapters: PlayerChapter[], time: number): PlayerChapt
 function findRegionAtTime(regions: MarkerRegionView[], time: number): MarkerRegionView | null {
   let match: MarkerRegionView | null = null;
   for (const region of regions) {
-    if (time < region.start || time > region.end) {
+    if (time < region.start || time >= region.end) {
       continue;
     }
     if (!match || region.end - region.start < match.end - match.start) {
@@ -116,17 +138,6 @@ function findRegionAtTime(regions: MarkerRegionView[], time: number): MarkerRegi
     }
   }
   return match;
-}
-
-function formatTime(seconds: number): string {
-  const s = Math.floor(seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
-  }
-  return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
 export function SeekBar({
@@ -141,6 +152,9 @@ export function SeekBar({
   onRegionEdgeChange,
   onSeek,
   onSkip,
+  trickplay = null,
+  trickplayUpdatedAt,
+  onTrickplayError,
 }: SeekBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -173,23 +187,65 @@ export function SeekBar({
   );
 
   const [dragTime, setDragTime] = useState<number | null>(null);
-  const previewTime = dragTime ?? hoverTime;
-  const previewChapter = useMemo(
+  // The preview follows the pointer while hovering and the scrub position
+  // while dragging (mouse or touch); a marker handle drag shows its own.
+  const previewTime = edgeDrag !== null ? null : (dragTime ?? hoverTime);
+  const hoverChapter = useMemo(
     () => (previewTime === null ? null : findChapterAtTime(chapters, previewTime)),
     [chapters, previewTime],
   );
-  const previewRegion = useMemo(
+  const hoverRegion = useMemo(
     () => (previewTime === null ? null : findRegionAtTime(regions, previewTime)),
     [regions, previewTime],
   );
-  const trickplayTile = useMemo(
-    () => (previewTime === null ? null : resolveTrickplayTile(trickplay, previewTime)),
-    [previewTime, trickplay],
+  // Sheets that loaded or failed, for the manifest they came from: a new
+  // manifest (fresh URLs) starts clean.
+  const [sheetState, setSheetState] = useState<SheetState>(NO_SHEET_STATE);
+  const sheets = sheetState.source === trickplay ? sheetState : NO_SHEET_STATE;
+  const candidate = useMemo(
+    () => (trickplay && previewTime !== null ? trickplayTile(trickplay, previewTime) : null),
+    [trickplay, previewTime],
   );
-  const hoverRegion = useMemo(
-    () => (hoverTime === null ? null : findRegionAtTime(regions, hoverTime)),
-    [regions, hoverTime],
-  );
+  // A sheet still loading, or one that failed, shows the chapter image
+  // instead: a sprite without its sheet is an empty box.
+  const tile =
+    candidate && sheets.loaded.has(candidate.url) && !sheets.failed.has(candidate.url)
+      ? candidate
+      : null;
+
+  // Load the sheet under the pointer and the one after it, so scrubbing
+  // forward rarely waits.
+  const candidateSheet = candidate?.sheet;
+  useEffect(() => {
+    if (!trickplay || candidateSheet === undefined) return;
+    const mark = (kind: "loaded" | "failed", url: string) =>
+      setSheetState((current) => {
+        const base =
+          current.source === trickplay ? current : { ...NO_SHEET_STATE, source: trickplay };
+        const opposite = kind === "loaded" ? "failed" : "loaded";
+        if (base[kind].has(url) && !base[opposite].has(url)) return base;
+        const cleared = new Set(base[opposite]);
+        cleared.delete(url);
+        return { ...base, [kind]: new Set(base[kind]).add(url), [opposite]: cleared };
+      });
+    const images: HTMLImageElement[] = [];
+    for (const url of trickplay.sheets.slice(candidateSheet, candidateSheet + 2)) {
+      const image = new Image();
+      image.onload = () => mark("loaded", url);
+      image.onerror = () => {
+        mark("failed", url);
+        onTrickplayError?.();
+      };
+      image.src = url;
+      images.push(image);
+    }
+    return () => {
+      for (const image of images) {
+        image.onload = null;
+        image.onerror = null;
+      }
+    };
+  }, [trickplay, trickplayUpdatedAt, candidateSheet, onTrickplayError]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -349,12 +405,16 @@ export function SeekBar({
 
   return (
     <div className="player-seekbar group/seek relative w-full px-2">
-      {/* Hover / drag time preview */}
-      {showPreviewBubble && (
+      {/* Hover and scrub time preview */}
+      {previewTime !== null && (
         <div
           className="pointer-events-none absolute z-10 flex flex-col items-center"
+          data-testid="seek-preview"
           style={{
-            left: `clamp(24px, ${(previewTime! / (duration || 1)) * 100}%, calc(100% - 24px))`,
+            left: (() => {
+              const half = tile || hoverChapter || hoverRegion ? WIDE_PREVIEW_HALF_WIDTH : 24;
+              return `clamp(${half}px, ${(previewTime / (duration || 1)) * 100}%, calc(100% - ${half}px))`;
+            })(),
             bottom: "calc(100% + 8px)",
             transform: "translateX(-50%)",
           }}
@@ -362,46 +422,33 @@ export function SeekBar({
           <div
             className={[
               "overflow-hidden rounded-lg border border-white/[0.08] bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md",
-              trickplayTile || previewChapter || previewRegion ? "w-44" : "",
+              tile || hoverChapter || hoverRegion ? "w-44" : "",
             ].join(" ")}
           >
-            {trickplayTile ? (
+            {/* Seek preview, else the chapter thumbnail or placeholder */}
+            {tile && trickplay ? (
               <div
-                className="w-full bg-black"
-                style={{
-                  aspectRatio: `${trickplayTile.width} / ${trickplayTile.height}`,
-                  backgroundImage: `url(${trickplayTile.url})`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: trickplayTile.backgroundPosition,
-                  backgroundSize: trickplayTile.backgroundSize,
-                }}
                 role="img"
-                aria-label="Seek preview"
+                aria-label={`Preview at ${formatTime(previewTime)}`}
+                data-testid="seek-preview-image"
+                className="w-full bg-black bg-no-repeat"
+                style={{
+                  aspectRatio: `${trickplay.width} / ${trickplay.height}`,
+                  backgroundImage: `url("${tile.url}")`,
+                  backgroundSize: `${trickplay.columns * 100}% ${trickplay.rows * 100}%`,
+                  backgroundPosition: `${trickplay.columns > 1 ? (tile.x / trickplay.width / (trickplay.columns - 1)) * 100 : 0}% ${trickplay.rows > 1 ? (tile.y / trickplay.height / (trickplay.rows - 1)) * 100 : 0}%`,
+                }}
               />
-            ) : previewChapter ? (
-              previewChapter.thumbnail_url ? (
-                <img
-                  src={previewChapter.thumbnail_url}
-                  alt={previewChapter.title}
+            ) : (
+              (hoverRegion || hoverChapter) && (
+                <PreviewImage
+                  src={hoverRegion ? hoverRegion.thumbnail_url : hoverChapter?.thumbnail_url}
+                  alt={hoverRegion ? MARKER_LABELS[hoverRegion.kind] : (hoverChapter?.title ?? "")}
                   className="aspect-video w-full object-cover"
+                  placeholderClassName="flex items-center justify-center bg-gradient-to-b from-white/[0.06] to-white/[0.02]"
                 />
-              ) : (
-                <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
-                  <svg
-                    className="h-5 w-5 text-white/[0.12]"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                    <path d="m7 2 0 20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5" />
-                  </svg>
-                </div>
               )
-            ) : null}
+            )}
             <div className="px-2.5 py-1.5">
               {previewRegion && (
                 <div className="mb-1 flex items-center gap-1.5 text-[11px] leading-tight font-semibold text-white">
@@ -419,7 +466,7 @@ export function SeekBar({
                 </div>
               )}
               <div className="text-xs font-semibold text-white tabular-nums">
-                {formatTime(previewTime!)}
+                {formatTime(previewTime)}
               </div>
               {previewChapter && (
                 <div className="mt-0.5 truncate text-[11px] leading-tight text-white/50">
@@ -584,5 +631,3 @@ function MarkerHandle({
     </div>
   );
 }
-
-export { formatTime };

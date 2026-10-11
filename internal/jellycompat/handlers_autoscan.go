@@ -297,7 +297,7 @@ func parentFallbackAutoscanUpdateError(err error) bool {
 }
 
 // softAutoscanUpdateError reports whether a rejected path should be dropped
-// silently. Jellyfin clients batch updates for paths Silo does not manage, and
+// silently. Jellyfin clients batch updates for paths Prairie does not manage, and
 // failing the whole batch over one of them would lose the updates that are
 // valid.
 func softAutoscanUpdateError(err error) bool {

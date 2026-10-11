@@ -86,6 +86,14 @@ func (h *Handler) handleStandaloneLogin(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) || errors.Is(err, auth.ErrUserDisabled) {
 			http.Error(w, "invalid username or password", http.StatusUnauthorized)
+		} else if errors.Is(err, auth.ErrLocalLoginDisabled) {
+			// The server turned local passwords off; this beta surface has no
+			// external sign-in.
+			http.Error(w, "password sign-in is turned off on this server", http.StatusUnauthorized)
+		} else if errors.Is(err, auth.ErrNotPermitted) {
+			// A network sign-in provider such as Tailscale no longer allows
+			// the account's person.
+			http.Error(w, "this account is not permitted to sign in to this server", http.StatusUnauthorized)
 		} else if errors.Is(err, auth.ErrPasswordChangeRequired) {
 			// This client cannot run the change a temporary password requires.
 			http.Error(w, "sign in to Prairie to replace your temporary password", http.StatusUnauthorized)
@@ -235,7 +243,7 @@ func (h *Handler) handleABSStatus(w http.ResponseWriter, _ *http.Request) {
 // envelope and GET /me. It mirrors the key set of audiobookshelf
 // User.toOldJSONForBrowser (server/models/User.js) so every endpoint that
 // emits a user decodes with one client model — a missing key crashes strict
-// clients, so we emit the full set even where silo has no analog (email is
+// clients, so we emit the full set even where prairie has no analog (email is
 // "", the flags are constant).
 //
 // `token` is the caller's current access token — real ABS's deprecated
@@ -388,7 +396,7 @@ func (h *Handler) loginEnvelope(
 		"user":                 user,
 		"userDefaultLibraryId": defaultLibraryID,
 		"serverSettings":       serverSettings,
-		"Source":               "silo",
+		"Source":               "prairie",
 		"ereaderDevices":       []any{},
 		"libraries":            libraryMaps,
 		"accessToken":          accessToken,

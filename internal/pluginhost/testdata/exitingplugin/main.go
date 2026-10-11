@@ -1,6 +1,6 @@
 // Command exitingplugin is a test fixture for the host's exit watcher: a
 // minimal metadata provider that exits with status 3 as soon as the file
-// named by SILO_TEST_PLUGIN_EXIT_FILE exists.
+// named by PRAIRIE_TEST_PLUGIN_EXIT_FILE exists.
 package main
 
 import (
@@ -20,7 +20,7 @@ type metadataServer struct {
 }
 
 func main() {
-	if exitFile := os.Getenv("SILO_TEST_PLUGIN_EXIT_FILE"); exitFile != "" {
+	if exitFile := os.Getenv("PRAIRIE_TEST_PLUGIN_EXIT_FILE"); exitFile != "" {
 		go func() {
 			for {
 				if _, err := os.Stat(exitFile); err == nil {

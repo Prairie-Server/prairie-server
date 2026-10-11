@@ -10,7 +10,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
-// ABSAccessResolver adapts silo's native profile/library access resolver to
+// ABSAccessResolver adapts prairie's native profile/library access resolver to
 // the ABS compatibility layer. ABS has already authenticated the account with
 // a password or refresh token, so profile PIN verification is skipped here.
 type ABSAccessResolver struct {

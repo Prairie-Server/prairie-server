@@ -24,7 +24,7 @@ type settingBatchWriter interface {
 // restart required): consumers read them through Settings, which caches reads
 // briefly. The enabled flags default to on and act as kill switches — except
 // webhooks and Discord, which are opt-in and stay off until an admin enables
-// them. Mobile push through the Silo relay defaults to on for new installs;
+// them. Mobile push through the Prairie relay defaults to on for new installs;
 // a migration pins it off for servers that existed before that default so
 // nobody is opted in without seeing the setup-wizard notice. Flood safety
 // comes from per-library seed markers, not from staged flag flips.

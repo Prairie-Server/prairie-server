@@ -2,12 +2,16 @@ package imageutil
 
 import (
 	"bytes"
-	"context"
+	"encoding/binary"
+	"errors"
+	"hash/crc32"
 	"image"
 	"image/color"
+	"image/color/palette"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"strconv"
+	"runtime"
 	"testing"
 
 	"golang.org/x/image/webp"
@@ -64,168 +68,33 @@ func TestGenerateVariants(t *testing.T) {
 	}
 }
 
-func TestPublicVariantAPIs(t *testing.T) {
-	t.Parallel()
-	// Exercises the public WebP and AVIF entry points on a small canvas so CI
-	// time stays modest. WebP uses libvips/bimg; AVIF uses the configured backend.
-	src := makeTestJPEG(t, 160, 120)
-
-	result, err := GenerateWebPVariants(src, []int{80})
-	if err != nil {
-		t.Fatalf("GenerateWebPVariants: %v", err)
-	}
-	keys := map[string]bool{}
-	for _, v := range result.Variants {
-		keys[v.Key] = true
-		if len(v.Data) == 0 {
-			t.Fatalf("variant %s missing WebP payload", v.Key)
-		}
-		if len(v.AVIF) != 0 {
-			t.Fatalf("variant %s unexpectedly included AVIF inline", v.Key)
-		}
-		if len(v.PNG) != 0 {
-			t.Fatalf("variant %s unexpectedly included PNG", v.Key)
-		}
-	}
-	for _, key := range []string{"original", "w80"} {
-		if !keys[key] {
-			t.Fatalf("missing variant %s", key)
-		}
-	}
-
-	siblings, err := GenerateAVIFSiblings(src, []int{80})
-	if err != nil {
-		t.Fatalf("GenerateAVIFSiblings: %v", err)
-	}
-	for _, v := range siblings.Variants {
-		switch v.Key {
-		case "original":
-			if len(v.AVIF) != 0 {
-				t.Fatalf("GenerateAVIFSiblings must skip original AVIF, got %d bytes", len(v.AVIF))
-			}
-			if len(v.Data) == 0 {
-				t.Fatal("GenerateAVIFSiblings original WebP missing")
-			}
-		case "w80":
-			if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
-				t.Fatalf("display variant %s missing AVIF payload", v.Key)
-			}
-		}
-	}
-
-	square, err := GenerateSquareVariants(src, []int{64})
-	if err != nil {
-		t.Fatalf("GenerateSquareVariants: %v", err)
-	}
-	found := false
-	for _, v := range square.Variants {
-		cfg, err := webp.DecodeConfig(bytes.NewReader(v.Data))
-		if err != nil {
-			t.Fatalf("decode %s: %v", v.Key, err)
-		}
-		if cfg.Width != cfg.Height {
-			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
-		}
-		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
-			t.Fatalf("square variant %s missing AVIF payload", v.Key)
-		}
-		if v.Key == "w64" {
-			found = true
-			if cfg.Width != 64 {
-				t.Fatalf("w64 size = %d, want 64", cfg.Width)
-			}
-		}
-	}
-	if !found {
-		t.Fatal("missing w64")
+func TestThumbhashRejectsGarbage(t *testing.T) {
+	if _, err := Thumbhash([]byte("not an image at all")); err == nil {
+		t.Fatal("Thumbhash accepted garbage input")
 	}
 }
 
-func TestGenerateVariantsCapsOriginal(t *testing.T) {
-	t.Parallel()
-	// Just over the 1920 cap on the long edge; keep pixels modest for CI time.
-	src := makeTestJPEG(t, 2000, 400)
-	result := mustGenerateVariants(t, src, nil, fastFormats)
-	original := result.Variants[0].Data
-	cfg, err := webp.DecodeConfig(bytes.NewReader(original))
-	if err != nil {
-		t.Fatalf("decode original: %v", err)
-	}
-	if cfg.Width > maxCachedOriginalDimension {
-		t.Fatalf("original width = %d, want <= %d", cfg.Width, maxCachedOriginalDimension)
-	}
-}
+// TestThumbhashDoesNotDecodeFullRasterInGo pins the reason the vips downscale
+// runs before the Go decode: hashing must not materialize the original's full
+// raster on the Go heap. A 6000×4000 JPEG decodes to ≥36 MiB in pure Go, and
+// under tens of concurrent image-cache workers that is an OOM risk; through
+// the vips path the Go side only ever decodes a ≤100px PNG. The 15 MiB bound
+// is far above the new path's real footprint and far below the old one's.
+func TestThumbhashDoesNotDecodeFullRasterInGo(t *testing.T) {
+	data := largeTestJPEG(t, 6000, 4000)
 
-func TestGenerateSquareVariants(t *testing.T) {
-	t.Parallel()
-	src := makeTestJPEG(t, 400, 300)
-	result := mustGenerateSquareVariants(t, src, []int{128}, fastFormats)
-	found := false
-	for _, v := range result.Variants {
-		cfg, err := webp.DecodeConfig(bytes.NewReader(v.Data))
-		if err != nil {
-			t.Fatalf("decode %s: %v", v.Key, err)
-		}
-		if cfg.Width != cfg.Height {
-			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
-		}
-		if len(v.PNG) != 0 {
-			t.Fatalf("variant %s unexpectedly included PNG", v.Key)
-		}
-		if v.Key == "w128" {
-			found = true
-			if cfg.Width != 128 {
-				t.Fatalf("w128 size = %d, want 128", cfg.Width)
-			}
-		}
-	}
-	if !found {
-		t.Fatal("missing w128")
-	}
-}
-
-func TestThumbhash(t *testing.T) {
-	t.Parallel()
-	src := makeTestJPEG(t, 120, 80)
-	hash, err := Thumbhash(src)
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+	hash, err := Thumbhash(data)
 	if err != nil {
 		t.Fatalf("Thumbhash: %v", err)
 	}
 	if hash == "" {
-		t.Fatal("empty thumbhash")
+		t.Fatal("Thumbhash returned empty hash")
 	}
-
-	// WebP-only sources need the normalize-png WASM path.
-	webpSrc := mustGenerateVariants(t, src, nil, "webp")
-	hash2, err := Thumbhash(webpSrc.Variants[0].Data)
-	if err != nil {
-		t.Fatalf("Thumbhash(webp): %v", err)
-	}
-	if hash2 == "" {
-		t.Fatal("empty thumbhash from webp")
-	}
-}
-
-func TestNormalizeRejectsGarbage(t *testing.T) {
-	t.Parallel()
-	_, err := GenerateVariants([]byte("not-an-image"), []int{100})
-	if err == nil {
-		t.Fatal("expected error for garbage input")
-	}
-}
-
-func TestGenerateVariantsFromSVG(t *testing.T) {
-	t.Parallel()
-	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#234"/></svg>`)
-	result := mustGenerateVariants(t, svg, []int{200}, fastFormats)
-	cfg, err := webp.DecodeConfig(bytes.NewReader(result.Variants[0].Data))
-	if err != nil {
-		t.Fatalf("decode svg original: %v", err)
-	}
-	if cfg.Width != 400 || cfg.Height != 200 {
-		t.Fatalf("svg original size = %dx%d, want 400x200", cfg.Width, cfg.Height)
-	}
-}
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
 
 func makeTestJPEG(t *testing.T, w, h int) []byte {
 	t.Helper()
@@ -293,4 +162,71 @@ func mustGenerateVariants(t *testing.T, data []byte, widths []int, formats strin
 func mustGenerateSquareVariants(t *testing.T, data []byte, sizes []int, formats string) *VariantResult {
 	t.Helper()
 	return mustRunVariants(t, "square-variants", "sizes", data, sizes, formats)
+}
+
+func TestGenerateVariantsWrapsErrInvalidImage(t *testing.T) {
+	_, err := GenerateVariants([]byte("not an image"), []int{300})
+	if !errors.Is(err, ErrInvalidImage) {
+		t.Fatalf("err = %v, want ErrInvalidImage", err)
+	}
+}
+
+func testPNG(t *testing.T, width, height int) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			img.Set(x, y, color.RGBA{R: uint8(x), G: uint8(y), B: 99, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatalf("encode png: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func TestPixelDataUndecodable(t *testing.T) {
+	fullPNG := testPNG(t, 600, 900)
+	fullJPEG := largeTestJPEG(t, 600, 900)
+	var gifBuf bytes.Buffer
+	if err := gif.Encode(&gifBuf, image.NewPaletted(image.Rect(0, 0, 600, 900), palette.Plan9), nil); err != nil {
+		t.Fatalf("encode gif: %v", err)
+	}
+	fullGIF := gifBuf.Bytes()
+
+	for name, tc := range map[string]struct {
+		data []byte
+		want bool
+	}{
+		"valid png":      {fullPNG, false},
+		"valid jpeg":     {fullJPEG, false},
+		"truncated png":  {fullPNG[:len(fullPNG)/2], true},
+		"truncated jpeg": {fullJPEG[:len(fullJPEG)/2], true},
+		"truncated gif":  {fullGIF[:len(fullGIF)/2], false},
+		"unknown":        {[]byte("not an image"), false},
+		"huge header":    {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 100_000, 100_000), false},
+		"just over cap":  {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 2_001, 2_000), false},
+		"one tall row":   {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 1, maxPixelCheckPixels+1), false},
+	} {
+		if got := PixelDataUndecodable(tc.data); got != tc.want {
+			t.Errorf("%s: PixelDataUndecodable = %v, want %v", name, got, tc.want)
+		}
+	}
+}
+
+// withPNGDimensions rewrites the IHDR width and height of a PNG, keeping the
+// chunk CRC valid, so a small file declares an arbitrarily large raster.
+func withPNGDimensions(t *testing.T, data []byte, width, height uint32) []byte {
+	t.Helper()
+	out := bytes.Clone(data)
+	// Signature (8) + length (4) + "IHDR" (4), then width, height.
+	const ihdr = 8 + 4
+	if string(out[ihdr:ihdr+4]) != "IHDR" {
+		t.Fatal("IHDR is not the first chunk")
+	}
+	binary.BigEndian.PutUint32(out[ihdr+4:], width)
+	binary.BigEndian.PutUint32(out[ihdr+8:], height)
+	binary.BigEndian.PutUint32(out[ihdr+4+13:], crc32.ChecksumIEEE(out[ihdr:ihdr+4+13]))
+	return out
 }

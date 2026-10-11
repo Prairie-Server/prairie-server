@@ -8,7 +8,7 @@ import { AdvancedSection } from "@/components/settings/AdvancedSection";
 import { SettingsPageHeader } from "@/components/settings/SettingsPageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingField } from "./SettingField";
-import { SaveBar } from "./SaveBar";
+import { SaveBar } from "@/components/SaveBar";
 import { FieldGroup } from "./FieldGroup";
 
 // Identity (server name, login subtitle) used to live on the Branding tab and
@@ -19,7 +19,8 @@ const ACCESS_KEYS = ["signup.enabled", "password_reset.self_service_enabled"];
 const LOGGING_ADVANCED_KEYS = ["server.log_quiet"];
 const LOGGING_KEYS = ["server.log_level", ...LOGGING_ADVANCED_KEYS];
 
-const KEYS = ["server.public_url", ...IDENTITY_KEYS, ...ACCESS_KEYS, ...LOGGING_KEYS];
+const NETWORK_KEYS = ["server.public_url", "server.lan_discovery"];
+const KEYS = [...NETWORK_KEYS, ...IDENTITY_KEYS, ...ACCESS_KEYS, ...LOGGING_KEYS];
 
 export default function GeneralSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
@@ -75,16 +76,30 @@ export default function GeneralSettings() {
           />
         </FieldGroup>
 
-        <FieldGroup label="Network">
+        <FieldGroup
+          label="Network"
+          restartAll={allRestart(NETWORK_KEYS)}
+          dirty={anyDirty(NETWORK_KEYS)}
+        >
           <SettingField
             label="Prairie public URL"
             settingKey="server.public_url"
             dirty={form.isDirty("server.public_url")}
             description="The HTTPS address users open. Used for websocket origins and links in email notifications."
-            hint="https://silo.example.com"
+            hint="https://prairie.example.com"
             value={form.getValue("server.public_url")}
             onChange={(v) => form.setValue("server.public_url", v)}
             restartRequired={restartKeys.has("server.public_url")}
+          />
+          <SettingField
+            label="Show on the local network"
+            settingKey="server.lan_discovery"
+            dirty={form.isDirty("server.lan_discovery")}
+            type="toggle"
+            description="Prairie apps on the same network list this server when adding one, so nobody has to type its address. Needs a network that passes multicast (Docker host networking, not the default bridge)."
+            value={form.getValue("server.lan_discovery")}
+            onChange={(v) => form.setValue("server.lan_discovery", v)}
+            restartRequired={restartKeys.has("server.lan_discovery")}
           />
         </FieldGroup>
 

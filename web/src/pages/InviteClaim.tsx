@@ -18,6 +18,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { clearHouseholdSetupDone, setTourSuppressed } from "@/lib/onboarding";
 import { toast } from "sonner";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "@/lib/email";
+
+const EMAIL_TAKEN_MESSAGE =
+  "An account already uses this email address. Sign in instead, or use a different address.";
 
 export default function InviteClaim() {
   const { token = "" } = useParams();
@@ -25,6 +29,8 @@ export default function InviteClaim() {
 }
 
 function ClaimForm({ token }: { token: string }) {
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -42,6 +48,9 @@ function ClaimForm({ token }: { token: string }) {
   }>({ pending: true });
   const [reload, setReload] = useState(0);
   const [recovery, setRecovery] = useState(false);
+  // The server refused the acceptance because password sign-in is off; the
+  // invitation stays unspent, and no account was created.
+  const [localLoginDisabled, setLocalLoginDisabled] = useState(false);
   const [createdUsername, setCreatedUsername] = useState<string | null>(null);
   const busy = useRef(false);
   const lifetime = useRef<AbortController | null>(null);
@@ -59,6 +68,7 @@ function ClaimForm({ token }: { token: string }) {
         if (controller.signal.aborted || !isSessionIdentityCurrent(identity)) return;
         setLookup({ data, pending: false });
         setRecovery(false);
+        setLocalLoginDisabled(false);
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted || !isSessionIdentityCurrent(identity)) return;
@@ -114,15 +124,18 @@ function ClaimForm({ token }: { token: string }) {
 
   const invitation = lookup.data;
 
-  // Upstream leads this page with an "open in the app" button on Android.
-  // Deliberately not rendered here: prairie-android registers the prairie://
-  // scheme for the device, item, play and downloads hosts only, with no invite
-  // handling anywhere in that repo. The button would fire a link the installed
-  // app cannot answer, and a custom-scheme miss surfaces an OS error rather
-  // than falling through — worse than not offering it.
-  //
-  // lib/appDeepLink.ts already emits the correct prairie://invite URL, so
-  // enabling this is a one-line change once the app registers the host.
+  // On Android, offer to continue in the native app — the app registers
+  // prairie://invite and has the full claim flow. A user-tapped custom-scheme
+  // link is the one context where prairie:// works reliably; we never fire it
+  // automatically (there is no installed-check, and a miss shows an OS
+  // error). iOS joins once the Apple app registers the scheme. A link
+  // invitation stays in the browser: released app builds cannot ask for the
+  // email address it needs, and the page cannot tell which build is installed.
+  const platform = detectMobilePlatform(navigator.userAgent);
+  const appLink =
+    platform === "android" && !invitation.email_required
+      ? buildInviteDeepLink(window.location.origin, token)
+      : null;
 
   function reloadLookup() {
     if (busy.current) return;
@@ -135,11 +148,18 @@ function ClaimForm({ token }: { token: string }) {
     if (
       busy.current ||
       recovery ||
+      localLoginDisabled ||
       createdUsername ||
       !invitation.acceptance_available ||
       getAccessToken()
     )
       return;
+    // A link invitation has no address yet: the invitee enters theirs.
+    const enteredEmail = invitation.email_required ? email.trim() : undefined;
+    if (enteredEmail !== undefined && !isValidEmail(enteredEmail)) {
+      setEmailError(INVALID_EMAIL_MESSAGE);
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -154,7 +174,7 @@ function ClaimForm({ token }: { token: string }) {
     busy.current = true;
     setSubmitting(true);
     try {
-      const data = await acceptPublicInvitation(token, password, controller.signal);
+      const data = await acceptPublicInvitation(token, password, controller.signal, enteredEmail);
       if (controller.signal.aborted || !isSessionIdentityCurrent(identity)) return;
       if (data.login_status === "sign_in_required") {
         setPassword("");
@@ -173,8 +193,27 @@ function ClaimForm({ token }: { token: string }) {
       clearHouseholdSetupDone();
       if (!invitation.show_tour) setTourSuppressed();
       navigate("/household-setup", { replace: true });
-    } catch {
+    } catch (error: unknown) {
       if (controller.signal.aborted || !isSessionIdentityCurrent(identity)) return;
+      if (error instanceof V2ProblemError && error.problemType === "local_login_disabled") {
+        setLocalLoginDisabled(true);
+        return;
+      }
+      // A refused address is a definite answer: no account was created and
+      // the link still works, so the invitee can correct it and retry.
+      if (enteredEmail !== undefined && error instanceof V2ProblemError) {
+        if (error.problemType === "conflict") {
+          setEmailError(EMAIL_TAKEN_MESSAGE);
+          return;
+        }
+        if (
+          error.problemType === "validation_failed" &&
+          error.problem.errors?.some((e) => e.location === "body.email")
+        ) {
+          setEmailError(INVALID_EMAIL_MESSAGE);
+          return;
+        }
+      }
       setRecovery(true);
     } finally {
       busy.current = false;
@@ -196,8 +235,18 @@ function ClaimForm({ token }: { token: string }) {
             Welcome to {invitation.server_name}
           </CardTitle>
           <CardDescription className="mt-2 text-sm leading-6">
-            Choose a password and you&apos;re in. You&apos;ll sign in with your email address.
+            {invitation.email_required
+              ? "Enter your email address and choose a password. You'll sign in with your email address."
+              : "Choose a password and you're in. You'll sign in with your email address."}
           </CardDescription>
+          {invitation.note && (
+            <blockquote className="border-border mt-4 border-l-2 py-1 pl-3 text-sm leading-relaxed">
+              <span className="text-muted-foreground block text-xs">
+                {invitation.inviter_name ? `Note from ${invitation.inviter_name}` : "Note"}
+              </span>
+              <span className="break-words whitespace-pre-line">{invitation.note}</span>
+            </blockquote>
+          )}
         </CardHeader>
         <CardContent>
           {createdUsername ? (
@@ -217,6 +266,13 @@ function ClaimForm({ token }: { token: string }) {
                   administrator for help.
                 </p>
               )}
+              {localLoginDisabled && (
+                <p role="alert" className="mb-4">
+                  Password sign-in is turned off on this server, so this invitation cannot create an
+                  account. Ask {invitation.inviter_name || "the person who invited you"} to add you
+                  through the server&apos;s sign-in provider instead.
+                </p>
+              )}
               {recovery && (
                 <div role="alert" className="mb-4 space-y-3">
                   <p>
@@ -231,7 +287,33 @@ function ClaimForm({ token }: { token: string }) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="invite-email">Email</Label>
-                  <Input id="invite-email" value={invitation.email} readOnly disabled />
+                  {invitation.email_required ? (
+                    <>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (emailError) setEmailError("");
+                        }}
+                        disabled={submitting}
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        aria-invalid={emailError ? true : undefined}
+                        aria-describedby={emailError ? "invite-email-error" : undefined}
+                        autoFocus={!appLink}
+                        required
+                      />
+                      {emailError && (
+                        <p id="invite-email-error" className="text-destructive text-xs">
+                          {emailError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <Input id="invite-email" value={invitation.email} readOnly disabled />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="invite-password">Password</Label>
@@ -242,7 +324,10 @@ function ClaimForm({ token }: { token: string }) {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={submitting}
                     autoComplete="new-password"
-                    autoFocus
+                    // On mobile, focusing here pops the keyboard over the
+                    // open-in-app button — the primary action when it's shown.
+                    // A link invitation focuses the email field instead.
+                    autoFocus={!appLink && !invitation.email_required}
                     required
                   />
                 </div>
@@ -263,7 +348,9 @@ function ClaimForm({ token }: { token: string }) {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitting || recovery || !invitation.acceptance_available}
+                  disabled={
+                    submitting || recovery || localLoginDisabled || !invitation.acceptance_available
+                  }
                 >
                   {submitting ? "Creating account..." : "Create account"}
                 </Button>

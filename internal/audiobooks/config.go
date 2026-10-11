@@ -18,7 +18,7 @@ const (
 	absDefaultRefreshTTL = 30 * 24 * time.Hour
 )
 
-// ABSConfigProvider implements abs.ConfigProvider using silo's server_settings
+// ABSConfigProvider implements abs.ConfigProvider using prairie's server_settings
 // table. The ABS JWT secret is generated once on first read and persisted for
 // the lifetime of the deployment.
 type ABSConfigProvider struct {

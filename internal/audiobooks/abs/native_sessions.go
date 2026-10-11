@@ -15,7 +15,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
-// PlaybackSessionManager is the native Silo playback-session surface ABS needs
+// PlaybackSessionManager is the native Prairie playback-session surface ABS needs
 // to make compatibility playback visible to live admin/session monitoring.
 type PlaybackSessionManager interface {
 	StartSessionWithFilesContext(ctx context.Context, userID int, profileID string, effectiveFileID int, requestedFileID int, method playback.PlayMethod, transcodeAudio bool) (*playback.Session, error)

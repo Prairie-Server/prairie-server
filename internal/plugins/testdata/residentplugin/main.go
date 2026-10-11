@@ -2,7 +2,7 @@
 // supervisor and the network access admin API: it declares
 // network_access_provider.v1 (so the host treats it as resident), answers
 // Connect/Disconnect/GetStatus from an in-memory state, and exits with status
-// 3 as soon as the file named by SILO_TEST_PLUGIN_EXIT_FILE exists, so a test
+// 3 as soon as the file named by PRAIRIE_TEST_PLUGIN_EXIT_FILE exists, so a test
 // can make it crash on demand.
 package main
 
@@ -40,10 +40,10 @@ func (p *provider) status() *pluginv1.NetworkAccessStatus {
 	status := &pluginv1.NetworkAccessStatus{State: "disconnected", ProviderVersion: "stub 0.1.0"}
 	if p.connected {
 		status.State = "connected"
-		status.Hostname = "silo.stub.test"
-		status.Origin = "https://silo.stub.test"
+		status.Hostname = "prairie.stub.test"
+		status.Origin = "https://prairie.stub.test"
 		status.Addresses = []string{"100.64.0.7"}
-		status.Listeners = []*pluginv1.NetworkAccessListener{{Name: "api", Origin: "https://silo.stub.test"}}
+		status.Listeners = []*pluginv1.NetworkAccessListener{{Name: "api", Origin: "https://prairie.stub.test"}}
 		status.DesiredConnected = true
 	}
 	return status
@@ -81,7 +81,7 @@ func (p *provider) GetStatus(ctx context.Context, _ *pluginv1.NetworkAccessGetSt
 }
 
 func main() {
-	if exitFile := os.Getenv("SILO_TEST_PLUGIN_EXIT_FILE"); exitFile != "" {
+	if exitFile := os.Getenv("PRAIRIE_TEST_PLUGIN_EXIT_FILE"); exitFile != "" {
 		go func() {
 			for {
 				if _, err := os.Stat(exitFile); err == nil {

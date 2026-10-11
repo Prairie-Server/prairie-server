@@ -34,7 +34,7 @@ const (
 	legacyWebSourceFile      = "SILO-JELLYFIN-WEB-SOURCE.txt"
 	webInstallLock           = ".installing"
 	webLastError             = ".last-error"
-	webTempMarker            = ".prairie-jellyfin-web-temp"
+	webTempMarker            = ".prairie--jellyfin-web-temp"
 	webSeekReanchorPatch     = "prairie-seek-reanchor-v1"
 	webPlaybackManagerSource = "src/components/playback/playbackmanager.js"
 	webHTMLVideoPlayerSource = "src/plugins/htmlVideoPlayer/plugin.js"

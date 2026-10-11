@@ -3,6 +3,7 @@ package pluginhost_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,22 +21,40 @@ import (
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
-// buildExitingPlugin compiles testdata/exitingplugin into a temp dir and
-// returns the binary path with the manifest the binary reports (checksum
-// included), which is what Host.Start compares against the live manifest.
-func buildExitingPlugin(t *testing.T) (string, *pluginv1.PluginManifest) {
-	t.Helper()
-	bin := filepath.Join(t.TempDir(), "exitingplugin")
+type exitingFixtureData struct{ binary, manifest []byte }
+
+// Keep immutable compiler outputs; every test gets fresh files and manifest state.
+var exitingFixtureBuild = sync.OnceValues(func() (exitingFixtureData, error) {
+	dir, err := os.MkdirTemp("", "prairie-exiting-fixture-")
+	if err != nil {
+		return exitingFixtureData{}, err
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	bin := filepath.Join(dir, "exitingplugin")
 	build := exec.Command("go", "build", "-o", bin, "./testdata/exitingplugin")
 	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build exitingplugin: %v\n%s", err, out)
+		return exitingFixtureData{}, fmt.Errorf("build exitingplugin: %w\n%s", err, out)
 	}
 	raw, err := exec.Command(bin, "manifest").Output()
 	if err != nil {
-		t.Fatalf("read fixture manifest: %v", err)
+		return exitingFixtureData{}, fmt.Errorf("read fixture manifest: %w", err)
+	}
+	binary, err := os.ReadFile(bin)
+	return exitingFixtureData{binary: binary, manifest: raw}, err
+})
+
+func buildExitingPlugin(t *testing.T) (string, *pluginv1.PluginManifest) {
+	t.Helper()
+	fixture, err := exitingFixtureBuild()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bin := filepath.Join(t.TempDir(), "exitingplugin")
+	if err := os.WriteFile(bin, fixture.binary, 0o755); err != nil {
+		t.Fatal(err)
 	}
 	manifest := &pluginv1.PluginManifest{}
-	if err := protojson.Unmarshal(raw, manifest); err != nil {
+	if err := protojson.Unmarshal(fixture.manifest, manifest); err != nil {
 		t.Fatalf("decode fixture manifest: %v", err)
 	}
 	return bin, manifest
@@ -44,7 +63,7 @@ func buildExitingPlugin(t *testing.T) (string, *pluginv1.PluginManifest) {
 func TestHostExitWatcherReportsCrash(t *testing.T) {
 	bin, manifest := buildExitingPlugin(t)
 	exitFile := filepath.Join(t.TempDir(), "exit-now")
-	t.Setenv("SILO_TEST_PLUGIN_EXIT_FILE", exitFile)
+	t.Setenv("PRAIRIE_TEST_PLUGIN_EXIT_FILE", exitFile)
 
 	host := pluginhost.NewHost(pluginhost.Config{
 		Logger:            hclog.NewNullLogger(),
@@ -87,7 +106,7 @@ func TestHostExitWatcherReportsCrash(t *testing.T) {
 func TestHostExitWatcherIgnoresDeliberateStop(t *testing.T) {
 	bin, manifest := buildExitingPlugin(t)
 	exitFile := filepath.Join(t.TempDir(), "exit-now")
-	t.Setenv("SILO_TEST_PLUGIN_EXIT_FILE", exitFile)
+	t.Setenv("PRAIRIE_TEST_PLUGIN_EXIT_FILE", exitFile)
 
 	host := pluginhost.NewHost(pluginhost.Config{
 		Logger:            hclog.NewNullLogger(),

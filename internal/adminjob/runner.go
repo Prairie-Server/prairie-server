@@ -450,7 +450,7 @@ func (r *Runner) storageRestartPending() bool {
 }
 
 // requestStorageTransitionRestartOnce asks the host to restart after a commit
-// and reports whether the administrator must restart Silo by hand. A second
+// and reports whether the administrator must restart Prairie by hand. A second
 // request in the same process reuses the first outcome: the host refuses a
 // repeated request, which would otherwise read as a missing restart callback.
 func (r *Runner) requestStorageTransitionRestartOnce(jobID string) (manual bool) {

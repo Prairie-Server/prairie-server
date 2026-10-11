@@ -93,14 +93,14 @@ func GetProfile(db *sql.DB, id string) (*Profile, error) {
 		       require_advisory_age,
 		       quality_preference, language, subtitle_language, subtitle_mode,
 		       auto_skip_intro, auto_skip_credits, auto_skip_recap, auto_play_next_preview, show_forced_subtitles,
-		       library_restrictions_enabled, max_playback_quality, created_at, updated_at
+		       library_restrictions_enabled, max_playback_quality, pin_revision, created_at, updated_at
 		FROM profiles WHERE id = ?`, id,
 	).Scan(
 		&p.ID, &p.Name, &p.Avatar, &p.PINHash, &p.IsChild, &p.IsPrimary, &p.MaxContentRating, &p.MaxAdvisoryAge,
 		&p.RequireAdvisoryAge,
 		&p.QualityPreference, &p.Language, &p.SubtitleLanguage, &p.SubtitleMode,
 		&p.AutoSkipIntro, &p.AutoSkipCredits, &p.AutoSkipRecap, &p.AutoPlayNextPreview, &p.ShowForcedSubtitles,
-		&p.LibraryRestrictionsEnabled, &p.MaxPlaybackQuality, &p.CreatedAt, &p.UpdatedAt,
+		&p.LibraryRestrictionsEnabled, &p.MaxPlaybackQuality, &p.PINRevision, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -122,7 +122,7 @@ func ListProfiles(db *sql.DB) ([]Profile, error) {
 		       require_advisory_age,
 		       quality_preference, language, subtitle_language, subtitle_mode,
 		       auto_skip_intro, auto_skip_credits, auto_skip_recap, auto_play_next_preview, show_forced_subtitles,
-		       library_restrictions_enabled, max_playback_quality, created_at, updated_at
+		       library_restrictions_enabled, max_playback_quality, pin_revision, created_at, updated_at
 		FROM profiles ORDER BY created_at ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("listing profiles: %w", err)
@@ -137,7 +137,7 @@ func ListProfiles(db *sql.DB) ([]Profile, error) {
 			&p.RequireAdvisoryAge,
 			&p.QualityPreference, &p.Language, &p.SubtitleLanguage, &p.SubtitleMode,
 			&p.AutoSkipIntro, &p.AutoSkipCredits, &p.AutoSkipRecap, &p.AutoPlayNextPreview, &p.ShowForcedSubtitles,
-			&p.LibraryRestrictionsEnabled, &p.MaxPlaybackQuality, &p.CreatedAt, &p.UpdatedAt,
+			&p.LibraryRestrictionsEnabled, &p.MaxPlaybackQuality, &p.PINRevision, &p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning profile row: %w", err)
 		}
@@ -193,6 +193,9 @@ func updateProfile(exec preferenceSettingsExecutor, id string, u UpdateProfileIn
 			setClauses = append(setClauses, "pin_hash = ?")
 			args = append(args, string(hash))
 		}
+		// The profiles_pin_revision trigger advances pin_revision whenever
+		// pin_hash changes, which invalidates every token minted for the old
+		// PIN, and only this profile's.
 	}
 	if u.IsChild != nil {
 		setClauses = append(setClauses, "is_child = ?")

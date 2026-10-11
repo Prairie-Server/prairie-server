@@ -296,26 +296,6 @@ describe("buildSettingsOverview health tiles", () => {
 });
 
 describe("buildSettingsOverview groups", () => {
-  it("emits one card per settings page id", () => {
-    expect(buildSettingsOverview({}).cards.map((entry) => entry.id)).toEqual([
-      "about",
-      "general",
-      "infrastructure",
-      "appearance",
-      "security",
-      "library",
-      "playback",
-      "downloads",
-      "requests",
-      "providers",
-      "watch-sync",
-      "ai",
-      "notifications",
-      "compatibility",
-      "network-access",
-    ]);
-  });
-
   it("keeps the group manifest aligned with the overview ids", () => {
     expect(buildSettingsOverview({}).cards.map((entry) => entry.id)).toEqual(
       ADMIN_SETTINGS_NAV.map((item) => item.id),

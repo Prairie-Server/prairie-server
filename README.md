@@ -1,48 +1,100 @@
-# Prairie
+<p align="center">
+  <img src="assets/icon.png" alt="Prairie logo" width="112" height="112">
+</p>
 
-Prairie is a self-hosted media streaming server for movies, shows, music, and books. It is an AGPL-licensed fork of Silo, rebranded with its own project identity while preserving the same core goal: point Prairie at your media folders and stream to your devices at home or away with direct play, remuxing, and hardware-accelerated transcoding handled automatically.
+<h1 align="center">Prairie</h1>
 
-## Highlights
+<p align="center">
+  A self-hosted media server for films, series, audiobooks, ebooks, podcasts, and manga.
+</p>
 
-- **Plays your media, your way** — direct play when the device supports it, remux or hardware-accelerated transcode when it does not.
-- **Web app included** — a full-featured web client and admin interface ship with the server.
-- **Jellyfin-compatible surface** — optional compatibility APIs support clients such as VidHub, Findroid, and Infuse.
-- **Household profiles** — multiple profiles per account, with per-profile watch state and parental controls.
-- **Plugin-driven metadata** — match and enrich libraries with providers like TMDB and TVDB through plugins.
-- **Fast setup** — one `docker compose up -d` starts the default stack; most configuration happens in the admin UI.
+<p align="center">
+  <a href="https://github.com/Prairie-Server/prairie-server/releases"><img alt="Latest GitHub release" src="https://img.shields.io/github/v/release/Prairie-Server/prairie-server?include_prereleases&amp;sort=semver&amp;display_name=tag&amp;style=flat-square&amp;label=release"></a>
+  <a href="https://github.com/orgs/Prairie-Server/packages/container/package/prairie-server"><img alt="Container image on GHCR" src="https://img.shields.io/badge/container-GHCR-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white"></a>
+  <a href="https://github.com/Prairie-Server/prairie-server/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://img.shields.io/github/actions/workflow/status/Prairie-Server/prairie-server/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
+  <img alt="Go 1.26" src="https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&amp;logo=go&amp;logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white">
+  <a href="LICENSE"><img alt="AGPL-3.0-or-later license" src="https://img.shields.io/badge/license-AGPL--3.0--or--later-555555?style=flat-square"></a>
+</p>
 
-## Deploy with Docker
+<p align="center">
+  <a href="#quick-start">Quick start</a>
+  · <a href="https://prairieserver.org/docs">Documentation</a>
+  · <a href="docs/release-versioning.md">Builds &amp; releases</a>
+  · <a href="https://discord.gg/prairieserver">Discord</a>
+  · <a href="#supporting-prairie">Support Prairie</a>
+  · <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-1. Copy the example environment file:
+---
 
-   ```sh
-   cp .env.example .env
-   ```
+> [!WARNING]
+> Prairie is pre-release. APIs, configuration, and database migrations may change
+> before the first stable release. Back up your deployment before updating.
 
-2. Edit `.env` and set at least your media path:
+## 1.0 release scope
 
-   ```dotenv
-   MEDIA_ROOT=/path/to/your/media
-   ```
+The [1.0 milestone](https://prairieserver.org/milestone/1.0/) covers movies and
+series. Audiobooks, ebooks, and Audiobookshelf compatibility keep working as
+they do today and are labeled **beta**: they are outside the 1.0 support
+promise and will be replaced by a consolidated Books effort with no assigned
+release date. The broader capabilities below include those beta
+implementations, not a promise that every media type is supported in 1.0.
+Existing library data is preserved when upgrading.
 
-   New Prairie installs default persistent bind mounts to `/opt/prairie`, with the app's internal paths under `/var/lib/prairie` and transient transcodes under `/tmp/prairie-transcode`. You can override the host root with `PRAIRIE_DATA_ROOT`.
+## What Prairie does
 
-3. Start the integrated stack:
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <strong>Play</strong><br><br>
+      Direct play when possible, remux when needed, transcode otherwise, with
+      VA-API, Quick Sync, and NVENC hardware acceleration.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Organize</strong><br><br>
+      One catalog for films, series, audiobooks, ebooks, podcasts, and manga,
+      matched through metadata plugins such as TMDB and TVDB.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Connect</strong><br><br>
+      Use the included web app, or the Jellyfin/Emby-compatible API with clients
+      such as <a href="https://vidhub.okaapps.com/what-does-vidhub-do/">VidHub</a>,
+      <a href="https://github.com/jarnedemeulemeester/findroid">Findroid</a>, and
+      <a href="https://firecore.com/infuse">Infuse</a>. Client coverage varies.
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <strong>Share</strong><br><br>
+      Household profiles with their own watch state, library access, and
+      parental controls.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Manage</strong><br><br>
+      Libraries, users, providers, storage, search, and playback are configured
+      in the admin interface, not in config files.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Scale</strong><br><br>
+      Start with one integrated server; split proxy and transcode roles across
+      shared PostgreSQL and Redis when you need to.
+    </td>
+  </tr>
+</table>
 
-   ```sh
-   docker compose up -d
-   ```
+## Quick start
 
-   This starts PostgreSQL, Redis, and the integrated Prairie server. The web app is available at `http://localhost:8090`.
-
-The default PostgreSQL user and database are `prairie`. The published image defaults to `ghcr.io/prairie-server/prairie-server:latest`.
-
-### Optional NVIDIA/NVENC
-
-GPU support is kept in a compose override so hosts without NVIDIA drivers work unchanged:
+Requires Docker Compose 2.24 or newer. The default stack runs Prairie, PostgreSQL
+with pgvector, and Redis.
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+git clone https://github.com/Prairie-Server/prairie-server.git
+cd prairie-server
+cp .env.example .env
+chmod 600 .env
+printf '\nPOSTGRES_PASSWORD=%s\nSECRET_KEY=%s\n' \
+  "$(openssl rand -hex 24)" "$(openssl rand -base64 48)" >> .env
 ```
 
 Or set `COMPOSE_FILE=docker-compose.yml:docker-compose.nvidia.yml` in `.env` on Linux/macOS (`;` instead of `:` on Windows).
@@ -71,13 +123,25 @@ Existing Continuum-to-Silo migration notes remain in [docs/continuum-to-silo-doc
 
 Prerequisites: Go 1.26+, pnpm, PostgreSQL, Redis, and FFmpeg.
 
-```sh
-cp .env.example .env
-make build
-./prairie
-```
+Questions and discussion: [Discord](https://discord.gg/prairieserver).
+Bugs, install problems, and performance issues: the
+[GitHub issue forms](https://github.com/Prairie-Server/prairie-server/issues/new/choose),
+which ask for reproduction steps and raw logs.
 
-The server listens on `http://localhost:8080` by default when run from source.
+Native clients are developed in
+[`prairie-apple`](https://github.com/prairie-server/prairie-apple) and
+[`prairie-android`](https://github.com/prairie-server/prairie-android). Client-visible
+API, authentication, playback, or metadata changes should consider both.
+
+Right now, the most helpful way to contribute is a clear, accurate issue. We
+implement and review changes through our own workflow, and pull request volume
+has outgrown what we can review carefully, so a good issue usually helps us
+more than a pull request.
+
+Pull requests are still welcome from contributors who've had one merged in a
+Prairie repository, or when a maintainer asks for one. We close other pull
+requests without review. [CONTRIBUTING.md](CONTRIBUTING.md) explains what makes
+an issue useful.
 
 Useful development commands:
 

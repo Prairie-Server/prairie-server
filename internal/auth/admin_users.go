@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/prairie-server/prairie-server/internal/auditmutation"
+	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -50,6 +52,7 @@ func (r *UserRepository) MutateAdminAccount(ctx context.Context, id int, revisio
 	if revision != -1 && current.Revision != revision {
 		return current, ErrAdminUserRevision
 	}
+	before := current.User
 	revoke, err := validate(current.User, tx)
 	if err != nil {
 		return current, err
@@ -70,8 +73,17 @@ func (r *UserRepository) MutateAdminAccount(ctx context.Context, id int, revisio
 	if err != nil {
 		return current, err
 	}
+	after := current.User
+	if input == nil {
+		after = nil
+	}
+	audit, err := auditmutation.RecordUserMutation(ctx, tx, before, after, input != nil && input.Password != nil)
+	if err != nil {
+		return current, err
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return current, err
 	}
+	auditmutation.CommitMutation(ctx, audit)
 	return current, nil
 }

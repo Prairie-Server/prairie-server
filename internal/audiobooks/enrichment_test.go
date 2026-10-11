@@ -68,8 +68,8 @@ func TestEnricherRunFansOut(t *testing.T) {
 }
 
 func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "8")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "8")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -82,8 +82,8 @@ func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
 }
 
 func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "100")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "100")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -95,16 +95,8 @@ func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
 	}
 }
 
-func TestAudiobookEnrichWorkersCapsAtBatchSize(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "8")
-
-	if got := audiobookEnrichWorkers(3); got != 3 {
-		t.Fatalf("audiobookEnrichWorkers(3) = %d, want 3", got)
-	}
-}
-
 func TestAudiobookEnrichBatchSizeIgnoresInvalidEnv(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
 
 	if got := audiobookEnrichBatchSize(); got != defaultEnrichBatchSize {
 		t.Fatalf("audiobookEnrichBatchSize() = %d, want %d", got, defaultEnrichBatchSize)

@@ -3,7 +3,7 @@ package plugins
 import "strings"
 
 const (
-	DefaultRepositoryURL  = "https://raw.githubusercontent.com/prairie-server/prairie-plugins/main/manifest.json"
+	DefaultRepositoryURL  = "https://raw.githubusercontent.com/Prairie-Server/prairie-plugins/main/manifest.json"
 	DefaultRepositoryName = "Prairie maintained"
 
 	ApprovedCommunityRepositoryURL  = "https://raw.githubusercontent.com/Prairie-Community/prairie-plugins/main/manifest.json"

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Talk to a running Prairie deployment — local or over SSH — using the settings in
-# `.prairie-dev.env`. Run `scripts/prairie-dev help` for the subcommands.
+# `.prairie--dev.env`. Run `scripts/prairie-dev help` for the subcommands.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-env_file=${PRAIRIE_DEV_ENV_FILE:-"$repo_root/.prairie-dev.env"}
+env_file=${PRAIRIE_DEV_ENV_FILE:-"$repo_root/.prairie--dev.env"}
 
 if [[ -f "$env_file" ]]; then
 	set -a
@@ -28,7 +28,7 @@ die() {
 }
 
 need_env_file() {
-	[[ -f "$env_file" ]] || die "no ${env_file##*/} — copy .prairie-dev.env.example to .prairie-dev.env and fill it in"
+	[[ -f "$env_file" ]] || die "no ${env_file##*/} — copy .prairie--dev.env.example to .prairie--dev.env and fill it in"
 }
 
 # Run a shell command on whichever host Prairie runs on.
@@ -73,7 +73,7 @@ usage: scripts/prairie-dev <command> [args]
   token                  print an access token for PRAIRIE_ADMIN_USER
   api <path> [curl...]   authenticated request as the admin's primary profile, e.g. api /api/v2/catalog
 
-Settings come from .prairie-dev.env (see .prairie-dev.env.example). With PRAIRIE_SSH
+Settings come from .prairie--dev.env (see .prairie--dev.env.example). With PRAIRIE_SSH
 empty, host commands run locally.
 EOF
 }

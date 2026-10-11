@@ -100,16 +100,10 @@ func historyImportRequestActor(r *http.Request) HistoryImportActor {
 }
 
 // historyImportsForAnyProfile reports whether actor may import into, and see
-// the runs of, every profile on the account: a server admin, or the primary
-// profile (PIN-verified when it has one), as for other household management.
-// Every other profile acts only for itself.
+// the runs of, every profile on the account: the household manager that
+// canManageHouseholdAs names (the primary profile, PIN-verified when it has
+// one, whatever the account's role). Every other profile acts only for itself.
 func (h *HistoryImportHandler) historyImportsForAnyProfile(ctx context.Context, actor HistoryImportActor) (bool, error) {
-	if apimw.IsAdmin(ctx) {
-		return true, nil
-	}
-	if actor.ProfileID == "" {
-		return false, nil
-	}
 	store, err := h.service.UserStore(ctx, actor.UserID)
 	if err != nil {
 		return false, err
@@ -390,7 +384,7 @@ func (h *HistoryImportHandler) writeHistoryImportError(w http.ResponseWriter, er
 // historyImportAPIError maps a history import failure onto the v1 decision
 // (status, code, message). Upstream statuses carry the historyimport
 // upstream-error code so the v2 listener can tell a rejected source
-// credential from a Silo authentication failure.
+// credential from a Prairie authentication failure.
 func historyImportAPIError(err error) *APIError {
 	if message, refused := historyimport.ServerAddressMessage(err); refused {
 		return &APIError{Status: http.StatusBadRequest, Code: policyErrorBadRequest, Message: message, cause: err}
@@ -432,8 +426,8 @@ func historyImportAPIError(err error) *APIError {
 }
 
 // ErrHistoryImportUpstream is the cause of an *APIError that reports the
-// source server's answer rather than Silo's: errors.Is distinguishes it from
-// a Silo authentication problem on the same status.
+// source server's answer rather than Prairie's: errors.Is distinguishes it from
+// a Prairie authentication problem on the same status.
 var errHistoryImportUpstream = errors.New("history import: upstream server error")
 
 // IsHistoryImportUpstreamError reports whether err wraps a source server

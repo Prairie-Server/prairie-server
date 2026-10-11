@@ -18,7 +18,7 @@ import (
 
 // SettingsReader is the minimal slice of the server-settings store that
 // the audiobooks service needs. The production implementation is
-// internal/catalog.ServerSettingsRepo (or whatever silo names that helper at
+// internal/catalog.ServerSettingsRepo (or whatever prairie names that helper at
 // wiring time); tests pass a fake.
 type SettingsReader interface {
 	GetString(ctx context.Context, key string) (string, error)
@@ -37,7 +37,7 @@ func New(settings SettingsReader) *Service {
 	return &Service{settings: settings}
 }
 
-// ABSHandlerDeps bundles the concrete silo dependencies needed to construct
+// ABSHandlerDeps bundles the concrete prairie dependencies needed to construct
 // the ABS-compat abs.Handler. Pool, Items, and Files are required — the ABS
 // handler dereferences MediaStore from many request paths and a nil store
 // would panic on the first request. BuildABSHandler validates this at startup.

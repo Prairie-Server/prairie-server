@@ -378,7 +378,7 @@ func (h *Handler) handleSmartCollectionItems(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, pagedEnvelope(results, total, limit, page, qd.Sort.Field, qd.Sort.Order == "desc", "", false, ""))
 }
 
-// siloItemToSmartcollItem maps a silo *models.MediaItem into the
+// siloItemToSmartcollItem maps a prairie *models.MediaItem into the
 // audiobook-domain Item shape the smartcoll evaluator walks.
 func siloItemToSmartcollItem(mi *models.MediaItem) smartcoll.Item {
 	if mi == nil {

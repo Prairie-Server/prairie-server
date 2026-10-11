@@ -14,11 +14,11 @@
       "$comment": "The trees the consumer call sites were extracted from. Sibling repos are pinned to the origin/main commit SHA used for extraction so a site can be re-resolved against that exact tree; web and server sites are in this repository at the same commit as the ledger.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["silo-apple", "silo-android", "silo-server"],
+      "required": ["silo-apple", "silo-android", "prairie-server"],
       "properties": {
         "silo-apple": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
         "silo-android": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-        "silo-server": { "const": "this repository" }
+        "prairie-server": { "const": "this repository" }
       }
     },
     "consumer_method": { "type": "string", "minLength": 1 },
@@ -44,8 +44,8 @@
     "authTrait": {
       "enum": [
         "acting_admin", "authenticated", "cors", "delegated", "demo_guarded", "egress_metered",
-        "marker_edit", "metadata_curation", "node_bearer", "optional_viewer_access",
-        "profile_required", "rate_limited", "viewer_access"
+        "household_profile_gate", "marker_edit", "metadata_curation", "node_bearer",
+        "optional_viewer_access", "profile_required", "rate_limited", "viewer_access"
       ]
     },
     "requestKind": { "enum": ["none", "json", "multipart", "binary", "range", "dynamic_proxy", "unknown"] },

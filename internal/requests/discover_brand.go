@@ -276,7 +276,7 @@ func (s *Service) BrowseGenre(ctx context.Context, viewer Viewer, slug string, r
 	}, nil
 }
 
-// certificationCeilingFor maps a Silo rating ceiling (which spans both the
+// certificationCeilingFor maps a Prairie rating ceiling (which spans both the
 // movie and TV ladders, and every national one — see access.RatingRank) onto
 // the US certification string TMDB's certification.lte understands for the
 // given media type.

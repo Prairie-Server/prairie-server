@@ -99,7 +99,7 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 	if req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 
@@ -113,6 +113,7 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 		RealtimeMonitoring:       req.RealtimeMonitoring,
+		TrickplayEnabled:         req.TrickplayEnabled,
 	})
 	if err != nil {
 		if errors.Is(err, catalog.ErrDuplicatePath) {
@@ -122,6 +123,9 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 		return LibraryView{}, apiError(http.StatusInternalServerError, "internal_error", "Failed to create library")
 	}
 	h.pokeRealtimeMonitor()
+	if req.TrickplayEnabled {
+		h.reconcileTrickplay()
+	}
 
 	// Seed default sections for the new library.
 	if h.SectionRepo != nil {
@@ -183,7 +187,7 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 
@@ -209,6 +213,7 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 		RealtimeMonitoring:       req.RealtimeMonitoring,
+		TrickplayEnabled:         req.TrickplayEnabled,
 	})
 	if err != nil {
 		if errors.Is(err, catalog.ErrFolderNotFound) {
@@ -221,6 +226,9 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 		return LibraryView{}, apiError(http.StatusInternalServerError, "internal_error", "Failed to update library")
 	}
 	h.pokeRealtimeMonitor()
+	if req.affectsTrickplay() {
+		h.reconcileTrickplay()
+	}
 
 	// Fetch the updated folder to return it.
 	folder, err := h.folderRepo.GetByID(ctx, id)

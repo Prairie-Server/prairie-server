@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,29 +22,38 @@ import (
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
-// buildResidentFixture compiles testdata/residentplugin into a temp install
-// dir, writes the manifest the binary reports (checksum included) next to
-// it as manifest.json, and returns the binary path.
+// Each test receives its own writable installation of the compiled fixture.
 func buildResidentFixture(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
+	return buildResidentFixtureVersion(t, "0.1.0")
+}
+
+type residentFixtureData struct{ binary, manifest []byte }
+
+// Cache only immutable build outputs. Installation paths and process state
+// remain private to each test, including tests that corrupt or replace files.
+var residentFixtureBuilds sync.Map // version -> func() (residentFixtureData, error)
+
+func compileResidentFixture(version string) (residentFixtureData, error) {
+	dir, err := os.MkdirTemp("", "prairie-resident-fixture-")
+	if err != nil {
+		return residentFixtureData{}, err
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
 	bin := filepath.Join(dir, "residentplugin")
-	build := exec.Command("go", "build", "-o", bin, "./testdata/residentplugin")
+	build := exec.Command("go", "build", "-ldflags", "-X main.version="+version, "-o", bin, "./testdata/residentplugin")
 	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build residentplugin: %v\n%s", err, out)
+		return residentFixtureData{}, fmt.Errorf("build residentplugin %s: %w\n%s", version, err, out)
 	}
 	raw, err := exec.Command(bin, "manifest").Output()
 	if err != nil {
-		t.Fatalf("read fixture manifest: %v", err)
+		return residentFixtureData{}, fmt.Errorf("read fixture manifest: %w", err)
 	}
-	manifest := &pluginv1.PluginManifest{}
-	if err := protojson.Unmarshal(raw, manifest); err != nil {
-		t.Fatalf("decode fixture manifest: %v", err)
+	if err := protojson.Unmarshal(raw, &pluginv1.PluginManifest{}); err != nil {
+		return residentFixtureData{}, fmt.Errorf("decode fixture manifest: %w", err)
 	}
-	if err := os.WriteFile(InstalledManifestPath(bin), raw, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	return bin
+	binary, err := os.ReadFile(bin)
+	return residentFixtureData{binary: binary, manifest: raw}, err
 }
 
 type residentFixture struct {
@@ -58,11 +68,11 @@ func newResidentFixture(t *testing.T, opts ResidentOptions) *residentFixture {
 	t.Helper()
 	bin := buildResidentFixture(t)
 	exitFile := filepath.Join(t.TempDir(), "exit-now")
-	t.Setenv("SILO_TEST_PLUGIN_EXIT_FILE", exitFile)
+	t.Setenv("PRAIRIE_TEST_PLUGIN_EXIT_FILE", exitFile)
 
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          5,
-		PluginID:    "silo.test.resident",
+		PluginID:    "prairie.test.resident",
 		Version:     "0.1.0",
 		InstallPath: bin,
 		Enabled:     true,
@@ -90,7 +100,7 @@ func newResidentFixture(t *testing.T, opts ResidentOptions) *residentFixture {
 	service.resident = newResidentSupervisor(service, opts)
 	// Same hook order as NewService and NewNodeService: the row cache is
 	// dropped before the supervisor reads the rows.
-	service.AddLifecycleHook(func(context.Context) { service.invalidateInstallationCache() })
+	service.AddLifecycleHook(func(context.Context) { service.InvalidateInstallationCache() })
 	service.AddLifecycleHook(func(ctx context.Context) { service.resident.Reconcile(ctx) })
 	host.SetExitHandler(service.HandleResidentExit)
 	t.Cleanup(func() {
@@ -335,7 +345,7 @@ func TestResidentPredicateNeedsCapability(t *testing.T) {
 
 func TestResidentRestartOfNonResidentOnlyStops(t *testing.T) {
 	host := &fakeServiceHost{}
-	store := newFakeServiceInstallationStore(&Installation{ID: 2, PluginID: "silo.metadb", Version: "1", InstallPath: "/x/plugin", Enabled: true, Kind: KindPlugin})
+	store := newFakeServiceInstallationStore(&Installation{ID: 2, PluginID: "prairie.metadb", Version: "1", InstallPath: "/x/plugin", Enabled: true, Kind: KindPlugin})
 	service := &Service{installations: store, host: host}
 	service.resident = newResidentSupervisor(service, ResidentOptions{})
 	if err := service.RestartInstallation(context.Background(), 2); err != nil {
@@ -346,7 +356,7 @@ func TestResidentRestartOfNonResidentOnlyStops(t *testing.T) {
 	}
 	disabled := false
 	_ = store.Update(context.Background(), 2, UpdateInstallationInput{Enabled: &disabled})
-	service.invalidateInstallationCache()
+	service.InvalidateInstallationCache()
 	if err := service.RestartInstallation(context.Background(), 2); !errors.Is(err, ErrInstallationDisabled) {
 		t.Fatalf("RestartInstallation(disabled) = %v, want ErrInstallationDisabled", err)
 	}
@@ -356,17 +366,18 @@ func TestResidentRestartOfNonResidentOnlyStops(t *testing.T) {
 // of the same plugin: the binary reports the given version in its manifest.
 func buildResidentFixtureVersion(t *testing.T, version string) string {
 	t.Helper()
-	dir := t.TempDir()
-	bin := filepath.Join(dir, "residentplugin")
-	build := exec.Command("go", "build", "-ldflags", "-X main.version="+version, "-o", bin, "./testdata/residentplugin")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build residentplugin %s: %v\n%s", version, err, out)
-	}
-	raw, err := exec.Command(bin, "manifest").Output()
+	build, _ := residentFixtureBuilds.LoadOrStore(version, sync.OnceValues(func() (residentFixtureData, error) {
+		return compileResidentFixture(version)
+	}))
+	fixture, err := build.(func() (residentFixtureData, error))()
 	if err != nil {
-		t.Fatalf("read fixture manifest: %v", err)
+		t.Fatal(err)
 	}
-	if err := os.WriteFile(InstalledManifestPath(bin), raw, 0o644); err != nil {
+	bin := filepath.Join(t.TempDir(), "residentplugin")
+	if err := os.WriteFile(bin, fixture.binary, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(InstalledManifestPath(bin), fixture.manifest, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return bin
@@ -452,7 +463,7 @@ func TestResidentSupervisorReplacesRehydratedProcessOnNewRelease(t *testing.T) {
 	f := newResidentFixture(t, ResidentOptions{})
 	ctx := context.Background()
 	root := filepath.Join(t.TempDir(), "proxy-cache")
-	apiMachine := filepath.Join(string(filepath.Separator), "api-machine-does-not-exist", "plugins", "silo.test.resident")
+	apiMachine := filepath.Join(string(filepath.Separator), "api-machine-does-not-exist", "plugins", "prairie.test.resident")
 
 	first := f.store.byID[5].InstallPath
 	f.store.archives = map[int]*InstallationArchive{5: fixtureArchive(t, first, 5)}
@@ -465,7 +476,7 @@ func TestResidentSupervisorReplacesRehydratedProcessOnNewRelease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	firstLocal := filepath.Join(root, "silo.test.resident", "0.1.0", "install-aaaa", "plugin")
+	firstLocal := filepath.Join(root, "prairie.test.resident", "0.1.0", "install-aaaa", "plugin")
 	if _, err := os.Stat(firstLocal); err != nil {
 		t.Fatalf("0.1.0 was not rehydrated under the cache root: %v", err)
 	}
@@ -491,7 +502,7 @@ func TestResidentSupervisorReplacesRehydratedProcessOnNewRelease(t *testing.T) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	if _, err := os.Stat(filepath.Join(root, "silo.test.resident", "0.2.0", "install-bbbb", "plugin")); err != nil {
+	if _, err := os.Stat(filepath.Join(root, "prairie.test.resident", "0.2.0", "install-bbbb", "plugin")); err != nil {
 		t.Fatalf("0.2.0 was not rehydrated under the cache root: %v", err)
 	}
 	if _, err := os.Stat(filepath.Dir(firstLocal)); !errors.Is(err, os.ErrNotExist) {
@@ -509,7 +520,7 @@ func TestResidentSupervisorDoesNotStartADuplicateProviderSlug(t *testing.T) {
 	f := newResidentFixture(t, ResidentOptions{})
 	ctx := context.Background()
 	second := buildResidentFixture(t)
-	dup := &Installation{ID: 6, PluginID: "silo.test.resident-copy", Version: "0.1.0", InstallPath: second, Enabled: true, Kind: KindPlugin}
+	dup := &Installation{ID: 6, PluginID: "prairie.test.resident-copy", Version: "0.1.0", InstallPath: second, Enabled: true, Kind: KindPlugin}
 	f.store.byID[dup.ID] = dup
 	f.store.byPluginID[dup.PluginID] = append(f.store.byPluginID[dup.PluginID], dup)
 	f.store.listCapabilities = append(f.store.listCapabilities, &Capability{InstallationID: 6, Type: capability.NetworkAccessProvider, ID: "stub"})
@@ -653,7 +664,7 @@ func TestResidentSupervisorKeepsRunningProviderWhenManifestUnavailable(t *testin
 }
 
 func TestResidentRestartReturnsWhenCallerCancels(t *testing.T) {
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	path := writeInstalledPluginManifest(t, manifest)
 	host := &ctxCaptureHost{entered: make(chan struct{}), proceed: make(chan struct{}), startResult: &fakePluginClient{manifest: manifest}}
 	store := newFakeServiceInstallationStore(&Installation{ID: 5, PluginID: manifest.PluginId, Version: manifest.Version, InstallPath: path, Enabled: true, Kind: KindPlugin})

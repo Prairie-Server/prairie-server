@@ -90,7 +90,7 @@ func (r *Repository) ListMappingsForSource(ctx context.Context, sourceID int) ([
 		return nil, fmt.Errorf("iterating mappings: %w", err)
 	}
 
-	// Enrich with silo user/profile names.
+	// Enrich with prairie user/profile names.
 	for i := range mappings {
 		if enriched, err := enrichMapping(ctx, r, &mappings[i]); err == nil {
 			mappings[i] = *enriched

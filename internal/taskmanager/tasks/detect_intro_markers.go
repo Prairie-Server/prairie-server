@@ -33,7 +33,7 @@ type markerAnalysisRunner interface {
 	RunMovies(ctx context.Context, kinds intromarkers.EpisodeMarkerKinds, progress intromarkers.ProgressFunc) (intromarkers.RunSummary, error)
 }
 
-// detectMarkersAdvisoryLock spells "SILOMRKR".
+// detectMarkersAdvisoryLock spells "PRAIRIEMRKR".
 const detectMarkersAdvisoryLock int64 = 0x53494C4F4D524B52
 
 // DetectIntroMarkersTask runs the library-wide marker analysis. Every API

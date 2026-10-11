@@ -10,14 +10,21 @@ import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction"
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import { adminFormForConfigSchema, humanizeConfigKey } from "./configSchemaAdminForm";
+import {
+  adminFormForConfigSchema,
+  formValuesFromConfig,
+  humanizeConfigKey,
+} from "./configSchemaAdminForm";
 import { SchemaForm } from "./SchemaForm";
-import { buildSchemaValues } from "./schemaFormUtils";
+import { buildSchemaValues, type BuildSchemaValuesOptions } from "./schemaFormUtils";
 
 import { Loader2, RotateCcw, Save } from "lucide-react";
 type PluginConfigValue = Record<string, unknown>;
 
 const EMPTY_FIELDS: PluginAdminFormField[] = [];
+// Global config saves merge into the stored value, so an emptied field must
+// be sent as an explicit clear or the stored value stays.
+const SAVE_OPTIONS: BuildSchemaValuesOptions = { explicitClears: true };
 
 type Props = {
   schema: PluginConfigSchema;
@@ -32,46 +39,22 @@ type Props = {
   isSaving?: boolean;
   isTesting?: boolean;
   /**
+   * Reports each edit as the entry it would save, so a page can test staged
+   * entries together (the Sign-in page's connection test).
+   */
+  onDraftChange?: (key: string, value: PluginConfigValue, clearSecrets: string[]) => void;
+  /**
    * Leave out the form's own title, description, and border, for a page panel
    * that already shows them.
    */
   bare?: boolean;
+  /**
+   * Prefix for the field ids, schema.key by default. A page that shows the
+   * same schema key for several plugins must pass one that tells them apart,
+   * or the labels of one form point at another's inputs.
+   */
+  idPrefix?: string;
 };
-
-function defaultValueForField(field: PluginAdminFormField): string | boolean {
-  if (field.default_value !== undefined) {
-    if (typeof field.default_value === "boolean") {
-      return field.default_value;
-    }
-    if (typeof field.default_value === "number") {
-      return String(field.default_value);
-    }
-    if (typeof field.default_value === "string") {
-      return field.default_value;
-    }
-  }
-  if (field.control === "SWITCH") {
-    return false;
-  }
-  return "";
-}
-
-function valueForField(
-  field: PluginAdminFormField,
-  configValue?: PluginConfigValue,
-): string | boolean {
-  const raw = configValue?.[field.key];
-  if (typeof raw === "boolean") {
-    return raw;
-  }
-  if (typeof raw === "number") {
-    return String(raw);
-  }
-  if (typeof raw === "string") {
-    return raw;
-  }
-  return defaultValueForField(field);
-}
 
 export function PluginConfigForm({
   schema,
@@ -81,7 +64,9 @@ export function PluginConfigForm({
   onTest,
   isSaving = false,
   isTesting = false,
+  onDraftChange,
   bare = false,
+  idPrefix,
 }: Props) {
   const inferredDescriptor = useMemo(() => adminFormForConfigSchema(schema), [schema]);
   const fields = inferredDescriptor?.fields ?? EMPTY_FIELDS;
@@ -101,29 +86,44 @@ export function PluginConfigForm({
   }, [configuredSecrets, fields, inferredDescriptor]);
 
   const [values, setValues] = useState<PluginConfigValue>(() =>
-    Object.fromEntries(fields.map((field) => [field.key, valueForField(field, value)])),
+    formValuesFromConfig(fields, value),
   );
   const [testResult, setTestResult] = useState<ConnectionCheckResponse | null>(null);
   const [clearSecrets, setClearSecrets] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    setValues(Object.fromEntries(fields.map((field) => [field.key, valueForField(field, value)])));
+    setValues(formValuesFromConfig(fields, value));
     setClearSecrets(new Set());
   }, [fields, value]);
 
   function handleChange(next: PluginConfigValue) {
     setTestResult(null);
     setValues(next);
-    setClearSecrets((current) => {
-      const updated = new Set(current);
-      for (const key of configuredSecrets) {
-        const replacement = next[key];
-        if (typeof replacement === "string" && replacement.trim() !== "") {
-          updated.delete(key);
-        }
+    const updated = new Set(clearSecrets);
+    for (const key of configuredSecrets) {
+      const replacement = next[key];
+      if (typeof replacement === "string" && replacement.trim() !== "") {
+        updated.delete(key);
       }
-      return updated;
-    });
+    }
+    setClearSecrets(updated);
+    onDraftChange?.(
+      schema.key,
+      buildSchemaValues(descriptor, next, undefined, SAVE_OPTIONS),
+      Array.from(updated),
+    );
+  }
+
+  function toggleClearSecret(key: string) {
+    const updated = new Set(clearSecrets);
+    if (updated.has(key)) updated.delete(key);
+    else updated.add(key);
+    setClearSecrets(updated);
+    onDraftChange?.(
+      schema.key,
+      buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
+      Array.from(updated),
+    );
   }
 
   async function handleTest() {
@@ -133,7 +133,11 @@ export function PluginConfigForm({
 
     try {
       setTestResult(
-        await onTest(schema.key, buildSchemaValues(descriptor, values), Array.from(clearSecrets)),
+        await onTest(
+          schema.key,
+          buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
+          Array.from(clearSecrets),
+        ),
       );
     } catch (error) {
       setTestResult({
@@ -172,7 +176,7 @@ export function PluginConfigForm({
         descriptor={descriptor}
         values={values}
         onChange={handleChange}
-        idPrefix={schema.key}
+        idPrefix={idPrefix ?? schema.key}
       />
 
       {configuredSecrets.length > 0 ? (
@@ -192,14 +196,7 @@ export function PluginConfigForm({
                     type="button"
                     size="xs"
                     variant="ghost"
-                    onClick={() =>
-                      setClearSecrets((current) => {
-                        const updated = new Set(current);
-                        if (updated.has(key)) updated.delete(key);
-                        else updated.add(key);
-                        return updated;
-                      })
-                    }
+                    onClick={() => toggleClearSecret(key)}
                   >
                     {clearing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
                     {clearing ? "Keep saved secret" : "Clear saved secret"}
@@ -225,7 +222,11 @@ export function PluginConfigForm({
           variant="outline"
           disabled={isSaving || isTesting}
           onClick={() =>
-            onSave(schema.key, buildSchemaValues(descriptor, values), Array.from(clearSecrets))
+            onSave(
+              schema.key,
+              buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
+              Array.from(clearSecrets),
+            )
           }
         >
           <Save />

@@ -48,7 +48,7 @@ type ItemsHandler struct {
 	images           *ImageCache
 	nextUpRepo       *catalog.NextUpRepository
 	browseRepo       *catalog.BrowseRepository
-	personRepo       *catalog.PersonRepository
+	personRepo       itemPersonRepository
 	detailSvc        *catalog.DetailService
 	durationSrc      probedDurationSource
 	itemRepo         itemRepoForBatchLoader
@@ -61,6 +61,10 @@ type ItemsHandler struct {
 	// collections is optional; when set, library collections are exposed as
 	// Jellyfin BoxSets. posterPresigner/presignTTL resolve their artwork keys.
 	collections collectionSource
+	// collectionPosters is optional; when set, BoxSets show each viewer the
+	// collage of the members it can access. Without it, only uploaded and
+	// template posters are shown.
+	collectionPosters CollectionPosterResolver
 	// queryExecutor is optional; when set, smart (live-query) collections
 	// resolve their BoxSet children at read time instead of from stored items.
 	queryExecutor   smartCollectionQueryExecutor
@@ -96,7 +100,6 @@ func NewItemsHandler(content ContentService, userData UserDataService, codec *Re
 		images:       images,
 		nextUpRepo:   nextUpRepo,
 		browseRepo:   browseRepo,
-		personRepo:   personRepo,
 		detailSvc:    detailSvc,
 		durationSrc:  detailSvc,
 		itemRepo:     itemRepo,
@@ -110,7 +113,17 @@ func NewItemsHandler(content ContentService, userData UserDataService, codec *Re
 	if seasonRepo != nil {
 		h.seasonRepo = seasonRepo
 	}
+	if personRepo != nil {
+		h.personRepo = personRepo
+	}
 	return h
+}
+
+// itemPersonRepository is what GET /Items/{id} needs to answer a person.
+type itemPersonRepository interface {
+	GetVisible(ctx context.Context, id int64, filter catalog.AccessFilter) (*models.Person, error)
+	EnsureAccessible(ctx context.Context, id int64, filter catalog.AccessFilter) error
+	CountItemsByType(ctx context.Context, personID int64) (map[string]int, error)
 }
 
 // HandleViews serves GET /Users/{userId}/Views.
@@ -255,7 +268,7 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 		// Jellyfin clients (e.g. Findroid "My Media") call GET /Items?userId=...
 		// and expect CollectionFolder items representing the user's libraries.
 		// Any Jellyfin 12 HasFilters parameter makes the request a recursive
-		// search instead, even one Silo cannot apply.
+		// search instead, even one Prairie cannot apply.
 		h.handleViewsResponse(w, r, session)
 	default:
 		h.handleBrowseItems(w, r, session, query)
@@ -509,7 +522,10 @@ func (h *ItemsHandler) handlePersonItem(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	person, err := h.personRepo.Get(r.Context(), personID)
+	// A person whose credits are all on titles the viewer cannot see reads as
+	// unknown, matching native person detail.
+	access := h.resolveAccessFilter(r.Context(), session)
+	person, err := h.personRepo.GetVisible(r.Context(), personID, access)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			writeError(w, http.StatusNotFound, "NotFound", "Person not found")
@@ -570,7 +586,7 @@ func (h *ItemsHandler) handlePersonItem(w http.ResponseWriter, r *http.Request, 
 	if photoURL != "" {
 		// The signed tag authorizes anonymous image GETs, so mint it only for a
 		// viewer with a visible credit; the image route refuses everyone else.
-		err := h.personRepo.EnsureAccessible(r.Context(), personID, h.resolveAccessFilter(r.Context(), session))
+		err := h.personRepo.EnsureAccessible(r.Context(), personID, access)
 		switch {
 		case err == nil:
 			dto.ImageTags = map[string]string{compatImagePrimary: personPrimaryImageTag(h.mapper.imageTagSigner, routeID, person.PhotoPath, person.PhotoThumbhash)}
@@ -1279,7 +1295,7 @@ func (h *ItemsHandler) HandleLatest(w http.ResponseWriter, r *http.Request) {
 	if h.sectionsFetcher != nil && latestFastPathEligible(params, libraryItemType) {
 		items, err := h.loadLatestViaSections(r.Context(), session, query)
 		if err == nil {
-			h.applyListMediaSourceCounts(r.Context(), session, items, query)
+			h.applyListFileFields(r.Context(), session, items, query)
 			applyItemsResponseOptions(items, query)
 			writeJSON(w, http.StatusOK, items)
 			return
@@ -1302,7 +1318,7 @@ func (h *ItemsHandler) HandleLatest(w http.ResponseWriter, r *http.Request) {
 		writeCompatUpstreamError(w, err)
 		return
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, items)
 }
@@ -1435,8 +1451,8 @@ func latestFastPathEligible(params url.Values, libraryItemType string) bool {
 
 // loadLatestViaSections serves a per-library /Items/Latest through the native
 // recently-added section fetch. Jellyfin expects a flat list of parent series,
-// so this compatibility path explicitly opts out of the native TV scan-event
-// grouping that may return episode cards or repeat a series across scan runs.
+// so this compatibility path explicitly opts out of the native TV arrival-event
+// grouping that may return episode cards or repeat a series across arrivals.
 // The cached *models.MediaItem values are treated read-only;
 // LocalizeItemModels deep-copies before any presign mutation.
 func (h *ItemsHandler) loadLatestViaSections(ctx context.Context, session *Session, query itemsQuery) ([]baseItemDTO, error) {
@@ -2143,7 +2159,7 @@ func (h *ItemsHandler) writeEpisodeModelsPage(w http.ResponseWriter, r *http.Req
 	if page {
 		startIndex = query.startIndex
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	if query.totalOverride != nil {
 		total = *query.totalOverride
@@ -2322,7 +2338,7 @@ func (h *ItemsHandler) writeNextUpResponse(w http.ResponseWriter, r *http.Reques
 			items[i] = dto
 		}
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,
@@ -2409,7 +2425,7 @@ func (h *ItemsHandler) HandleUpcoming(w http.ResponseWriter, r *http.Request) {
 	for i, ep := range episodes {
 		applyPlayableLocation(&items[i], hasFiles[ep.ContentID])
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, 200, queryResultDTO{Items: items, TotalRecordCount: total, StartIndex: query.startIndex})
 }
@@ -2592,7 +2608,7 @@ func (h *ItemsHandler) handleBrowseItems(w http.ResponseWriter, r *http.Request,
 		}
 		items = append(items, dto)
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,
@@ -2664,7 +2680,7 @@ func (h *ItemsHandler) handleFavoriteItems(w http.ResponseWriter, r *http.Reques
 		for _, item := range listItems {
 			items = append(items, h.mapper.itemFromList(item, true, progress[item.ContentID], query.requestedFields))
 		}
-		h.applyListMediaSourceCounts(r.Context(), session, items, query)
+		h.applyListFileFields(r.Context(), session, items, query)
 		applyItemsResponseOptions(items, query)
 		writeJSON(w, http.StatusOK, queryResultDTO{
 			Items:            items,
@@ -2714,7 +2730,7 @@ func (h *ItemsHandler) handleFavoriteItems(w http.ResponseWriter, r *http.Reques
 		for _, item := range result.Items {
 			items = append(items, h.mapper.itemFromList(item, true, progress[item.ContentID], query.requestedFields))
 		}
-		h.applyListMediaSourceCounts(r.Context(), session, items, query)
+		h.applyListFileFields(r.Context(), session, items, query)
 		applyItemsResponseOptions(items, query)
 		writeJSON(w, http.StatusOK, queryResultDTO{
 			Items:            items,
@@ -2751,7 +2767,7 @@ func (h *ItemsHandler) handleFavoriteItems(w http.ResponseWriter, r *http.Reques
 	}
 	total := len(items)
 	items = sliceBaseItems(items, query.startIndex, query.limit)
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,
@@ -2823,7 +2839,7 @@ func (h *ItemsHandler) handleSearchItems(w http.ResponseWriter, r *http.Request,
 		}
 		items = append(items, dto)
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,
@@ -2912,7 +2928,7 @@ func (h *ItemsHandler) handleSpecificItems(w http.ResponseWriter, r *http.Reques
 		total = 0
 	}
 	items = slicePage(items, query.startIndex, query.limit)
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{Items: items, TotalRecordCount: total, StartIndex: query.startIndex})
 }
@@ -2950,7 +2966,7 @@ func (h *ItemsHandler) handlePlayedItems(w http.ResponseWriter, r *http.Request,
 		writeCompatUpstreamError(w, err)
 		return
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 
 	writeJSON(w, http.StatusOK, queryResultDTO{
@@ -3000,7 +3016,7 @@ func (h *ItemsHandler) handleResumeResponse(w http.ResponseWriter, r *http.Reque
 	if h.sectionsFetcher != nil && (len(typeSet) == 0 || typeSet[itemTypeEpisode] || typeSet[itemTypeMovie]) {
 		items, total, err := h.loadResumeViaSections(r.Context(), session, query, typeSet)
 		if err == nil {
-			h.applyListMediaSourceCounts(r.Context(), session, items, query)
+			h.applyListFileFields(r.Context(), session, items, query)
 			applyItemsResponseOptions(items, query)
 			writeJSON(w, http.StatusOK, queryResultDTO{
 				Items:            items,
@@ -3017,7 +3033,7 @@ func (h *ItemsHandler) handleResumeResponse(w http.ResponseWriter, r *http.Reque
 		writeCompatUpstreamError(w, err)
 		return
 	}
-	h.applyListMediaSourceCounts(r.Context(), session, items, query)
+	h.applyListFileFields(r.Context(), session, items, query)
 	applyItemsResponseOptions(items, query)
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,

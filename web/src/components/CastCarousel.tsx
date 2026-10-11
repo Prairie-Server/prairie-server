@@ -160,8 +160,10 @@ export function PersonCard({
         )}
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-sm font-medium">{name}</div>
-        {subtitle ? <div className="text-muted-foreground truncate text-xs">{subtitle}</div> : null}
+        <div className="text-foreground truncate text-[0.8125rem] font-medium">{member.name}</div>
+        {member.character ? (
+          <div className="text-muted-foreground truncate text-[0.6875rem]">{member.character}</div>
+        ) : null}
       </div>
     </>
   );

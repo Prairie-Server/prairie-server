@@ -75,6 +75,23 @@ type ChapterThumbnailQueuer interface {
 	QueuePriorityFileAtPosition(ctx context.Context, fileID int, targetSeconds float64)
 }
 
+// TrickplayAvailability reports the servable seek-bar previews of files.
+type TrickplayAvailability interface {
+	TrickplayGrids(ctx context.Context, fileIDs []int) (map[int]TrickplayGrid, error)
+}
+
+// TrickplayGrid is how a file's published seek-bar previews are laid out:
+// ThumbnailCount thumbnails of Width by Height pixels, one per IntervalMS of
+// media time, TileColumns by TileRows to a sheet. Bandwidth is Jellyfin's
+// bits-per-second estimate for fetching them.
+type TrickplayGrid struct {
+	Width, Height         int
+	TileColumns, TileRows int
+	ThumbnailCount        int
+	IntervalMS            int
+	Bandwidth             int
+}
+
 // ImageResolver resolves image paths (potentially plugin-prefixed) to usable URLs.
 type ImageResolver interface {
 	// ResolveImageURL resolves a single image path. Plugin-prefixed paths (e.g.,
@@ -171,7 +188,10 @@ func (s *DetailService) ProbedDurationsByEpisodeIDs(ctx context.Context, ids []s
 type ItemDetail struct {
 	ContentID     string `json:"content_id"`
 	PlayContentID string `json:"play_content_id,omitempty"`
-	Type          string `json:"type"`
+	// PlaySeasonNumber is the season of PlayContentID when it is an episode.
+	// The native v2 detail carries it; the frozen v1 detail does not.
+	PlaySeasonNumber *int   `json:"-"`
+	Type             string `json:"type"`
 
 	// Metadata (served inline from Postgres).
 	Title         string `json:"title"`
@@ -255,6 +275,13 @@ type ItemDetail struct {
 	// series, in display order. Kept out of this JSON contract because
 	// /api/v1 is frozen; apiv2 emits them as rating_sources.
 	RatingSources []ItemRatingSourceInfo `json:"-"`
+
+	// ViewerCurates is true when the viewer may curate this item's metadata
+	// (admins and accounts with metadata curation), the same check that
+	// shows them file paths. apiv2 gives them every stored rating for the
+	// metadata editor and everyone else only the ratings clients show. Not
+	// part of any JSON contract.
+	ViewerCurates bool `json:"-"`
 
 	// Local extras (scanner-discovered trailers, featurettes, deleted
 	// scenes, ...) playable via their own content_id through /watch.
@@ -495,6 +522,16 @@ type FileVersion struct {
 	Recap                    *Marker                `json:"recap,omitempty"`
 	Preview                  *Marker                `json:"preview,omitempty"`
 	MarkerSegments           []models.MarkerSegment `json:"-"`
+	MarkerPreviews           []VersionMarkerPreview `json:"-"`
+	// Trickplay is the layout of the file's servable seek-bar previews, nil
+	// when it has none. The v2 watch and Jellyfin views carry it; the frozen
+	// v1 view does not.
+	Trickplay *TrickplayGrid `json:"-"`
+	// Unreadable is models.MediaFile.ProbeRejected: ffprobe rejected the file
+	// and nothing usable is recorded for it, so it cannot play until it is
+	// replaced. Jellyfin PlaybackInfo leaves such versions out. Neither the v1
+	// nor the v2 view carries the flag.
+	Unreadable bool `json:"-"`
 }
 
 // SetMarkers refreshes the marker projection without rebuilding file metadata.
@@ -504,6 +541,16 @@ func (v *FileVersion) SetMarkers(file *models.MediaFile) {
 	v.Recap = markerFromRange(file.RecapStart, file.RecapEnd)
 	v.Preview = markerFromRange(file.PreviewStart, file.PreviewEnd)
 	v.MarkerSegments = models.EffectiveMarkerSegments(file)
+	previews := make([]VersionMarkerPreview, 0, len(v.MarkerPreviews))
+	for _, image := range v.MarkerPreviews {
+		for _, segment := range v.MarkerSegments {
+			if image.MarkerSegment == segment {
+				previews = append(previews, image)
+				break
+			}
+		}
+	}
+	v.MarkerPreviews = previews
 }
 
 func (v FileVersion) EffectiveMarkerSegments() []models.MarkerSegment {
@@ -769,8 +816,7 @@ type DetailService struct {
 	probeEnsurer      PlaybackProbeEnsurer
 	copySafetyRacer   CopySafetyRacer
 	chapterThumbs     ChapterThumbnailQueuer
-	probeBackfillOnce sync.Once
-	probeBackfill     *probeBackfiller
+	trickplay         TrickplayAvailability
 
 	// resolver is built once on first use; see settingsResolver.
 	resolverOnce sync.Once
@@ -836,6 +882,61 @@ func (s *DetailService) SetCopySafetyRacer(racer CopySafetyRacer) {
 
 func (s *DetailService) SetChapterThumbnailQueuer(queuer ChapterThumbnailQueuer) {
 	s.chapterThumbs = queuer
+}
+
+// SetTrickplayAvailability wires in the seek-bar preview reader.
+func (s *DetailService) SetTrickplayAvailability(availability TrickplayAvailability) {
+	s.trickplay = availability
+}
+
+// markTrickplay sets Trickplay on versions. Previews are an enhancement, so
+// a failed lookup leaves every version without them.
+func (s *DetailService) markTrickplay(ctx context.Context, versions []FileVersion, availability TrickplayAvailability) {
+	if availability == nil || len(versions) == 0 {
+		return
+	}
+	ids := make([]int, len(versions))
+	for i, v := range versions {
+		ids[i] = v.FileID
+	}
+	grids, err := availability.TrickplayGrids(ctx, ids)
+	if err != nil {
+		slog.WarnContext(ctx, "trickplay lookup failed", "component", "catalog", "error", err)
+		return
+	}
+	for i := range versions {
+		if grid, ok := grids[versions[i].FileID]; ok {
+			versions[i].Trickplay = &grid
+		}
+	}
+}
+
+// prefetchedTrickplay makes the page's availability lookup reusable by each
+// detail builder, including a failed lookup that returned no previews.
+type prefetchedTrickplay map[int]TrickplayGrid
+
+func (p prefetchedTrickplay) TrickplayGrids(context.Context, []int) (map[int]TrickplayGrid, error) {
+	return p, nil
+}
+
+func (s *DetailService) prefetchTrickplay(ctx context.Context, filesByID map[string][]*models.MediaFile) TrickplayAvailability {
+	if s.trickplay == nil {
+		return nil
+	}
+	var fileIDs []int
+	for _, files := range filesByID {
+		for _, file := range files {
+			if file != nil {
+				fileIDs = append(fileIDs, file.ID)
+			}
+		}
+	}
+	grids, err := s.trickplay.TrickplayGrids(ctx, fileIDs)
+	if err != nil {
+		slog.WarnContext(ctx, "trickplay lookup failed", "component", "catalog", "error", err)
+		grids = nil
+	}
+	return prefetchedTrickplay(grids)
 }
 
 func (s *DetailService) SetFolderRepository(repo interface {
@@ -1618,6 +1719,8 @@ type seriesDetailContext struct {
 	// series (and library) instead of once per episode.
 	audio            *audioPrefResolver
 	subtitleDefaults map[int]subtitleDefaults
+	filesByEpisode   map[string][]*models.MediaFile
+	trickplay        TrickplayAvailability
 }
 
 // buildSeriesDetailContext loads the parent series row, localizes it, fetches
@@ -1643,6 +1746,7 @@ func (s *DetailService) buildSeriesDetailContext(ctx context.Context, seriesID s
 		backdropURL:      s.PresignImageURL(ctx, series.BackdropPath, "backdrop", string(filter.ImageSize)),
 		audio:            s.newAudioPrefResolver(ctx, filter, seriesID),
 		subtitleDefaults: map[int]subtitleDefaults{},
+		trickplay:        s.trickplay,
 	}, nil
 }
 
@@ -1692,6 +1796,20 @@ func (s *DetailService) GetEpisodeDetailsForSeries(
 	seriesCtx, err := s.buildSeriesDetailContext(ctx, seriesID, filter)
 	if err != nil {
 		return nil, err
+	}
+	if fetcher, ok := s.fileFetcher.(interface {
+		ListByEpisodeIDs(context.Context, []string) (map[string][]*models.MediaFile, error)
+	}); ok {
+		files, err := fetcher.ListByEpisodeIDs(ctx, episodeContentIDs)
+		if err == nil {
+			if files == nil {
+				files = map[string][]*models.MediaFile{}
+			}
+			seriesCtx.filesByEpisode = files
+			seriesCtx.trickplay = s.prefetchTrickplay(ctx, files)
+		}
+		// A failed optional batch leaves the per-episode reads in place. Their
+		// existing error handling skips only the detail that could not be built.
 	}
 	for _, contentID := range episodeContentIDs {
 		episode, err := s.episodeRepo.GetByID(ctx, contentID)
@@ -1822,6 +1940,11 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 		}
 	}
 
+	trickplay := s.trickplay
+	if haveFileBatch {
+		trickplay = s.prefetchTrickplay(ctx, filesByID)
+	}
+
 	// Remote videos and local extras for movie/series items in two queries.
 	movieSeriesIDs := make([]string, 0, len(visible))
 	for _, item := range visible {
@@ -1878,6 +2001,7 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 			pendingTranslation: pending,
 			localizedItem:      s.localizeItemModelWith(item, language, loc),
 			haveCredits:        s.personRepo != nil,
+			trickplay:          trickplay,
 		}
 		if s.personRepo != nil {
 			pf.castCredits, pf.crewCredits = splitCastCrew(s.personCredits(ctx, creditsByID[id], filter))
@@ -2026,6 +2150,7 @@ func (s *DetailService) fetchCredits(ctx context.Context, contentID string, filt
 // identical to the unbatched GetItemDetail path regardless of which pieces were
 // prefetched. A nil prefetch reproduces the original per-item behavior exactly.
 type itemDetailPrefetch struct {
+	trickplay          TrickplayAvailability
 	haveLocalization   bool
 	pendingTranslation string
 	localizedItem      *models.MediaItem
@@ -2105,7 +2230,7 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 		Crew:                       crewCredits,
 		Studios:                    item.Studios,
 		Networks:                   item.Networks,
-		Countries:                  item.Countries,
+		Countries:                  lang.UniqueCountries(item.Countries),
 		LockedFields:               item.LockedFields,
 		FirstAirDate:               item.FirstAirDate,
 		LastAirDate:                item.LastAirDate,
@@ -2147,11 +2272,12 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 			sortAudiobookMediaFiles(files)
 		}
 		files = s.prepareBrowseFiles(ctx, files)
-		detail.Versions, detail.PlaybackVariants, detail.Subtitles, detail.Intro, detail.Credits, detail.Recap, detail.Preview = s.buildPlaybackInfo(
-			ctx,
-			files,
-			filter,
-			item.ContentID,
+		availability := s.trickplay
+		if pf != nil {
+			availability = pf.trickplay
+		}
+		detail.Versions, detail.PlaybackVariants, detail.Subtitles, detail.Intro, detail.Credits, detail.Recap, detail.Preview = s.buildPlaybackInfoWith(
+			ctx, files, filter, s.newAudioPrefResolver(ctx, filter, item.ContentID), availability,
 		)
 		detail.OverlaySummary = overlays.BuildSummary(files)
 		// Movie pre-play selectors need the same effective subtitle defaults
@@ -3020,9 +3146,13 @@ func (s *DetailService) buildEpisodeDetail(ctx context.Context, episode *models.
 	detail.PosterURL = s.PresignImageURL(ctx, episode.StillPath, "still", string(filter.ImageSize))
 	detail.BackdropURL = seriesCtx.backdropURL
 
-	files, err := s.fileFetcher.GetByEpisodeID(ctx, episode.ContentID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching file versions: %w", err)
+	files := seriesCtx.filesByEpisode[episode.ContentID]
+	if seriesCtx.filesByEpisode == nil {
+		var err error
+		files, err = s.fileFetcher.GetByEpisodeID(ctx, episode.ContentID)
+		if err != nil {
+			return nil, fmt.Errorf("fetching file versions: %w", err)
+		}
 	}
 	files = FilterMediaFilesByAccess(files, filter)
 	files = s.prepareBrowseFiles(ctx, files)
@@ -3031,6 +3161,7 @@ func (s *DetailService) buildEpisodeDetail(ctx context.Context, episode *models.
 		files,
 		filter,
 		s.episodeAudioResolver(ctx, seriesCtx, filter, episode.SeriesID),
+		seriesCtx.trickplay,
 	)
 	detail.OverlaySummary = overlays.BuildSummary(files)
 	s.episodeSubtitleDefaults(ctx, seriesCtx, filter, episode.SeriesID, files).applyToItemDetail(detail)
@@ -3292,7 +3423,7 @@ func (s *DetailService) effectiveSubtitleDefaults(
 		return defaults
 	}
 
-	rc := settingsresolve.Context{ProfileID: filter.ProfileID}
+	rc := settingsresolve.Context{ProfileID: filter.ProfileID, DeviceID: filter.DeviceID}
 	if libraryID := preferredPlayableLibraryID(files, filter.SelectedFileID); libraryID > 0 {
 		rc.LibraryIDs = []int{libraryID}
 	}
@@ -3724,7 +3855,7 @@ func (s *DetailService) buildPlaybackInfo(
 ) ([]FileVersion, []PlaybackVariant, []SubtitleInfo, *Marker, *Marker, *Marker, *Marker) {
 	// Resolve the request-invariant audio preferences once; a multi-track item
 	// would otherwise re-query the profile/preference rows for every file.
-	return s.buildPlaybackInfoWith(ctx, files, filter, s.newAudioPrefResolver(ctx, filter, audioPreferenceContentID))
+	return s.buildPlaybackInfoWith(ctx, files, filter, s.newAudioPrefResolver(ctx, filter, audioPreferenceContentID), s.trickplay)
 }
 
 // buildPlaybackInfoWith is buildPlaybackInfo with a caller-owned audio
@@ -3734,6 +3865,7 @@ func (s *DetailService) buildPlaybackInfoWith(
 	files []*models.MediaFile,
 	filter AccessFilter,
 	audioResolver *audioPrefResolver,
+	availability TrickplayAvailability,
 ) ([]FileVersion, []PlaybackVariant, []SubtitleInfo, *Marker, *Marker, *Marker, *Marker) {
 	versions := make([]FileVersion, 0, len(files))
 	subtitleSet := make(map[string]SubtitleInfo)
@@ -3794,6 +3926,10 @@ func (s *DetailService) buildPlaybackInfoWith(
 			Recap:                    versionRecap,
 			Preview:                  versionPreview,
 			MarkerSegments:           models.EffectiveMarkerSegments(f),
+			MarkerPreviews: BuildMarkerPreviews(ctx, f, func(ctx context.Context, paths []string) map[string]ResolvedImageURL {
+				return s.PresignURLsWithExpiry(ctx, paths, "card")
+			}),
+			Unreadable: f.ProbeRejected(),
 		})
 
 		for _, sub := range f.SubtitleTracks {
@@ -3830,6 +3966,7 @@ func (s *DetailService) buildPlaybackInfoWith(
 		subtitles = append(subtitles, sub)
 	}
 
+	s.markTrickplay(ctx, versions, availability)
 	variants := buildPlaybackVariants(versions, filter.SelectedFileID)
 	selectedVersionExists := playbackVersionExists(versions, filter.SelectedFileID)
 	pick := func(field func(v FileVersion) *Marker, fallback *Marker) *Marker {
@@ -4129,6 +4266,13 @@ func (s *DetailService) buildVersionChapters(ctx context.Context, file *models.M
 		return []VersionChapter{}
 	}
 
+	paths := make([]string, 0, len(file.Chapters))
+	for _, chapter := range file.Chapters {
+		if chapter.ThumbnailPath != "" {
+			paths = append(paths, chapter.ThumbnailPath)
+		}
+	}
+	resolved := s.PresignURLsWithExpiry(ctx, paths, "card")
 	chapters := make([]VersionChapter, 0, len(file.Chapters))
 	for _, chapter := range file.Chapters {
 		ch := VersionChapter{
@@ -4140,7 +4284,7 @@ func (s *DetailService) buildVersionChapters(ctx context.Context, file *models.M
 			ThumbnailThumbhash: chapter.ThumbnailThumbhash,
 		}
 		if chapter.ThumbnailPath != "" {
-			ch.ThumbnailURL = s.PresignURL(ctx, strings.Replace(chapter.ThumbnailPath, "/original.", "/w300.", 1), "card")
+			ch.ThumbnailURL = resolved[chapter.ThumbnailPath].URL
 		}
 		chapters = append(chapters, ch)
 	}

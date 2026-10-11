@@ -15,12 +15,14 @@ import (
 // facility (internal/mail). Feature-specific email content lives with the
 // features; this handler only owns configuration verification.
 type EmailHandler struct {
-	sender silomail.Sender
+	sender prairiemail.Sender
+	brand  *prairiemail.BrandLoader
 }
 
-// NewEmailHandler creates an EmailHandler.
-func NewEmailHandler(sender silomail.Sender) *EmailHandler {
-	return &EmailHandler{sender: sender}
+// NewEmailHandler creates an EmailHandler. brand styles the test message so
+// it previews the server's branded emails; nil sends Prairie's default branding.
+func NewEmailHandler(sender prairiemail.Sender, brand *prairiemail.BrandLoader) *EmailHandler {
+	return &EmailHandler{sender: sender, brand: brand}
 }
 
 type emailTestRequest struct {
@@ -69,18 +71,21 @@ func (h *EmailHandler) HandleTest(w http.ResponseWriter, r *http.Request) {
 // sendTestEmail constructs and dispatches the same message for both transports.
 func (h *EmailHandler) sendTestEmail(ctx context.Context, to string) (int64, error) {
 	started := time.Now()
-	err := h.sender.Send(ctx, silomail.Message{
+	brand := h.brand.Load(ctx)
+	err := h.sender.Send(ctx, prairiemail.Message{
 		To:      []string{to},
 		Subject: "Prairie test email",
 		TextBody: "This is a test email from your Prairie server.\n\n" +
 			"If you received it, outbound email is configured correctly.",
-		HTMLBody: silomail.RenderLayout(silomail.LayoutOptions{
+		HTMLBody: prairiemail.RenderLayout(prairiemail.LayoutOptions{
+			Brand:     brand,
 			Preheader: "Outbound email from your Prairie server is configured correctly.",
 			Title:     "Outbound email is working",
 			BodyHTML: silomail.EmailParagraph("This is a test email from your Prairie server.") +
 				silomail.EmailParagraph("If you're reading it, the SMTP settings are correct and "+
 					"notification emails will look like this one."),
 		}),
+		Inline: brand.InlineImages(),
 	})
 	return time.Since(started).Milliseconds(), err
 }

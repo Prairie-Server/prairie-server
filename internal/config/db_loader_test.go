@@ -47,11 +47,11 @@ func TestLoadFromDBRejectsInvalidSegmentRetention(t *testing.T) {
 }
 
 func TestLoadFromDBDownloadArtifactDirRequiresAbsolutePath(t *testing.T) {
-	cfg, err := LoadFromDB(map[string]string{downloadArtifactDirSettingKey: "/mnt/silo-downloads"})
+	cfg, err := LoadFromDB(map[string]string{downloadArtifactDirSettingKey: "/mnt/prairie-downloads"})
 	if err != nil {
 		t.Fatalf("LoadFromDB() with absolute artifact dir: %v", err)
 	}
-	if cfg.Download.ArtifactDir != "/mnt/silo-downloads" {
+	if cfg.Download.ArtifactDir != "/mnt/prairie-downloads" {
 		t.Fatalf("artifact dir = %q", cfg.Download.ArtifactDir)
 	}
 

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
 	"github.com/prairie-server/prairie-server/internal/cache"
@@ -43,11 +42,6 @@ type s3SettingsCheckClient interface {
 	DeleteObject(ctx context.Context, bucket, key string) error
 }
 
-type redisSettingsCheckClient interface {
-	Ping(ctx context.Context) error
-	Close() error
-}
-
 type embeddingsSettingsCheckClient interface {
 	Embed(ctx context.Context, texts []string) ([][]float32, error)
 }
@@ -61,32 +55,9 @@ type aiSettingsCheckClient interface {
 	Transcribe(ctx context.Context, req llm.TranscribeRequest) (*llm.Transcription, error)
 }
 
-type redisSettingsCheckAdapter struct {
-	client *redis.Client
-}
-
-func (a *redisSettingsCheckAdapter) Ping(ctx context.Context) error {
-	return a.client.Ping(ctx).Err()
-}
-
-func (a *redisSettingsCheckAdapter) Close() error {
-	return cache.CloseRedisClient(a.client)
-}
-
 var newAdminS3SettingsCheckClient = func(cfg s3client.BucketConfig) s3SettingsCheckClient {
 	cfg.Role = "checks"
 	return s3client.NewClient(cfg)
-}
-
-var newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-	client, err := cache.NewRedisClientForRole(cfg, "checks")
-	if err != nil {
-		return nil, err
-	}
-	if client == nil {
-		return nil, nil
-	}
-	return &redisSettingsCheckAdapter{client: client}, nil
 }
 
 var newAdminEmbeddingsSettingsCheckClient = func(
@@ -518,7 +489,7 @@ func checkS3ObjectPermissions(
 	client s3SettingsCheckClient,
 	bucket string,
 ) (resultErr error) {
-	key := fmt.Sprintf(".prairie-admin-connection-check/%d", time.Now().UnixNano())
+	key := fmt.Sprintf(".prairie--admin-connection-check/%d", time.Now().UnixNano())
 	payload := []byte("prairie-storage-check")
 	deleted := false
 	defer func() {
@@ -559,7 +530,9 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 	if strings.TrimSpace(cfg.Redis.URL) == "" {
 		return connectionCheckResponse{Success: false, Message: "Redis URL is required."}
 	}
-	if err := probeRedisConfig(ctx, cfg.Redis); err != nil {
+
+	client, err := cache.NewRedisClientForRole(cfg.Redis, "checks")
+	if err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Redis connection check failed: %v", err),
@@ -584,11 +557,21 @@ func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
 	if client == nil {
 		return errors.New("redis URL is required")
 	}
-	defer func() { _ = client.Close() }()
+	defer func() { _ = cache.CloseRedisClient(client) }()
 
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	return client.Ping(checkCtx)
+	if err := client.Ping(checkCtx).Err(); err != nil {
+		return connectionCheckResponse{
+			Success: false,
+			Message: fmt.Sprintf("Redis connection check failed: %v", err),
+		}
+	}
+
+	return connectionCheckResponse{
+		Success: true,
+		Message: "Redis connection successful.",
+	}
 }
 
 func checkRecommendationsEmbeddingConnection(

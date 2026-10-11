@@ -41,7 +41,7 @@ const imageCacheWorkerMemoryBudget = 512 << 20
 // cap keeps a many-core server from monopolizing provider connections. The
 // original fixed pool of 2 measured roughly 60 images/minute on a ~600k-item
 // library; 48 workers measured roughly 2,900/minute over a 60-minute window
-// (RXWatcher/silo-server@3b377f5c2).
+// (RXWatcher/prairie-server@3b377f5c2).
 //
 // configured, when positive, is the administrator's metadata.image_workers
 // value and replaces the CPU-derived size outright; the memory cap still

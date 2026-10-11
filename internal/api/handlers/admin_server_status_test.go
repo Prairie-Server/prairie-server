@@ -145,7 +145,7 @@ func TestAdminServerStatusHealthWithoutDependencies(t *testing.T) {
 func TestAdminServerStatusHealthWithUnreachablePostgres(t *testing.T) {
 	t.Parallel()
 
-	pool, err := pgxpool.New(context.Background(), "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	pool, err := pgxpool.New(context.Background(), "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestLogLevelCountsAreServedFromCache(t *testing.T) {
 	counts := cache.NewTTLCache[adminLogLevelCounts]()
 	t.Cleanup(counts.Close)
 
-	pool, err := pgxpool.New(context.Background(), "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	pool, err := pgxpool.New(context.Background(), "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}

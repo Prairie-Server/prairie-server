@@ -12,7 +12,7 @@ import (
 // TestAdvisoryFromPluginMetadata covers the hostile-input contract of the
 // advisory keys. A plugin owns this Struct completely and the value it carries
 // is rendered on item detail, so anything that is not a whole age in range
-// from a source Silo recognizes has to be dropped rather than stored.
+// from a source Prairie recognizes has to be dropped rather than stored.
 func TestAdvisoryFromPluginMetadata(t *testing.T) {
 	tests := []struct {
 		name       string

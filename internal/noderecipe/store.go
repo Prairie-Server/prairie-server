@@ -51,26 +51,26 @@ import (
 const KeyPrefix = "prairie:noderecipe:"
 
 // ProxyGrantKeyPrefix namespaces per-session proxy grants:
-// silo:proxygrant:<playbackSessionID>. It is deliberately a separate key space
+// prairie:proxygrant:<playbackSessionID>. It is deliberately a separate key space
 // from KeyPrefix: the two are written by different flows, consumed by different
 // node roles, and a lookup in one must never resolve the other's entry.
-const ProxyGrantKeyPrefix = "silo:proxygrant:"
+const ProxyGrantKeyPrefix = "prairie:proxygrant:"
 
 // nodeAuthorityGenerationKeyPrefix namespaces the per-node Redis timestamp
 // generation that force reload advances to revoke every outstanding node
 // recipe, including a progressive-remux URL with no request yet.
-const nodeAuthorityGenerationKeyPrefix = "silo:noderecipe-authority-generation:"
+const nodeAuthorityGenerationKeyPrefix = "prairie:noderecipe-authority-generation:"
 
 // nodeAuthorityRecordGenerationKeyPrefix namespaces the generation stamped
 // alongside one node recipe. Keeping it in a sidecar preserves the recipe's
 // previous wire format for older transcode nodes during rolling upgrades.
-const nodeAuthorityRecordGenerationKeyPrefix = "silo:noderecipe-authority-record:"
+const nodeAuthorityRecordGenerationKeyPrefix = "prairie:noderecipe-authority-record:"
 
 // nodeAuthorityRecordDigestKeyPrefix binds the generation sidecar to the
 // recipe bytes it stamped. An older API may overwrite only the legacy recipe
 // key; the digest lets a current node recognize that the surviving generation
 // belongs to different bytes and validate the overwrite as a legacy write.
-const nodeAuthorityRecordDigestKeyPrefix = "silo:noderecipe-authority-digest:"
+const nodeAuthorityRecordDigestKeyPrefix = "prairie:noderecipe-authority-digest:"
 
 // DefaultTTL bounds how long a stored recipe survives. It matches the stream
 // token lifetime (playback.MaxTokenTTL, 24h): past it no surviving token could

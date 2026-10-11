@@ -25,19 +25,19 @@ results this PR could invalidate or unblock, before it merges. You report; you n
 
 - **Task issues** carry the label `Validation`, are titled `<Feature> — <Surface>` (Server, Web,
   Web admin, iOS, tvOS, Android, Android TV, or a plugin), and live in the repository that owns the
-  surface: `Silo-Server/silo-server`, `Silo-Server/silo-apple`, `Silo-Server/silo-android`, or a
+  surface: `Prairie-Server/prairie-server`, `Prairie-Server/silo-apple`, `Prairie-Server/silo-android`, or a
   plugin repository. Each has a `## Cases` checklist (`C1`, `C2`, …) and a `## Results` table with
   one row per case and one column per surface or form factor. Cells read like
   `Passed — human validation`, `Failed / blocked by #1294`, `Pending …`, or `Not run`, and name
   the build as `build 745 · cbc13de1`. A `## Related findings` section marks linked issues as
   blocking or non-blocking for a case.
-- **Feature parents** are titled `[v1] <Feature>` in `Silo-Server/silo-server`. They hold the
+- **Feature parents** are titled `[v1] <Feature>` in `Prairie-Server/prairie-server`. They hold the
   acceptance criteria (`AC1`, …) that the cases prove.
 - A task can be open and still hold passed cases. Treat every `Passed` cell as validated behavior,
   whatever the issue state.
 
 Find tasks with the GitHub issue search API, for example
-`org:Silo-Server label:Validation "Passed"` and `org:Silo-Server label:Validation <feature words>`,
+`org:Prairie-Server label:Validation "Passed"` and `org:Prairie-Server label:Validation <feature words>`,
 then read the bodies of the tasks and parents you need. Also read every issue the PR body closes or
 mentions: if a task names that issue on a results row or under *Related findings*, the PR reaches
 that task directly.

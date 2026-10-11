@@ -1,5 +1,5 @@
 // Package playback provides play method resolution, streaming, transcoding,
-// and session management for Silo.
+// and session management for Prairie.
 package playback
 
 import (

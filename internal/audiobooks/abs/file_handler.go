@@ -48,7 +48,7 @@ func trackInoFor(contentID string, fileIdx int) string {
 //
 // Behavior:
 //   - Validate ABS bearer token (bearerAuth middleware has already done this).
-//   - Look up the requested file in silo's media_files table.
+//   - Look up the requested file in prairie's media_files table.
 //   - Serve the bytes directly with Range-request support via playback.ServeDirectPlay.
 //   - Set Content-Disposition: attachment on /download paths to encourage
 //     browser save-to-disk / mobile offline-save behavior.
@@ -140,7 +140,7 @@ func (h *Handler) handleFileStream(w http.ResponseWriter, r *http.Request) {
 // Resolution:
 //  1. Look up the session by sid via PlaybackSessionStore.
 //  2. Load the ordered media-files list for the session's contentID.
-//  3. files[idx-1] is the requested track (silo emits 1-based wireIndex).
+//  3. files[idx-1] is the requested track (prairie emits 1-based wireIndex).
 //  4. Stream via playback.ServeDirectPlay (handles Range + HEAD).
 //
 // Mounted OUTSIDE bearerAuth: the client sends no Authorization header on

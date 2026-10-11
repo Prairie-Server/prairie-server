@@ -300,7 +300,7 @@ func TestIsFragileLosslessAudioCodec(t *testing.T) {
 
 func TestIsOriginalLanguagePreference(t *testing.T) {
 	for value, want := range map[string]bool{
-		"original": true, "Original": true, "x-silo-original": true, " X-Silo-Original ": true,
+		"original": true, "Original": true, "x-silo-original": true, " X-Prairie-Original ": true,
 		"": false, "en": false, "ja": false, "x-silo-other": false,
 	} {
 		if got := playback.IsOriginalLanguagePreference(value); got != want {

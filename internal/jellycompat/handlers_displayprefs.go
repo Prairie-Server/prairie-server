@@ -205,10 +205,10 @@ func defaultDisplayPreferences(id, client string) displayPreferencesDTO {
 
 // seedFromProfile fills a fresh DisplayPreferences document from the user's
 // real settings, so a Jellyfin client's first read reflects choices made in
-// Silo rather than empty defaults.
+// Prairie rather than empty defaults.
 //
 // Resolved at profile scope with no device: this seeds what a Jellyfin client
-// sees, and those clients do not carry Silo's device identity. A device
+// sees, and those clients do not carry Prairie's device identity. A device
 // override leaking in here would hand one device's settings to every Jellyfin
 // client on the account.
 func (h *DisplayPreferencesHandler) seedFromProfile(r *http.Request, session *Session, dto *displayPreferencesDTO) error {

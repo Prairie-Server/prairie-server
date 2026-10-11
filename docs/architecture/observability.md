@@ -18,7 +18,7 @@ Telemetry turns on when **either** `PRAIRIE_OTEL_ENABLED` is truthy **or**
 | `PRAIRIE_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint; also implicitly enables telemetry. | — |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` (default) or `http/protobuf`. | `grpc` |
-| `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `silo-server` |
+| `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `prairie-server` |
 | `OTEL_SERVICE_VERSION` | `service.version` resource attribute. | unset |
 | `OTEL_TRACES_SAMPLER` | `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off`, or `parentbased_traceidratio`. Unsupported values (e.g. `jaeger_remote`) fall back to the default. | `parentbased_traceidratio` |
 | `OTEL_TRACES_SAMPLER_ARG` | Trace-id ratio for the ratio-based samplers (0–1; clamps >1 to 1). | `0.01` |
@@ -119,7 +119,7 @@ writers never block and never log. Neither Redis nor Postgres is on that path.
   logging is persisted and reaches other nodes. A node that dies loses the entries
   still in its buffer, including the record that `log.Fatalf` writes just before it
   exits.
-- Earlier Silo versions pushed entries into the Redis lists `ops_log:buffer` and
+- Earlier Prairie versions pushed entries into the Redis lists `ops_log:buffer` and
   `activity_log:buffer`. Current versions never read them. Once no node runs an earlier
   version, delete both keys.
 
@@ -342,9 +342,9 @@ completion, `prairie_subprocess_exits_total` counts bounded workload and outcome
 categories, and `prairie_subprocess_peak_rss_bytes` is a distribution of per-child
 maximum RSS, normalized to bytes and omitted on unsupported platforms.
 Instrumented owners are playback transcodes and restarts, progressive remux,
-scanner probes, plugin shutdown and failed startup, and media analysis and
-chapter thumbnail runs through `internal/mediasample` (workloads `analysis` and
-`thumbnail`). Other FFmpeg uses need their own owner instrumentation before
+scanner probes, plugin shutdown and failed startup, and media analysis,
+chapter thumbnail, and trickplay runs through `internal/mediasample`
+(workloads `analysis`, `thumbnail`, and `trickplay`). Other FFmpeg uses need their own owner instrumentation before
 claiming coverage. No second waiter or reaper is installed.
 
 ### Node resource sampling

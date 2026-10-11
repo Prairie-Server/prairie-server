@@ -13,7 +13,7 @@ import (
 
 const compatSessionTranscode = "Transcode"
 
-// Jellyfin RepeatMode and PlaybackOrder values for a Silo session, which has
+// Jellyfin RepeatMode and PlaybackOrder values for a Prairie session, which has
 // no queue controls.
 const (
 	compatRepeatNone           = "RepeatNone"

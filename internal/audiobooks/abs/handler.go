@@ -4,7 +4,7 @@
 // root-level paths real ABS clients build against (e.g. /login, /api/items).
 //
 // Stage 1 lands the package skeleton: Handler struct, interface stubs for
-// silo-side dependencies, and an empty Mount() method. Real route handlers
+// prairie-side dependencies, and an empty Mount() method. Real route handlers
 // are added in subsequent stages (auth, file serving, progress, browse).
 package abs
 
@@ -37,7 +37,7 @@ type AudiobookLibrary struct {
 	Type string // always "audiobooks" for this surface
 }
 
-// MediaStore is the slice of silo's catalog the ABS handler reads.
+// MediaStore is the slice of prairie's catalog the ABS handler reads.
 // Real impl: catalog.ItemRepository + scanner.FileRepository wrapped in
 // a small adapter struct added in a later stage.
 type MediaStore interface {
@@ -171,14 +171,14 @@ type ABSToken struct {
 }
 
 // ProfileCredentialValidator validates a (username, password) pair against
-// silo's auth backend. Implemented by an adapter over internal/auth in a
+// prairie's auth backend. Implemented by an adapter over internal/auth in a
 // later stage.
 type ProfileCredentialValidator interface {
 	Validate(ctx context.Context, username, password string) (userID string, profileID string, displayName string, err error)
 }
 
 // AccessResolver resolves the ABS-authenticated user/profile into the same
-// effective catalog access filter used by silo's native API.
+// effective catalog access filter used by prairie's native API.
 type AccessResolver interface {
 	ResolveABSAccess(ctx context.Context, userID, profileID string) (catalog.AccessFilter, error)
 }
@@ -273,7 +273,7 @@ type Dependencies struct {
 	// SocketIO is the Socket.io server mounted at /abs/socket.io/. May be nil;
 	// the route is only registered when a non-nil value is supplied.
 	SocketIO SocketIOServer
-	// NativeSessions mirrors ABS playback into Silo's native playback session
+	// NativeSessions mirrors ABS playback into Prairie's native playback session
 	// manager so shared live-session views, limits, and stale-session cleanup
 	// see Audiobookshelf-compatible clients. May be nil; ABS playback still
 	// functions, but admin live-session visibility is unavailable.
@@ -281,7 +281,7 @@ type Dependencies struct {
 	// NativeSessionSyncer flushes native session-manager state into the shared
 	// admin live-session table after ABS play/sync/close events.
 	NativeSessionSyncer PlaybackSessionSyncer
-	// CoverResolver translates a raw silo poster path (e.g.
+	// CoverResolver translates a raw prairie poster path (e.g.
 	// "local/audiobooks/.../original.webp") into a fully-qualified URL
 	// the ABS client can fetch. Optional; when nil, /api/items/{id}/cover
 	// 404s rather than redirecting to an unreachable relative path.
@@ -383,7 +383,7 @@ func (h *Handler) mountRoutes(r chi.Router) {
 	// Discovery + auth endpoints: real ABS exposes these at server ROOT
 	// (no /api or /abs/api prefix). Mobile clients do `${addr}/ping`,
 	// `${addr}/login`, etc. Designed to be mounted on a dedicated listener
-	// so the routes don't collide with silo's SPA catch-all.
+	// so the routes don't collide with prairie's SPA catch-all.
 	for _, prefix := range []string{"", "/abs/api"} {
 		r.Get(prefix+"/ping", h.handleABSPing)
 		r.Get(prefix+"/healthcheck", h.handleABSPing) // same body as /ping
@@ -484,8 +484,8 @@ func (h *Handler) mountRoutes(r chi.Router) {
 			// (SessionController.sync). The official ABS mobile/web clients
 			// POST here; missing it means playback progress never syncs.
 			r.Post(prefix+"/session/{sid}/sync", h.handleSessionSync)
-			// PATCH /session/{sid}           — silo-native heartbeat alias
-			// (kept additive for silo's own clients).
+			// PATCH /session/{sid}           — prairie-native heartbeat alias
+			// (kept additive for prairie's own clients).
 			r.Patch(prefix+"/session/{sid}", h.handleSessionSync)
 			// POST  /session/{sid}/close     — finalise the play session
 			r.Post(prefix+"/session/{sid}/close", h.handleSessionClose)

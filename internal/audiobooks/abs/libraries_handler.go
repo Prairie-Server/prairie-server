@@ -15,7 +15,7 @@ import (
 
 // maxUnpaginatedAuthors / maxUnpaginatedSeries clamp the "return all" forms
 // of /libraries/{id}/authors and /libraries/{id}/series. Real ABS returns the
-// complete set and typical libraries stay well under these bounds, but silo
+// complete set and typical libraries stay well under these bounds, but prairie
 // serves libraries real ABS never sees (250k+ books → ~98k authors, ~32k
 // series) and an unbounded response crashes non-paginating mobile clients.
 // Series is bounded tighter because each row embeds up to four minified book
@@ -148,7 +148,7 @@ func (h *Handler) buildFilterData(r *http.Request, lib AudiobookLibrary) map[str
 // handleLibraryItems — GET /abs/api/libraries/{libraryId}/items
 //
 // Returns a paginated, optionally filtered and/or collapsed-by-series list
-// of audiobook LibraryItems from silo's media_items table for the requested
+// of audiobook LibraryItems from prairie's media_items table for the requested
 // library. Supports the standard ABS query params:
 //
 //   - limit / page      — pagination
@@ -277,7 +277,7 @@ func (h *Handler) handleLibraryItems(w http.ResponseWriter, r *http.Request) {
 
 // handleItemCover — GET /abs/api/items/{id}/cover (unauthenticated)
 //
-// Returns the audiobook's cover image. Currently redirects to silo's native
+// Returns the audiobook's cover image. Currently redirects to prairie's native
 // cover endpoint; a later stage may proxy the bytes directly.
 func (h *Handler) handleItemCover(w http.ResponseWriter, r *http.Request) {
 	contentID := chi.URLParam(r, "id")
@@ -295,7 +295,7 @@ func (h *Handler) handleItemCover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	target := item.PosterPath
-	// Raw silo paths (e.g. "local/audiobooks/.../original.webp") need to
+	// Raw prairie paths (e.g. "local/audiobooks/.../original.webp") need to
 	// be resolved into a real URL via the CoverResolver before redirect;
 	// otherwise the client follows a relative path that doesn't exist on
 	// the ABS listener.
@@ -351,7 +351,7 @@ func (h *Handler) handleLibraryAuthors(w http.ResponseWriter, r *http.Request) {
 	// cap) — clients like the official app fetch the whole list once and
 	// scroll it locally, so a small server-side default limit silently
 	// truncates the Authors page. limit=0 means "return all", clamped by
-	// the guardrail below: at silo scale (a 250k-book library carries ~98k
+	// the guardrail below: at prairie scale (a 250k-book library carries ~98k
 	// authors) a truly unbounded response crashes non-paginating mobile
 	// clients, which real ABS never has to survive.
 	limit, page := readPagedQuery(r, 0)
@@ -511,12 +511,12 @@ func (h *Handler) handleLibrarySearch(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Best-effort author/series buckets: silo has no dedicated search-scoped
+	// Best-effort author/series buckets: prairie has no dedicated search-scoped
 	// store query for these yet, so we reuse the existing aggregate listers
 	// (capped, same pattern as buildFilterData/handleLibraryAuthors/
 	// handleLibrarySeries) and filter client-side on a case-insensitive
 	// substring match. narrators/tags/genres have no backing aggregation
-	// query at all in silo's catalog today and stay empty-but-present.
+	// query at all in prairie's catalog today and stay empty-but-present.
 	qLower := strings.ToLower(q)
 	const fetchCap = 5000
 
@@ -683,7 +683,7 @@ func minifiedSlice(items []*models.MediaItem, lib AudiobookLibrary, baseURL stri
 // ---------------------------------------------------------------------------
 
 // resolveLibrary looks up the library identified by the {libraryId} URL
-// param, handling the virtual "silo-audiobooks" sentinel. Returns (lib, true)
+// param, handling the virtual "prairie-audiobooks" sentinel. Returns (lib, true)
 // on success or writes a 404 and returns (zero, false) on failure.
 func (h *Handler) resolveLibrary(w http.ResponseWriter, r *http.Request) (AudiobookLibrary, bool) {
 	idStr := chi.URLParam(r, "libraryId")
@@ -727,10 +727,10 @@ func (h *Handler) resolveLibrary(w http.ResponseWriter, r *http.Request) (Audiob
 }
 
 // ---------------------------------------------------------------------------
-// silo MediaItem → ABS LibraryItem translation
+// prairie MediaItem → ABS LibraryItem translation
 // ---------------------------------------------------------------------------
 
-// siloItemToLibraryItem converts a silo MediaItem (type='audiobook') into the
+// siloItemToLibraryItem converts a prairie MediaItem (type='audiobook') into the
 // ABS LibraryItem wire shape for browse-list responses (no audio tracks; only
 // metadata + duration summary). File-level tracks are populated only on the
 // item-detail handler (handleItem).
@@ -744,7 +744,7 @@ func siloItemToLibraryItem(item *models.MediaItem, lib AudiobookLibrary, baseURL
 	duration := audiobookDurationSeconds(item)
 
 	// Always point coverPath at our /api/items/{id}/cover endpoint rather
-	// than the raw silo PosterPath. Storage paths like
+	// than the raw prairie PosterPath. Storage paths like
 	// "local/audiobooks/.../original.webp" mean nothing to an ABS client;
 	// our cover handler resolves them via the CoverResolver before
 	// redirecting to the real URL.
@@ -788,7 +788,7 @@ func siloItemToLibraryItem(item *models.MediaItem, lib AudiobookLibrary, baseURL
 	}
 }
 
-// siloItemToMetadata extracts the ABS Metadata block from a silo MediaItem.
+// siloItemToMetadata extracts the ABS Metadata block from a prairie MediaItem.
 // Authors and narrators are sourced from item.People; series from the
 // audiobook_series table hydrated onto the MediaItem; publisher from Studios.
 //
@@ -845,7 +845,7 @@ func siloItemToMetadata(item *models.MediaItem) Metadata {
 		genres = []string{}
 	}
 
-	// silo has no item-level tags concept today; emit an empty array so
+	// prairie has no item-level tags concept today; emit an empty array so
 	// clients that branch on tags[] don't see a null and crash.
 	tags := []string{}
 
@@ -897,7 +897,7 @@ func audiobookDurationSeconds(item *models.MediaItem) float64 {
 	return float64(item.Runtime) * 60
 }
 
-// siloItemToLibraryItemDetail converts a silo MediaItem + its media files into
+// siloItemToLibraryItemDetail converts a prairie MediaItem + its media files into
 // a full ABS LibraryItem with audio track details populated. Called by
 // handleItem (single-item GET).
 func siloItemToLibraryItemDetail(item *models.MediaItem, files []*models.MediaFile, lib AudiobookLibrary, baseURL string) LibraryItem {
@@ -950,7 +950,7 @@ func siloItemToLibraryItemDetail(item *models.MediaItem, files []*models.MediaFi
 	return base
 }
 
-// siloFilesToAudioTracks converts silo MediaFile rows into ABS AudioTrack
+// siloFilesToAudioTracks converts prairie MediaFile rows into ABS AudioTrack
 // entries for the item-detail response. token may be empty (item-detail
 // doesn't embed auth tokens; the ABS client initiates playback via /play).
 func siloFilesToAudioTracks(contentID string, files []*models.MediaFile, baseURL, token string) []AudioTrack {

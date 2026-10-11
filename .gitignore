@@ -37,7 +37,7 @@ silo.yaml
 .env.*
 !.env.example
 # Per-developer settings for the agent skills (hosts, credentials, tokens).
-.prairie-dev.env
+.prairie--dev.env
 
 # Developer-specific make targets
 Makefile.local

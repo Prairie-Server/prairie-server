@@ -449,7 +449,8 @@ export function AdvancedFields({
 }: {
   form: LibraryFormController;
   chapterThumbnailsSupported: boolean;
-  trickplaySupported: boolean;
+  /** Undefined when the server does not offer seek previews. */
+  trickplaySupported?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -474,15 +475,15 @@ export function AdvancedFields({
           />
         </SettingCard>
       )}
-      {form.settingSupport.chapterThumbnails && (
+      {form.settingSupport.trickplay && trickplaySupported !== undefined && (
         <SettingCard
           htmlFor="trickplay-switch"
           title="Generate seek previews"
-          description="Builds sprite-sheet previews for the scrubber so hovering or dragging the seek bar shows a frame from that moment. Stored with the rest of your artwork."
+          description="Makes the thumbnails players show while seeking, in the configured public asset storage. Files are processed in the background at low priority. Turning this off deletes the library's previews."
           footer={
             !trickplaySupported ? (
               <p className="text-warning text-xs">
-                Artwork storage is not configured, so there is nowhere to put the generated images.
+                Public asset storage is required before this can be enabled.
               </p>
             ) : null
           }
@@ -490,7 +491,7 @@ export function AdvancedFields({
           <Switch
             id="trickplay-switch"
             checked={form.trickplayEnabled}
-            disabled={!trickplaySupported}
+            disabled={!trickplaySupported && !form.trickplayEnabled}
             onCheckedChange={form.setTrickplayEnabled}
           />
         </SettingCard>

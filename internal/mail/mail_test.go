@@ -19,7 +19,7 @@ func configuredSettings() stubSettings {
 	return stubSettings{
 		SettingEnabled:     "true",
 		SettingSMTPHost:    "smtp.example.com",
-		SettingFromAddress: "silo@example.com",
+		SettingFromAddress: "prairie@example.com",
 	}
 }
 
@@ -139,7 +139,7 @@ func TestSendReportsUnreachableServerAsNotSent(t *testing.T) {
 		SettingSMTPHost:     "127.0.0.1",
 		SettingSMTPPort:     strconv.Itoa(port),
 		SettingSMTPSecurity: "none",
-		SettingFromAddress:  "silo@example.test",
+		SettingFromAddress:  "prairie@example.test",
 	})
 	err = sender.Send(t.Context(), Message{To: []string{"user@example.test"}, Subject: "s", TextBody: "b"})
 	if !errors.Is(err, ErrNotSent) {

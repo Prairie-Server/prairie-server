@@ -136,7 +136,7 @@ SDK, in the catalog, or in a specific plugin repo.
 
 Separately, any change that leaves the user manual on siloserver.org wrong or incomplete (a
 setting, default, label, setup step, or feature behavior it describes) is not done until an
-issue is open on `Silo-Server/siloserver.org`.
+issue is open on `Prairie-Server/prairieserver.org`.
 [Update the user manual](CONTRIBUTING.md#update-the-user-manual) covers when to open one and
 what goes in it.
 
@@ -171,7 +171,7 @@ Go stays `gofmt`/`goimports` clean; the frontend follows `web/.prettierrc`.
 
 ## Development environment
 
-Copy `.prairie-dev.env.example` to `.prairie-dev.env` and fill in how to
+Copy `.prairie--dev.env.example` to `.prairie--dev.env` and fill in how to
 reach your Prairie deployment — URL, SSH target, database, an account to debug with. That file is
 gitignored and is the only place hosts, passwords, and tokens belong. `scripts/prairie-dev doctor`
 checks it end to end.
@@ -233,20 +233,32 @@ neutral placeholders where context is needed. Never publish credentials, tokens,
 personal data, or private media details. Check text and attachments before posting;
 authorization to open a PR does not authorize publishing private evidence.
 
-The one private link allowed is a maintainer's evidence page on
-`evidence.siloserver.org`, which only Silo-Server organization members can open
-after GitHub sign-in. Put it on one line at the end of a PR body's Validation
-section or a validation hand-off comment:
-`Evidence: https://evidence.siloserver.org/r/<repo>/<topic>/`. Link the page;
+The one private link allowed is an evidence page on `evidence.prairieserver.org`,
+which only Prairie maintainers and the page's owner (for a pull request's own page,
+its author) can open after GitHub sign-in. Put it on one line in a PR body's
+Evidence section or a validation hand-off comment:
+`Evidence: https://evidence.prairieserver.org/r/<repo>/<topic>/`. Link the page;
 never attach or embed its media.
 
 - Keep one concern per pull request. Split changes that solve independent
   problems or can be reviewed and shipped separately.
-- Do not capture screenshots or record videos just to prepare a PR. Attach media
-  only when the user explicitly requests it. Verify UI behavior as needed without
-  turning verification into a media deliverable. Do not explain omitted media.
-- When the user requests PR media, check it for private information and upload it
-  to GitHub. Never commit PR-only assets such as `.github/pr-assets/`.
+- Every pull request that changes what a user sees must include evidence, as
+  [Show visible changes](CONTRIBUTING.md#show-visible-changes) defines. That
+  covers UI and UX changes and changes to which items appear or what they show,
+  such as search results, home sections, recommendations, sorting, filtering,
+  metadata, or artwork. Use before-and-after captures of the same screen with the
+  same data, and a short recording when motion, timing, or focus matters. For web
+  app and web admin changes also visible at phone width, include desktop and
+  mobile web captures (or show that mobile is unaffected). Write
+  `Evidence: none, no user-visible change` only when that is true.
+- Attach evidence on GitHub under the PR body's Evidence heading, or publish it
+  with `npx @prairie-server/evidence publish <folder> --pr <number>` and put its
+  `Evidence:` link there. GitHub has no API for attaching images to a pull
+  request, so an agent either publishes with the CLI or gives the developer the
+  captures to attach. Check media for private information before it goes on
+  GitHub. When publishing exits 4, ask the developer to run
+  `npx @prairie-server/evidence login`; never approve that login or read the saved
+  key. Never commit PR-only assets such as `.github/pr-assets/`.
 - Put a `Closes #NNN` line in the body for every issue the pull request fully
   resolves (`Closes Silo-Server/<repo>#NNN` across repositories), so GitHub closes
   it on merge to `main`. `Related issue:` does not close anything; use it for the
@@ -263,6 +275,11 @@ never attach or embed its media.
   after the last push. Verify bot findings against the source, fix real issues,
   and dismiss false positives with a written reason. Remain quiet when nothing
   new has appeared. Stop when the latest commit is green.
+
+Pull requests are welcome from contributors who have had one merged in a Prairie
+repository, or when a maintainer asks for one; others are closed without review.
+When working for someone in neither group, write an issue instead of opening a
+pull request.
 
 AI-use disclosure is required in the pull request body. If you are an AI agent
 contributing on behalf of a non-maintainer, follow

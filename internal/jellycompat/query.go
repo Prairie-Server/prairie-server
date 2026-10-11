@@ -422,9 +422,9 @@ func buildBrowseParams(query itemsQuery) url.Values {
 // jellyfinRootFilterParams are the GET /Items parameters that set a field of
 // Jellyfin 12's InternalItemsQuery.HasFilters. From 12.0 a user-root request
 // carrying any of them searches the libraries recursively instead of listing
-// them, even when Recursive is absent, so Silo must not fall back to the
+// them, even when Recursive is absent, so Prairie must not fall back to the
 // library views even for filters it cannot apply. LocationTypes and
-// ExcludeLocationTypes are deliberately left out: Silo has no virtual items,
+// ExcludeLocationTypes are deliberately left out: Prairie has no virtual items,
 // and older clients send ExcludeLocationTypes=Virtual on their library-list
 // request.
 //
@@ -640,9 +640,9 @@ func parseMediaTypes(rawValues []string) []string {
 }
 
 // parseSort maps Jellyfin's parallel SortBy/SortOrder lists to one browse sort
-// and order. The catalog sorts by one key, so the first key Silo maps wins and
+// and order. The catalog sorts by one key, so the first key Prairie maps wins and
 // takes the SortOrder entry at the same position. Jellyfin sorts ascending
-// when that entry is absent; without SortBy, Silo keeps its newest-first rail
+// when that entry is absent; without SortBy, Prairie keeps its newest-first rail
 // default. Unmapped keys alone fall back to created_at.
 func parseSort(sortBy, sortOrder string) (sort, order string) {
 	keys := strings.Split(sortBy, ",")
@@ -700,7 +700,7 @@ func sortKey(raw string) (string, bool) {
 
 // mapSortOrder maps one Jellyfin SortOrder entry to a browse order. Jellyfin
 // sorts an explicit SortBy ascending when SortOrder is absent (Wholphin relies
-// on this for episode lists); requests without SortBy keep Silo's
+// on this for episode lists); requests without SortBy keep Prairie's
 // newest-first rail default.
 func mapSortOrder(raw string, explicitSort bool) string {
 	switch raw = strings.TrimSpace(raw); {
@@ -744,8 +744,16 @@ func parseRequestedFields(raw string) map[string]bool {
 // (catalog SQL performance overhaul plan §3.2 part b), it can be removed.
 var fieldsRequiringDetail = parseRequestedFields("RemoteTrailers,ProviderIds,People,Chapters,MediaStreams,MediaSources")
 
+// Lowercased Fields keys for the list path's file-backed video size.
+const (
+	fieldWidth  = "width"
+	fieldHeight = "height"
+	fieldIsHD   = "ishd"
+)
+
 // fieldsServedByList enumerates Fields values that mapping.go's itemFromList
-// can populate — gated by `if allFields || fields[X]` blocks. Anything outside
+// can populate — gated by `if allFields || fields[X]` blocks — plus the
+// file-backed ones applyListFileFields fills in afterwards. Anything outside
 // this set AND outside fieldsRequiringDetail is silently dropped from
 // list-path responses (no detail fetch is triggered to fill it).
 //
@@ -762,6 +770,9 @@ var fieldsServedByList = map[string]struct{}{
 	"productionlocations": {},
 	"criticrating":        {},
 	"mediasourcecount":    {},
+	fieldWidth:            {},
+	fieldHeight:           {},
+	fieldIsHD:             {},
 	"providerids":         {},
 }
 

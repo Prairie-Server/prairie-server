@@ -357,7 +357,7 @@ func buildConditionValues(version catalog.FileVersion, audioStreamIndex *int) co
 		"isinterlaced":   {text: strconv.FormatBool(video.Interlaced)},
 	}
 
-	// Everything below is only inserted when Silo actually knows the value.
+	// Everything below is only inserted when Prairie actually knows the value.
 	// An absent key falls through to conditionMatches' IsRequired handling,
 	// mirroring how Jellyfin's ConditionProcessor treats a null value.
 	if strings.TrimSpace(video.Profile) != "" {

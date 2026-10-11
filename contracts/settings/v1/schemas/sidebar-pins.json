@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/contracts/settings/v1/schemas/sidebar-pins.json",
+  "$id": "https://prairie-server.dev/contracts/settings/v1/schemas/sidebar-pins.json",
   "title": "Sidebar pins",
   "description": "Sections and collections pinned into the sidebar, grouped by the library they belong to. Mirrors SidebarPins in web/src/api/types.ts.",
   "type": "object",

@@ -7,10 +7,23 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import os from "os";
+import { configDefaults } from "vitest/config";
 
 /// <reference types="vitest" />
 
 const PRECOMPRESS_MIN_BYTES = 1024;
+
+// These tests need globals or Node APIs unavailable or non-configurable in VM
+// contexts, so they run on the threads pool and everything else on vmThreads.
+// TODO: make each one VM-safe (see the TODO in the file) and empty this list.
+const THREADS_TESTS = [
+  "src/api/v2/request.deadline.test.ts",
+  "src/lib/pointerCapability.test.ts",
+  "src/player/client-context-v3.test.ts",
+  "src/player/player-auth-refresh.test.ts",
+  "src/hooks/queries/authCore.v2.test.ts",
+  "vite.config.test.ts",
+];
 
 // React and the router change far less often than the app, so they get a chunk
 // of their own. Its content hash then survives most Silo upgrades, and browsers
@@ -250,43 +263,20 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
-      pool: "forks",
-      fileParallelism: true,
-      maxWorkers: "50%",
-      coverage: {
-        provider: "v8",
-        include: [
-          "src/lib/artworkUrl.ts",
-          "src/lib/liveTVGuide.ts",
-          "src/lib/datetime.ts",
-          "src/lib/filterEasyMode.ts",
-          "src/lib/jellyfinCompat.ts",
-          "src/lib/impersonationSession.ts",
-          "src/lib/chunkedUpload.ts",
-          "src/lib/calendarWeek.ts",
-          "src/lib/autoscanLabels.ts",
-          "src/lib/documentTitle.ts",
-          "src/lib/mangaChapters.ts",
-          "src/lib/collectionDisplayFilters.ts",
-          "src/lib/carouselEmbla.ts",
-          "src/lib/mediaFormat.ts",
-          "src/lib/pluginRouteHref.ts",
-          "src/lib/recipes.ts",
-          "src/lib/recommendation-provider-presets.ts",
-          "src/lib/videoRange.ts",
-          "src/lib/webhookSync.ts",
-          "src/lib/queryInvalidation.ts",
-          "src/utils/storage.ts",
-        ],
-        thresholds: process.env.VITEST_SHARD
-          ? undefined
-          : {
-              statements: 95,
-              lines: 95,
-              functions: 95,
-              branches: 95,
-            },
-      },
+      projects: [
+        {
+          extends: true,
+          test: { name: "threads", pool: "threads", include: THREADS_TESTS },
+        },
+        {
+          extends: true,
+          test: {
+            name: "vmThreads",
+            pool: "vmThreads",
+            include: [...configDefaults.include, ...THREADS_TESTS.map((file) => `!${file}`)],
+          },
+        },
+      ],
     },
   };
 });

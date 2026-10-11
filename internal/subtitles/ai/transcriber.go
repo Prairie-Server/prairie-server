@@ -121,7 +121,7 @@ func (t *WhisperTranscriber) SetExtraction(ffmpegPath string, chunkSeconds int) 
 // where possible.
 func (t *WhisperTranscriber) Transcribe(ctx context.Context, req TranscribeJobRequest,
 	onChunk TranscribeChunkCallback) ([]SubtitleCue, string, error) {
-	dir, err := os.MkdirTemp("", "silo-asr-*")
+	dir, err := os.MkdirTemp("", "prairie-asr-*")
 	if err != nil {
 		return nil, "", fmt.Errorf("create ASR temp dir: %w", err)
 	}

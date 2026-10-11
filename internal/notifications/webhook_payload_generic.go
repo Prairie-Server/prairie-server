@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// genericWebhookBody is the canonical Silo webhook JSON
+// genericWebhookBody is the canonical Prairie webhook JSON
 // (docs/architecture/notifications.md, "Generic payload and HMAC signing").
-// The HMAC signature is computed over the literal bytes Silo sends;
+// The HMAC signature is computed over the literal bytes Prairie sends;
 // receivers verify against the literal bytes they received, so no
 // canonicalization is required on either side. No server URL, no absolute
 // artwork URLs, no library name.
@@ -57,7 +57,7 @@ type genericWebhookRequest struct {
 	Reason    string `json:"reason,omitempty"`
 }
 
-// BuildGenericWebhookPayload renders a delivery as canonical Silo JSON. Pure
+// BuildGenericWebhookPayload renders a delivery as canonical Prairie JSON. Pure
 // function.
 func BuildGenericWebhookPayload(row DeliveryRow, webhookID string, test bool) ([]byte, error) {
 	createdAt := row.CreatedAt

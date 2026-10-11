@@ -187,7 +187,7 @@ func renderFeedXML(f RSSFeed, item *models.MediaItem, files []*models.MediaFile,
 	b.WriteString("<channel>\n")
 	b.WriteString("<title>" + xmlEscape(item.Title) + "</title>\n")
 	b.WriteString("<link>" + xmlEscape(baseURL+"/feed/"+f.Slug+".xml") + "</link>\n")
-	b.WriteString("<description>silo audiobook feed</description>\n")
+	b.WriteString("<description>prairie audiobook feed</description>\n")
 	for _, mf := range files {
 		enc := baseURL + "/feed/" + f.Slug + "/file/" + strconv.Itoa(mf.ID)
 		b.WriteString("<item>\n")

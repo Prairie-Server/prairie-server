@@ -301,10 +301,10 @@ func TestDiscordPosterURLModes(t *testing.T) {
 	// Local artwork storage signs root-relative URLs; Discord fetches from
 	// outside, so they are anchored to server.public_url or dropped.
 	local := &System{
-		Settings: NewSettings(mapSettingReader{SettingDiscordPosterMode: "server", "server.public_url": "https://silo.example/"}),
+		Settings: NewSettings(mapSettingReader{SettingDiscordPosterMode: "server", "server.public_url": "https://prairie.example/"}),
 		images:   relativePresigner{},
 	}
-	if got := local.discordPosterURL(ctx, cachedKey, ""); got != "https://silo.example/api/v2/artwork/"+cachedKey+"?exp=1&sig=abc" {
+	if got := local.discordPosterURL(ctx, cachedKey, ""); got != "https://prairie.example/api/v2/artwork/"+cachedKey+"?exp=1&sig=abc" {
 		t.Fatalf("local artwork must be anchored to the public URL, got %q", got)
 	}
 	unpublished := &System{

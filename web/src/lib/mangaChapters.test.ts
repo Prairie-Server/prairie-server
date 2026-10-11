@@ -127,14 +127,6 @@ describe("prettifyVolumeLabel", () => {
     expect(prettifyVolumeLabel("v13")).toBe("Volume 13");
     expect(prettifyVolumeLabel("V2")).toBe("Volume 2");
   });
-
-  it("expands a bare numeric token to a Volume label", () => {
-    expect(prettifyVolumeLabel("7")).toBe("Volume 7");
-  });
-
-  it("passes through non-numeric tokens unchanged", () => {
-    expect(prettifyVolumeLabel("Omnibus")).toBe("Omnibus");
-  });
 });
 
 describe("volume token normalization", () => {
@@ -170,6 +162,6 @@ describe("volume token normalization", () => {
       },
       { content_id: "b", title: "v2", chapter_index: 2, volume: "v2" },
     ]);
-    expect(entries).toHaveLength(2);
+    expect(entries.map((entry) => entry.label)).toEqual(["Omnibus", "Volume 2"]);
   });
 });

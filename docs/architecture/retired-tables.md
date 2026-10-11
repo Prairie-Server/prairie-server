@@ -2,7 +2,7 @@
 
 Migration `20260912230857_drop_dead_tables` removes four `plex_sync_*` tables,
 `user_playback_sessions`, and `content_id_migration_map`. This completes the
-first schema hygiene item in [#888](https://github.com/Silo-Server/silo-server/issues/888).
+first schema hygiene item in [#888](https://github.com/Prairie-Server/prairie-server/issues/888).
 
 ## Upgrade and recovery
 
@@ -44,7 +44,7 @@ with this migrated database merely because it is available for download.
 
 Historical migrations remain intact and run before the drop on a fresh database.
 In particular, the webhook data copy and content-ID remap still see the old
-schema. The runtime `silo_rename_content_id` function discovers existing reference
+schema. The runtime `silo_rename_content_ids` function discovers existing reference
 columns through PostgreSQL catalogs, so it stops visiting the removed columns.
 The drop uses child-before-parent ordering without `CASCADE`; an unexpected
 schema dependency aborts the migration instead of silently deleting it.

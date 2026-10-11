@@ -57,7 +57,7 @@ const (
 type playbackInfoRequest struct {
 	serverBitrateCapKbps                int
 	streamLocation                      string
-	SiloSeekReanchor                    bool            `json:"SiloSeekReanchor"`
+	PrairieSeekReanchor                    bool            `json:"PrairieSeekReanchor"`
 	UserID                              string          `json:"UserId"`
 	MediaSourceID                       string          `json:"MediaSourceId"`
 	AudioStreamIndex                    *compatIntValue `json:"AudioStreamIndex,omitempty"`
@@ -278,6 +278,10 @@ type sessionExpirationHookAdder interface {
 	AddExpirationHook(func(*playback.Session))
 }
 
+type sessionFinisher interface {
+	FinishSession(ctx context.Context, sessionID string) error
+}
+
 // PlaybackSessionSyncer flushes the in-memory native-session snapshot into the
 // shared admin live-session table (playback_sessions_sync). Without it, compat
 // session starts and stops only become visible on the periodic reconciler
@@ -310,6 +314,8 @@ type PlaybackHandler struct {
 	playbackStore           CompatPlaybackStore
 	sessionMgr              SessionManagerInterface
 	fileResolver            FilePathResolver
+	downloads               DownloadServer       // nil refuses /Items/{id}/Download
+	accessFilter            AccessFilterResolver // the viewer's scope for downloads
 	storeProvider           userstore.UserStoreProvider
 	ScopeResolver           ScopeResolver
 	NodePlanner             nodepool.SessionPlanner
@@ -327,9 +333,16 @@ type PlaybackHandler struct {
 	// and node-affinity rule for free. The reconstruction recipe is carried in the
 	// compat playback store (PlaybackSession.Recipe), since Jellyfin clients cannot
 	// round-trip a native stream token.
-	tm                     *playback.TranscodeManager
-	SubtitleRepo           subtitles.Repository  // optional; enables downloaded subtitles
-	SubtitleBlobs          subtitles.BlobStore   // optional; backs downloaded subtitle reads
+	tm            *playback.TranscodeManager
+	SubtitleRepo  subtitles.Repository // optional; enables downloaded subtitles
+	SubtitleBlobs subtitles.BlobStore  // optional; backs downloaded subtitle reads
+	// ExternalTimings finds sidecar timing corrections; nil serves sidecars
+	// as they are on disk.
+	ExternalTimings subtitles.ExternalTimingLookup
+	// PlaySync aligns a subtitle the first time a client is served it, when
+	// it was never synced; nil leaves that to a request.
+	PlaySync               subtitles.PlaySyncer
+	Trickplay              TrickplaySheets       // optional; serves seek-bar preview sheets
 	SettingsRepo           SettingsReader        // optional; reads watched threshold setting
 	SessionSyncer          PlaybackSessionSyncer // optional; enables immediate session sync to shared admin view
 	WatchScrobbler         PlaybackWatchScrobbler
@@ -360,6 +373,10 @@ type PlaybackHandler struct {
 	// compatAutoTranscodePipeline is a test seam for the hw_accel=auto
 	// fallback pipeline; nil uses playback.NewAutoTranscodePipeline.
 	compatAutoTranscodePipeline func(context.Context, playback.TranscodeOpts) *playback.AutoTranscodePipeline
+	// compatScrobbleLocks orders each upstream session's start, report, and
+	// terminal-staging scrobbles; see sendCompatResumeStart, applyCompatReport,
+	// and stageCompatStop.
+	compatScrobbleLocks compatScrobbleLocks
 }
 
 // SetLiveTV wires Live TV channel PlaybackInfo negotiation.
@@ -525,7 +542,10 @@ func (h *PlaybackHandler) toneMapPolicyResult(ctx context.Context) (tonemap.Poli
 	if err != nil {
 		return tonemap.PolicyNone, fmt.Errorf("load software tone-map setting: %w", err)
 	}
-	return tonemap.NewPolicy(strings.EqualFold(hardware, "true"), strings.EqualFold(software, "true")), nil
+	return tonemap.NewPolicy(
+		config.AdminSettingEnabled(config.PlaybackTranscodeHardwareToneMapSettingKey, hardware),
+		config.AdminSettingEnabled(config.PlaybackTranscodeSoftwareToneMapSettingKey, software),
+	), nil
 }
 
 // resolveCompatToneMapRecipe classifies an HDR source and freezes the preferred
@@ -1085,14 +1105,15 @@ func (h *PlaybackHandler) releaseCompatSessionReservation(sessionID string) {
 	}
 }
 
-// allow4KVideoTranscode reads the allow_4k_transcode server setting,
-// defaulting to deny like the native playback handler.
+// allow4KVideoTranscode reads the allow_4k_transcode server setting like the
+// native playback handler: an unset row is the server default, and an
+// unreadable setting denies.
 func (h *PlaybackHandler) allow4KVideoTranscode(ctx context.Context) bool {
 	if h.SettingsRepo == nil {
 		return false
 	}
-	v, _ := h.SettingsRepo.Get(ctx, config.Allow4KTranscodeSettingKey)
-	return v == "true"
+	v, err := h.SettingsRepo.Get(ctx, config.Allow4KTranscodeSettingKey)
+	return err == nil && config.AdminSettingEnabled(config.Allow4KTranscodeSettingKey, v)
 }
 
 // allowHEVCVideoEncoding reads opt-in HEVC encoding. Missing or unreadable
@@ -1101,8 +1122,8 @@ func (h *PlaybackHandler) allowHEVCVideoEncoding(ctx context.Context) bool {
 	if h.SettingsRepo == nil {
 		return false
 	}
-	v, _ := h.SettingsRepo.Get(ctx, config.PlaybackAllowHEVCEncodingSettingKey)
-	return strings.EqualFold(strings.TrimSpace(v), "true")
+	v, err := h.SettingsRepo.Get(ctx, config.PlaybackAllowHEVCEncodingSettingKey)
+	return err == nil && config.AdminSettingEnabled(config.PlaybackAllowHEVCEncodingSettingKey, v)
 }
 
 func is4KResolution(res string) bool {
@@ -1157,7 +1178,7 @@ func compatVideoToolboxToneMapBitrateKbps(version catalog.FileVersion, recipe co
 }
 
 // compatTargetResolutionForBitrate is the encoder height a Jellyfin client's
-// bitrate limit earns on Silo's shared ladder (playback.LadderClassForBitrate),
+// bitrate limit earns on Prairie's shared ladder (playback.LadderClassForBitrate),
 // fit to the source's aspect ratio. Empty leaves the source unscaled: at 20
 // Mbps and above, and whenever the source already fits the class.
 func compatTargetResolutionForBitrate(kbps int64, track models.VideoTrack) string {
@@ -1190,7 +1211,7 @@ func NewPlaybackHandler(
 	fileResolver FilePathResolver,
 	storeProvider userstore.UserStoreProvider,
 ) *PlaybackHandler {
-	transcodeDir := filepath.Join(os.TempDir(), "silo-transcode")
+	transcodeDir := filepath.Join(os.TempDir(), "prairie-transcode")
 	ffmpegPath := ""
 	hwAccel := ""
 	segmentRetentionSeconds := 600
@@ -1608,7 +1629,7 @@ func (h *PlaybackHandler) startRemoteTranscodeWithToneMapMode(
 		startSegmentNumber = int(initialSeekSeconds / float64(segmentDuration))
 	}
 	streamOriginSeconds := 0.0
-	copySeekAnchorResolved := source.SiloSeekReanchor && compatHLSCopiesVideo(source)
+	copySeekAnchorResolved := source.PrairieSeekReanchor && compatHLSCopiesVideo(source)
 	if copySeekAnchorResolved {
 		var seekErr error
 		streamOriginSeconds, startSegmentNumber, seekErr = playback.ResolveCopySeekAnchor(ctx, h.FFmpegPath, file.FilePath, initialSeekSeconds, segmentDuration)
@@ -2265,9 +2286,16 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 			req.MediaSourceID = pathMediaSourceID
 		}
 	}
+	unreadableSkipped := false
 	for _, version := range detail.Versions {
 		source := h.buildPlaybackSource(routeItemID, playSessionID, version, profile, req, allow4KTranscode, allowHEVCEncoding)
 		if req.MediaSourceID != "" && !mediaSourceIDsEqual(source.ID, req.MediaSourceID) {
+			continue
+		}
+		// The native planner refuses a file ffprobe rejected (#1810); offering
+		// it here would hand the client a source that fails in its player.
+		if version.Unreadable {
+			unreadableSkipped = true
 			continue
 		}
 		source = h.applyCompatDVStrip(r.Context(), routeItemID, playSessionID, source, profile, req, allow4KTranscode)
@@ -2346,7 +2374,7 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 			source.TargetVideoCodec = compatTargetVideoCodec
 			source.SupportsTranscoding = profile.supportsTranscodingOutput(version, source.TargetAudioChannels, source.TargetBitrateKbps, source.TargetResolution)
 		}
-		source.SiloSeekReanchor = req.SiloSeekReanchor && compatHLSCopiesVideo(source) && source.SupportsTranscoding
+		source.PrairieSeekReanchor = req.PrairieSeekReanchor && compatHLSCopiesVideo(source) && source.SupportsTranscoding
 		sources = append(sources, source)
 		dto := h.mediaSourceDTO(routeItemID, playSessionID, session.Token, source)
 		warmSubtitles = append(warmSubtitles, compatWarmsTextSubtitles(subtitleMode, dto.MediaStreams))
@@ -2388,6 +2416,18 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 	}
 
 	if len(sourceDTOs) == 0 {
+		if unreadableSkipped {
+			// Every version this request could use is unreadable. Answer as
+			// Jellyfin does when nothing can play, so the client says so.
+			slog.InfoContext(r.Context(), "jellycompat playback info found no readable media source", "component", "jellycompat",
+				"content_id", detail.ContentID,
+			)
+			writeJSON(w, http.StatusOK, playbackInfoResponseDTO{
+				MediaSources: []mediaSourceDTO{},
+				ErrorCode:    playbackErrorNoCompatibleStream,
+			})
+			return
+		}
 		writeError(w, http.StatusNotFound, "NotFound", "Media source not found")
 		return
 	}
@@ -2656,7 +2696,7 @@ func supportedHLSRemuxAudioStreamIndexes(version catalog.FileVersion, profile De
 func (h *PlaybackHandler) mediaSourceDTO(routeItemID, playSessionID, compatToken string, source PlaybackMediaSource) mediaSourceDTO {
 	selectedAudioStreamIndex := effectiveCompatAudioStreamIndex(source)
 	dto := mediaSourceDTO{
-		SiloSeekReanchor:                    source.SiloSeekReanchor,
+		PrairieSeekReanchor:                    source.PrairieSeekReanchor,
 		Protocol:                            "File",
 		ID:                                  source.ID,
 		Path:                                compatMediaPath(source.Version),
@@ -3559,7 +3599,7 @@ func downloadedSubtitlePath(version catalog.FileVersion, sub subtitles.Downloade
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, "\\", "-")
 	filename := name + "." + subtitleRouteFormat(string(sub.Format))
-	return filepath.ToSlash(filepath.Join("/silo/subtitles", filename))
+	return filepath.ToSlash(filepath.Join("/prairie/subtitles", filename))
 }
 
 func compatVideoPath(routeItemID string, audioV2 bool) string {
@@ -3633,8 +3673,8 @@ func applyPlaybackQueryOverrides(req *playbackInfoRequest, query url.Values) {
 	if value, ok := parseOptionalInt(firstQueryValue(query, "MaxAudioChannels")); ok {
 		req.MaxAudioChannels = value
 	}
-	if value, ok := parseOptionalBool(firstQueryValue(query, "SiloSeekReanchor")); ok {
-		req.SiloSeekReanchor = value
+	if value, ok := parseOptionalBool(firstQueryValue(query, "PrairieSeekReanchor")); ok {
+		req.PrairieSeekReanchor = value
 	}
 	if value, ok := parseOptionalBool(firstQueryValue(query, "AlwaysBurnInSubtitleWhenTranscoding")); ok {
 		req.AlwaysBurnInSubtitleWhenTranscoding = value

@@ -96,35 +96,29 @@ func Revision(objectPath string) string {
 	return stem[firstDot+1:]
 }
 
-// VariantName extracts the variant segment from a key — "original", "w300", or
-// empty when the name is not variant-shaped.
-func VariantName(objectPath string) string {
-	name := path.Base(strings.TrimSpace(objectPath))
-	if name == "" || name == "." || name == "/" {
-		return ""
+// OriginalOf returns the original object of the revision a variant key
+// belongs to, for example ".../poster/original.r1.webp" for
+// ".../poster/w500.r1.webp". Repair regenerates variants from that original.
+// A key without a directory or a revision is returned unchanged.
+func OriginalOf(objectPath string) string {
+	dir := Directory(objectPath)
+	if dir == "" {
+		return objectPath
 	}
-	stem := strings.TrimSuffix(name, path.Ext(name))
-	if firstDot := strings.IndexByte(stem, '.'); firstDot >= 0 {
-		stem = stem[:firstDot]
+	base := path.Base(objectPath)
+	ext := path.Ext(base)
+	stem := base[:len(base)-len(ext)]
+	dot := strings.IndexByte(stem, '.')
+	if dot < 0 {
+		return objectPath
 	}
-	return stem
+	return dir + OriginalVariant + stem[dot:] + ext
 }
 
-// variantWidth parses the pixel width out of a "w<N>" variant name. Reports
-// false for "original" and anything not shaped like a rung.
-func variantWidth(variant string) (int, bool) {
-	if len(variant) < 2 || variant[0] != 'w' {
-		return 0, false
-	}
-	width, err := strconv.Atoi(variant[1:])
-	if err != nil || width <= 0 {
-		return 0, false
-	}
-	return width, true
-}
-
-// WiderVariantKeys returns keys for the rungs wider than the one in objectPath,
-// narrowest first, for the same artwork, revision and format.
+// VariantWidths returns the resize widths generated for an artwork type,
+// ordered widest first. This is the single source of truth for the variant
+// ladder: image generation, object-key expansion, garbage collection, and the
+// client-selectable image sizes in internal/imagesize all derive from it.
 //
 // Used to stand in for a rung that has not been generated yet. A newly added
 // ladder entry does not exist for artwork cached before it, and the backfill

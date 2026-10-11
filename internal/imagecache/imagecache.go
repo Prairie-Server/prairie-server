@@ -25,6 +25,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 const (
@@ -101,10 +102,13 @@ type CacheResult struct {
 
 // Cacher downloads and stores image variants via an ObjectPutter backend.
 type Cacher struct {
-	s3                ObjectPutter
-	revisionTracker   ArtworkRevisionTracker
-	avifJobs          AVIFBackfillStore
-	httpClient        *http.Client
+	s3              ObjectPutter
+	revisionTracker ArtworkRevisionTracker
+	httpClient      *http.Client
+	// trustedClient fetches for requests whose context carries
+	// netguard.WithPrivateAccess. Its netguard transport may reach the
+	// server's local network but still refuses blocked addresses.
+	trustedClient     *http.Client
 	enforcePublicURLs bool
 
 	// AVIF backfill: WebP publishes first so the library is browsable; AVIF
@@ -118,13 +122,7 @@ type Cacher struct {
 
 // New creates a new Cacher backed by the given ObjectPutter.
 func New(s3 ObjectPutter) *Cacher {
-	c := &Cacher{
-		s3:                s3,
-		httpClient:        newSecureHTTPClient(),
-		enforcePublicURLs: true,
-	}
-	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
-	return c
+	return &Cacher{s3: s3, httpClient: newSecureHTTPClient(), trustedClient: newTrustedHTTPClient(), enforcePublicURLs: true}
 }
 
 // SetArtworkRevisionTracker wires durable revision lifecycle tracking. The
@@ -133,102 +131,6 @@ func (c *Cacher) SetArtworkRevisionTracker(tracker ArtworkRevisionTracker) {
 	if c != nil {
 		c.revisionTracker = tracker
 	}
-}
-
-// SetAVIFBackfillStore wires durable deferred AVIF sibling jobs. Without it,
-// AVIF backfill is in-memory only and is dropped on process exit.
-func (c *Cacher) SetAVIFBackfillStore(store AVIFBackfillStore) {
-	if c != nil {
-		c.avifJobs = store
-	}
-}
-
-// SetAVIFBackfillConcurrency sets the eager in-process AVIF encode concurrency.
-// Values <= 0 mean runtime.NumCPU(). Hot-reloads without dropping in-flight work.
-func (c *Cacher) SetAVIFBackfillConcurrency(n int) {
-	if c == nil {
-		return
-	}
-	if n <= 0 {
-		n = avifBackfillConcurrency()
-	}
-	c.avifWorkers.Store(int32(n))
-}
-
-func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
-	if client == nil {
-		client = http.DefaultClient
-	}
-	c := &Cacher{
-		s3:         s3,
-		httpClient: client,
-	}
-	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
-	return c
-}
-
-// WaitAVIFBackfill blocks until deferred AVIF sibling uploads finish. Tests
-// call this after Cache/CacheBytes so assertions see the full object set.
-// Production shutdown also waits so in-flight encodes drain during the
-// termination grace period.
-func (c *Cacher) WaitAVIFBackfill() {
-	if c == nil {
-		return
-	}
-	c.avifWG.Wait()
-}
-
-// WaitAVIFBackfillContext waits for deferred AVIF work or ctx cancellation,
-// whichever comes first. Returns ctx.Err() when cancelled before drain completes.
-func (c *Cacher) WaitAVIFBackfillContext(ctx context.Context) error {
-	if c == nil {
-		return nil
-	}
-	done := make(chan struct{})
-	go func() {
-		c.avifWG.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-// avifBackfillConcurrency is the default eager AVIF worker count. It tracks the
-// shared artwork encode budget (well below the core count) so deferred encodes
-// never crowd out playback ffmpeg.
-func avifBackfillConcurrency() int {
-	n := imageutil.DefaultEncodeBudgetSize()
-	if n < 1 {
-		return 1
-	}
-	return n
-}
-
-func (c *Cacher) acquireAVIFSlot() {
-	for {
-		max := c.avifWorkers.Load()
-		if max < 1 {
-			max = 1
-		}
-		for {
-			cur := c.avifCur.Load()
-			if cur >= max {
-				break
-			}
-			if c.avifCur.CompareAndSwap(cur, cur+1) {
-				return
-			}
-		}
-		time.Sleep(5 * time.Millisecond)
-	}
-}
-
-func (c *Cacher) releaseAVIFSlot() {
-	c.avifCur.Add(-1)
 }
 
 // CacheImage implements metadata.ImageCacher using the internal Cache method.
@@ -759,14 +661,21 @@ func normalizeImageLanguage(language string) string {
 }
 
 // downloadImage fetches the image at the given URL, enforcing size, timeout,
-// and public-network limits.
+// and network limits: public addresses only, or the local network too when
+// ctx carries netguard.WithPrivateAccess.
 func (c *Cacher) downloadImage(ctx context.Context, rawURL string) ([]byte, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse URL: %w", err)
 	}
+	client := c.httpClient
 	if c.enforcePublicURLs {
-		if err := validatePublicImageURL(parsed); err != nil {
+		if netguard.PrivateAccess(ctx) {
+			if err := validateImageURL(parsed); err != nil {
+				return nil, err
+			}
+			client = c.trustedClient
+		} else if err := validatePublicImageURL(parsed); err != nil {
 			return nil, err
 		}
 	}
@@ -778,7 +687,6 @@ func (c *Cacher) downloadImage(ctx context.Context, rawURL string) ([]byte, erro
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 
-	client := c.httpClient
 	if client == nil {
 		client = newSecureHTTPClient()
 	}
@@ -821,17 +729,40 @@ func newSecureHTTPClient() *http.Client {
 	}
 }
 
-func validatePublicImageURL(u *url.URL) error {
+// newTrustedHTTPClient returns the client for trusted requests. The
+// netguard transport checks every address it dials, redirect hops included,
+// and uses its trusted pool because those requests carry
+// netguard.WithPrivateAccess.
+func newTrustedHTTPClient() *http.Client {
+	return &http.Client{
+		Transport: netguard.NewTransport(),
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return http.ErrUseLastResponse
+			}
+			return validateImageURL(req.URL)
+		},
+	}
+}
+
+func validateImageURL(u *url.URL) error {
 	if u == nil {
 		return fmt.Errorf("empty URL")
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return fmt.Errorf("unsupported URL scheme %q", u.Scheme)
 	}
-	host := u.Hostname()
-	if host == "" {
+	if u.Hostname() == "" {
 		return fmt.Errorf("URL host is required")
 	}
+	return nil
+}
+
+func validatePublicImageURL(u *url.URL) error {
+	if err := validateImageURL(u); err != nil {
+		return err
+	}
+	host := u.Hostname()
 	if addr, err := netip.ParseAddr(host); err == nil && !isPublicAddr(addr) {
 		return fmt.Errorf("private image host %q is not allowed", host)
 	}

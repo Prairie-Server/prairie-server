@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/schemas/playback-v3/v3/route-event.schema.json",
+  "$id": "https://prairie-server.dev/schemas/playback-v3/v3/route-event.schema.json",
   "title": "Silo Playback Protocol v3 Route Event",
   "description": "Request body of POST /api/v1/playback/route-event: one event object, not a batch. Bounds mirror validRouteEventV3 in internal/api/handlers/playback_v3.go. The endpoint is telemetry, so the server rejects a malformed event rather than half-recording it; every bound here is a rejection, and the two behaviours that are not rejections — unknown diagnostics keys being dropped, long diagnostics values being truncated — are described rather than constrained.",
   "type": "object",

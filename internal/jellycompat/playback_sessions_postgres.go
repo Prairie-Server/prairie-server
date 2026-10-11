@@ -62,7 +62,7 @@ const (
 // only serializes unrelated negotiations because the subsequent DELETE remains
 // scoped by exact values.
 func negotiatedSessionAdvisoryLockKey(compatToken, clientDeviceID, routeItemID string) int64 {
-	const domain = "silo:jellycompat:negotiated-session:v1"
+	const domain = "prairie:jellycompat:negotiated-session:v1"
 	framed := make([]byte, 0, len(domain)+3*8+len(compatToken)+len(clientDeviceID)+len(routeItemID))
 	framed = append(framed, domain...)
 	for _, component := range [...]string{compatToken, clientDeviceID, routeItemID} {
