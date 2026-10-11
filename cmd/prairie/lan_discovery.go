@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
-	"github.com/Silo-Server/silo-server/internal/landiscovery"
-	"github.com/Silo-Server/silo-server/internal/serveridentity"
+	"github.com/prairie-server/prairie-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/landiscovery"
+	"github.com/prairie-server/prairie-server/internal/serveridentity"
 )
 
 // advertiseOnLAN announces the bound API listener with DNS-SD until ctx ends,

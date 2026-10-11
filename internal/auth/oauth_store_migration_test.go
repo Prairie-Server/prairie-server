@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

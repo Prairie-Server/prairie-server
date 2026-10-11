@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )

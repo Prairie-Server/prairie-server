@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 // compatConnectInfoKeys are the only settings this endpoint consults. They are

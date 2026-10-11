@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 var ErrInvalidAccessGroup = errors.New("invalid access group configuration")

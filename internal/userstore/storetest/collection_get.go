@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // RunGetMissingCollection checks that reading a collection that never existed,

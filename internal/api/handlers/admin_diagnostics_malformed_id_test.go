@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 // unusedReportStore fails the test if any query runs: a malformed report id has

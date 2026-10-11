@@ -141,7 +141,7 @@ function PluginsBoard() {
       <div className="space-y-3">
         <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
         <p className="page-subtitle text-sm sm:text-base">
-          Add metadata sources, playback markers, request routing, and watch sync to Silo.
+          Add metadata sources, playback markers, request routing, and watch sync to Prairie.
         </p>
       </div>
       <Button

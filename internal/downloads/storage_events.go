@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/idgen"
 )
 
 // Storage locations. A prepared file lives on the API server or on one

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/ratingsources"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/ratingsources"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 // The recommendations domain: the profile-scoped personalised reads the

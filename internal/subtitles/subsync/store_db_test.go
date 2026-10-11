@@ -11,10 +11,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
-	"github.com/Silo-Server/silo-server/internal/database"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 func openTestPool(t *testing.T) *pgxpool.Pool {

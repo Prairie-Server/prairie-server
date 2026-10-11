@@ -19,7 +19,7 @@ function resolveTab(value: string | null) {
 const PIPELINE_STEPS = [
   {
     icon: PackageCheck,
-    title: "Silo decides the baseline",
+    title: "Prairie decides the baseline",
     detail: "Built-in rules ship with every release: profile restrictions, ratings, limits.",
   },
   {
@@ -86,7 +86,7 @@ export default function AdminPolicyLayout() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Policy</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Household access rules: what Silo allows by default, and where you tighten it.
+            Household access rules: what Prairie allows by default, and where you tighten it.
           </p>
         </div>
       </div>

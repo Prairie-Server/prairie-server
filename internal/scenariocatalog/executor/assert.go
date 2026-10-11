@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // Body kinds and the predicate ops the engine special-cases by name.

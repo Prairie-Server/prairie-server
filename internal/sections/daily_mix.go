@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // discoveryPoolFactor sets how deep a discovery row's daily mix reaches: each

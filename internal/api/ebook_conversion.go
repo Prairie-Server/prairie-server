@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/ebookconvert"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/ebookconvert"
 )
 
 // ebookKindleConversionSettingKey is the admin flag that gates Kindle->EPUB
@@ -90,7 +90,7 @@ func ebookConversionCacheDir(cfg *config.Config) string {
 	if cfg != nil && strings.TrimSpace(cfg.Playback.TranscodeDir) != "" {
 		base = filepath.Dir(cfg.Playback.TranscodeDir)
 	}
-	return filepath.Join(base, "silo-ebook-epub")
+	return filepath.Join(base, "prairie-ebook-epub")
 }
 
 func isTruthySetting(v string) bool {

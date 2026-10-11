@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/themedelivery"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/access"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/themedelivery"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
 )
 
 type fakeThemeSongs struct {

@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collage"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collage"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // Shared artwork helpers used by both the admin library_collections handler
@@ -113,7 +113,7 @@ func readCollectionImageMultipart(r *http.Request, fieldName string) ([]byte, er
 	return data, nil
 }
 
-// invalidCollectionImage reports artwork the caller supplied that Silo cannot
+// invalidCollectionImage reports artwork the caller supplied that Prairie cannot
 // use. The v2 routes render the 400 as a validation problem instead of a 500.
 func invalidCollectionImage(message string, cause error) *APIError {
 	return &APIError{Status: http.StatusBadRequest, Code: policyErrorBadRequest, Message: message, cause: cause}

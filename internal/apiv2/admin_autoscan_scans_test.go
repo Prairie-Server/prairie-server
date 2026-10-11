@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 type fakeAdminAutoscanScans struct {

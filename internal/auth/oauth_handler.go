@@ -15,12 +15,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // OAuthClient is the host-side gRPC client surface the OAuth handler needs.
@@ -502,7 +502,7 @@ func (h *OAuthHandler) consumeLinkTicket(ctx context.Context, value string, inst
 // written or the browser is bounced.
 func (h *OAuthHandler) checkStart(ctx context.Context, req OAuthStartRequest) error {
 	if h.currentHostBaseURL() == "" {
-		return &OAuthHandshakeError{Status: http.StatusConflict, Message: "Silo public URL is not configured"}
+		return &OAuthHandshakeError{Status: http.StatusConflict, Message: "Prairie public URL is not configured"}
 	}
 	if req.LinkTicket != "" && !req.Native {
 		return &OAuthHandshakeError{Status: http.StatusBadRequest, Message: "link_ticket is accepted by the native start only; web linking starts with startAccountIdentityLink"}
@@ -1278,7 +1278,7 @@ func (h *OAuthHandler) ProviderLogoutAvailable() bool {
 }
 
 // ProviderLogoutURL is the provider end-session URL the web client sends
-// the browser to after ending an account's Silo session; empty when the
+// the browser to after ending an account's Prairie session; empty when the
 // administrator has not turned provider logout on, the account has no
 // identity at an OAuth provider, or the plugin offers none. The provider
 // returns the browser to the login page on the public origin.
@@ -1287,7 +1287,7 @@ func (h *OAuthHandler) ProviderLogoutURL(ctx context.Context, userID int) (strin
 	if !h.ProviderLogoutAvailable() || redirect == "" {
 		return "", nil
 	}
-	// The web logout waits for this answer before it ends the Silo session,
+	// The web logout waits for this answer before it ends the Prairie session,
 	// so a provider whose discovery is slow must not hold it up: past the
 	// bound the answer is empty and the logout goes ahead without the
 	// provider.

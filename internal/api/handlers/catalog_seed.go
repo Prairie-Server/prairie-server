@@ -18,10 +18,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type CatalogSeedArtifactStore interface {
@@ -86,7 +86,7 @@ func (h *CatalogSeedHandler) HandleExport(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	filename := "silo-catalog-seed-" + time.Now().UTC().Format("20060102T150405Z") + ".json.gz"
+	filename := "prairie-catalog-seed-" + time.Now().UTC().Format("20060102T150405Z") + ".json.gz"
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))

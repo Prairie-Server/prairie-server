@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // A nil-backed store (single integrated box, no Redis) must be safe: writes
@@ -75,8 +75,8 @@ func TestNilStore_RevokeNodeNoop(t *testing.T) {
 }
 
 func TestKeyNamespacing(t *testing.T) {
-	if got := NewStore(nil, 0).key("abc"); got != "silo:noderecipe:abc" {
-		t.Fatalf("key(abc) = %q, want silo:noderecipe:abc", got)
+	if got := NewStore(nil, 0).key("abc"); got != "prairie:noderecipe:abc" {
+		t.Fatalf("key(abc) = %q, want prairie:noderecipe:abc", got)
 	}
 }
 
@@ -115,8 +115,8 @@ func TestNodeAuthorityRecordSidecarKeysAreSeparate(t *testing.T) {
 // transcode node's reconstruct lookup must never resolve a grant.
 func TestProxyGrantStoreIsolatesItsKeySpace(t *testing.T) {
 	grants := NewProxyGrantStore(nil, 0)
-	if got := grants.key("abc"); got != "silo:proxygrant:abc" {
-		t.Fatalf("proxy grant key(abc) = %q, want silo:proxygrant:abc", got)
+	if got := grants.key("abc"); got != "prairie:proxygrant:abc" {
+		t.Fatalf("proxy grant key(abc) = %q, want prairie:proxygrant:abc", got)
 	}
 	if grants.key("abc") == NewStore(nil, 0).key("abc") {
 		t.Fatal("proxy grants and node recipes share a key")
@@ -158,13 +158,13 @@ func TestDefaultTTLMatchesTokenLifetime(t *testing.T) {
 }
 
 func TestNodeAuthorityGenerationRevokesDormantRecipes(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if rawURL == "" {
-		t.Skip("SILO_TEST_REDIS_URL not set")
+		t.Skip("PRAIRIE_TEST_REDIS_URL not set")
 	}
 	options, err := redis.ParseURL(rawURL)
 	if err != nil {
-		t.Fatalf("parse SILO_TEST_REDIS_URL: %v", err)
+		t.Fatalf("parse PRAIRIE_TEST_REDIS_URL: %v", err)
 	}
 	client := redis.NewClient(options)
 	t.Cleanup(func() { _ = client.Close() })
@@ -418,13 +418,13 @@ func TestOrdinaryRecipeRemainsLegacyFlatJSON(t *testing.T) {
 }
 
 func TestPutTTLBoundsRecordLifetime(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if rawURL == "" {
-		t.Skip("SILO_TEST_REDIS_URL not set")
+		t.Skip("PRAIRIE_TEST_REDIS_URL not set")
 	}
 	options, err := redis.ParseURL(rawURL)
 	if err != nil {
-		t.Fatalf("parse SILO_TEST_REDIS_URL: %v", err)
+		t.Fatalf("parse PRAIRIE_TEST_REDIS_URL: %v", err)
 	}
 	client := redis.NewClient(options)
 	t.Cleanup(func() { _ = client.Close() })

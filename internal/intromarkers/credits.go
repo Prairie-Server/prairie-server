@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
 )
 
 // Credits detection bounds, validated against frame-checked episodes and

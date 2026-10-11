@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 // Execution modes, from the subtitles.sync_execution setting.

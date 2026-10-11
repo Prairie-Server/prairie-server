@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // TestScenarioCatalogs runs every scenario against the real router. Public

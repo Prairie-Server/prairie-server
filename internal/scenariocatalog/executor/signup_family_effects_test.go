@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )

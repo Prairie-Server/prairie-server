@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	publicmanifest "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	publicmanifest "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 )
 
-const DefaultSiloAPIVersion = "v1"
+const DefaultPrairieAPIVersion = "v1"
 
 func ValidateManifest(manifest *pluginv1.PluginManifest) error {
 	if err := validateManifestShared(manifest); err != nil {
@@ -63,10 +63,10 @@ func capabilityKey(kind, id string) string {
 
 // isReservedPluginID reports whether a plugin id is reserved for the host and
 // must never be installable. Only the exact builtin registration id is
-// reserved: first-party plugins legitimately use the "silo." prefix
-// (silo.tmdb, silo.tvdb).
+// reserved: first-party plugins legitimately use the "prairie." prefix
+// (prairie.tmdb, prairie.tvdb).
 func isReservedPluginID(pluginID string) bool {
-	return pluginID == "silo.builtin"
+	return pluginID == "prairie.builtin"
 }
 
 func validateManifestShared(manifest *pluginv1.PluginManifest) error {
@@ -76,7 +76,7 @@ func validateManifestShared(manifest *pluginv1.PluginManifest) error {
 	if isReservedPluginID(manifest.GetPluginId()) {
 		return fmt.Errorf("plugin id %q is reserved for built-in host providers", manifest.GetPluginId())
 	}
-	if manifest.GetSiloApiVersion() == "" {
+	if manifest.GetPrairieApiVersion() == "" {
 		return fmt.Errorf("plugin manifest silo_api_version is required")
 	}
 	if len(manifest.GetCapabilities()) == 0 {

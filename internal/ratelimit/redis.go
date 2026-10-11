@@ -85,8 +85,8 @@ func (rl *RedisLimiter) Allow(ctx context.Context, key string, limit Rate) Allow
 	secTs := now.Unix()
 	minTs := now.Unix() / 60
 
-	secKey := fmt.Sprintf("silo:ratelimit:%s:s:%d", key, secTs)
-	minKey := fmt.Sprintf("silo:ratelimit:%s:m:%d", key, minTs)
+	secKey := fmt.Sprintf("prairie:ratelimit:%s:s:%d", key, secTs)
+	minKey := fmt.Sprintf("prairie:ratelimit:%s:m:%d", key, minTs)
 
 	secLimit, minLimit, effectiveLimit := redisWindowLimits(limit)
 

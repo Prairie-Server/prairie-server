@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // tmdbListTestServer serves list 310 with entries alternating movie/tv and

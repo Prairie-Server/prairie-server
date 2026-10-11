@@ -9,10 +9,10 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // Section personal-collections: a profile's own collections and the ones

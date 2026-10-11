@@ -19,10 +19,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +35,7 @@ func init() {
 // TranscodeOpts holds configuration for an HLS transcode session.
 type TranscodeOpts struct {
 	InputPath string
-	OutputDir string // e.g., /tmp/silo-transcode/{session_id}/
+	OutputDir string // e.g., /tmp/prairie-transcode/{session_id}/
 	// subtitleFilterInputPath is a parser-safe local alias used only by the
 	// libass subtitles filter. FFmpeg still opens InputPath as the media input.
 	subtitleFilterInputPath string

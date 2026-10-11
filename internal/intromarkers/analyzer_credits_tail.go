@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // creditsInputOptions selects the tail evidence a credits group needs.

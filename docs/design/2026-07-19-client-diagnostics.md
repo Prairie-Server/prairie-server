@@ -2,15 +2,15 @@
 
 Status: Draft (spec + cross-repo plan)
 Date: 2026-07-19
-Repos affected: `silo-server`, `silo-android`, `silo-apple`
+Repos affected: `prairie-server`, `silo-android`, `silo-apple`
 
 ## Summary
 
-Add an opt-in, self-hosted diagnostics pipeline: Silo clients detect crashes
+Add an opt-in, self-hosted diagnostics pipeline: Prairie clients detect crashes
 and abnormal exits, collect structured debug logs (playback, TV focus,
 network, lifecycle) plus a hardware snapshot (device model, display/HDMI,
 audio path, codec capabilities), and — only with explicit user consent —
-upload a compressed diagnostics bundle to the user's own Silo server. Admins
+upload a compressed diagnostics bundle to the user's own Prairie server. Admins
 review bundles through new acting-admin API endpoints alongside the existing
 server logs tooling.
 
@@ -21,7 +21,7 @@ Everything ships **disabled by default**:
   object storage is configured and validated.
 - Client: verbose "debug logging" is a per-device setting (default off).
   Crash reporting defaults to **Ask** — after an abnormal exit the app shows
-  an incident-specific prompt (e.g. *"Silo closed unexpectedly during
+  an incident-specific prompt (e.g. *"Prairie closed unexpectedly during
   playback. Send a diagnostic report to your server?"*) with
   **Send / Don't send / Always send**. Nothing uploads without one of: an
   explicit prompt confirmation, a prior "Always send" election bound to this
@@ -92,11 +92,11 @@ Today we are blind to client-side failures:
 
 ## Why this route
 
-**Upload to the user's own Silo server, not a third-party crash service.**
+**Upload to the user's own Prairie server, not a third-party crash service.**
 Crashlytics/Sentry SaaS would send user data to a third party, require vendor
 accounts/keys we'd have to ship, and put the reports in front of *us* rather
 than the person who can actually act — the self-hosting admin. Requiring
-every admin to also run self-hosted Sentry is far too heavy. The Silo server
+every admin to also run self-hosted Sentry is far too heavy. The Prairie server
 is the natural, privacy-aligned destination, and it already has auth, admin
 tooling, object storage, and retention patterns to build on.
 
@@ -135,7 +135,7 @@ MetricKit natively (iOS; not tvOS — see Apple design).
 ## Architecture overview
 
 ```text
- Android / Apple client                          silo-server
+ Android / Apple client                          prairie-server
 ┌────────────────────────────────┐   ┌──────────────────────────────────────┐
 │ Safe-logging facade → ring     │   │ GET  /api/v1/diagnostics/status      │
 │  └ debug mode: rotating        │   │   └ available|disabled|              │
@@ -353,7 +353,7 @@ so each client adds a small **bounded, persisted recent-session tracker**
 (last ~10 session IDs with timestamps) that survives restarts — required for
 next-launch crash reports.
 
-## Server design (`silo-server`)
+## Server design (`prairie-server`)
 
 ### Feature gate
 
@@ -433,7 +433,7 @@ reused:
 6. On success, update the row to `ready` with sizes + sha256. On any
    failure: delete the object, mark the row `failed` (compensation); the
    reconciler (below) cleans up stragglers from process death mid-request.
-7. Respond `201 {"report_id":"…","short_id":"SILO-…"}` and emit a normalized
+7. Respond `201 {"report_id":"…","short_id":"PRAIRIE-…"}` and emit a normalized
    operational event (accepted/rejected, account, sizes, result).
 
 `short_id` is 12 Crockford-Base32 characters, server-generated with
@@ -504,7 +504,7 @@ add no admin screens in v1 (product policy).
 ### Retention + reconciliation
 
 A taskmanager task `internal/taskmanager/tasks/cleanup_client_diagnostics.go`
-mirroring `cleanup_operational_log.go`, registered in `cmd/silo/main.go`
+mirroring `cleanup_operational_log.go`, registered in `cmd/prairie/main.go`
 with the other cleanup tasks:
 
 - Delete reports older than `diagnostics.retention_days` (by `received_at`),
@@ -521,12 +521,12 @@ with the other cleanup tasks:
 ## Android design (`silo-android`)
 
 New package
-`android-shared/src/androidMain/kotlin/org/siloserver/silo/common/diagnostics/`.
+`android-shared/src/androidMain/kotlin/org/siloserver/prairie/common/diagnostics/`.
 
 ### Logging
 
-- `SiloLog.kt` — safe-logging facade per the contract above:
-  `SiloLog.d(cat, tag, msg, attrs)` (+`i/w/e`, sanitized `Throwable`).
+- `PrairieLog.kt` — safe-logging facade per the contract above:
+  `PrairieLog.d(cat, tag, msg, attrs)` (+`i/w/e`, sanitized `Throwable`).
   Always forwards to `android.util.Log` (today's behavior unchanged) and
   offers the entry to the ring buffer.
 - `LogRing.kt` — always-on in-memory ring: fixed-size array of pre-rendered
@@ -667,7 +667,7 @@ daily, while the app runs), not "next launch".
 - **tvOS abnormal-exit detection**: no crash stacks in v1. A dirty-exit
   sentinel (marker written at launch, cleared on clean
   background/termination) plus the breadcrumb journal yields
-  `type: abnormal_exit` reports — "Silo did not shut down cleanly last
+  `type: abnormal_exit` reports — "Prairie did not shut down cleanly last
   time" — with breadcrumbs and device snapshot but no stack. An in-process
   crash reporter for tvOS is explicitly deferred (see Non-goals).
 - **Device snapshot**: `AppleDeviceIdentity.current` +

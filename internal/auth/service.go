@@ -9,9 +9,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -186,7 +186,7 @@ func (s *Service) Login(ctx context.Context, username, password, deviceName, ip 
 // CompatLogin is Login for sign-in surfaces that cannot run the forced
 // password change (Jellyfin and Audiobookshelf compatibility). An account
 // holding a temporary password gets ErrPasswordChangeRequired and no session:
-// its holder must sign in to Silo and choose a new password first.
+// its holder must sign in to Prairie and choose a new password first.
 //
 // Compatibility clients cannot pick a provider, so the name is routed like
 // a login without a provider (see routePasswordLogin): directory users of a
@@ -547,12 +547,12 @@ func (s *Service) LinkOAuthIdentity(ctx context.Context, in OAuthLoginInput) (*m
 }
 
 // ProviderLogoutURL is the end-session URL of the OAuth provider an account
-// is linked to, for the web client to visit after the Silo session ends.
+// is linked to, for the web client to visit after the Prairie session ends.
 // It is empty unless the account has an identity at an enabled OAuth
 // provider and that plugin answers EndSessionUrl with a URL. The plugin's
 // own configuration is the only switch: a plugin whose operator turned
 // provider logout off answers empty. A plugin failure is logged and answers
-// empty: the Silo sign-out never depends on the provider.
+// empty: the Prairie sign-out never depends on the provider.
 func (s *Service) ProviderLogoutURL(ctx context.Context, userID int, postLogoutRedirectURI string) (string, error) {
 	for _, registered := range s.pluginProviders() {
 		pp, ok := registered.Provider.(*PluginProvider)

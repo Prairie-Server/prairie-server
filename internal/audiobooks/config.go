@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 	absDefaultRefreshTTL = 30 * 24 * time.Hour
 )
 
-// ABSConfigProvider implements abs.ConfigProvider using silo's server_settings
+// ABSConfigProvider implements abs.ConfigProvider using prairie's server_settings
 // table. The ABS JWT secret is generated once on first read and persisted for
 // the lifetime of the deployment.
 type ABSConfigProvider struct {

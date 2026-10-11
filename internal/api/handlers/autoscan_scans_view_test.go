@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 func TestReadAdminAutoscanScans(t *testing.T) {

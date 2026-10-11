@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	sdkcapability "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	sdkcapability "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 type fakeMarkerRuntimeConfigs struct {

@@ -4,7 +4,7 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestApplyBootstrapOverridesTakesRedisFromTheEnvironment(t *testing.T) {

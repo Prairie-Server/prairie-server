@@ -6,8 +6,8 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestTailWindow(t *testing.T) {

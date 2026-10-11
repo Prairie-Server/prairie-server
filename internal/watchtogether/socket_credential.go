@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/events"
 	"github.com/redis/go-redis/v9"
 )
 

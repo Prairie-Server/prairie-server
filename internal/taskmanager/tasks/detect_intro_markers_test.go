@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/database/pglock"
-	"github.com/Silo-Server/silo-server/internal/intromarkers"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 type fakeMarkerAnalysisRunner struct {

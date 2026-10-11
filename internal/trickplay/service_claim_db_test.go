@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 func TestServiceRecordsFailureWithClaimTokenDB(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/watchlist"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/watchlist"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Watchlist entries for titles the library doesn't have yet. The entries live

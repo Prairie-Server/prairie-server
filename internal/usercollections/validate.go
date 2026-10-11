@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // AllowedSyncSchedules maps a UI-friendly cadence label to the cron

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 // PolicyDefaults is the policy an ungrouped account resolves a field to when

@@ -5,7 +5,7 @@
 // current build, with a time guard so a persistently broken chunk cannot
 // cause a reload loop.
 
-const GUARD_KEY = "silo:preload-error-reload-at";
+const GUARD_KEY = "prairie:preload-error-reload-at";
 const GUARD_WINDOW_MS = 60_000;
 
 interface PreloadErrorReloadDeps {

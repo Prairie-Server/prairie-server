@@ -36,27 +36,27 @@ func routerTypeRecovery(m dsl.Matcher) {
 		return t.Type.Underlying().Is(`*chi.Mux`) ||
 			t.Type.Underlying().Is(`*http.ServeMux`) ||
 			t.Type.Implements(`chi.Routes`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Handles`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.HandlesFunc`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.HandlesMuxFunc`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Methods`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.MethodFuncs`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Connects`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Deletes`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Gets`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Heads`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Optionss`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Patches`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Posts`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Puts`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Traces`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Mounts`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Uses`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.NotFounds`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.MethodNotAlloweds`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Routes`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Groups`) ||
-			t.Type.Implements(`github.com/Silo-Server/silo-server/internal/routeinventory/lintrules/routershape.Withs`)
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Handles`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.HandlesFunc`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.HandlesMuxFunc`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Methods`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.MethodFuncs`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Connects`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Deletes`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Gets`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Heads`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Optionss`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Patches`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Posts`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Puts`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Traces`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Mounts`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Uses`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.NotFounds`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.MethodNotAlloweds`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Routes`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Groups`) ||
+			t.Type.Implements(`github.com/prairie-server/prairie-server/internal/routeinventory/lintrules/routershape.Withs`)
 	}
 
 	m.Match(`$x.($t)`).

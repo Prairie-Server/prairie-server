@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
 )
 
 // TestPickCandidatesByPriority_ReturnsAllInOrder pins the fallback semantic

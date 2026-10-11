@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore/pgstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

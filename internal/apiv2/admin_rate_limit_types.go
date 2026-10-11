@@ -1,6 +1,6 @@
 package apiv2
 
-import "github.com/Silo-Server/silo-server/internal/api/handlers"
+import "github.com/prairie-server/prairie-server/internal/api/handlers"
 
 type AdminRateLimitUpdate struct {
 	Enabled            *bool                                       `json:"enabled,omitempty"`

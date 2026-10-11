@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 type PlexProvider struct {
@@ -76,7 +76,7 @@ func (p *PlexProvider) DiscoverUsers(ctx context.Context, conn *Connection, mapp
 func (p *PlexProvider) ParseWebhook(ctx context.Context, conn *Connection, r *http.Request) (*CanonicalEvent, error) {
 	// Plex events carry no timestamp. The receipt time is taken before any
 	// lookup so lookup latency cannot reorder events or let a delivery look
-	// newer than Silo activity written while it waited.
+	// newer than Prairie activity written while it waited.
 	occurredAt := time.Now().UTC().Truncate(time.Microsecond)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		return nil, fmt.Errorf("invalid multipart request")

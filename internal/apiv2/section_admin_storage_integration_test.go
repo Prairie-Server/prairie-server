@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/sections"
-	"github.com/Silo-Server/silo-server/internal/userdb"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/userstore/pgstore"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/userdb"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
 )
 
 func TestAdminSectionTransportSnapshotAndRestoreDB(t *testing.T) {

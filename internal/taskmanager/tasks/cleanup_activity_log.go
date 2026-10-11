@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // ActivityLogCleanupTask prunes expired activity log rows and partitions.

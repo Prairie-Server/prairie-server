@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 const (

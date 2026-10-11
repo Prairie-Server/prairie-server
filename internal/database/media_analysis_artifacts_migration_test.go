@@ -13,7 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 var mediaAnalysisArtifactColumns = []string{"kind", "status", "detail", "failure_count", "last_error", "retry_after", "recorded_by"}

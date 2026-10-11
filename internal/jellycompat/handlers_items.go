@@ -22,17 +22,17 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/sections"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/themedelivery"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/themedelivery"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // ItemsHandler serves Jellyfin browse/search/item endpoints.
@@ -251,7 +251,7 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 		// Jellyfin clients (e.g. Findroid "My Media") call GET /Items?userId=...
 		// and expect CollectionFolder items representing the user's libraries.
 		// Any Jellyfin 12 HasFilters parameter makes the request a recursive
-		// search instead, even one Silo cannot apply.
+		// search instead, even one Prairie cannot apply.
 		h.handleViewsResponse(w, r, session)
 	default:
 		h.handleBrowseItems(w, r, session, query)
@@ -921,7 +921,7 @@ func deriveSegmentID(itemUUID, kind string) string {
 
 // HandleGroupingOptionsStub serves /UserViews/GroupingOptions and its legacy
 // /Users/{userId}/GroupingOptions alias with an empty array.
-// Jellyfin returns []SpecialViewOptionDto; Silo doesn't support library grouping.
+// Jellyfin returns []SpecialViewOptionDto; Prairie doesn't support library grouping.
 func (h *ItemsHandler) HandleGroupingOptionsStub(w http.ResponseWriter, r *http.Request) {
 	session := SessionFromContext(r.Context())
 	if session == nil {

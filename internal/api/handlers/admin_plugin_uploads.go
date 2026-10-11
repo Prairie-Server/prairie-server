@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Silo-Server/silo-server/internal/uploads"
+	"github.com/prairie-server/prairie-server/internal/uploads"
 )
 
 // PluginChunkedUploadCreateInput opens one process-local upload session.

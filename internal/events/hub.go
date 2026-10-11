@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/oklog/ulid/v2"
 )
 

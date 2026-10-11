@@ -3,7 +3,7 @@ package intromarkers
 import (
 	"math"
 
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
 )
 
 // fingerprintWindow is the stretch of a file, in media seconds, whose audio a

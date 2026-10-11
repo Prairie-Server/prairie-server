@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 const serverSettingsMutationLock = config.ServerSettingsMutationLock
@@ -80,7 +80,7 @@ func (r *ServerSettingsRepo) SetMany(ctx context.Context, values map[string]stri
 }
 
 // UpdateAtomic serializes a read/validate/write settings mutation across every
-// Silo process sharing the database. The callback receives the current
+// Prairie process sharing the database. The callback receives the current
 // snapshot while the transaction-scoped advisory lock is held and returns the
 // subset of values to upsert.
 func (r *ServerSettingsRepo) UpdateAtomic(

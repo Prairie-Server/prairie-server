@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/artworkurl"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/blobstore/blobstoretest"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
 )
 
 func TestArtworkNestedKeyBytesAndRanges(t *testing.T) {

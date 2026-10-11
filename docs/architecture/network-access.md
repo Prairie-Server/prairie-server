@@ -8,7 +8,7 @@ exposed because clients never talk to them. The plugin owns the overlay client
 and reverse-proxies to the local Silo listeners; the server owns supervision,
 per-instance state, the access path, status, and the admin API
 ([docs/network-access-api.md](../network-access-api.md)). Tracking issue:
-Silo-Server/silo-server#1001.
+Prairie-Server/prairie-server#1001.
 
 ```
                  overlay                       LAN / backend

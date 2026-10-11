@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 type fakeJobs struct {

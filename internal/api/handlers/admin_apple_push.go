@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 type AdminApplePushHandler struct {
@@ -28,7 +28,7 @@ func NewAdminApplePushHandler(system *notifications.System, settings ServerSetti
 		system:              system,
 		settings:            settings,
 		client:              &http.Client{Timeout: 10 * time.Second},
-		developmentRelayURL: os.Getenv("SILO_PUSH_RELAY_DEVELOPMENT_URL"),
+		developmentRelayURL: os.Getenv("PRAIRIE_PUSH_RELAY_DEVELOPMENT_URL"),
 	}
 }
 

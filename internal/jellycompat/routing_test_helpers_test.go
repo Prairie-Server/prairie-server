@@ -1,9 +1,9 @@
 package jellycompat
 
 import (
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func requireCompatWorkerRouting(handler *PlaybackHandler) {

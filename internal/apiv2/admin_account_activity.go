@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/streamlocation"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/streamlocation"
 )
 
 type AdminAccountActivityService interface {

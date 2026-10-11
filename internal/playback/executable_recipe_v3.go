@@ -1,6 +1,6 @@
 package playback
 
-import "github.com/Silo-Server/silo-server/internal/tonemap"
+import "github.com/prairie-server/prairie-server/internal/tonemap"
 
 // ExecutableRecipeV3 is the frozen operational half of a protocol-v3 plan.
 // PlanV3 describes the client-visible route identity; these fields are the

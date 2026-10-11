@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type CatalogImportSource struct {

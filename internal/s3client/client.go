@@ -32,7 +32,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 )
 
 // ErrNotFound is returned when the requested S3 object does not exist.

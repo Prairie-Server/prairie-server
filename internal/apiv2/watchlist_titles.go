@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/watchlist"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/watchlist"
 )
 
 // Watchlist titles: the acting profile's watchlist entries for movies and

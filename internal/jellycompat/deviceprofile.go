@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -332,7 +332,7 @@ func (p DeviceProfile) supportsVideoTranscodingOutput(version catalog.FileVersio
 
 // SupportsHLSRemuxForAudioStream reports whether the client accepts the
 // source codecs in an HLS fragmented-MP4 stream. Codec-profile conditions are
-// evaluated against the sample entry Silo will write, not against an unknown
+// evaluated against the sample entry Prairie will write, not against an unknown
 // source-container tag.
 func (p DeviceProfile) SupportsHLSRemuxForAudioStream(version catalog.FileVersion, audioStreamIndex *int) bool {
 	if len(p.TranscodingProfiles) == 0 {

@@ -9,22 +9,22 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Dependencies holds the pluggable pieces used by the compat server.
@@ -45,7 +45,7 @@ type Dependencies struct {
 	DB               *pgxpool.Pool
 	SecretCipher     *secret.Cipher // at-rest credential cipher (required when DB is set)
 	ClientIPResolver *clientip.Resolver
-	// IngressTokens validates the X-Silo-Ingress-Token network access
+	// IngressTokens validates the X-Prairie-Ingress-Token network access
 	// provider plugins stamp on proxied requests. Nil accepts no tokens.
 	IngressTokens *netaccess.Registry
 	// ActivityLogWriter records compat requests in the same activity log as the
@@ -74,7 +74,7 @@ type Dependencies struct {
 	ProfilePINAttempts *ratelimit.AttemptLimiter
 	Authenticator      *Authenticator
 	WebFS              fs.FS
-	// FrontendFS is the embedded Silo frontend asset filesystem (web/dist),
+	// FrontendFS is the embedded Prairie frontend asset filesystem (web/dist),
 	// used to serve app-relative artwork such as bundled collection-template
 	// posters that have no remote origin. Optional.
 	FrontendFS fs.FS

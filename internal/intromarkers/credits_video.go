@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // End credits on video are text on true black ("lettered"), plain true black

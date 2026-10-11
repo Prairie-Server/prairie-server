@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/debugserver"
+	"github.com/prairie-server/prairie-server/internal/debugserver"
 )
 
 // startBootstrapDebugListener runs after dotenv loading, before database work.

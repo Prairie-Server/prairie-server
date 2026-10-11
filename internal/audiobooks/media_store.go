@@ -13,13 +13,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
-// ABSMediaStore implements abs.MediaStore using silo's catalog.ItemRepository,
+// ABSMediaStore implements abs.MediaStore using prairie's catalog.ItemRepository,
 // scanner.FileRepository, and a direct pgxpool.Pool for media_folders queries.
 type ABSMediaStore struct {
 	Items *catalog.ItemRepository
@@ -534,7 +534,7 @@ func (s *ABSMediaStore) GetMediaFileByID(ctx context.Context, fileID int) (*mode
 }
 
 // ListAudiobookLibraries returns media_folder rows where type='audiobooks'
-// (the canonical silo type for the audiobooks sub-plan).
+// (the canonical prairie type for the audiobooks sub-plan).
 func (s *ABSMediaStore) ListAudiobookLibraries(ctx context.Context, access catalog.AccessFilter) ([]abs.AudiobookLibrary, error) {
 	if s.Pool == nil {
 		return nil, nil
@@ -687,7 +687,7 @@ func (s *ABSMediaStore) SearchAudiobooks(ctx context.Context, libraryID int64, q
 }
 
 // ListContinueListening returns audiobooks the user has in-progress (and
-// hasn't finished). userID is the silo integer-id-as-string from the ABS
+// hasn't finished). userID is the prairie integer-id-as-string from the ABS
 // JWT; we filter by user_watch_progress for that user + this audiobook.
 func (s *ABSMediaStore) ListContinueListening(ctx context.Context, userID, profileID string, libraryID int64, limit int, access catalog.AccessFilter) ([]*models.MediaItem, error) {
 	if userID == "" {

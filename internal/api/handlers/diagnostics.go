@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 const (
@@ -73,7 +73,7 @@ func NewDiagnosticsHandler(service DiagnosticsService) *DiagnosticsHandler {
 	handler := &DiagnosticsHandler{
 		service:       service,
 		inflight:      newDiagnosticsInFlightLimiter(4),
-		chunkSessions: newDiagnosticsChunkSessions(filepath.Join(os.TempDir(), "silo-diagnostics-uploads")),
+		chunkSessions: newDiagnosticsChunkSessions(filepath.Join(os.TempDir(), "prairie-diagnostics-uploads")),
 		logger:        slog.Default(),
 	}
 	// Reclaim abandoned chunk spool bytes on a timer, not only from later API

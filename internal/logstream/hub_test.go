@@ -11,7 +11,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 // stuckBus models an unreachable Redis: Publish waits until its context ends

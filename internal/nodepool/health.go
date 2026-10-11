@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // healthResponse is the JSON response from a node's /health endpoint.

@@ -3,7 +3,7 @@ package metadata
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // unseasonedEpisodeIndex resolves episode-only names against metadata already

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 )
 
 const CanonicalEmbeddingDimensions = embeddingvectors.CanonicalDimensions

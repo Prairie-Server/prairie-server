@@ -11,11 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	sdkcapability "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
-	"github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	sdkcapability "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
+	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 // PluginProviderRegistryConfig wires the registry to the plugin stores.

@@ -9,10 +9,10 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogsvc "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
 )
 
 type PersonalCollectionPosterForm struct {

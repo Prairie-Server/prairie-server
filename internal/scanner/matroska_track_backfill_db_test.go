@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func insertMatroskaBackfillRow(t *testing.T, ctx context.Context, pool *pgxpool.Pool, path string, size int64, mtime *time.Time, subtitles string) int {

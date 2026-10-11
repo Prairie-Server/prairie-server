@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // A browser reaching Silo through a connected network access provider sends

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 )
 
 // TestActingAdminGateHouseholdRule drives the acting_admin class through the

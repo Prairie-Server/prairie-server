@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/opslog"
+	"github.com/prairie-server/prairie-server/internal/opslog"
 )
 
 type fakeOperationalLogs struct {

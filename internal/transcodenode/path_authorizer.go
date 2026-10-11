@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
 )
 
 // InputPathAuthorizer approves a local media input before a node passes it to

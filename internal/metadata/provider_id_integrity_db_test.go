@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/webhooksync/webhooksynctest"
+	"github.com/prairie-server/prairie-server/internal/webhooksync/webhooksynctest"
 )
 
 func TestSyncMergeStepsAfterPlexTableDropPostgres(t *testing.T) {

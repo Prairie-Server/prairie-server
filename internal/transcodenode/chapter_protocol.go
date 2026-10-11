@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
-	"github.com/Silo-Server/silo-server/internal/workerprotocol"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/workerprotocol"
 	"github.com/danielgtaylor/huma/v2"
 )
 

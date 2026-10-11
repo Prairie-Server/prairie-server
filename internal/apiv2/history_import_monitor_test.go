@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 func TestPersonalHistoryMonitorConditionalLifecycle(t *testing.T) {

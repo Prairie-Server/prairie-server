@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 type fakeViewerSubtitleDelete struct {

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 const aggregateMediaTypeFloorDivisor = 5

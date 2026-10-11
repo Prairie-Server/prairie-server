@@ -1,6 +1,6 @@
-# Developing Silo
+# Developing Prairie
 
-How to build, run, and test the Silo server from source. To run Silo without
+How to build, run, and test the Prairie server from source. To run Prairie without
 building it, see the [README](README.md). Contribution rules and the
 pre-submission gate are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -10,12 +10,12 @@ pre-submission gate are in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Docker Engine or Docker Desktop with Docker Compose 2.24+ (local services and testcontainers)
 - Go 1.26.4+
 - Node.js 22+ with pnpm 10.32.1. The managed Jellyfin Web installer (`make jellyfin-web`,
-  `silo compat-web install`, or the admin settings) needs Node.js 24+ for Jellyfin Web 12.x.
+  `prairie compat-web install`, or the admin settings) needs Node.js 24+ for Jellyfin Web 12.x.
 - PostgreSQL 18 with pgvector
 - Redis
 - FFmpeg (transcoding). On macOS, install Homebrew's keg-only full build so
   text-subtitle burn-in and the complete filter set are available alongside
-  VideoToolbox: `brew install ffmpeg-full`. Silo discovers the Apple Silicon
+  VideoToolbox: `brew install ffmpeg-full`. Prairie discovers the Apple Silicon
   and Intel keg paths automatically when the FFmpeg Path setting is blank; a
   custom build can be selected explicitly in Admin Settings.
 - A C compiler and build toolchain (CGO dependencies)
@@ -32,7 +32,7 @@ cp .env.example .env
 chmod 600 .env
 printf '\nSECRET_KEY=%s\nDATABASE_URL=%s\nREDIS_URL=%s\n' \
   "$(openssl rand -base64 48)" \
-  'postgres://silo:silo@localhost:5432/silo?sslmode=disable' \
+  'postgres://prairie:prairie@localhost:5432/prairie?sslmode=disable' \
   'redis://localhost:6379' >> .env
 
 # Start local PostgreSQL and Redis
@@ -70,13 +70,13 @@ testing libraries against real media.
 
 ### Working on the plugin SDK at the same time
 
-If a change spans Silo and `silo-plugin-sdk`, use an untracked local `go.work`
+If a change spans Prairie and `prairie-plugin-sdk`, use an untracked local `go.work`
 workspace. `go.work` and `go.work.sum` are gitignored developer conveniences: CI
 runs from a clean checkout without them, and release builds set `GOWORK=off`.
 Any SDK package or symbol this repository uses must therefore be pushed and
-tagged in `silo-plugin-sdk` before the change here can merge.
+tagged in `prairie-plugin-sdk` before the change here can merge.
 
-Plugin authors should start in the `silo-plugin-sdk` repository, usually checked
+Plugin authors should start in the `prairie-plugin-sdk` repository, usually checked
 out beside this one. It owns the plugin package format, protobuf contracts,
 generated plugin API, import paths, and manifest helpers.
 
@@ -86,7 +86,7 @@ With `.env` created and PostgreSQL and Redis running:
 
 ```sh
 make build
-./silo
+./prairie
 ```
 
 The server listens at <http://localhost:8080>. Complete onboarding and manage
@@ -104,8 +104,8 @@ the remaining settings in the web interface.
 | `make dev-transcode` | Run a standalone transcode node |
 | `make migrate-create NAME=add_thing` | Create a timestamped Goose SQL migration |
 | `make migrate-validate` | Validate Goose migration files without touching a database |
-| `make migrate-status` | Show Goose migration status using Silo's bootstrapping runner |
-| `make migrate-up` | Apply pending Goose migrations using Silo's bootstrapping runner |
+| `make migrate-status` | Show Goose migration status using Prairie's bootstrapping runner |
+| `make migrate-up` | Apply pending Goose migrations using Prairie's bootstrapping runner |
 | `make clean` | Remove build artifacts |
 
 ## Database migrations
@@ -172,7 +172,7 @@ the verify targets) is listed once, in
 ## Project structure
 
 ```
-cmd/silo/       Entry point
+cmd/prairie/       Entry point
 internal/
   api/               HTTP router, handlers, middleware
   auth/              JWT authentication and sessions

@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 const testWebhookToken = "wh_test_token_abcdef123456"
@@ -421,7 +421,7 @@ func TestCreateSourceWebhookReturnsURL(t *testing.T) {
 		revealTokenFn: func(string) (string, error) { return testWebhookToken, nil },
 	}
 	h := NewAutoscanHandler(store, &fakeAutoscanTriggerer{})
-	h.SetPublicURL("https://silo.example/")
+	h.SetPublicURL("https://prairie.example/")
 
 	rec := httptest.NewRecorder()
 	h.HandleCreateSourceWebhook(rec, newAutoscanRequest(http.MethodPost, "/admin/autoscan/sources/src-1/webhook", "", "src-1"))
@@ -430,7 +430,7 @@ func TestCreateSourceWebhookReturnsURL(t *testing.T) {
 		t.Fatalf("status = %d, want 200 (%s)", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	wantURL := `"webhook_url":"https://silo.example/api/v2/autoscan/webhooks/` + testWebhookToken + `"`
+	wantURL := `"webhook_url":"https://prairie.example/api/v2/autoscan/webhooks/` + testWebhookToken + `"`
 	if !strings.Contains(body, wantURL) {
 		t.Fatalf("response missing %s: %s", wantURL, body)
 	}

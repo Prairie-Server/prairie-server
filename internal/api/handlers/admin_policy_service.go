@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/policy"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 // AdminPolicyReady preserves the editor gate independently of decision-log access.

@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 const jellycompatSessionColumns = `token, username, account_username, profile_id, profile_name, pseudo_user_id, streamapp_user_id, streamapp_access_token, streamapp_refresh_token, streamapp_token_expiry, created_at, expires_at`
@@ -62,7 +62,7 @@ func (r *SessionRepository) scanCompatSession(row pgx.Row) (*Session, error) {
 		}
 		return nil, fmt.Errorf("scan compat session: %w", err)
 	}
-	// Decrypt the bridged Silo access/refresh tokens (read-path contract).
+	// Decrypt the bridged Prairie access/refresh tokens (read-path contract).
 	if session.StreamAppAccessToken, err = r.cipher.DecryptIfEncrypted(session.StreamAppAccessToken, jellycompatTokenAAD("streamapp_access_token", session.Token)); err != nil {
 		return nil, fmt.Errorf("%w: decrypt streamapp access token: %w", errSessionUnreadable, err)
 	}
@@ -72,7 +72,7 @@ func (r *SessionRepository) scanCompatSession(row pgx.Row) (*Session, error) {
 	return &session, nil
 }
 
-// encryptTokens encrypts the session's bridged Silo access and refresh
+// encryptTokens encrypts the session's bridged Prairie access and refresh
 // tokens for storage (write-path contract).
 func (r *SessionRepository) encryptTokens(session Session) (accessToken, refreshToken string, err error) {
 	accessToken, err = r.cipher.Encrypt(session.StreamAppAccessToken, jellycompatTokenAAD("streamapp_access_token", session.Token))

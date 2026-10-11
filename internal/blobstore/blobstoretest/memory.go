@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 const memoryETag = "\"memory\""

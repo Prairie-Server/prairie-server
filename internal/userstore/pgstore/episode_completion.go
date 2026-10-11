@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 var _ userstore.EpisodeParentCompletionStore = (*PostgresUserStore)(nil)

@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 // absTokenTouchThrottle bounds how often a token's last_seen_at is refreshed.

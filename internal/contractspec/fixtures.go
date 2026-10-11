@@ -12,7 +12,7 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // fixturesSchemaID is the $id the index schema declares; validation errors

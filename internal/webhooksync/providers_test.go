@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 func TestEmbyProviderParseWebhook(t *testing.T) {

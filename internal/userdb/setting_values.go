@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // settingValueColumns is the projection every read shares, in the order

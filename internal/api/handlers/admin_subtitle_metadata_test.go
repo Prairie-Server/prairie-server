@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

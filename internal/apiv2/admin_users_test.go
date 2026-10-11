@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 func TestListAdminUsers(t *testing.T) {

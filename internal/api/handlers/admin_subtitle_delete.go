@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 func (h *AdminSubtitleHandler) DeleteAdminSubtitle(ctx context.Context, id int, revision *int64) error {

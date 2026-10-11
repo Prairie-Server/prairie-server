@@ -15,8 +15,8 @@ permissions:
 
 env:
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*
+  GONOSUMDB: github.com/prairie-server/*
   # Pinned so a lint gate cannot change its mind between two runs of the same
   # commit. Built from source below rather than downloaded: a released binary
   # refuses to run against a Go version newer than the one it was built with,
@@ -62,7 +62,7 @@ jobs:
   # private-runner job waits for it, so it does nothing else.
   #
   # The tools come from a sparse checkout of this workflow's own commit on
-  # main rather than `uses: Silo-Server/silo-server/...@main`, which downloads
+  # main rather than `uses: Prairie-Server/prairie-server/...@main`, which downloads
   # a tarball of the whole repository (about 290 MB) and took 15-20 s per job.
   # Pinning to job.workflow_sha gives every run, including a re-run, tools
   # from the same commit as its job list. The checkout holds no Go files,
@@ -87,7 +87,7 @@ jobs:
       - name: Check out the CI tools from main
         uses: actions/checkout@v5
         with:
-          repository: Silo-Server/silo-server
+          repository: Prairie-Server/prairie-server
           ref: ${{ job.workflow_sha || 'refs/heads/main' }}
           path: .ci-tools
           fetch-depth: 1
@@ -139,7 +139,7 @@ jobs:
       - name: Check out the case-collision checker from main
         uses: actions/checkout@v5
         with:
-          repository: Silo-Server/silo-server
+          repository: Prairie-Server/prairie-server
           ref: ${{ job.workflow_sha || 'refs/heads/main' }}
           path: .ci-tools
           fetch-depth: 1
@@ -172,7 +172,7 @@ jobs:
     name: Go lint
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-lint"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-lint"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     steps:
       # github.com/h2non/bimg binds libvips through cgo and pkg-config, so
       # nothing under ./... compiles without the headers. The Dockerfile
@@ -257,7 +257,7 @@ jobs:
       - name: Check out the CI tools from main
         uses: actions/checkout@v5
         with:
-          repository: Silo-Server/silo-server
+          repository: Prairie-Server/prairie-server
           ref: ${{ job.workflow_sha || 'refs/heads/main' }}
           path: .ci-tools
           fetch-depth: 1
@@ -351,7 +351,7 @@ jobs:
     name: Go test
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-test"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-test"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     steps:
       - *libvips-cache-key
       - *libvips-restore
@@ -367,7 +367,7 @@ jobs:
       - name: Check out the CI tools from main
         uses: actions/checkout@v5
         with:
-          repository: Silo-Server/silo-server
+          repository: Prairie-Server/prairie-server
           ref: ${{ job.workflow_sha || 'refs/heads/main' }}
           path: .ci-tools
           fetch-depth: 1
@@ -407,7 +407,7 @@ jobs:
     name: Go integration
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-integration"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-integration"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
       SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/silo_test?sslmode=disable
     steps:
@@ -502,7 +502,7 @@ jobs:
     name: Go DB pins
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-pins"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-pins"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
       SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/silo_test?sslmode=disable
     steps:
@@ -556,7 +556,7 @@ jobs:
     name: Go DB external auth
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-auth"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-auth"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
       SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/silo_test?sslmode=disable
     steps:
@@ -614,7 +614,7 @@ jobs:
     name: Web (${{ matrix.part }})
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.web != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -762,7 +762,7 @@ jobs:
     name: Web test (${{ matrix.shard }}/4)
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.web != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Silo-Server/silo-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web-test-{2}"]', github.run_id, github.run_attempt, matrix.shard)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web-test-{2}"]', github.run_id, github.run_attempt, matrix.shard)) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -810,7 +810,7 @@ jobs:
       - name: Check out the CI tools from main
         uses: actions/checkout@v5
         with:
-          repository: Silo-Server/silo-server
+          repository: Prairie-Server/prairie-server
           ref: ${{ job.workflow_sha || 'refs/heads/main' }}
           path: .ci-tools
           fetch-depth: 1

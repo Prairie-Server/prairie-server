@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
 )
 
 // FinalizeVariantsByPathPrefix recomputes edition/presentation metadata after

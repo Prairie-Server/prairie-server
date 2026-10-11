@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

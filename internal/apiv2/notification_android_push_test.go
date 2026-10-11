@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 type fakeOrderedPush struct {

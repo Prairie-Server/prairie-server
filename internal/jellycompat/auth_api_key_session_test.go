@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // fakeUserStore embeds userstore.UserStore so only ListProfiles needs an
@@ -99,7 +99,7 @@ func TestRequireSessionOrAPIKeySession_SynthesizesPrimaryProfile(t *testing.T) {
 	if got.Username != "admin" {
 		t.Errorf("Username = %q, want admin", got.Username)
 	}
-	// Refresh-skip invariants: no upstream Silo token, zero expiry.
+	// Refresh-skip invariants: no upstream Prairie token, zero expiry.
 	if got.StreamAppAccessToken != "" || got.StreamAppRefreshToken != "" {
 		t.Errorf("expected empty upstream tokens, got access=%q refresh=%q", got.StreamAppAccessToken, got.StreamAppRefreshToken)
 	}

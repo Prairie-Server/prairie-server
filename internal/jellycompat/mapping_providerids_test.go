@@ -3,8 +3,8 @@ package jellycompat
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func assertProviderIDs(t *testing.T, got map[string]string, want map[string]string) {

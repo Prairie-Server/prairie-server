@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 func pollOneSource(t *testing.T, src Source, changes []Change, q Queuer, suppress Suppressor, resolver Resolver) EventFinish {

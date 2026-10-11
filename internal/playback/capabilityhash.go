@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // ComputeCapabilityHash summarizes what a host has and can do into one

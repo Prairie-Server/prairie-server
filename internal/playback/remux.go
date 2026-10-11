@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 const (
@@ -56,7 +56,7 @@ func ffmpegBinary() string {
 func discoverFFmpegPath(goos string, lookPath func(string) (string, error)) string {
 	candidates := []string{jellyfinFFmpegPath}
 	if goos == darwinGOOS {
-		// Homebrew's regular FFmpeg omits libass and other filters Silo uses.
+		// Homebrew's regular FFmpeg omits libass and other filters Prairie uses.
 		// Prefer the keg-only full build on both Apple Silicon and Intel Macs
 		// when it is installed; PATH remains the final portable fallback.
 		candidates = []string{

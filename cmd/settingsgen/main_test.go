@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
 )
 
 func TestPresentationMetadataIsGeneratedForEveryClientLanguage(t *testing.T) {

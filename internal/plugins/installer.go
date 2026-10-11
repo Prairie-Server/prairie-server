@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	publicmanifest "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	publicmanifest "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -76,7 +76,7 @@ func NewInstaller(installations installationStore, opts InstallerOptions) *Insta
 	}
 	baseDir := opts.BaseDir
 	if baseDir == "" {
-		baseDir = filepath.Join(os.TempDir(), "silo-plugins")
+		baseDir = filepath.Join(os.TempDir(), "prairie-plugins")
 	}
 	return &Installer{
 		installations: installations,
@@ -177,7 +177,7 @@ func (i *Installer) downloadBinary(
 	actualChecksum := hex.EncodeToString(checksum[:])
 	if actualChecksum != req.Checksum {
 		return nil, nil, "", packageError(fmt.Errorf("binary checksum mismatch: expected %s, got %s", req.Checksum, actualChecksum),
-			"The downloaded plugin doesn't match the SHA-256 checksum its catalog lists, so Silo didn't install it.")
+			"The downloaded plugin doesn't match the SHA-256 checksum its catalog lists, so Prairie didn't install it.")
 	}
 
 	manifest := req.Manifest
@@ -614,7 +614,7 @@ func loadManifestFromBinary(ctx context.Context, binaryData []byte) (*pluginv1.P
 			return nil, runErr
 		}
 		return nil, packageError(runErr,
-			"Silo couldn't run the plugin to read its manifest. It may be built for another platform, or the file may be damaged.")
+			"Prairie couldn't run the plugin to read its manifest. It may be built for another platform, or the file may be damaged.")
 	}
 
 	var manifest pluginv1.PluginManifest
@@ -625,8 +625,8 @@ func loadManifestFromBinary(ctx context.Context, binaryData []byte) (*pluginv1.P
 	if err := ValidateManifest(&manifest); err != nil {
 		return nil, packageError(err, "The plugin's manifest is invalid: %v.", err)
 	}
-	if manifest.GetSiloApiVersion() != DefaultSiloAPIVersion {
-		return nil, unsupportedAPIVersionError(manifest.GetSiloApiVersion(), DefaultSiloAPIVersion)
+	if manifest.GetPrairieApiVersion() != DefaultPrairieAPIVersion {
+		return nil, unsupportedAPIVersionError(manifest.GetPrairieApiVersion(), DefaultPrairieAPIVersion)
 	}
 	return &manifest, nil
 }
@@ -690,7 +690,7 @@ func checkCatalogIdentity(manifest *pluginv1.PluginManifest, pluginID, version s
 	}
 	return packageError(
 		fmt.Errorf("binary manifest is %s@%s, catalog lists %s@%s", manifest.GetPluginId(), manifest.GetVersion(), pluginID, version),
-		"The downloaded plugin identifies itself as %s %s, not the %s %s its catalog lists, so Silo didn't install it.",
+		"The downloaded plugin identifies itself as %s %s, not the %s %s its catalog lists, so Prairie didn't install it.",
 		manifest.GetPluginId(), manifest.GetVersion(), pluginID, version,
 	)
 }
@@ -703,8 +703,8 @@ func openInstallArchive(data []byte, req InstallArchiveRequest) (*zip.Reader, []
 	if err != nil {
 		return nil, nil, nil, packageError(err, "The plugin archive couldn't be read.")
 	}
-	if manifest.GetSiloApiVersion() != DefaultSiloAPIVersion {
-		return nil, nil, nil, unsupportedAPIVersionError(manifest.GetSiloApiVersion(), DefaultSiloAPIVersion)
+	if manifest.GetPrairieApiVersion() != DefaultPrairieAPIVersion {
+		return nil, nil, nil, unsupportedAPIVersionError(manifest.GetPrairieApiVersion(), DefaultPrairieAPIVersion)
 	}
 	if err := checkCatalogIdentity(manifest, req.PluginID, req.Version); err != nil {
 		return nil, nil, nil, err

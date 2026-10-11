@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 // directPlayRouter wraps the probe handler in PlaybackSessionAuth and mounts it

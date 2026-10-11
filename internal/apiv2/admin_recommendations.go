@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 // AdminRecommendationsService is the existing process-local recommendation worker.

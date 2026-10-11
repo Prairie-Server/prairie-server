@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/serveridentity"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/serveridentity"
 )
 
 type fakeServerIdentity struct {

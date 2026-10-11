@@ -3,8 +3,8 @@ package nfo
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // The NFO provider reads Rotten Tomatoes scores into the rt_critic and

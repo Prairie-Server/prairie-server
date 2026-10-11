@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // TelemetryTokenTiming resolves the timing a viewer-edge handler attaches from

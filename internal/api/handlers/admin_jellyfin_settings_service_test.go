@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 func TestAdminJellyfinSettingsAtomicGuard(t *testing.T) {

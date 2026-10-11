@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredLoginR1Acceptance(t *testing.T) {

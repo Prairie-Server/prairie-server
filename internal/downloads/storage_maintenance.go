@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 const (

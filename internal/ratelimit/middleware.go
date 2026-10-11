@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 )
 
 // Middleware manages rate limiting config, limiters, and the HTTP handler.

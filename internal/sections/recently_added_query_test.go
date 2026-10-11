@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestBuildRecentlyAddedQueryUsesLibraryMembershipFastPathForSingleLibrary(t *testing.T) {

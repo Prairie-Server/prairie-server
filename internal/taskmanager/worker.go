@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
-	"github.com/Silo-Server/silo-server/internal/workmetrics"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/workmetrics"
 )
 
 // taskWorker wraps a Task with in-memory runtime state and trigger management.

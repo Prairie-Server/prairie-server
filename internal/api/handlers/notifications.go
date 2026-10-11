@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -411,7 +411,7 @@ func (h *NotificationsHandler) NotificationCapabilities(ctx context.Context) Not
 		if h.system.Settings.ApplePushDeliveryEnabled(ctx) {
 			applePush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderSiloRelay,
+				Provider:       notifications.PushProviderPrairieRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 				DisplayToken:   h.displayTokens != nil,
 			}
@@ -419,7 +419,7 @@ func (h *NotificationsHandler) NotificationCapabilities(ctx context.Context) Not
 		if h.system.Settings.AndroidPushDeliveryEnabled(ctx) {
 			androidPush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderSiloRelay,
+				Provider:       notifications.PushProviderPrairieRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 			}
 		}

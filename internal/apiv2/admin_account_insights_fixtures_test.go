@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeAdminAccountDevices returns one registered device and one known only

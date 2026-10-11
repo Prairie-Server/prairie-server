@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 func TestDeferredEpisodeHydrationMatchesOriginalPage(t *testing.T) {

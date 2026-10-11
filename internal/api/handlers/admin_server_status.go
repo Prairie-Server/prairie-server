@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 const (

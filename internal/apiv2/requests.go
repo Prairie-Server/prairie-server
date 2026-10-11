@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // The requests domain: a profile's media requests and the TMDB-backed

@@ -19,14 +19,14 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*
+  GONOSUMDB: github.com/prairie-server/*
 
 jobs:
   build:
     # A PR cannot turn this publisher into a privileged PR-code build.
     if: >-
-      github.repository == 'Silo-Server/silo-server' &&
+      github.repository == 'Prairie-Server/prairie-server' &&
       contains(fromJSON('["linux/amd64","linux/arm64"]'), inputs.platform) &&
       ((github.event_name == 'workflow_dispatch' &&
         contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)) ||

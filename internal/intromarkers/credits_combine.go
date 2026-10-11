@@ -3,7 +3,7 @@ package intromarkers
 import (
 	"math"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // Combining audio and video credits evidence.

@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // Jellyfin provider keys. These strings are the contract: clients match on the

@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 // PluginLaunchService is the slice of *handlers.AuthHandler the v2 plugin

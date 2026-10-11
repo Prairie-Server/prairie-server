@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
 	redisv9 "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 )
@@ -182,14 +182,14 @@ const (
 	// AuthLocalPasswordLoginSettingKey turns local password sign-in on or off
 	// server-wide. Off, only break-glass admin accounts may sign in with a
 	// local password; turning it off requires at least one of them. The
-	// "silo auth local-login enable" command turns it back on.
+	// "prairie auth local-login enable" command turns it back on.
 	AuthLocalPasswordLoginSettingKey = "auth.local_password_login"
 	// AuthEmailAutoMatchSettingKey links a first external sign-in to the
 	// unlinked account holding the same email, but only when the provider
 	// says the email is verified. Off by default: an email match lets whoever
-	// controls the address at the provider take the account over. Silo does
+	// controls the address at the provider take the account over. Prairie does
 	// not verify account emails either, so whoever registers or sets that
-	// address on a Silo account first is the one matched; the match ends the
+	// address on a Prairie account first is the one matched; the match ends the
 	// account's existing sessions, device approvals and API keys.
 	AuthEmailAutoMatchSettingKey = "auth.email_auto_match"
 	// AuthProviderRecheckIntervalSettingKey is how old an identity's last
@@ -248,7 +248,7 @@ func AuthRefreshTokenExpiry(raw string) time.Duration {
 // validation reads (such as the break-glass accounts that
 // AuthLocalPasswordLoginSettingKey requires) take it too, so the check and
 // the write cannot interleave.
-const ServerSettingsMutationLock = "silo:server_settings:mutation"
+const ServerSettingsMutationLock = "prairie:server_settings:mutation"
 
 // adminSettingDefaults is the effective value shown by the Admin UI when no
 // row exists in server_settings. Keep these values aligned with the runtime
@@ -265,7 +265,7 @@ var adminSettingDefaults = map[string]string{
 	"server.log_level":          "info",
 	"server.log_quiet":          "",
 	"server.public_url":         "",
-	"branding.server_name":      "Silo",
+	"branding.server_name":      "Prairie",
 	"branding.login_subtitle":   "Sign in with an existing account.",
 	"clientip.trusted_proxies":  "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, ::1/128",
 	"theme.catalog_url":         DefaultThemeCatalogURL,
@@ -301,7 +301,7 @@ var adminSettingDefaults = map[string]string{
 	"matcher.enable_tv_series_group_queue": "false",
 	"metadata.cache_images":                "true",
 	"artwork.storage_backend":              "auto",
-	"artwork.local_path":                   "/var/lib/silo/artwork",
+	"artwork.local_path":                   "/var/lib/prairie/artwork",
 	"markers.mode":                         "both",
 	"markers.lazy_playback":                "true",
 	MarkersDetectionWorkersSettingKey:      "1",
@@ -347,7 +347,7 @@ var adminSettingDefaults = map[string]string{
 	"jellyfin_compat.enabled":                 "true",
 	"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
 	"jellyfin_compat.emulated_server_version": DefaultJellyfinCompatEmulatedServerVersion,
-	"jellyfin_compat.server_name":             "Silo",
+	"jellyfin_compat.server_name":             "Prairie",
 	"jellyfin_compat.web_enabled":             "true",
 	"jellyfin_compat.web_version":             DefaultJellyfinWebVersion,
 	"jellyfin_compat.web_install_dir":         DefaultJellyfinWebInstallDir,
@@ -406,7 +406,7 @@ var adminSettingDefaults = map[string]string{
 	"email.enabled":       "false",
 	"email.smtp_port":     "587",
 	"email.smtp_security": "starttls",
-	"email.from_name":     "Silo",
+	"email.from_name":     "Prairie",
 
 	"notifications.release_events_enabled":                     "true",
 	"notifications.fanout_enabled":                             "true",
@@ -760,7 +760,7 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 	case "server.log_level":
 		return normalizeAdminEnum(key, value, "debug", "info", "warn", "error")
 	case "opslog.capture_level":
-		// "warning" is accepted because the startup reader in cmd/silo treats
+		// "warning" is accepted because the startup reader in cmd/prairie treats
 		// it as an alias for "warn".
 		return normalizeAdminEnum(key, value, "debug", "info", "warn", "warning", "error")
 	case "userdb.backend":
@@ -1101,10 +1101,10 @@ func ParseRedisURL(raw string) (*redisv9.Options, *redisv9.FailoverOptions, erro
 		return nil, nil, errors.New("redis: the Sentinel address needs a host and a port, for example sentinel-1:26379; name further Sentinels with addr parameters")
 	}
 	if failover.RouteByLatency || failover.RouteRandomly || failover.ReplicaOnly || failover.UseDisconnectedReplicas {
-		// These options are for reading from replicas. Silo's clients write,
+		// These options are for reading from replicas. Prairie's clients write,
 		// and go-redis panics when a single client is built with a routing
 		// option.
-		return nil, nil, errors.New("redis: route_by_latency, route_randomly, replica_only and use_disconnected_replicas are not supported; Silo reads and writes on the master")
+		return nil, nil, errors.New("redis: route_by_latency, route_randomly, replica_only and use_disconnected_replicas are not supported; Prairie reads and writes on the master")
 	}
 	if failover.DialTimeout < 0 || failover.ReadTimeout < 0 {
 		// go-redis reads a read timeout of 0 or less as no timeout. A

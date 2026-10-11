@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 type plannedNodes struct {

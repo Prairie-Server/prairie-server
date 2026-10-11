@@ -7,8 +7,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 // NetworkAccessService is the slice of *plugins.Service the network access

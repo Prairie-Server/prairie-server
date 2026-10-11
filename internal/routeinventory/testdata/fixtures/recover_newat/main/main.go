@@ -8,7 +8,7 @@ import (
 
 	"reflect"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/recover_newat/listener"
+	"github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/recover_newat/listener"
 )
 
 func extra(w http.ResponseWriter, r *http.Request) {}

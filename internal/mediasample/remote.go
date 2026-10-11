@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 )
 
 // RemotePath is the transcode-node route that runs a Request with the node's

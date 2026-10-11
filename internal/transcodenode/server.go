@@ -21,24 +21,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
 
 // TranscodeStartRequest is the JSON body for POST /transcode/start.
@@ -1821,7 +1821,7 @@ func (s *Server) requireApprovedInputPath(w http.ResponseWriter, r *http.Request
 // restart, from whichever recipe source the request has.
 //
 // A legacy attempt forwards the client's verified stream token in the
-// X-Silo-Stream-Token header, and a native token carries the full byte-affecting
+// X-Prairie-Stream-Token header, and a native token carries the full byte-affecting
 // recipe (the former Postgres "recipe card"), so the node can re-spawn ffmpeg
 // seeked to the requested segment rather than 404ing — mirroring the integrated
 // server's token-carried reconstruct.
@@ -1843,7 +1843,7 @@ func (s *Server) requireApprovedInputPath(w http.ResponseWriter, r *http.Request
 func (s *Server) reconstructFromToken(r *http.Request, sessionID string, requestedSegment int) (*playback.TranscodeSession, error) {
 	var card playback.RecipeCard
 	tokenComplete := false
-	if tokenStr := r.Header.Get("X-Silo-Stream-Token"); tokenStr != "" {
+	if tokenStr := r.Header.Get("X-Prairie-Stream-Token"); tokenStr != "" {
 		cfg := s.watcher.Config()
 		if cfg == nil {
 			return nil, nil
@@ -2199,7 +2199,7 @@ func (s *Server) handleRemux(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "node not configured", http.StatusServiceUnavailable)
 		return
 	}
-	token := strings.TrimSpace(r.Header.Get("X-Silo-Stream-Token"))
+	token := strings.TrimSpace(r.Header.Get("X-Prairie-Stream-Token"))
 	claims, err := streamtoken.Verify(token, cfg.Auth.JWTSecret)
 	if err != nil {
 		http.Error(w, "invalid stream token", http.StatusUnauthorized)

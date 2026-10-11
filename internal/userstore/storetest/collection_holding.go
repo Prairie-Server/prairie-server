@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // RunManualCollectionsHolding covers the Add to collection ticks: of the

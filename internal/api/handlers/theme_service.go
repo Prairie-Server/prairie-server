@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 const (

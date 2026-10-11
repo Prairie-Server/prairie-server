@@ -9,13 +9,13 @@ import (
 	"net/url"
 	"strings"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 type pluginAuthClient interface {
@@ -74,7 +74,7 @@ func NewPluginProvider(
 }
 
 // Authenticate is a password sign-in through the plugin (LDAP and other
-// credential providers), resolved to a Silo account.
+// credential providers), resolved to a Prairie account.
 func (p *PluginProvider) Authenticate(ctx context.Context, creds Credentials) (*models.User, error) {
 	user, _, err := p.authenticateCredentials(ctx, creds, 0)
 	return user, err

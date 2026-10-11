@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/workmetrics"
+	"github.com/prairie-server/prairie-server/internal/workmetrics"
 
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 type ArtifactStore interface {
@@ -387,12 +387,12 @@ func (r *Runner) executeStorageTransition(job *models.AdminJob) {
 	// restart must not depend on the best-effort job receipt write below. In
 	// particular, a canceled context or a transient database outage must not
 	// leave the old process running indefinitely with storage writes blocked.
-	message := "Storage transition completed; restarting Silo"
+	message := "Storage transition completed; restarting Prairie"
 	manual := r.requestStorageTransitionRestartOnce(job.ID)
 	if uncertain, ok := result.(storageTransitionCommitResult); ok && uncertain.StorageTransitionCommitUnknown() {
-		message = "Storage commit outcome is unknown; restarting Silo to recover safely"
+		message = "Storage commit outcome is unknown; restarting Prairie to recover safely"
 		if manual {
-			message = "Storage commit outcome is unknown; automatic restart unavailable — restart Silo manually"
+			message = "Storage commit outcome is unknown; automatic restart unavailable — restart Prairie manually"
 		}
 		if structured, ok := result.(storageTransitionRestartResult); ok {
 			result = structured.WithStorageTransitionRestartReceipt(manual, job.ClaimGeneration)
@@ -401,7 +401,7 @@ func (r *Runner) executeStorageTransition(job *models.AdminJob) {
 		return
 	}
 	if manual {
-		message = "Storage transition committed; automatic restart unavailable — restart Silo manually"
+		message = "Storage transition committed; automatic restart unavailable — restart Prairie manually"
 	}
 	if structured, ok := result.(storageTransitionRestartResult); ok {
 		result = structured.WithStorageTransitionRestartReceipt(manual, job.ClaimGeneration)
@@ -450,7 +450,7 @@ func (r *Runner) storageRestartPending() bool {
 }
 
 // requestStorageTransitionRestartOnce asks the host to restart after a commit
-// and reports whether the administrator must restart Silo by hand. A second
+// and reports whether the administrator must restart Prairie by hand. A second
 // request in the same process reuses the first outcome: the host refuses a
 // repeated request, which would otherwise read as a missing restart callback.
 func (r *Runner) requestStorageTransitionRestartOnce(jobID string) (manual bool) {
@@ -482,9 +482,9 @@ func (r *Runner) settleCommittedStorageTransition(job *models.AdminJob, current,
 	if committed {
 		state = "Storage transition committed"
 	}
-	message := state + "; restarting Silo to finish recovery"
+	message := state + "; restarting Prairie to finish recovery"
 	if manual {
-		message = state + "; automatic restart unavailable — restart Silo manually"
+		message = state + "; automatic restart unavailable — restart Prairie manually"
 	}
 	receipt := StorageTransitionReceipt{
 		Phase: storageTransitionPhaseRestartPending, VerifiedObjects: max(current, 0),
@@ -890,7 +890,7 @@ func (r *Runner) executeCatalogExport(job *models.AdminJob) {
 		r.publishJobByID(ctx, notifications.TypeJobProgress, job.ID)
 	}
 
-	tempFile, err := os.CreateTemp("", "silo-catalog-seed-*.json.gz")
+	tempFile, err := os.CreateTemp("", "prairie-catalog-seed-*.json.gz")
 	if err != nil {
 		r.failJob(job.ID, 0, 0, "Catalog export failed", fmt.Sprintf("creating temp file: %v", err))
 		return

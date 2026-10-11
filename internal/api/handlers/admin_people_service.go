@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // RefreshAdminPerson waits for the existing provider refresh and returns its result.

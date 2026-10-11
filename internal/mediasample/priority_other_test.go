@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 // Background runs start like any other run where priority is not lowered.

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 // Runner runs sampling requests with one ffmpeg binary.

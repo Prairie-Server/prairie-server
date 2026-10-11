@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // The personal-collection seams. v1 HTTP handlers and the v2 operations both

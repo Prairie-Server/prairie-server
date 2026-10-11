@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // BenchmarkActivitySessionEnrichment measures reporting work only. It does not
@@ -173,7 +173,7 @@ func TestIsJellyfinEcosystemClient(t *testing.T) {
 		{"infuse by user agent only", "", "Infuse-Direct/8.4.6", true},
 		{"kodi addon by name", "Kodi", "Kodi/21.0", true},
 		{"mpv shim by user agent", "", "mpv 0.38.0", true},
-		{"native android client", "Silo Android", "okhttp/4.12", false},
+		{"native android client", "Prairie Android", "okhttp/4.12", false},
 		{"generic browser", "", "Mozilla/5.0 (X11) Chrome/120.0 Safari/537.36", false},
 		{"no metadata", "", "", false},
 	}
@@ -302,9 +302,9 @@ func TestPlaybackClientDisplayNameKeepsNamedClientVersionExact(t *testing.T) {
 		clientVersion string
 		want          string
 	}{
-		{name: "patch version survives", clientName: "Silo Android TV", clientVersion: "1.0.0", want: "Silo Android TV 1.0.0"},
-		{name: "prerelease suffix survives", clientName: "Silo iOS", clientVersion: "2.1.0-rc.3", want: "Silo iOS 2.1.0-rc.3"},
-		{name: "no version", clientName: "Silo Android TV", clientVersion: "", want: "Silo Android TV"},
+		{name: "patch version survives", clientName: "Prairie Android TV", clientVersion: "1.0.0", want: "Prairie Android TV 1.0.0"},
+		{name: "prerelease suffix survives", clientName: "Prairie iOS", clientVersion: "2.1.0-rc.3", want: "Prairie iOS 2.1.0-rc.3"},
+		{name: "no version", clientName: "Prairie Android TV", clientVersion: "", want: "Prairie Android TV"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -328,59 +328,59 @@ func TestPlaybackClientFullDisplayName(t *testing.T) {
 	}{
 		{
 			name:    "version build and channel",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
 			build:   "5",
 			channel: "dev",
-			want:    "Silo Android TV 1.0.0 (build 5, dev)",
+			want:    "Prairie Android TV 1.0.0 (build 5, dev)",
 		},
 		{
 			name:    "release channel omitted",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
 			build:   "5",
 			channel: "release",
-			want:    "Silo Android TV 1.0.0 (build 5)",
+			want:    "Prairie Android TV 1.0.0 (build 5)",
 		},
 		{
 			name:    "release channel omitted case insensitively",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
 			build:   "5",
 			channel: "Release",
-			want:    "Silo Android TV 1.0.0 (build 5)",
+			want:    "Prairie Android TV 1.0.0 (build 5)",
 		},
 		{
 			name:    "empty channel omitted",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
 			build:   "5",
-			want:    "Silo Android TV 1.0.0 (build 5)",
+			want:    "Prairie Android TV 1.0.0 (build 5)",
 		},
 		{
 			name:    "channel without build",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
 			channel: "dev",
-			want:    "Silo Android TV 1.0.0 (dev)",
+			want:    "Prairie Android TV 1.0.0 (dev)",
 		},
 		{
 			name:    "build and channel empty",
-			client:  "Silo Android TV",
+			client:  "Prairie Android TV",
 			version: "1.0.0",
-			want:    "Silo Android TV 1.0.0",
+			want:    "Prairie Android TV 1.0.0",
 		},
 		{
 			name:   "version empty",
-			client: "Silo Android TV",
-			want:   "Silo Android TV",
+			client: "Prairie Android TV",
+			want:   "Prairie Android TV",
 		},
 		{
 			name:    "opaque build is not parsed",
-			client:  "Silo tvOS",
+			client:  "Prairie tvOS",
 			version: "1.0.0",
 			build:   "2026.08.13-abcdef",
-			want:    "Silo tvOS 1.0.0 (build 2026.08.13-abcdef)",
+			want:    "Prairie tvOS 1.0.0 (build 2026.08.13-abcdef)",
 		},
 		{
 			// A client that reports a build but not a name is still named by its
@@ -421,28 +421,28 @@ func TestPlaybackClientInfoForStartV3(t *testing.T) {
 	}{
 		{
 			name:    "headers win over the body",
-			headers: map[string]string{"X-Silo-Client": "Silo iOS", "X-Silo-Client-Version": "2.1.0", "X-Silo-Client-Build": "9", "X-Silo-Client-Channel": "beta"},
+			headers: map[string]string{"X-Prairie-Client": "Prairie iOS", "X-Prairie-Client-Version": "2.1.0", "X-Prairie-Client-Build": "9", "X-Prairie-Client-Channel": "beta"},
 			context: playback.ClientPlaybackContextV3{AppVersion: "1.0.0", AppBuild: "1", AppChannel: "release"},
-			want:    playback.ClientInfo{Name: "Silo iOS", Version: "2.1.0", Build: "9", Channel: "beta"},
+			want:    playback.ClientInfo{Name: "Prairie iOS", Version: "2.1.0", Build: "9", Channel: "beta"},
 		},
 		{
 			// The fallback is per field, not per struct: a client may set the
 			// name and version headers on every request and still report the
 			// build it only knows at start time in the body.
 			name:    "body fills only the fields the headers omit",
-			headers: map[string]string{"X-Silo-Client": "Silo tvOS", "X-Silo-Client-Version": "2.1.0"},
+			headers: map[string]string{"X-Prairie-Client": "Prairie tvOS", "X-Prairie-Client-Version": "2.1.0"},
 			context: playback.ClientPlaybackContextV3{AppVersion: "1.0.0", AppBuild: "77", AppChannel: "sideload"},
-			want:    playback.ClientInfo{Name: "Silo tvOS", Version: "2.1.0", Build: "77", Channel: "sideload"},
+			want:    playback.ClientInfo{Name: "Prairie tvOS", Version: "2.1.0", Build: "77", Channel: "sideload"},
 		},
 		{
 			name:    "body supplies everything but the name",
-			headers: map[string]string{"X-Silo-Client": "Silo Android TV"},
+			headers: map[string]string{"X-Prairie-Client": "Prairie Android TV"},
 			context: playback.ClientPlaybackContextV3{AppVersion: "1.0.0", AppBuild: "5", AppChannel: "dev"},
-			want:    playback.ClientInfo{Name: "Silo Android TV", Version: "1.0.0", Build: "5", Channel: "dev"},
+			want:    playback.ClientInfo{Name: "Prairie Android TV", Version: "1.0.0", Build: "5", Channel: "dev"},
 		},
 		{
 			// The regression this guards: the web player reports the literal
-			// "web" as its app_version and sends no X-Silo-Client. Taking the
+			// "web" as its app_version and sends no X-Prairie-Client. Taking the
 			// body anyway would stamp "web" onto client_version — the one field
 			// the contract promises is a marketing version — for every browser
 			// session, and onto every route event and decision log with it.
@@ -457,9 +457,9 @@ func TestPlaybackClientInfoForStartV3(t *testing.T) {
 		},
 		{
 			name:    "whitespace-only header falls through to the body",
-			headers: map[string]string{"X-Silo-Client": "Silo iOS", "X-Silo-Client-Build": "   "},
+			headers: map[string]string{"X-Prairie-Client": "Prairie iOS", "X-Prairie-Client-Build": "   "},
 			context: playback.ClientPlaybackContextV3{AppBuild: " 42 "},
-			want:    playback.ClientInfo{Name: "Silo iOS", Build: "42"},
+			want:    playback.ClientInfo{Name: "Prairie iOS", Build: "42"},
 		},
 	}
 	for _, tc := range cases {
@@ -484,10 +484,10 @@ func TestPlaybackClientInfoForStartV3(t *testing.T) {
 // where the session stamps its fields.
 func TestPlaybackClientInfoFromRequestClampsHeaders(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/playback/start", nil)
-	req.Header.Set("X-Silo-Client", "  "+strings.Repeat("N", 200)+"  ")
-	req.Header.Set("X-Silo-Client-Version", strings.Repeat("v", 100))
-	req.Header.Set("X-Silo-Client-Build", strings.Repeat("b", 100))
-	req.Header.Set("X-Silo-Client-Channel", strings.Repeat("c", 100))
+	req.Header.Set("X-Prairie-Client", "  "+strings.Repeat("N", 200)+"  ")
+	req.Header.Set("X-Prairie-Client-Version", strings.Repeat("v", 100))
+	req.Header.Set("X-Prairie-Client-Build", strings.Repeat("b", 100))
+	req.Header.Set("X-Prairie-Client-Channel", strings.Repeat("c", 100))
 
 	got := playback.ClientInfoFromRequest(req)
 
@@ -516,7 +516,7 @@ func TestNormalizeClientMetadataCountsRunes(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/playback/start", nil)
 	// 40 three-byte runes: within the 64-character channel bound as the schema
 	// counts it, well past it as bytes.
-	req.Header.Set("X-Silo-Client-Channel", strings.Repeat("δ", 40))
+	req.Header.Set("X-Prairie-Client-Channel", strings.Repeat("δ", 40))
 
 	got := playback.ClientInfoFromRequest(req)
 
@@ -538,7 +538,7 @@ func TestNormalizeClientMetadataCountsRunes(t *testing.T) {
 // 0x20), which is exactly why the body path needs its own guard.
 func TestPlaybackClientInfoStripsControlCharacters(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/playback/start", nil)
-	req.Header.Set("X-Silo-Client", "Silo Android TV")
+	req.Header.Set("X-Prairie-Client", "Prairie Android TV")
 
 	got := playbackClientInfoForStartV3(req, playback.ClientPlaybackContextV3{
 		AppVersion: "1.0\x00.0",

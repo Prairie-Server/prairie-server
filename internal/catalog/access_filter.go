@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/imagesize"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const LibraryCollectionVisibilityVisible = "visible"
@@ -337,7 +337,7 @@ func FilterMediaFilesByAccess(files []*models.MediaFile, filter AccessFilter) []
 // the same on both sides instead of falling through to the ELSE branch.
 //
 // Use octal \013 for vertical tab; PostgreSQL treats \v as a literal v. The
-// \uXXXX escapes need a UTF-8 database, which Silo requires anyway.
+// \uXXXX escapes need a UTF-8 database, which Prairie requires anyway.
 const SQLTrimSpaceChars = `E' \t\n\013\f\r\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004` +
 	`\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000'`
 

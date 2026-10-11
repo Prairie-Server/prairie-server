@@ -3,8 +3,8 @@ package transcodenode
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // canonicalSessionID resolves the id the viewer-facing edge publishes this

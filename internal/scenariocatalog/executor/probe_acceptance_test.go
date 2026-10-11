@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // TestRequiredRetainedProbeAcceptance runs the seven frozen liveness and

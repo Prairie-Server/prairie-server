@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/schemas/playback-v3/v3/replan-request.schema.json",
+  "$id": "https://prairie-server.dev/schemas/playback-v3/v3/replan-request.schema.json",
   "title": "Silo Playback Protocol v3 Replan Request",
   "description": "Body of POST /api/v1/playback/{session_id}/replan. Bounds mirror ReplanRequestV3.Validate and validateCapabilitiesV3 in internal/playback/protocol_v3.go. STRING LENGTHS: every `maxLength` here is a character count, while the server enforces the same limit as a UTF-8 byte length (Go `len(string)`), so a value near a cap that contains multi-byte characters can satisfy this schema yet be rejected at ingest. JSON Schema cannot express byte length, so the divergence is documented rather than encoded.",
   "type": "object",

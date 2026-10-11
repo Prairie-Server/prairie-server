@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type fakeMarkers struct {

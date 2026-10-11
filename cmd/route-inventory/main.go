@@ -19,7 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
 )
 
 func main() {

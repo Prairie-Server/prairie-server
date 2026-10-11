@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type adminAPIKeyContextKey string
@@ -229,8 +229,8 @@ func (a *AdminAPIKeyAuthenticator) resolveSession(ctx context.Context, token str
 		}, true
 	}
 
-	// Upstream Silo token fields are left empty and the expiry zero: an API key
-	// has no refreshable Silo token, and a zero expiry makes RequireSession's
+	// Upstream Prairie token fields are left empty and the expiry zero: an API key
+	// has no refreshable Prairie token, and a zero expiry makes RequireSession's
 	// refresh path a no-op. Downstream services scope by StreamAppUserID/ProfileID.
 	return &Session{
 		Token:           token,

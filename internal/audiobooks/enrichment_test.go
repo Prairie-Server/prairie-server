@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestEnricherRunFansOut verifies that runBatch processes a claimed batch with
@@ -68,8 +68,8 @@ func TestEnricherRunFansOut(t *testing.T) {
 }
 
 func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "8")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "8")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -82,8 +82,8 @@ func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
 }
 
 func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "100")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "100")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -96,7 +96,7 @@ func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
 }
 
 func TestAudiobookEnrichBatchSizeIgnoresInvalidEnv(t *testing.T) {
-	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
+	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
 
 	if got := audiobookEnrichBatchSize(); got != defaultEnrichBatchSize {
 		t.Fatalf("audiobookEnrichBatchSize() = %d, want %d", got, defaultEnrichBatchSize)

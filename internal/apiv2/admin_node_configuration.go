@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 

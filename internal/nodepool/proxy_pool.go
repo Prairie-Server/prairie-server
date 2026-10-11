@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // ProxyPool manages proxy nodes with round-robin selection.

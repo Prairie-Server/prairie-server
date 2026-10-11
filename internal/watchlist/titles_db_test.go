@@ -12,9 +12,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // titleTMDBStub answers detail and find calls from maps and counts them.

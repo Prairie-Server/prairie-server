@@ -14,7 +14,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/downloads"
 )
 
 // AdminAccountDownloadService reads one account's managed device downloads

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/ratingsources"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/ratingsources"
 )
 
 // The native detail names the season of its play target so a client can open

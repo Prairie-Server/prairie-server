@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/subtitles/opensubtitles"
-	"github.com/Silo-Server/silo-server/internal/subtitles/subdl"
-	"github.com/Silo-Server/silo-server/internal/subtitles/subsource"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles/opensubtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles/subdl"
+	"github.com/prairie-server/prairie-server/internal/subtitles/subsource"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

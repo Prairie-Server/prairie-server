@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // ErrOwnerAccessUnavailable reports that a sync could not resolve what the

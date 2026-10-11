@@ -18,9 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/contracts/api/v2/scenarios"
-	"github.com/Silo-Server/silo-server/internal/apiv2"
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/contracts/api/v2/scenarios"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 const publicPrincipal = "public"

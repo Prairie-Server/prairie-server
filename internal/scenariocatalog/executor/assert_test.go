@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func jsonResponse(t *testing.T, body string) response {

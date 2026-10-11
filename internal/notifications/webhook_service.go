@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -307,7 +307,7 @@ func sampleDeliveryRow(profileID string) DeliveryRow {
 			ReasonFlags: []byte(`{"favorite":true,"watchlist":false,"continue_watching":false,"next_up":false}`),
 			CreatedAt:   time.Now(),
 		},
-		SeriesTitle:   "Silo Test Series",
+		SeriesTitle:   "Prairie Test Series",
 		EpisodeTitle:  "This is a test notification",
 		SeasonNumber:  &seasonNumber,
 		EpisodeNumber: &episodeNumber,

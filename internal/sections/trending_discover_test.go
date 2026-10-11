@@ -3,7 +3,7 @@ package sections
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestOrderedTrendingContentIDs_PreservesOrderAndSeriesPrefersTVDB(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
 )
 
 type countingRoundTripper struct {

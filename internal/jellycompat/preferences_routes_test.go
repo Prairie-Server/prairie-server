@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // TestRouterPreferencesDiscovery verifies authenticated discovery through the

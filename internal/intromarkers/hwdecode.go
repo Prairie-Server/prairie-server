@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // hardwareAttempts is the attempt plan of a tail pass on accel: hardware

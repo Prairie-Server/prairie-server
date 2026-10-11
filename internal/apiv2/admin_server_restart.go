@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 // AdminServerRestartService is the slice of *handlers.ServerControlHandler the

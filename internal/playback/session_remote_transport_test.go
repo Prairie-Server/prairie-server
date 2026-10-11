@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
 )
 
 // A proxy-served session has no in-flight transport request on this server, so

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 const opListCatalogImportSources = "listCatalogImportSources"

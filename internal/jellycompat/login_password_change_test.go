@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 // A Jellyfin client cannot run the change a temporary password requires, so

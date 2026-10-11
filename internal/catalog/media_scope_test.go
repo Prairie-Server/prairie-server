@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestMediaScopeItemTypes pins the expansion of group scopes: "video" covers

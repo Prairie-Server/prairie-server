@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // The planner's leading-picture drop reaches a proxy or transcode node only

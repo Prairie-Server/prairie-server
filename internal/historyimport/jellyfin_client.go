@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 const (
@@ -23,8 +23,8 @@ const (
 	// episode numbers, series IDs, runtime, and user data are default DTO
 	// members. MediaSources and Path would make every page much heavier.
 	jellyfinItemFields = "ProviderIds"
-	// Jellyfin favorites cover more kinds than Silo can store: seasons have no
-	// favorite in Silo, so only movies, shows, and episodes are requested.
+	// Jellyfin favorites cover more kinds than Prairie can store: seasons have no
+	// favorite in Prairie, so only movies, shows, and episodes are requested.
 	jellyfinPlayableItemTypes = "Movie,Episode"
 	jellyfinFavoriteItemTypes = "Movie,Series,Episode"
 	jellyfinVideoMediaType    = "Video"
@@ -247,7 +247,7 @@ func (e *jellyfinHTTPError) Error() string {
 }
 
 func jellyfinAuthorizationHeader() string {
-	return `MediaBrowser Client="watch-importer", Device="Silo", DeviceId="silo-history-import", Version="1.0.0"`
+	return `MediaBrowser Client="watch-importer", Device="Prairie", DeviceId="prairie-history-import", Version="1.0.0"`
 }
 
 func jellyfinAuthorizationHeaderWithToken(token string) string {

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 // The ABS listener is public and clientip.Middleware overwrites RemoteAddr with

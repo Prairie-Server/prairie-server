@@ -1,8 +1,8 @@
 # Observability
 
-Silo emits structured **logs** and distributed **traces** via OpenTelemetry (OTLP),
+Prairie emits structured **logs** and distributed **traces** via OpenTelemetry (OTLP),
 in addition to the existing stderr and `opslog` database pipeline. The feature is
-**opt-in and default-off**: with no `OTEL_*` / `SILO_OTEL_ENABLED` configuration the
+**opt-in and default-off**: with no `OTEL_*` / `PRAIRIE_OTEL_ENABLED` configuration the
 server behaves exactly as before (stderr + `opslog` only).
 
 **Metrics are not part of OpenTelemetry here.** They remain on Prometheus
@@ -10,21 +10,21 @@ server behaves exactly as before (stderr + `opslog` only).
 
 ## Enabling it
 
-Telemetry turns on when **either** `SILO_OTEL_ENABLED` is truthy **or**
+Telemetry turns on when **either** `PRAIRIE_OTEL_ENABLED` is truthy **or**
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `SILO_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
+| `PRAIRIE_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint; also implicitly enables telemetry. | — |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` (default) or `http/protobuf`. | `grpc` |
-| `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `silo-server` |
+| `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `prairie-server` |
 | `OTEL_SERVICE_VERSION` | `service.version` resource attribute. | unset |
 | `OTEL_TRACES_SAMPLER` | `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off`, or `parentbased_traceidratio`. Unsupported values (e.g. `jaeger_remote`) fall back to the default. | `parentbased_traceidratio` |
 | `OTEL_TRACES_SAMPLER_ARG` | Trace-id ratio for the ratio-based samplers (0–1; clamps >1 to 1). | `0.01` |
 
 The node identity is attached as the `service.instance.id` resource attribute, so
-multiple Silo nodes sharing one `service.name` stay distinguishable in the backend.
+multiple Prairie nodes sharing one `service.name` stay distinguishable in the backend.
 
 All other `OTEL_EXPORTER_OTLP_*` knobs (headers, TLS, per-signal endpoints) are read
 directly from the environment by the OTLP exporters — the environment is the single
@@ -40,7 +40,7 @@ and keeps running with telemetry disabled rather than crash-looping.
 The bootstrap lives in `internal/telemetry` (`Setup` in `telemetry.go`). When enabled
 it builds one shared `resource.Resource`, a `TracerProvider` (sampler per
 `OTEL_TRACES_SAMPLER`, batched OTLP exporter), a `LoggerProvider` (batched OTLP exporter), and the W3C
-`TraceContext` propagator. Shutdown is deferred in `cmd/silo/main.go` with a
+`TraceContext` propagator. Shutdown is deferred in `cmd/prairie/main.go` with a
 flush timeout so buffered spans/logs drain on exit.
 
 ### Log handler chain
@@ -119,7 +119,7 @@ writers never block and never log. Neither Redis nor Postgres is on that path.
   logging is persisted and reaches other nodes. A node that dies loses the entries
   still in its buffer, including the record that `log.Fatalf` writes just before it
   exits.
-- Earlier Silo versions pushed entries into the Redis lists `ops_log:buffer` and
+- Earlier Prairie versions pushed entries into the Redis lists `ops_log:buffer` and
   `activity_log:buffer`. Current versions never read them. Once no node runs an earlier
   version, delete both keys.
 
@@ -151,7 +151,7 @@ prefix in the message) when no attribute is present — bound loggers that alrea
 message) but **cannot** enforce that a `component` attribute is present. That convention
 rests on this doc, the canonical list below, and review.
 
-Canonical component values (first path segment under `internal/`; `app` for `cmd/silo`):
+Canonical component values (first path segment under `internal/`; `app` for `cmd/prairie`):
 
 `access`, `activitylog`, `adminjob`, `ai`, `api`, `app`, `audiobooks`, `auth`, `autoscan`,
 `catalog`, `chapterthumbs`, `diagnostics`, `downloads`, `ebooks`, `historyimport`,
@@ -208,14 +208,14 @@ service:
     logs:   { receivers: [otlp], exporters: [debug] }
 ```
 
-Run Silo with `SILO_OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317` and watch
+Run Prairie with `PRAIRIE_OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317` and watch
 logs + traces arrive at the collector. Swap `debug` for Loki/Tempo (or a vendor OTLP
 endpoint) for real storage; Grafana can then show traces alongside the unchanged
 Prometheus metrics.
 
 ## Log retention & rotation
 
-Silo does **not** write or rotate its own log files. Rotation/retention is handled by the
+Prairie does **not** write or rotate its own log files. Rotation/retention is handled by the
 layer that owns each sink, which is the intended cloud-native split:
 
 - **Console (stderr)** is owned by the container runtime. Under Docker, configure the
@@ -225,7 +225,7 @@ layer that owns each sink, which is the intended cloud-native split:
   ```yaml
   # docker-compose.yml
   services:
-    silo:
+    prairie:
       logging:
         driver: json-file
         options:
@@ -255,13 +255,13 @@ would re-introduce a custom sink the OTLP + runtime split already covers.
 - **Early-boot logs are not exported.** Records emitted before the handler is installed
   (DB connect, migrations, tuning) reach stderr only, matching existing `opslog` behavior.
 - **Per-subsystem trace propagation into plugins** is a follow-up owned by
-  `silo-plugin-sdk`; this repo instruments only the host side.
+  `prairie-plugin-sdk`; this repo instruments only the host side.
 
 
 ## Profiling and resource boundaries
 
 Every serving process can enable a separate literal-loopback profiling listener
-with `SILO_DEBUG_LISTEN=127.0.0.1:6060`. It is disabled by default, binds before
+with `PRAIRIE_DEBUG_LISTEN=127.0.0.1:6060`. It is disabled by default, binds before
 PostgreSQL connection, and never participates in readiness. Invalid addresses
 fail bootstrap; an occupied debug port reports an error while the workload
 continues. Migration and utility commands do not start the listener.
@@ -284,7 +284,7 @@ Captures are bounded per process:
 | --- | --- |
 | `profile` (CPU) | Default 30 seconds; maximum 60 |
 | `heap`, `allocs`, `goroutine`, `threadcreate` | Immediate, or a delta of up to 60 seconds |
-| `block`, `mutex` | Disabled (HTTP 409) unless `SILO_DEBUG_BLOCK_RATE` (1,000,000–1,000,000,000 ns) or `SILO_DEBUG_MUTEX_FRACTION` (100–1,000,000) is set at startup |
+| `block`, `mutex` | Disabled (HTTP 409) unless `PRAIRIE_DEBUG_BLOCK_RATE` (1,000,000–1,000,000,000 ns) or `PRAIRIE_DEBUG_MUTEX_FRACTION` (100–1,000,000) is set at startup |
 | `trace` | Default 1 second; maximum 5 |
 
 Only one capture runs per process, including snapshots and forced GC. Concurrent
@@ -294,7 +294,7 @@ malformed, or excessive parameters are rejected before profiling starts. Client
 disconnect and server shutdown cancel timed captures, though runtime GC or stack
 collection may finish first and the slot stays held until the handler exits.
 Duration limits bound neither stop-the-world pauses nor output size, which is why
-`scripts/silo-profile` caps output (128 MiB by default) and the request deadline
+`scripts/prairie-profile` caps output (128 MiB by default) and the request deadline
 (75 seconds), never overwrites an artifact, and marks a sidecar `valid: true`
 only after a complete response with the uninterrupted-capture trailer. The
 listener omits `cmdline`, `symbol`, generic expvar, and dynamically discovered
@@ -302,9 +302,9 @@ profile names. Analyze a capture with the Go release and executable that
 produced it:
 
 ```sh
-go tool pprof -top incident/silo incident/cpu.pprof
-go tool pprof -sample_index=inuse_space -top incident/silo incident/heap.pprof
-go tool pprof -diff_base=incident/before.pprof -top incident/silo incident/after.pprof
+go tool pprof -top incident/prairie incident/cpu.pprof
+go tool pprof -sample_index=inuse_space -top incident/prairie incident/heap.pprof
+go tool pprof -diff_base=incident/before.pprof -top incident/prairie incident/after.pprof
 go tool trace -http=127.0.0.1:8088 incident/runtime.trace
 ```
 
@@ -332,7 +332,7 @@ sampling run in bounded background work, never in HTTP handlers or scrapes.
 Missing sources omit values; stale snapshots carry explicit timestamps and flags.
 Use node-exporter, a container exporter, GPU vendor exporters and dependency
 exporters for device latency, network drops, host pressure, PostgreSQL locks/WAL,
-Redis evictions and object-store capacity. Silo measures the calls it owns.
+Redis evictions and object-store capacity. Prairie measures the calls it owns.
 
 Go heap profiles describe sampled Go allocations only: not libvips or other
 native allocations, FFmpeg memory, plugin internals, filesystem cache, or GPU
@@ -354,7 +354,7 @@ serving process every five seconds and keeps only the current sample; trends and
 alerts belong to Prometheus. The sample feeds the admin Nodes page, each node's
 `/api/v1/health` and `/status`, `GET /api/v2/admin/system/resources`, and
 `streamapp_node_*` gauges. Proxy and transcode nodes serve `/metrics` on their
-application listener; the API process serves it only on `SILO_METRICS_LISTEN`.
+application listener; the API process serves it only on `PRAIRIE_METRICS_LISTEN`.
 
 - **Paths stay private.** Disk series are labeled by role (`mount="scratch"`,
   `mount="library-1"`), never by path, so an unauthenticated scrape cannot
@@ -370,7 +370,7 @@ application listener; the API process serves it only on `SILO_METRICS_LISTEN`.
   last good numbers marked `stale` and never delays a health response; a path
   the process cannot see reports `unavailable`, not an empty disk.
 - **GPU sources.** Intel (i915, xe) and AMD (amdgpu) busyness comes from DRM
-  fdinfo, which needs no privileges beyond `/dev/dri` and counts only Silo's own
+  fdinfo, which needs no privileges beyond `/dev/dri` and counts only Prairie's own
   FFmpeg processes. NVIDIA exposes no fdinfo, so `nvidia-smi` supplies
   whole-GPU utilization, encoder and decoder utilization, and VRAM, including
   other tenants; a missing or repeatedly failing binary reports
@@ -519,9 +519,9 @@ whose `first_frame_ms` diagnostic parses as 0 to 600,000 ms, it observes
 `silo_playback_first_frame_seconds{client}` (buckets from 0.1 s to 60 s). The
 `client` label is the fixed family (`web`, `apple`, `android`, `other`, `none`)
 of the event's client name, which on a v2 report is the declared `X-Client-Name`
-or else the `X-Silo-Client` product name that also labels
+or else the `X-Prairie-Client` product name that also labels
 `streamapp_apiv2_requests_total{client}`. The first-party clients send only
-`X-Silo-Client`. Only an inserted row counts. A v2 report that
+`X-Prairie-Client`. Only an inserted row counts. A v2 report that
 repeats its `event_id` inserts nothing on any replica, so a retry is not counted
 twice. Legacy v1-bridge reports carry no event id and are counted on every
 report. Events dropped because the in-process write queue is full are never
@@ -549,7 +549,7 @@ process. These boundaries are recorded in the PR follow-up checklist.
 ## Deployment and retention
 
 The main application listener does not serve `/metrics`. Metrics are disabled unless
-the operator sets `SILO_METRICS_LISTEN` to an explicit address; that setting applies
+the operator sets `PRAIRIE_METRICS_LISTEN` to an explicit address; that setting applies
 to integrated and API processes. Proxy and transcode nodes serve `/metrics` on their
 own application listener. The dedicated listener
 is an unauthenticated operational endpoint, so bind it to an internal monitoring
@@ -562,7 +562,7 @@ with their tests, and a Grafana dashboard. Targets carry a `cluster` label and u
 `process_role` for the deployment role, because `role` already names
 database, cache and storage pools. Prometheus owns metric retention; the OTLP
 backend owns trace/log retention. Profiles remain private incident artifacts
-with deliberate deletion. Silo adds no time-series database or automatic profile
+with deliberate deletion. Prairie adds no time-series database or automatic profile
 upload. Dashmetrics retains its existing bounded summary behavior.
 
 ### Validating observability changes
@@ -572,7 +572,7 @@ them; run them when changing the examples or rules:
 
 ```sh
 docker run --rm --entrypoint promtool -v "$PWD/deploy/observability:/etc/prometheus:ro" prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml
-docker run --rm --entrypoint promtool -v "$PWD/deploy/observability:/etc/prometheus:ro" -w /etc/prometheus prom/prometheus:v3.5.0 test rules silo.rules.test.yml
+docker run --rm --entrypoint promtool -v "$PWD/deploy/observability:/etc/prometheus:ro" -w /etc/prometheus prom/prometheus:v3.5.0 test rules prairie.rules.test.yml
 ```
 
 The rules tests exercise alert logic with synthetic series. Package tests cover

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 type diagnosticDeleteStub struct {

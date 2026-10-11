@@ -21,10 +21,10 @@ import (
 
 	"github.com/h2non/bimg"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/netguard"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 const (
@@ -463,7 +463,7 @@ func TestCache_Backdrop(t *testing.T) {
 }
 
 func TestCache_ConvertsSVGLogo(t *testing.T) {
-	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="#111"/><text x="80" y="255" fill="#fff" font-family="Arial" font-size="180">SILO</text></svg>`)
+	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="#111"/><text x="80" y="255" fill="#fff" font-family="Arial" font-size="180">PRAIRIE</text></svg>`)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		_, _ = w.Write(svg)
@@ -894,7 +894,7 @@ func TestCacheBytesRepeatedS3ArtworkDoesNotWrite(t *testing.T) {
 				w.WriteHeader(500)
 				return
 			}
-			objects[r.URL.Path] = object{len(data), r.Header.Get("X-Amz-Meta-Silo-Sha256")}
+			objects[r.URL.Path] = object{len(data), r.Header.Get("X-Amz-Meta-Prairie-Sha256")}
 			writes++
 		case http.MethodHead:
 			obj, ok := objects[r.URL.Path]
@@ -903,7 +903,7 @@ func TestCacheBytesRepeatedS3ArtworkDoesNotWrite(t *testing.T) {
 				return
 			}
 			w.Header().Set("Content-Length", strconv.Itoa(obj.size))
-			w.Header().Set("X-Amz-Meta-Silo-Sha256", obj.checksum)
+			w.Header().Set("X-Amz-Meta-Prairie-Sha256", obj.checksum)
 		default:
 			w.WriteHeader(405)
 		}

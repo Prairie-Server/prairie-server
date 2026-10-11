@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/mail"
 
-	silomail "github.com/Silo-Server/silo-server/internal/mail"
+	silomail "github.com/prairie-server/prairie-server/internal/mail"
 )
 
 var ErrAdminEmailUnavailable = errors.New("administrator email is unavailable")

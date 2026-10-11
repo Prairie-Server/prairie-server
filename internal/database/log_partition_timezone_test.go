@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/partman"
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/internal/partman"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 // Migration 028 creates the first log partitions and partman extends them

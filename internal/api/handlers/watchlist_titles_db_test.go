@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/userstore/pgstore"
-	"github.com/Silo-Server/silo-server/internal/watchlist"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
+	"github.com/prairie-server/prairie-server/internal/watchlist"
 )
 
 // WatchlistTitleOff counts a title as off the watchlist only when neither form

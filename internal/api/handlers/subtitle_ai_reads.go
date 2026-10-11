@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/subtitles/ai"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/subtitles/ai"
 )
 
 func (h *SubtitleAIHandler) authorizeSubtitleAIFile(ctx context.Context, filter catalog.AccessFilter, fileID int) error {

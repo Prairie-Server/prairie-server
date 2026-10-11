@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // TestBuildLiveSessionSyncsSkipsStopReportedSessions covers #1454: a play the

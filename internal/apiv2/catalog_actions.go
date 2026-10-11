@@ -10,10 +10,10 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/literaryworks"
-	"github.com/Silo-Server/silo-server/internal/metadata/translation"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/metadata/translation"
 )
 
 // Section catalog-items, stage B: the viewer-facing item actions (trailer

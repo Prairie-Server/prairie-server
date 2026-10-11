@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
 )
 
 // The v2 router is sealed behind the listener delegation, so its finite media

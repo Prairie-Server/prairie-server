@@ -14,10 +14,10 @@ import (
 // The reserved builtin plugin id must be rejected at install time so a
 // malicious or accidental catalog entry cannot hijack the reserved row.
 func TestReservedPluginIDRejected(t *testing.T) {
-	if !isReservedPluginID("silo.builtin") {
-		t.Error("silo.builtin must be reserved")
+	if !isReservedPluginID("prairie.builtin") {
+		t.Error("prairie.builtin must be reserved")
 	}
-	if isReservedPluginID("silo.tmdb") || isReservedPluginID("silo.tvdb") {
+	if isReservedPluginID("prairie.tmdb") || isReservedPluginID("prairie.tvdb") {
 		t.Error("first-party plugin ids must stay installable")
 	}
 	if isReservedPluginID("community.example") {
@@ -31,10 +31,10 @@ func TestReservedPluginIDRejected(t *testing.T) {
 func TestPreloadEnabledSkipsBuiltinInstallation(t *testing.T) {
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          1,
-		PluginID:    "silo.builtin",
+		PluginID:    "prairie.builtin",
 		Kind:        KindBuiltin,
 		Enabled:     true,
-		InstallPath: "/nonexistent/silo-builtin",
+		InstallPath: "/nonexistent/prairie-builtin",
 	})
 	svc := &Service{installations: store}
 
@@ -71,9 +71,9 @@ func TestInstallationStoreDeleteRejectsBuiltin(t *testing.T) {
 
 func builtinGuardTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -88,7 +88,7 @@ func seedBuiltinTestInstallation(t *testing.T, pool *pgxpool.Pool, pluginID stri
 	var id int
 	err := pool.QueryRow(context.Background(),
 		`INSERT INTO plugin_installations (plugin_id, version, install_path, enabled, update_policy, kind)
-		 VALUES ($1, '0', '/nonexistent/silo-builtin-test', true, 'manual', 'builtin')
+		 VALUES ($1, '0', '/nonexistent/prairie-builtin-test', true, 'manual', 'builtin')
 		 RETURNING id`, pluginID+time.Now().UTC().Format("-20060102150405.000000000")).Scan(&id)
 	if err != nil {
 		t.Fatalf("seed builtin installation: %v", err)
@@ -99,14 +99,14 @@ func seedBuiltinTestInstallation(t *testing.T, pool *pgxpool.Pool, pluginID stri
 	return id
 }
 
-// Replacing a package records where the new one came from, and InstalledFromSiloRepository
-// follows it: a package uploaded over a Silo catalog install is no longer Silo-managed.
+// Replacing a package records where the new one came from, and InstalledFromPrairieRepository
+// follows it: a package uploaded over a Prairie catalog install is no longer Prairie-managed.
 func TestInstallationStoreUpdateRecordsReplacementSourceDB(t *testing.T) {
 	pool := builtinGuardTestPool(t)
 	ctx := context.Background()
 	var siloRepository int
-	if err := pool.QueryRow(ctx, `SELECT id FROM plugin_repositories WHERE source_kind = 'silo' ORDER BY id LIMIT 1`).Scan(&siloRepository); err != nil {
-		t.Skipf("no Silo-managed repository row: %v", err)
+	if err := pool.QueryRow(ctx, `SELECT id FROM plugin_repositories WHERE source_kind = 'prairie' ORDER BY id LIMIT 1`).Scan(&siloRepository); err != nil {
+		t.Skipf("no Prairie-managed repository row: %v", err)
 	}
 	store := NewInstallationStore(pool)
 	pluginID := "test.source." + strconv.FormatInt(time.Now().UnixNano(), 36)
@@ -121,7 +121,7 @@ func TestInstallationStoreUpdateRecordsReplacementSourceDB(t *testing.T) {
 	}
 	defer func() { _, _ = pool.Exec(ctx, `DELETE FROM plugin_installations WHERE id = $1`, installation.ID) }()
 	service := &Service{repositories: NewRepositoryStore(pool)}
-	if managed, err := service.InstalledFromSiloRepository(ctx, installation); err != nil || !managed {
+	if managed, err := service.InstalledFromPrairieRepository(ctx, installation); err != nil || !managed {
 		t.Fatalf("catalog install: managed = %t, err = %v", managed, err)
 	}
 
@@ -135,7 +135,7 @@ func TestInstallationStoreUpdateRecordsReplacementSourceDB(t *testing.T) {
 	if replaced.RepositoryID != nil {
 		t.Fatalf("repository after upload replace = %d, want none", *replaced.RepositoryID)
 	}
-	if managed, err := service.InstalledFromSiloRepository(ctx, replaced); err != nil || managed {
+	if managed, err := service.InstalledFromPrairieRepository(ctx, replaced); err != nil || managed {
 		t.Fatalf("uploaded replacement: managed = %t, err = %v", managed, err)
 	}
 }

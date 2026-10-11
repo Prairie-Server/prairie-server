@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 func viewerSession(id string, bytes int64) streamtelemetry.SessionView {

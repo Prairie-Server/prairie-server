@@ -353,7 +353,7 @@ If Redis cannot be read, the sweep falls back to the other activity. Sessions
 created through the Jellyfin compatibility layer are not marked as
 proxy-served and do not read these records. Whether progress reports
 alone should keep alive a session whose media requests have stopped is raised
-in [#666](https://github.com/Silo-Server/silo-server/issues/666).
+in [#666](https://github.com/Prairie-Server/prairie-server/issues/666).
 
 A client therefore:
 

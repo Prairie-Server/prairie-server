@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestResponseCaptureValuesAreNotTemplates(t *testing.T) {

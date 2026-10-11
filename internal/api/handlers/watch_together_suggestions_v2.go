@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 func (h *WatchTogetherHandler) CheckSuggestionRoomProof(room string, user int, profile, token string) error {

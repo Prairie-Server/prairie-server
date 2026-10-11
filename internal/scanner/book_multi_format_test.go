@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/literaryworks"
 )
 
 func TestBookScansLinkEarlierEditionsWhenOtherFormatArrives(t *testing.T) {

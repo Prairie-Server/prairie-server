@@ -3,7 +3,7 @@ package storetest
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // RunProfilePINRevision pins the profile PIN revision that profile tokens are

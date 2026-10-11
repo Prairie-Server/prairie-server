@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // fakePersonalCollections records the last command and answers fixtures.

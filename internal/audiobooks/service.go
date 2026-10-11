@@ -6,19 +6,19 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abssocket"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abssocket"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // SettingsReader is the minimal slice of the server-settings store that
 // the audiobooks service needs. The production implementation is
-// internal/catalog.ServerSettingsRepo (or whatever silo names that helper at
+// internal/catalog.ServerSettingsRepo (or whatever prairie names that helper at
 // wiring time); tests pass a fake.
 type SettingsReader interface {
 	GetString(ctx context.Context, key string) (string, error)
@@ -37,7 +37,7 @@ func New(settings SettingsReader) *Service {
 	return &Service{settings: settings}
 }
 
-// ABSHandlerDeps bundles the concrete silo dependencies needed to construct
+// ABSHandlerDeps bundles the concrete prairie dependencies needed to construct
 // the ABS-compat abs.Handler. Pool, Items, and Files are required — the ABS
 // handler dereferences MediaStore from many request paths and a nil store
 // would panic on the first request. BuildABSHandler validates this at startup.
@@ -65,7 +65,7 @@ type ABSHandlerDeps struct {
 // absAuthAdapter is the narrow slice of internal/auth that BuildABSHandler
 // needs. Defined as an interface to avoid an import cycle between the
 // audiobooks package and internal/auth. main.go satisfies it with the
-// concrete *auth.Service + *pgxpool.Pool pair via SiloCredValidator.
+// concrete *auth.Service + *pgxpool.Pool pair via PrairieCredValidator.
 type absAuthAdapter = abs.ProfileCredentialValidator
 
 // BuildABSHandler wires all production adapters and returns a ready-to-mount
@@ -148,10 +148,10 @@ func (s *Service) BuildABSHandler(deps ABSHandlerDeps) *abs.Handler {
 	}
 
 	// GET /me only has the token's userID; source a resolver from the concrete
-	// SiloCredValidator (which holds the pgx pool) so /me can show the real
+	// PrairieCredValidator (which holds the pgx pool) so /me can show the real
 	// display username instead of the numeric id.
 	var usernameResolver func(ctx context.Context, userID, profileID string) string
-	if scv, ok := deps.Auth.(*SiloCredValidator); ok {
+	if scv, ok := deps.Auth.(*PrairieCredValidator); ok {
 		usernameResolver = scv.ResolveUsername
 	}
 

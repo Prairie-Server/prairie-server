@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport/testdata"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport/testdata"
 )
 
 // The collection writer applies #1615: a shared collection whose allow list

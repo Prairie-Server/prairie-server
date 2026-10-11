@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 // nodeLookupPlannerStub is a planner that can also resolve a pooled node from

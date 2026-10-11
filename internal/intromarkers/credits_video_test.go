@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // stats builds a keyframe: PBlack at luma 20/26/32, then luma min, low,

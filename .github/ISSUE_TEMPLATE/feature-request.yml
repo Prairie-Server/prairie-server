@@ -8,7 +8,7 @@ body:
       value: |
         Silo is pre-1.0 and focused on correctness and polish. A request is most useful when it explains the problem you hit, with a concrete example, rather than prescribing a solution. One request per issue.
 
-        Silo will not accept Live TV, OTA/DVB tuners, IPTV, EPG/XMLTV guides, DVR, or `.strm` remote-stream files; [Project non-goals](https://github.com/Silo-Server/silo-server/blob/main/docs/non-goals.md) explains why. Requests that only concern the Apple or Android apps belong in [silo-apple](https://github.com/Silo-Server/silo-apple/issues/new/choose) or [silo-android](https://github.com/Silo-Server/silo-android/issues/new/choose).
+        Silo will not accept Live TV, OTA/DVB tuners, IPTV, EPG/XMLTV guides, DVR, or `.strm` remote-stream files; [Project non-goals](https://github.com/Prairie-Server/prairie-server/blob/main/docs/non-goals.md) explains why. Requests that only concern the Apple or Android apps belong in [silo-apple](https://github.com/prairie-server/silo-apple/issues/new/choose) or [silo-android](https://github.com/prairie-server/silo-android/issues/new/choose).
   - type: textarea
     id: problem
     attributes:

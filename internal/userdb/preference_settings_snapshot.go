@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func (s *SQLiteUserStore) WithPreferenceSettingsSnapshot(ctx context.Context, fn func(userstore.PreferenceSettingsReader) error) error {

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 // ResidentState is one step of the resident supervisor's per-installation

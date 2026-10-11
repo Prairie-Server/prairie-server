@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
-	"github.com/Silo-Server/silo-server/internal/metadata/translation"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/metadata/translation"
 	"github.com/go-chi/chi/v5"
 )
 

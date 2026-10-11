@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 	"github.com/danielgtaylor/huma/v2"
 )
 

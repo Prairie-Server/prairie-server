@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/shuffle"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/shuffle"
 )
 
 type fakeShuffles struct {

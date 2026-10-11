@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 func decodeParity(t *testing.T, recorder *httptest.ResponseRecorder) parityResponse {

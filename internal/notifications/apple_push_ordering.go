@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/jackc/pgx/v5"
 )
 

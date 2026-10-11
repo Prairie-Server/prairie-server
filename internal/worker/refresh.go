@@ -1,11 +1,11 @@
-// Package worker provides background processing workers for Silo.
+// Package worker provides background processing workers for Prairie.
 package worker
 
 import (
 	"context"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

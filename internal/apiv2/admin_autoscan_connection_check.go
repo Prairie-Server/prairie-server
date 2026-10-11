@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 type AdminAutoscanConnectionTestService interface {

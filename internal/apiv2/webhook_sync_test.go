@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 const webhookFixtureID = "00000000-0000-4000-8000-000000000001"

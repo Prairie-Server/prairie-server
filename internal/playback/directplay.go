@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // unknownMediaMIME is the MIME type of a file with an unknown extension.

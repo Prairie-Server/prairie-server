@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/trickplay"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 )
 
 // AdminTrickplayService answers administrators about seek-bar previews

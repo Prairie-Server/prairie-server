@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	mediacatalog "github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	mediacatalog "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // The ratings domain: the acting profile's star ratings of catalog items.

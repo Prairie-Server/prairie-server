@@ -1,5 +1,5 @@
 name: Bug report
-description: Report something broken in Silo server or web UI
+description: Report something broken in Prairie server or web UI
 title: "[bug] "
 labels: ["bug"]
 body:
@@ -8,9 +8,9 @@ body:
       value: |
         Report behavior you reproduced on a real deployment. Include raw logs rather than AI summaries, and keep observations separate from suspected root cause. Redact credentials, tokens, personal data, and private media details, and mark each redaction.
 
-        [Reporting a problem](https://siloserver.org/docs/report-a-problem) explains where to find versions and logs. Using Claude Code or Codex? The [Silo troubleshooting skill](https://github.com/Silo-Server/silo-troubleshooting-skill) diagnoses your server and drafts this report, then has independent reviewers check it before you post. Problems only in the Apple or Android apps belong in [silo-apple](https://github.com/Silo-Server/silo-apple/issues/new/choose) or [silo-android](https://github.com/Silo-Server/silo-android/issues/new/choose).
+        [Reporting a problem](https://siloserver.org/docs/report-a-problem) explains where to find versions and logs. Using Claude Code or Codex? The [Prairie troubleshooting skill](https://github.com/Prairie-Server/prairie-troubleshooting-skill) diagnoses your server and drafts this report, then has independent reviewers check it before you post. Problems only in the Apple or Android apps belong in [silo-apple](https://github.com/prairie-server/silo-apple/issues/new/choose) or [silo-android](https://github.com/prairie-server/silo-android/issues/new/choose).
 
-        Fabricated or AI-hallucinated reports are an immediate block. Read [CONTRIBUTING.md](https://github.com/Silo-Server/silo-server/blob/main/CONTRIBUTING.md) and the [AI-assisted contribution policy](https://github.com/Silo-Server/silo-server/blob/main/docs/ai-contributions.md) first.
+        Fabricated or AI-hallucinated reports are an immediate block. Read [CONTRIBUTING.md](https://github.com/Prairie-Server/prairie-server/blob/main/CONTRIBUTING.md) and the [AI-assisted contribution policy](https://github.com/Prairie-Server/prairie-server/blob/main/docs/ai-contributions.md) first.
   - type: textarea
     id: what-happened
     attributes:
@@ -33,9 +33,9 @@ body:
     validations:
       required: true
   - type: input
-    id: silo-version
+    id: prairie-version
     attributes:
-      label: Silo version / commit
+      label: Prairie version / commit
       description: The **Build** value at the bottom of the admin sidebar, for example `412 · 1a2b3c4d`. Add the image tag if you pin one.
     validations:
       required: true
@@ -87,7 +87,7 @@ body:
     attributes:
       label: Client app and device
       description: For an app, its version and build (Settings > About), the device model, and the OS version. For a Jellyfin-compatible app, its name and version. For the web UI, the browser.
-      placeholder: Silo 1.0.0 (42) on Apple TV 4K (3rd generation), tvOS 26.1
+      placeholder: Prairie 1.0.0 (42) on Apple TV 4K (3rd generation), tvOS 26.1
   - type: textarea
     id: media-details
     attributes:
@@ -97,13 +97,13 @@ body:
     id: diagnostics-reference
     attributes:
       label: Diagnostics report reference
-      description: If a Silo app sent a report to Silo Diagnostics, paste its reference. In the app, open Settings > Support > Diagnostics (on TVs, Settings > Diagnostics).
-      placeholder: SILO-XXXXXXXX
+      description: If a Prairie app sent a report to Prairie Diagnostics, paste its reference. In the app, open Settings > Support > Diagnostics (on TVs, Settings > Diagnostics).
+      placeholder: PRAIRIE-XXXXXXXX
   - type: textarea
     id: relevant-logs
     attributes:
       label: Relevant logs
-      description: Paste raw server logs from **Admin > Logs** (filter by playback session or component) or `docker compose logs --since 30m silo`. If they show nothing useful, raise the level in Admin > Settings > General > Logging, reproduce, and copy again.
+      description: Paste raw server logs from **Admin > Logs** (filter by playback session or component) or `docker compose logs --since 30m prairie`. If they show nothing useful, raise the level in Admin > Settings > General > Logging, reproduce, and copy again.
       placeholder: paste raw server logs; write "no logs available" if genuinely none
       render: shell
     validations:

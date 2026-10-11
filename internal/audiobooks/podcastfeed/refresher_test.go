@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/podcastfeed"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
 )
 
 // fakeStore implements podcastfeed.Store for unit tests. It records every

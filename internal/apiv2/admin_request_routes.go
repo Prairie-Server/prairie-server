@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // Request routing administration: the ordered rules that decide which server

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// jitOff is the jit setting Silo runs with, on its own connections and in the
+// jitOff is the jit setting Prairie runs with, on its own connections and in the
 // tuner's server recommendations.
 const jitOff = "off"
 
@@ -51,7 +51,7 @@ func NewPoolForRole(ctx context.Context, cfg config.DatabaseConfig, role string)
 
 // disableUnconfiguredJIT turns JIT off for the session unless something
 // already chose it: the server configuration, ALTER DATABASE or ROLE, or
-// DATABASE_URL, directly or through options. Silo's queries are short reads the
+// DATABASE_URL, directly or through options. Prairie's queries are short reads the
 // planner often prices past jit_above_cost, and compiling them then takes
 // longer than running them.
 func disableUnconfiguredJIT(ctx context.Context, conn *pgx.Conn) error {

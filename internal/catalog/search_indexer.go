@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/database/pglock"
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
@@ -205,7 +205,7 @@ func (i *CatalogSearchIndexer) SyncOutbox(ctx context.Context, progress SearchIn
 			stats.Skipped = true
 			stats.Reason = "saved search settings are waiting for a server restart"
 			setSearchIndexTaskResult(progress, stats)
-			reportSearchIndexProgress(progress, 100, "Restart Silo before rebuilding the catalog search index")
+			reportSearchIndexProgress(progress, 100, "Restart Prairie before rebuilding the catalog search index")
 			return stats, nil
 		}
 		stats.RebuildAttempted = true
@@ -385,7 +385,7 @@ func (i *CatalogSearchIndexer) Rebuild(ctx context.Context, progress SearchIndex
 		stats.Skipped = true
 		stats.Reason = "saved search settings are waiting for a server restart"
 		setSearchIndexTaskResult(progress, stats)
-		reportSearchIndexProgress(progress, 100, "Restart Silo before rebuilding the catalog search index")
+		reportSearchIndexProgress(progress, 100, "Restart Prairie before rebuilding the catalog search index")
 		return stats, nil
 	}
 

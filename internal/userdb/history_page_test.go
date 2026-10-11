@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // ListHistoryPage orders by (watched_at DESC, id DESC) and resumes strictly

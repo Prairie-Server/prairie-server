@@ -13,8 +13,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type httpRouteClient interface {
@@ -27,8 +27,8 @@ type httpProxyService interface {
 	HTTPRoutesClient(ctx context.Context, installationID int, capabilityID string) (httpRouteClient, error)
 }
 
-// UserThemeLookup resolves the UI theme for a silo user. The proxy uses it
-// to inject X-Silo-Theme on every plugin request so plugin SPAs can paint in
+// UserThemeLookup resolves the UI theme for a prairie user. The proxy uses it
+// to inject X-Prairie-Theme on every plugin request so plugin SPAs can paint in
 // the host's theme on first byte without relying on the URL ?theme= parameter
 // (which is fragile under refresh, direct links, and cross-tab sharing). The
 // production lookup is FixedUserThemeLookup: the web client has one theme.
@@ -51,7 +51,7 @@ func NewHTTPProxy(service httpProxyService, installations taskInstallationStore)
 }
 
 // WithUserThemeLookup attaches a theme resolver. When set, ServeRoute injects
-// X-Silo-Theme on the upstream plugin request for authenticated users.
+// X-Prairie-Theme on the upstream plugin request for authenticated users.
 // Pass nil to disable.
 func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 	p.themes = t
@@ -59,8 +59,8 @@ func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 }
 
 // WithUserIdentityLookup attaches a username/profile-name resolver. When set,
-// ServeRoute injects X-Silo-User-Name, X-Silo-Profile-Name, and
-// X-Silo-Profile-Primary headers so plugins can render "user#profile"
+// ServeRoute injects X-Prairie-User-Name, X-Prairie-Profile-Name, and
+// X-Prairie-Profile-Primary headers so plugins can render "user#profile"
 // strings without reaching back into browser localStorage.
 func (p *HTTPProxy) WithUserIdentityLookup(l UserIdentityLookup) *HTTPProxy {
 	p.identity = l
@@ -140,11 +140,11 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 	body, _ := io.ReadAll(r.Body)
 	headers := forwardedRequestHeaders(r.Header)
 	if _, _, userID, contextProfileID := pluginAccessUserFromContext(r.Context()); userID > 0 {
-		headers["X-Silo-User-Id"] = strconv.Itoa(userID)
+		headers["X-Prairie-User-Id"] = strconv.Itoa(userID)
 		if admin {
-			headers["X-Silo-User-Role"] = "admin"
+			headers["X-Prairie-User-Role"] = "admin"
 		} else {
-			headers["X-Silo-User-Role"] = "user"
+			headers["X-Prairie-User-Role"] = "user"
 		}
 		// Full-page plugin navigation cannot attach X-Profile-Id. The launch
 		// cookie carries the validated active profile in that case; direct
@@ -155,19 +155,19 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 		}
 		if p.themes != nil {
 			if theme, err := p.themes.LookupUITheme(r.Context(), userID, profileID); err == nil && theme != "" {
-				headers["X-Silo-Theme"] = theme
+				headers["X-Prairie-Theme"] = theme
 			}
 		}
 		if p.identity != nil {
 			if ident, err := p.identity.LookupIdentity(r.Context(), userID, profileID); err == nil {
 				if ident.Username != "" {
-					headers["X-Silo-User-Name"] = ident.Username
+					headers["X-Prairie-User-Name"] = ident.Username
 				}
 				if ident.ProfileName != "" {
-					headers["X-Silo-Profile-Name"] = ident.ProfileName
+					headers["X-Prairie-Profile-Name"] = ident.ProfileName
 				}
 				if ident.ProfileIsPrimary {
-					headers["X-Silo-Profile-Primary"] = "true"
+					headers["X-Prairie-Profile-Primary"] = "true"
 				}
 			}
 		}
@@ -188,7 +188,7 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 		w.Header().Set(key, value)
 	}
 	// A plugin answers with its own Content-Type; the browser must not
-	// reinterpret the body as something else (script, HTML) on Silo's origin.
+	// reinterpret the body as something else (script, HTML) on Prairie's origin.
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if response.GetStatusCode() == 0 {
 		response.StatusCode = http.StatusOK

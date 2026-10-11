@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // A local filesystem store is a first-class subtitle backend, not just a test

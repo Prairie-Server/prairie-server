@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 type fakeAdminRequests struct {

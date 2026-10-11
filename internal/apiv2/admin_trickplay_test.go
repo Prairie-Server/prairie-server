@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/trickplay"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 )
 
 type fakeAdminTrickplay struct {

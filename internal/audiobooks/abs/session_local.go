@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ import (
 //   - syncLocalSession returns {id, success:false, error} when the library
 //     item can't be found, else {id, success:true, progressSynced}.
 //
-// silo does not persist arbitrary client-supplied sessions, so we do not
+// prairie does not persist arbitrary client-supplied sessions, so we do not
 // create a server-side playback-session row here. We mirror the *effect* that
 // matters — the caller's resume position — into user_watch_progress and emit
 // the same user_item_progress_updated realtime event handleSessionSync does.
@@ -43,7 +43,7 @@ import (
 // the client-visible behaviour offline sync exists to restore.
 
 // localPlaybackSession is the subset of the ABS PlaybackSession payload the
-// client POSTs for offline sync that silo acts on. EpisodeID is a pointer so a
+// client POSTs for offline sync that prairie acts on. EpisodeID is a pointer so a
 // present-but-null value (audiobook) is distinguishable from a podcast episode.
 type localPlaybackSession struct {
 	ID            string  `json:"id"`
@@ -135,7 +135,7 @@ func (h *Handler) handleSyncLocalSessions(w http.ResponseWriter, r *http.Request
 func (h *Handler) syncOneLocalSession(ctx context.Context, a ctxAuth, access catalog.AccessFilter, sess localPlaybackSession) localSyncResult {
 	res := localSyncResult{ID: sess.ID}
 
-	// Podcast episode sessions are out of scope for silo's audiobook-only
+	// Podcast episode sessions are out of scope for prairie's audiobook-only
 	// catalog. Accept them as a no-op success so the client clears its queue.
 	if sess.EpisodeID != nil && *sess.EpisodeID != "" {
 		res.Success = true

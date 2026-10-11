@@ -10,7 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 	skippedRetryHorizon      = 15 * time.Minute
 	claimCandidateWindow     = maxEnrichWorkers
 	defaultRateLimitCooldown = 15 * time.Minute
-	rateLimitCooldownEnv     = "SILO_EBOOK_RATE_LIMIT_COOLDOWN"
+	rateLimitCooldownEnv     = "PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN"
 )
 
 func rateLimitCooldownFloor() time.Duration {

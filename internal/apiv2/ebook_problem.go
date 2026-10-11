@@ -2,9 +2,9 @@ package apiv2
 
 import (
 	"errors"
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // Ebook services deliberately hide inaccessible or mismatched catalog files.

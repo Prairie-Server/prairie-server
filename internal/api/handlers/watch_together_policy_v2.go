@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 func (h *WatchTogetherHandler) UpdateWatchTogetherPolicy(ctx context.Context, room string, user int, profile string, policy watchtogether.GuestControlPolicy) (watchtogether.Snapshot, string, error) {

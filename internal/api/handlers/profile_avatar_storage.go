@@ -1,6 +1,6 @@
 package handlers
 
-import "github.com/Silo-Server/silo-server/internal/blobstore"
+import "github.com/prairie-server/prairie-server/internal/blobstore"
 
 // NewProfileAvatarStore returns the store avatars live in, which is the
 // operational store: private S3 when configured, preserving existing keys and

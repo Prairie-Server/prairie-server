@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 )
 
 // Key relationships: settings that are two spellings of one preference.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 var ErrAdminNodesUnavailable = errors.New("administrator nodes are not configured")

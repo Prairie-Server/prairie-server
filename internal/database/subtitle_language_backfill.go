@@ -11,7 +11,7 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/lang"
 )
 
 // subtitleLanguageBackfillVersion sorts after every SQL migration that shipped

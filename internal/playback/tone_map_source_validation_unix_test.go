@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // The live tone-map source fixtures drive ffmpeg/ffprobe through POSIX shell

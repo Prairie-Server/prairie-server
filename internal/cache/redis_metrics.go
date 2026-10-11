@@ -8,7 +8,7 @@ import (
 	"sync"
 	"weak"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/redis/go-redis/v9"

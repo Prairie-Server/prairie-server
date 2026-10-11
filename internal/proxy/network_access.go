@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // NetworkAccessProviderHost drives the network access provider plugin

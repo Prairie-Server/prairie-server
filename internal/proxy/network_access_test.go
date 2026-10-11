@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // fakeProviderHost stands in for the plugin service: one provider, "stub",

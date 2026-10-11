@@ -12,10 +12,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	aitranslate "github.com/Silo-Server/silo-server/internal/ai/translate"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	aitranslate "github.com/prairie-server/prairie-server/internal/ai/translate"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 const (
@@ -121,7 +121,7 @@ func (t *WhisperTranscriber) SetExtraction(ffmpegPath string, chunkSeconds int) 
 // where possible.
 func (t *WhisperTranscriber) Transcribe(ctx context.Context, req TranscribeJobRequest,
 	onChunk TranscribeChunkCallback) ([]SubtitleCue, string, error) {
-	dir, err := os.MkdirTemp("", "silo-asr-*")
+	dir, err := os.MkdirTemp("", "prairie-asr-*")
 	if err != nil {
 		return nil, "", fmt.Errorf("create ASR temp dir: %w", err)
 	}

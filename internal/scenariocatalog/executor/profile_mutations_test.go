@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredProfileMutationAcceptance(t *testing.T) {

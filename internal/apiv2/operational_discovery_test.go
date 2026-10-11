@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestOperationalDiscoveryPreservesCompatibilityView(t *testing.T) {

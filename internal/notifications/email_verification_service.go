@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 const emailVerificationHTTPScheme = "http"

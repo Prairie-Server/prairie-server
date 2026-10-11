@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
 )
 
 const (

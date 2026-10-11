@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/streamlocation"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/streamlocation"
 )
 
 type AdminPlaybackSessionService interface {

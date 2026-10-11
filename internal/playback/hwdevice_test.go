@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // fakeDeviceStat installs a stat function that reports only the given paths as

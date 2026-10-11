@@ -3,8 +3,8 @@ package scanner
 import (
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ScanResult contains the outcome of scanning a media folder. Missing counts the

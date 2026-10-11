@@ -37,8 +37,8 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/Silo-Server/silo-server/contracts/api/v2/scenarios"
-	"github.com/Silo-Server/silo-server/internal/contractledger"
+	"github.com/prairie-server/prairie-server/contracts/api/v2/scenarios"
+	"github.com/prairie-server/prairie-server/internal/contractledger"
 )
 
 // Category is one of the scenario classes the plan names for tier-1 rows.

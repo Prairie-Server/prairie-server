@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestAdminServerStatusClearsAfterProcessRestart(t *testing.T) {
@@ -59,7 +59,7 @@ func TestAdminServerStatusDoesNotPromoteLiveJellyfinIdentitySettings(t *testing.
 		"jellyfin_compat.enabled":                 "true",
 		"jellyfin_compat.listen":                  ":8096",
 		"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
-		"jellyfin_compat.server_name":             "Silo",
+		"jellyfin_compat.server_name":             "Prairie",
 		"jellyfin_compat.emulated_server_version": "10.11.0",
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func TestAdminServerStatusDoesNotPromoteLiveJellyfinIdentitySettings(t *testing.
 		RestartStatus: NewServerRestartStatusTracker(),
 		SettingsRepo: &fakeServerSettingsStore{values: map[string]string{
 			"jellyfin_compat.public_url":              "https://compat.example.test",
-			"jellyfin_compat.server_name":             "Silo Compat",
+			"jellyfin_compat.server_name":             "Prairie Compat",
 			"jellyfin_compat.emulated_server_version": "10.11.6",
 		}},
 	}
@@ -145,7 +145,7 @@ func TestAdminServerStatusHealthWithoutDependencies(t *testing.T) {
 func TestAdminServerStatusHealthWithUnreachablePostgres(t *testing.T) {
 	t.Parallel()
 
-	pool, err := pgxpool.New(context.Background(), "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	pool, err := pgxpool.New(context.Background(), "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestLogLevelCountsAreServedFromCache(t *testing.T) {
 	counts := cache.NewTTLCache[adminLogLevelCounts]()
 	t.Cleanup(counts.Close)
 
-	pool, err := pgxpool.New(context.Background(), "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	pool, err := pgxpool.New(context.Background(), "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}

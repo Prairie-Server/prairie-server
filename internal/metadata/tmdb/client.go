@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/logredact"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
 )
@@ -58,7 +58,7 @@ type Client struct {
 }
 
 // NewClient creates a TMDB API client with the given API key and rate limit
-// (requests per second). If apiKey is empty, Silo's public project API key is
+// (requests per second). If apiKey is empty, Prairie's public project API key is
 // used.
 
 // ErrNotFound is wrapped by errors for titles TMDB does not have (HTTP 404).
@@ -203,7 +203,7 @@ func retryAfterOrDefault(resp *http.Response, attempt int) time.Duration {
 }
 
 // SearchMedia searches TMDB directly for movies, TV series, or both. mediaType
-// accepts Silo-facing "movie", "series", or "all" values, plus TMDB-facing
+// accepts Prairie-facing "movie", "series", or "all" values, plus TMDB-facing
 // "tv" for callers already working at the provider boundary.
 func (c *Client) SearchMedia(ctx context.Context, mediaType, query string, page int) (*MediaPage, error) {
 	query = strings.TrimSpace(query)
@@ -250,7 +250,7 @@ func (c *Client) SearchMedia(ctx context.Context, mediaType, query string, page 
 	}
 }
 
-// DiscoverSection fetches one of Silo's request-discovery sections directly
+// DiscoverSection fetches one of Prairie's request-discovery sections directly
 // from TMDB. It intentionally does not go through collection sync or
 // collection templates.
 func (c *Client) DiscoverSection(ctx context.Context, section string, page int) (*MediaPage, error) {
@@ -898,7 +898,7 @@ func (c *Client) GetList(ctx context.Context, id, limit int) ([]CollectionResult
 
 // GetMediaDetail fetches a single TMDB movie or series with credits, external
 // IDs, recommendations, and the appropriate certification feed, returning a
-// normalized MediaDetail. mediaType accepts Silo-facing "movie" or "series".
+// normalized MediaDetail. mediaType accepts Prairie-facing "movie" or "series".
 //
 // Cast is sorted by TMDB billing order and capped at 24 entries to keep the
 // payload bounded.
@@ -1372,7 +1372,7 @@ func cloneExternalIDs(ids *ExternalIDs) *ExternalIDs {
 // back to another country's certification: the value feeds the US-scale
 // parental-control ladder, where a foreign "PG" (Canada, Australia, ...) is
 // not evidence of US-PG content. No US entry means unresolved, which the
-// ladder treats as fail-closed. mediaType accepts Silo-facing
+// ladder treats as fail-closed. mediaType accepts Prairie-facing
 // "movie"/"series" plus TMDB-facing "tv".
 func (c *Client) GetCertification(ctx context.Context, mediaType string, id int) (string, error) {
 	path, err := certificationPath(mediaType, id)
@@ -1619,7 +1619,7 @@ const (
 // FindByExternalID looks a title up by another provider's ID through TMDB's
 // /find/{external_id} endpoint. source is ExternalSourceIMDb or
 // ExternalSourceTVDB. It returns every movie and series TMDB lists for the
-// ID, with Silo-facing media types ("movie", "series"); no result is an empty
+// ID, with Prairie-facing media types ("movie", "series"); no result is an empty
 // slice, not an error. Results are not cached: callers use it to recover a
 // title whose TMDB ID stopped resolving, which is rare and wants a fresh
 // answer.

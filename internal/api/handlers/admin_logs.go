@@ -13,9 +13,9 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/logstream"
-	"github.com/Silo-Server/silo-server/internal/opslog"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/logstream"
+	"github.com/prairie-server/prairie-server/internal/opslog"
 )
 
 const auditFilterAction = "action"

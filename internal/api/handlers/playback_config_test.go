@@ -3,8 +3,8 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func TestPlaybackHandlerTranscodeRuntimeConfigIncludesSegmentRetention(t *testing.T) {

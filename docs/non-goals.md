@@ -1,6 +1,6 @@
 # Non-goals
 
-Silo is an early WIP and most of its scope is open. This document is the short list of things
+Prairie is an early WIP and most of its scope is open. This document is the short list of things
 that are **not** open — features that will not be accepted, in core, in a plugin, or in a client,
 regardless of implementation quality.
 
@@ -21,14 +21,14 @@ writing code in these areas, so nobody's time is wasted.
 
 ### Why
 
-**App store distribution risk.** Silo's first-party clients ship on the Apple and Google stores.
+**App store distribution risk.** Prairie's first-party clients ship on the Apple and Google stores.
 Review of media apps in these categories is strict, and an app whose server plays arbitrary
 remote stream URLs or IPTV playlists is read as a conduit for unlicensed content no matter what
 the intended use is. The exposure is not scoped to the feature — a rejection or a takedown lands
 on the entire client suite, for every user, including those who only ever play files they own.
 No single feature is worth that trade.
 
-**Product scope.** Silo indexes and plays media that exists on disk in a library the operator
+**Product scope.** Prairie indexes and plays media that exists on disk in a library the operator
 controls. Live TV is a different product with its own always-on reliability burden: tuner
 allocation, guide-provider contracts and merge semantics, schedule conflict resolution, and
 recording lifecycle. Building it competes directly with making the core playback path fast and
@@ -47,7 +47,7 @@ problem above. Not in core, not in a plugin, not in a client.
 
 ### What to do instead
 
-Silo does not assume it is the only media server on the box. Run Jellyfin, Plex, or a dedicated
-tuner/IPTV backend alongside it for live TV, and use Silo for the on-disk library. That
+Prairie does not assume it is the only media server on the box. Run Jellyfin, Plex, or a dedicated
+tuner/IPTV backend alongside it for live TV, and use Prairie for the on-disk library. That
 separation also keeps the risk where it belongs, on software whose distribution model can absorb
 it.

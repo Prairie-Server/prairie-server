@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // Jellyfin 12 sets an episode's ParentPrimaryImage to its season poster, or to

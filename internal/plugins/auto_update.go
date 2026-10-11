@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 // compareVersions compares two dot-separated version strings numerically.
@@ -55,9 +55,9 @@ func compareVersions(a, b string) int {
 	return 0
 }
 
-const pluginIDTMDB = "silo.tmdb"
+const pluginIDTMDB = "prairie.tmdb"
 
-var defaultPluginIDs = []string{pluginIDTMDB, "silo.tvdb", "silo.theintrodb"}
+var defaultPluginIDs = []string{pluginIDTMDB, "prairie.tvdb", "silo.theintrodb"}
 
 type autoUpdateRepositoryStore interface {
 	List(ctx context.Context) ([]*Repository, error)
@@ -157,7 +157,7 @@ func NewAutoUpdateService(
 }
 
 // SetRequiredPlugins adds a source of plugin IDs that startup installs from the
-// Silo repository the same way it installs the default plugins. Unlike the
+// Prairie repository the same way it installs the default plugins. Unlike the
 // defaults, the list can change: a plugin that is only needed to carry over
 // existing data drops off it once that has happened. Call it before Run.
 func (s *AutoUpdateService) SetRequiredPlugins(required func(context.Context) ([]string, error)) {
@@ -231,7 +231,7 @@ func (s *AutoUpdateService) Check(ctx context.Context, opts AutoUpdateOptions) (
 	}
 
 	if toInstall := s.pluginsToAutoInstall(ctx, opts, &summary); len(toInstall) > 0 {
-		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourceSilo)
+		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourcePrairie)
 		for _, pluginID := range toInstall {
 			if _, installed := installedPluginIDs[pluginID]; installed {
 				continue

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
 )
 
 func (f *fakeAdminCollections) AdminCollectionTemplateCatalog(context.Context) templates.Catalog {

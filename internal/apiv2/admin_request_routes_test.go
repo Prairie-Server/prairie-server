@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeRouteAdmin adds route administration to the admin request fake.

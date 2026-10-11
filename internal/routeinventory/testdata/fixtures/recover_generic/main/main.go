@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/recover_generic/listener"
+	"github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/recover_generic/listener"
 )
 
 func extra(w http.ResponseWriter, r *http.Request) {}

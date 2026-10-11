@@ -9,10 +9,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/netguard"
-	"github.com/Silo-Server/silo-server/internal/userstore/pgstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 type staticSettings map[string]string

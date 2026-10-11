@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/danielgtaylor/huma/v2"
 )
 

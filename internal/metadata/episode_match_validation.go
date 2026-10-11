@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Silo-Server/silo-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/naming"
 )
 
 const (

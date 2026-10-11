@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 // fakeRecommendations records the last call and answers the shared fake card.

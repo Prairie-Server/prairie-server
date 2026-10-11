@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // UserLibraryView is a simplified library view for non-admin users.

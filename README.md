@@ -2,16 +2,16 @@
   <img src="assets/icon.png" alt="Silo logo" width="112" height="112">
 </p>
 
-<h1 align="center">Silo</h1>
+<h1 align="center">Prairie</h1>
 
 <p align="center">
   A self-hosted media server for films, series, audiobooks, ebooks, podcasts, and manga.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Silo-Server/silo-server/releases"><img alt="Latest GitHub release" src="https://img.shields.io/github/v/release/Silo-Server/silo-server?include_prereleases&amp;sort=semver&amp;display_name=tag&amp;style=flat-square&amp;label=release"></a>
-  <a href="https://github.com/orgs/Silo-Server/packages/container/package/silo-server"><img alt="Container image on GHCR" src="https://img.shields.io/badge/container-GHCR-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white"></a>
-  <a href="https://github.com/Silo-Server/silo-server/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://img.shields.io/github/actions/workflow/status/Silo-Server/silo-server/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
+  <a href="https://github.com/Prairie-Server/prairie-server/releases"><img alt="Latest GitHub release" src="https://img.shields.io/github/v/release/Prairie-Server/prairie-server?include_prereleases&amp;sort=semver&amp;display_name=tag&amp;style=flat-square&amp;label=release"></a>
+  <a href="https://github.com/orgs/Prairie-Server/packages/container/package/prairie-server"><img alt="Container image on GHCR" src="https://img.shields.io/badge/container-GHCR-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white"></a>
+  <a href="https://github.com/Prairie-Server/prairie-server/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://img.shields.io/github/actions/workflow/status/Prairie-Server/prairie-server/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
   <img alt="Go 1.26" src="https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&amp;logo=go&amp;logoColor=white">
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white">
   <a href="LICENSE"><img alt="AGPL-3.0-or-later license" src="https://img.shields.io/badge/license-AGPL--3.0--or--later-555555?style=flat-square"></a>
@@ -22,14 +22,14 @@
   · <a href="https://siloserver.org/docs">Documentation</a>
   · <a href="docs/release-versioning.md">Builds &amp; releases</a>
   · <a href="https://discord.gg/siloserver">Discord</a>
-  · <a href="#supporting-silo">Support Silo</a>
+  · <a href="#supporting-silo">Support Prairie</a>
   · <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 ---
 
 > [!WARNING]
-> Silo is pre-release. APIs, configuration, and database migrations may change
+> Prairie is pre-release. APIs, configuration, and database migrations may change
 > before the first stable release. Back up your deployment before updating.
 
 ## 1.0 release scope
@@ -42,7 +42,7 @@ release date. The broader capabilities below include those beta
 implementations, not a promise that every media type is supported in 1.0.
 Existing library data is preserved when upgrading.
 
-## What Silo does
+## What Prairie does
 
 <table>
   <tr>
@@ -85,12 +85,12 @@ Existing library data is preserved when upgrading.
 
 ## Quick start
 
-Requires Docker Compose 2.24 or newer. The default stack runs Silo, PostgreSQL
+Requires Docker Compose 2.24 or newer. The default stack runs Prairie, PostgreSQL
 with pgvector, and Redis.
 
 ```sh
-git clone https://github.com/Silo-Server/silo-server.git
-cd silo-server
+git clone https://github.com/Prairie-Server/prairie-server.git
+cd prairie-server
 cp .env.example .env
 chmod 600 .env
 printf '\nPOSTGRES_PASSWORD=%s\nSECRET_KEY=%s\n' \
@@ -119,7 +119,7 @@ defines each tag and the SemVer contract.
 
 ## Documentation
 
-- [User manual](https://siloserver.org/docs) — installing, configuring, and running Silo
+- [User manual](https://siloserver.org/docs) — installing, configuring, and running Prairie
 - [Development guide](DEVELOPMENT.md) — source setup, builds, tests, migrations
 - [Settings API](docs/settings-api.md), [Downloads API](docs/downloads-api.md), and [Apple Push Display Token](docs/notifications-push-api.md) — client contracts
 
@@ -127,12 +127,12 @@ defines each tag and the SemVer contract.
 
 Questions and discussion: [Discord](https://discord.gg/siloserver).
 Bugs, install problems, and performance issues: the
-[GitHub issue forms](https://github.com/Silo-Server/silo-server/issues/new/choose),
+[GitHub issue forms](https://github.com/Prairie-Server/prairie-server/issues/new/choose),
 which ask for reproduction steps and raw logs.
 
 Native clients are developed in
-[`silo-apple`](https://github.com/Silo-Server/silo-apple) and
-[`silo-android`](https://github.com/Silo-Server/silo-android). Client-visible
+[`silo-apple`](https://github.com/prairie-server/silo-apple) and
+[`silo-android`](https://github.com/prairie-server/silo-android). Client-visible
 API, authentication, playback, or metadata changes should consider both.
 
 Right now, the most helpful way to contribute is a clear, accurate issue. We
@@ -141,13 +141,13 @@ has outgrown what we can review carefully, so a good issue usually helps us
 more than a pull request.
 
 Pull requests are still welcome from contributors who've had one merged in a
-Silo repository, or when a maintainer asks for one. We close other pull
+Prairie repository, or when a maintainer asks for one. We close other pull
 requests without review. [CONTRIBUTING.md](CONTRIBUTING.md) explains what makes
 an issue useful.
 
-## Supporting Silo
+## Supporting Prairie
 
-Silo is developed in spare time and funded out of pocket, and will stay free and
+Prairie is developed in spare time and funded out of pocket, and will stay free and
 open source. [GitHub Sponsors](https://github.com/sponsors/quick104) covers AI
 development tooling (Claude, Codex), push-notification relay infrastructure, and
 future project costs. Bug reports, code, and documentation help just as much.
@@ -163,13 +163,13 @@ open source program.
 
 ## License and trademarks
 
-Silo's source code is licensed under the
+Prairie's source code is licensed under the
 **GNU Affero General Public License v3.0 or later** (`AGPL-3.0-or-later`). See
 [LICENSE](LICENSE).
 
 The **Silo name, logo, and wordmark are trademarks of Silo Media L.L.C.** and
 are not covered by the AGPL. Forks and redistributions may use the code but must
-not use the Silo brand as their identity and must remove or replace the brand
-assets. Publishing a Silo-branded app to an app store requires written
+not use the Prairie brand as their identity and must remove or replace the brand
+assets. Publishing a Prairie-branded app to an app store requires written
 permission. See [TRADEMARK.md](TRADEMARK.md) for permitted referential use,
 including phrases such as "compatible with Silo."

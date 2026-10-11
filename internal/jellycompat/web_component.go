@@ -22,18 +22,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 const (
 	DefaultWebSourceURL = "https://github.com/jellyfin/jellyfin-web.git"
 
-	webMetadataFile          = "SILO-JELLYFIN-WEB.json"
-	webSourceFile            = "SILO-JELLYFIN-WEB-SOURCE.txt"
+	webMetadataFile          = "PRAIRIE-JELLYFIN-WEB.json"
+	webSourceFile            = "PRAIRIE-JELLYFIN-WEB-SOURCE.txt"
 	webInstallLock           = ".installing"
 	webLastError             = ".last-error"
-	webTempMarker            = ".silo-jellyfin-web-temp"
-	webSeekReanchorPatch     = "silo-seek-reanchor-v1"
+	webTempMarker            = ".prairie--jellyfin-web-temp"
+	webSeekReanchorPatch     = "prairie-seek-reanchor-v1"
 	webPlaybackManagerSource = "src/components/playback/playbackmanager.js"
 	webHTMLVideoPlayerSource = "src/plugins/htmlVideoPlayer/plugin.js"
 	webNPMExecutable         = "npm"
@@ -268,7 +268,7 @@ func listRemoteWebVersions(ctx context.Context, sourceURL string) ([]string, err
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "silo-jellyfin-web-installer")
+	req.Header.Set("User-Agent", "prairie-jellyfin-web-installer")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -543,7 +543,7 @@ func installWebComponentLocked(ctx context.Context, opts WebComponentInstallOpti
 		return webComponentStatus(root, ManagedWebInstallPath(root), version, sourceURL), err
 	}
 	defer os.RemoveAll(tmpRoot)
-	if err := os.WriteFile(filepath.Join(tmpRoot, webTempMarker), []byte("silo jellyfin web install workspace\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpRoot, webTempMarker), []byte("prairie jellyfin web install workspace\n"), 0o644); err != nil {
 		writeWebInstallError(root, err)
 		return webComponentStatus(root, ManagedWebInstallPath(root), version, sourceURL), err
 	}
@@ -1026,7 +1026,7 @@ func ensureWebInstallerPrerequisites() error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("%w: install %s on the Silo host or container", ErrWebInstallerUnavailable, strings.Join(missing, ", "))
+		return fmt.Errorf("%w: install %s on the Prairie host or container", ErrWebInstallerUnavailable, strings.Join(missing, ", "))
 	}
 	return nil
 }
@@ -1593,12 +1593,12 @@ func patchManagedWebSources(root string) error {
 		{
 			webPlaybackManagerSource,
 			"    const query = {\n        UserId: apiClient.getCurrentUserId(),\n        StartTimeTicks: options.startPosition || 0\n    };",
-			"    const query = {\n        SiloSeekReanchor: true,\n        UserId: apiClient.getCurrentUserId(),\n        StartTimeTicks: options.startPosition || 0\n    };",
+			"    const query = {\n        PrairieSeekReanchor: true,\n        UserId: apiClient.getCurrentUserId(),\n        StartTimeTicks: options.startPosition || 0\n    };",
 		},
 		{
 			webPlaybackManagerSource,
 			"        function changeStream(player, ticks, params) {\n            if (canPlayerSeek(player) && params == null) {",
-			"        function changeStream(player, ticks, params) {\n            if (canPlayerSeek(player) && params == null\n                && (!self.currentMediaSource(player)?.SiloSeekReanchor\n                    || (ticks >= (getPlayerData(player).streamInfo.playerStartPositionTicks || 0)\n                        && typeof player.canSeekTo === 'function' && player.canSeekTo(ticks / 10000)))) {",
+			"        function changeStream(player, ticks, params) {\n            if (canPlayerSeek(player) && params == null\n                && (!self.currentMediaSource(player)?.PrairieSeekReanchor\n                    || (ticks >= (getPlayerData(player).streamInfo.playerStartPositionTicks || 0)\n                        && typeof player.canSeekTo === 'function' && player.canSeekTo(ticks / 10000)))) {",
 		},
 		{
 			webHTMLVideoPlayerSource,
@@ -1670,7 +1670,7 @@ Modified: %t
 Patches: %s
 Checksum: %s
 
-This component is separate from Silo's AGPL-licensed server code. It is installed only
+This component is separate from Prairie's AGPL-licensed server code. It is installed only
 when an administrator explicitly requests Jellyfin-compatible web UI assets.
 `, metadata.SourceURL, metadata.Tag, metadata.CommitSHA, metadata.License, metadata.BuildCommand, metadata.Modified, strings.Join(metadata.Patches, ", "), metadata.Checksum)
 	return os.WriteFile(filepath.Join(dir, webSourceFile), []byte(body), 0o644)

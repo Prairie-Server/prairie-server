@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func RunDeviceSettings(t *testing.T, newStore func(*testing.T) userstore.UserStore) {

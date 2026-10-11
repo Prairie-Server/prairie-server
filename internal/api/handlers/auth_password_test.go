@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 type stubAccountPasswordService struct {

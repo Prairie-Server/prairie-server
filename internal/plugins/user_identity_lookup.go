@@ -9,7 +9,7 @@ import (
 )
 
 // UserIdentity is the public-facing identity surfaced to plugins via the
-// X-Silo-User-Name / X-Silo-Profile-Name / X-Silo-Profile-Primary
+// X-Prairie-User-Name / X-Prairie-Profile-Name / X-Prairie-Profile-Primary
 // headers. Plugins use it to render "user#profile" strings in app-pairing
 // UIs without reaching back into the browser's localStorage.
 type UserIdentity struct {
@@ -27,7 +27,7 @@ type UserIdentityLookup interface {
 }
 
 // PgUserIdentityLookup reads username from `users` and profile name +
-// is_primary from `user_profiles`. Hits the same tables silo's web
+// is_primary from `user_profiles`. Hits the same tables prairie's web
 // client uses for `/auth/me` and `/profiles`, so the plugin proxy returns
 // the same names operators see in the main UI.
 type PgUserIdentityLookup struct {

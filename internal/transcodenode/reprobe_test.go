@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func postReprobe(t *testing.T, server *Server) *httptest.ResponseRecorder {

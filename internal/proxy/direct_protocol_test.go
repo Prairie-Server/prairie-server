@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 func TestDirectProtocolConditionalResponses(t *testing.T) {

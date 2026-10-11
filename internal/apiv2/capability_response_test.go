@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // Discover operations, not schema names: several capability endpoints historically

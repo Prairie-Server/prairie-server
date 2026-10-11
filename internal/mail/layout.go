@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Shared visual tokens for Silo's branded emails, mirroring the web UI's
+// Shared visual tokens for Prairie's branded emails, mirroring the web UI's
 // default "Midnight Cinema" theme (web/src/app.css): a near-black canvas,
 // monochrome type, and a white primary action. Feature packages compose body
 // fragments with these tokens and wrap them with RenderLayout so every email
@@ -35,7 +35,7 @@ const (
 
 // LayoutOptions is the content RenderLayout places into the branded shell.
 type LayoutOptions struct {
-	// Brand supplies the header logo; the zero value is Silo's own. The
+	// Brand supplies the header logo; the zero value is Prairie's own. The
 	// message must carry Brand.InlineImages() for the logo to display.
 	Brand Brand
 	// Preheader is the hidden inbox-preview snippet shown next to the subject
@@ -50,7 +50,7 @@ type LayoutOptions struct {
 	FooterHTML string
 }
 
-// RenderLayout wraps content in Silo's dark branded email shell: the brand's
+// RenderLayout wraps content in Prairie's dark branded email shell: the brand's
 // logo, content card, and footer. It adds no links of its own, so an email whose
 // options carry no hrefs renders fully link-free (some features require
 // that when no external URL is configured).
@@ -180,17 +180,17 @@ const emailShell = `<!DOCTYPE html>
 <meta name="supported-color-schemes" content="dark">
 <style>
   @media (max-width: 480px) {
-    .silo-shell { padding: 24px 12px 36px !important; }
-    .silo-card { padding: 24px 20px !important; }
+    .prairie--shell { padding: 24px 12px 36px !important; }
+    .prairie--card { padding: 24px 20px !important; }
   }
 </style>
 </head>
 <body style="margin:0;padding:0;background-color:{{canvas}};" bgcolor="{{canvas}}">
 {{preheader}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{canvas}}" style="background-color:{{canvas}};">
-<tr><td align="center" class="silo-shell" style="padding:36px 16px 48px;">
+<tr><td align="center" class="prairie-shell" style="padding:36px 16px 48px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
 <tr><td style="padding:0 6px 20px;">{{logo}}</td></tr>
-<tr><td class="silo-card" bgcolor="{{card}}" style="background-color:{{card}};border:1px solid {{border}};border-radius:12px;padding:28px 32px;">
+<tr><td class="prairie-card" bgcolor="{{card}}" style="background-color:{{card}};border:1px solid {{border}};border-radius:12px;padding:28px 32px;">
 {{title}}{{body}}
 </td></tr>
 {{footer}}</table>

@@ -11,18 +11,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/userstore/storetest"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/storetest"
 )
 
 // TestPostgresProgressSince runs the offline-sync progress-reconciliation
 // conformance test (invariant 1) against the Postgres backend, exercising the
 // user_watch_progress synced_seq trigger and event_at LWW comparison. Skips
-// unless SILO_TEST_DATABASE_URL is set and the migration is applied.
+// unless PRAIRIE_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresProgressSince(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -62,11 +62,11 @@ func TestPostgresProgressSince(t *testing.T) {
 // (series/season mark-watched) against the Postgres backend. The per-user
 // SQLite backend runs the same suite in internal/userdb, which is what keeps
 // the two transactional implementations from drifting. Skips unless
-// SILO_TEST_DATABASE_URL is set.
+// PRAIRIE_TEST_DATABASE_URL is set.
 func TestPostgresMarkWatchedBatch(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -98,11 +98,11 @@ func TestPostgresMarkWatchedBatch(t *testing.T) {
 // conformance tests against the Postgres backend. The per-user SQLite backend
 // runs the same suite in internal/userdb, which is what keeps the two from
 // drifting on scope identity, partial uniqueness and delete behavior. Skips
-// unless SILO_TEST_DATABASE_URL is set and the migration is applied.
+// unless PRAIRIE_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresSettingValues(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -169,11 +169,11 @@ func deleteUserAssertingCascade(t *testing.T, pool *pgxpool.Pool, userID int, ch
 // TestPostgresJellycompatDisplayPrefs runs the Jellyfin DisplayPreferences
 // storage conformance tests against the Postgres backend; the per-user SQLite
 // backend runs the same suite in internal/userdb. Skips unless
-// SILO_TEST_DATABASE_URL is set and the migration is applied.
+// PRAIRIE_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresJellycompatDisplayPrefs(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -209,9 +209,9 @@ func TestPostgresJellycompatDisplayPrefs(t *testing.T) {
 }
 
 func TestPostgresCollectionSortPreferences(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -247,11 +247,11 @@ func TestPostgresCollectionSortPreferences(t *testing.T) {
 
 // TestPostgresPersonalListPage runs the keyset favorites/watchlist paging
 // conformance test against the Postgres backend.
-// Skips unless SILO_TEST_DATABASE_URL is set.
+// Skips unless PRAIRIE_TEST_DATABASE_URL is set.
 func TestPostgresPersonalListPage(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -279,11 +279,11 @@ func TestPostgresPersonalListPage(t *testing.T) {
 }
 
 // TestPostgresProgressPage runs the keyset progress paging conformance test
-// against the Postgres backend. Skips unless SILO_TEST_DATABASE_URL is set.
+// against the Postgres backend. Skips unless PRAIRIE_TEST_DATABASE_URL is set.
 func TestPostgresProgressPage(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

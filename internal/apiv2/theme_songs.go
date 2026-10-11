@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/themedelivery"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/themedelivery"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
 )

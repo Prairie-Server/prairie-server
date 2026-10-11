@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
 )
 
 // TestRouteInventoryMatchesRootListener is the runtime backstop for the root

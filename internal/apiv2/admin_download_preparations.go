@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // AdminDownloadPreparationService reads the prepared-download encode queue.

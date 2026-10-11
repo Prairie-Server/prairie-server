@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
 	"testing"
 )
 

@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userdb"
+	"github.com/prairie-server/prairie-server/internal/userdb"
 
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport/testdata"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport/testdata"
 )
 
 func TestImportSchema22AccountsForEveryColumn(t *testing.T) {

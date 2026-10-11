@@ -6,7 +6,7 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // visiblePersonalCollectionCounts answers how many items each personal

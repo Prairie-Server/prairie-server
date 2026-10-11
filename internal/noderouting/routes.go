@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 type Workload string

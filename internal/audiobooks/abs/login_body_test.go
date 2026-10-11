@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 // recordingValidator captures the credentials handleStandaloneLogin extracted

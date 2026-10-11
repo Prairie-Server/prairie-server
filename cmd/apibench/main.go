@@ -38,7 +38,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/apibench"
+	"github.com/prairie-server/prairie-server/internal/apibench"
 )
 
 // databaseEnv is the fallback source of the -db DSN. It is resolved after

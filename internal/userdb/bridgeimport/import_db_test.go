@@ -17,11 +17,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/database"
-	"github.com/Silo-Server/silo-server/internal/progresssync"
-	"github.com/Silo-Server/silo-server/internal/userdb"
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport/testdata"
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/progresssync"
+	"github.com/prairie-server/prairie-server/internal/userdb"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport/testdata"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 func accountImportPool(t *testing.T) *pgxpool.Pool {

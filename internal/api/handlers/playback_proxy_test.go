@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
 
 func TestProxyToTranscodeNodeAcknowledgesOnlyFullDownstreamResponse(t *testing.T) {

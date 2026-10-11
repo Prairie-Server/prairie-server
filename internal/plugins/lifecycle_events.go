@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 // PluginsChangedEvent is the payload of cache.EventPluginsChanged. An empty

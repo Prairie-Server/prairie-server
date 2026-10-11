@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Silo-Server/silo-server/internal/api"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/api"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // newCompatDetailService builds the catalog detail service the Jellyfin

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 func TestDownloadProtocolRemoteStatusAndHead(t *testing.T) {

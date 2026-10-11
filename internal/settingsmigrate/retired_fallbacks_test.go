@@ -3,7 +3,7 @@ package settingsmigrate
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 )
 
 // TestPlanRetiredFallbackMatchesTheFallbackRead pins the replacement rule:

@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/jackc/pgx/v5"
 )
 

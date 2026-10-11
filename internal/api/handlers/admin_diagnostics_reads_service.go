@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 func (h *DiagnosticsHandler) ListAdminDiagnosticReports(ctx context.Context, filters diagnostics.ListFilters) (diagnostics.ListResult, error) {

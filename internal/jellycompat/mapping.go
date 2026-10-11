@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/lang"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // allDetailFields is a sentinel passed to itemFromList so detail views include all fields.
@@ -932,9 +932,9 @@ func compatMediaPath(version catalog.FileVersion) string {
 	}
 	ext := strings.ToLower(strings.TrimSpace(version.Container))
 	if ext == "" {
-		return filepath.ToSlash(filepath.Join("/silo", name))
+		return filepath.ToSlash(filepath.Join("/prairie", name))
 	}
-	return filepath.ToSlash(filepath.Join("/silo", name+"."+ext))
+	return filepath.ToSlash(filepath.Join("/prairie", name+"."+ext))
 }
 
 func formatCompatTime(value time.Time) string {

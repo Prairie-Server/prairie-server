@@ -28,7 +28,7 @@ const (
 	DefaultStallWindow = 180 * time.Second
 
 	// stallWindowEnv overrides DefaultStallWindow (integer seconds).
-	stallWindowEnv = "SILO_STREAM_WRITE_STALL_TIMEOUT"
+	stallWindowEnv = "PRAIRIE_STREAM_WRITE_STALL_TIMEOUT"
 
 	// bumpStep rate-limits deadline updates so a busy stream issues one
 	// SetWriteDeadline per step rather than one per 32 KB chunk. It applies to

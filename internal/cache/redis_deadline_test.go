@@ -3,7 +3,7 @@ package cache
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // A deadline client lets a caller's context end a stalled socket read, for a

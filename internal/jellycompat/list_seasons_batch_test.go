@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // stubItemAccessSource always permits access. The Search/GetByIDs methods are

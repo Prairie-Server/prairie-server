@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 )
 
 // Legacy v1 error codes the gates translate that have no v2 problem type of

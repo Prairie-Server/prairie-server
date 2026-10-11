@@ -343,10 +343,10 @@ function RegisterRelayRow({
   const expirationValid = expiration != null && !Number.isNaN(expiration.getTime());
   const renewalStatus = expirationValid
     ? expiration.getTime() <= Date.now()
-      ? "Expired; Silo renews it before the next delivery."
-      : `Expires ${expiration.toLocaleString()}; Silo renews automatically.`
+      ? "Expired; Prairie renews it before the next delivery."
+      : `Expires ${expiration.toLocaleString()}; Prairie renews automatically.`
     : configured
-      ? "Expiration unknown; Silo refreshes the credential on its next renewal."
+      ? "Expiration unknown; Prairie refreshes the credential on its next renewal."
       : "No relay credential is registered.";
 
   const registerRelay = async () => {
@@ -525,7 +525,7 @@ function DiscordSetupGuide() {
             </li>
             <li>
               Bot page: reset and copy the <strong>Token</strong>. Leave all Privileged Gateway
-              Intents (Presence, Server Members, Message Content) <strong>off</strong> — Silo never
+              Intents (Presence, Server Members, Message Content) <strong>off</strong> — Prairie never
               connects to the gateway; it only sends DMs.
             </li>
             <li>
@@ -1014,8 +1014,8 @@ export default function NotificationsAdminSettings() {
 
           <ChannelCard
             icon={RadioTower}
-            title="Silo Push Relay"
-            description="Mobile push through Silo's relay, delivered by APNs or FCM."
+            title="Prairie Push Relay"
+            description="Mobile push through Prairie's relay, delivered by APNs or FCM."
             enabled={mobilePushOn}
             onEnabledChange={(enabled) => {
               form.setValue("notifications.apple_push_delivery_enabled", String(enabled));
@@ -1100,7 +1100,7 @@ export default function NotificationsAdminSettings() {
             <div className="settings-field-list">
               <SettingField
                 label="Send email from this server"
-                description="Covers every email Silo sends, not just notifications."
+                description="Covers every email Prairie sends, not just notifications."
                 type="toggle"
                 value={form.getValue("email.enabled")}
                 onChange={(v) => form.setValue("email.enabled", v)}
@@ -1108,14 +1108,14 @@ export default function NotificationsAdminSettings() {
               />
               <SettingField
                 label="From address"
-                hint="silo@example.com"
+                hint="prairie@example.com"
                 value={form.getValue("email.from_address")}
                 onChange={(v) => form.setValue("email.from_address", v)}
                 restartRequired={needsRestart("email.from_address")}
               />
               <SettingField
                 label="From name"
-                hint="Silo"
+                hint="Prairie"
                 value={form.getValue("email.from_name")}
                 onChange={(v) => form.setValue("email.from_name", v)}
                 restartRequired={needsRestart("email.from_name")}
@@ -1338,7 +1338,7 @@ export default function NotificationsAdminSettings() {
               />
               <SettingField
                 label="Mention the requester on Discord"
-                description="Unlinked accounts show their Silo username instead."
+                description="Unlinked accounts show their Prairie username instead."
                 type="toggle"
                 value={form.getValue("notifications.server_channels.mention_requesters")}
                 onChange={(v) =>
@@ -1420,7 +1420,7 @@ export default function NotificationsAdminSettings() {
                 />
                 <SettingField
                   label="Sent history"
-                  description="Record of what Silo already notified about."
+                  description="Record of what Prairie already notified about."
                   unit="days"
                   type="number"
                   value={numberValue("notifications.retention.event_days", "30")}

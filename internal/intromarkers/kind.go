@@ -3,7 +3,7 @@ package intromarkers
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // markerKind is a marker segment local analysis detects. The zero value is no

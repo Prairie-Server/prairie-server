@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // Retry parameters for the bulk-reset UPDATEs below. They run concurrently

@@ -2,7 +2,7 @@
 
 Migration `20260912230857_drop_dead_tables` removes four `plex_sync_*` tables,
 `user_playback_sessions`, and `content_id_migration_map`. This completes the
-first schema hygiene item in [#888](https://github.com/Silo-Server/silo-server/issues/888).
+first schema hygiene item in [#888](https://github.com/Prairie-Server/prairie-server/issues/888).
 
 ## Upgrade and recovery
 

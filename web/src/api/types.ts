@@ -2280,7 +2280,7 @@ export interface AutoscanScanSourceDescriptor {
   delivery_modes: AutoscanDeliveryMode[];
   connection: AutoscanConnectionRequirement;
   connection_kinds?: string[];
-  /** Plugin already emits Silo-native paths, so path rewrites can be skipped. */
+  /** Plugin already emits Prairie-native paths, so path rewrites can be skipped. */
   emits_native_paths?: boolean;
   summary?: string;
   icon_url?: string;
@@ -3838,7 +3838,7 @@ export interface PluginAdminFormField {
   exclusive_group_field?: string;
   /**
    * Names a host-known value this field can be populated from in one click.
-   * Used by autoscan source config so a path field can be filled from Silo's
+   * Used by autoscan source config so a path field can be filled from Prairie's
    * own library paths without the UI knowing which plugin owns it. Unknown
    * values render no action.
    */
@@ -3912,7 +3912,7 @@ export interface PluginRepository {
   url: string;
   display_name: string;
   enabled: boolean;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "approved_community" | "external";
   managed: boolean;
   last_fetched_at?: string | null;
   created_at?: string;
@@ -3938,7 +3938,7 @@ export interface PluginCatalogEntry {
   plugin_id: string;
   version: string;
   archive_url: string;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "approved_community" | "external";
   repository_name: string;
   repo_url?: string;
   presentation?: PluginPresentation;
@@ -3985,7 +3985,7 @@ export interface PluginInstallation {
   task_bindings: PluginTaskBinding[];
   update_policy: string;
   available_version?: string | null;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "approved_community" | "external";
   repository_name?: string;
   repo_url?: string;
   presentation?: PluginPresentation;

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
 )
 
 // FFprobe does not report a Matroska track's TrackNumber, but players that

@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 const taskSchedulesMigration = "sql/20260906000622_task_schedule_revisions.sql"

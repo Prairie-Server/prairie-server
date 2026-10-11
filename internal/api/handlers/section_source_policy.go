@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 func isTraktBackedSection(sectionType string, config json.RawMessage) bool {

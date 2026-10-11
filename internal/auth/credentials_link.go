@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // CredentialsLinkInput is a signed-in account linking the directory

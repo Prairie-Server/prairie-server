@@ -14,13 +14,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/recommendations/embeddings"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/recommendations/embeddings"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type adminSettingsConnectionCheckRequest struct {
@@ -177,7 +177,7 @@ func checkAIChatConnection(ctx context.Context, cfg *config.Config) connectionCh
 	defer cancel()
 	if _, err := client.Chat(checkCtx, []llm.Message{
 		{Role: "system", Content: "Return a JSON object with status set to ok."},
-		{Role: "user", Content: "Check this Silo text translation connection."},
+		{Role: "user", Content: "Check this Prairie text translation connection."},
 	}, true); err != nil {
 		return connectionCheckResponse{
 			Success: false,
@@ -211,7 +211,7 @@ func checkAITranscriptionConnection(ctx context.Context, cfg *config.Config) con
 	checkCtx, cancel := context.WithTimeout(ctx, 80*time.Second)
 	defer cancel()
 	result, err := client.Transcribe(checkCtx, llm.TranscribeRequest{
-		Filename: "silo-connection-check.wav",
+		Filename: "prairie-connection-check.wav",
 		Audio:    transcriptionCheckWAV,
 		Timeout:  75 * time.Second,
 	})
@@ -489,8 +489,8 @@ func checkS3ObjectPermissions(
 	client s3SettingsCheckClient,
 	bucket string,
 ) (resultErr error) {
-	key := fmt.Sprintf(".silo-admin-connection-check/%d", time.Now().UnixNano())
-	payload := []byte("silo-storage-check")
+	key := fmt.Sprintf(".prairie--admin-connection-check/%d", time.Now().UnixNano())
+	payload := []byte("prairie-storage-check")
 	deleted := false
 	defer func() {
 		if deleted {
@@ -583,7 +583,7 @@ func checkRecommendationsEmbeddingConnection(
 
 	checkCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	if _, err := client.Embed(checkCtx, []string{"silo connection test"}); err != nil {
+	if _, err := client.Embed(checkCtx, []string{"prairie connection test"}); err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Embedding connection check failed: %v", err),

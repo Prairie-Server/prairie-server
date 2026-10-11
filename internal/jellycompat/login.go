@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 	ErrInvalidPIN = errors.New("invalid profile PIN")
 )
 
-// LoginResolver performs username#profile login resolution against Silo.
+// LoginResolver performs username#profile login resolution against Prairie.
 type LoginResolver struct {
 	authService    *auth.Service
 	storeProvider  userstore.UserStoreProvider
@@ -316,7 +316,7 @@ func mapAuthError(err error) error {
 	}
 	if errors.Is(err, auth.ErrPasswordChangeRequired) {
 		// Kept as the sentinel, like the PIN errors, so the client sees why.
-		return fmt.Errorf("%w: sign in to Silo to replace your temporary password", err)
+		return fmt.Errorf("%w: sign in to Prairie to replace your temporary password", err)
 	}
 	switch {
 	case errors.Is(err, auth.ErrProviderUnavailable):

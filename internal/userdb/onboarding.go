@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // GetOnboardingState returns one profile's state for one tour, or nil when

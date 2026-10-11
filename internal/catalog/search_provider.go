@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const (
@@ -405,7 +405,7 @@ type CatalogSearchTypeCoverage struct {
 }
 
 // CatalogSearchSemanticCapability reports whether the active Meilisearch index is
-// configured to accept Silo's user-provided embedding vectors. A failure here
+// configured to accept Prairie's user-provided embedding vectors. A failure here
 // means hybrid search would be rejected, but it must not trip the circuit or
 // flip Healthy — keyword search stays up regardless.
 type CatalogSearchSemanticCapability struct {
@@ -518,7 +518,7 @@ const (
 )
 
 // catalogSearchMeilisearchIndexCompatibility classifies an active index using
-// only schema identities Silo itself can have published. If the active hash
+// only schema identities Prairie itself can have published. If the active hash
 // matches the same embedder, vector dimensions, and media scope with a different
 // semantic/binary setting, its document fields and filters are still valid for
 // keyword search. Unknown hashes are not trusted because they may represent a

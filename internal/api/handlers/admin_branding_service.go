@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/branding"
 )
 
 const (

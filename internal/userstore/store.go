@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
 )
 
 var ErrCollectionGroupNotFound = errors.New("collection group not found")

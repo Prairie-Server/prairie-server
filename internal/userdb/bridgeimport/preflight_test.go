@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport"
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport/testdata"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport/testdata"
 )
 
 func fixture(t *testing.T) string {

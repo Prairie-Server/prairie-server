@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 type AdminPolicyService interface {

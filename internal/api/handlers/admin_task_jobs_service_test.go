@@ -6,10 +6,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/blobstore/blobstoretest"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func completedArtifactJob() *models.AdminJob {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 )
 
 type AdminAuditLogsService interface {

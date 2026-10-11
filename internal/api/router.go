@@ -1,4 +1,4 @@
-// Package api provides the HTTP router and middleware setup for Silo.
+// Package api provides the HTTP router and middleware setup for Prairie.
 package api
 
 import (
@@ -18,85 +18,85 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	"github.com/Silo-Server/silo-server/internal/animeids"
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/apiv2"
-	"github.com/Silo-Server/silo-server/internal/artworkurl"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/branding"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/intromarkers"
-	"github.com/Silo-Server/silo-server/internal/invitations"
-	"github.com/Silo-Server/silo-server/internal/libraryingest"
-	"github.com/Silo-Server/silo-server/internal/literaryworks"
-	"github.com/Silo-Server/silo-server/internal/logstream"
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
-	metatrakt "github.com/Silo-Server/silo-server/internal/metadata/trakt"
-	metadatatranslation "github.com/Silo-Server/silo-server/internal/metadata/translation"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderecipe"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/onboarding"
-	"github.com/Silo-Server/silo-server/internal/opslog"
-	"github.com/Silo-Server/silo-server/internal/passwordreset"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/playback/planstore"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/policy"
-	"github.com/Silo-Server/silo-server/internal/progresssync"
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/ratingsources"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/s3client"
-	"github.com/Silo-Server/silo-server/internal/scanner"
-	"github.com/Silo-Server/silo-server/internal/scanqueue"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/sections"
-	"github.com/Silo-Server/silo-server/internal/serveridentity"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/shuffle"
-	"github.com/Silo-Server/silo-server/internal/storagetransition"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	subtitleai "github.com/Silo-Server/silo-server/internal/subtitles/ai"
-	"github.com/Silo-Server/silo-server/internal/subtitles/opensubtitles"
-	"github.com/Silo-Server/silo-server/internal/subtitles/subdl"
-	"github.com/Silo-Server/silo-server/internal/subtitles/subsource"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	"github.com/Silo-Server/silo-server/internal/taskmanager/repository"
-	"github.com/Silo-Server/silo-server/internal/themedelivery"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
-	"github.com/Silo-Server/silo-server/internal/trickplay"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchlist"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/animeids"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/invitations"
+	"github.com/prairie-server/prairie-server/internal/libraryingest"
+	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/logstream"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
+	metatrakt "github.com/prairie-server/prairie-server/internal/metadata/trakt"
+	metadatatranslation "github.com/prairie-server/prairie-server/internal/metadata/translation"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderecipe"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/onboarding"
+	"github.com/prairie-server/prairie-server/internal/opslog"
+	"github.com/prairie-server/prairie-server/internal/passwordreset"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback/planstore"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/progresssync"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/ratingsources"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/scanqueue"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/serveridentity"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/shuffle"
+	"github.com/prairie-server/prairie-server/internal/storagetransition"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	subtitleai "github.com/prairie-server/prairie-server/internal/subtitles/ai"
+	"github.com/prairie-server/prairie-server/internal/subtitles/opensubtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles/subdl"
+	"github.com/prairie-server/prairie-server/internal/subtitles/subsource"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager/repository"
+	"github.com/prairie-server/prairie-server/internal/themedelivery"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchlist"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 // The media request service answers the administrator request-usage read.
@@ -147,7 +147,7 @@ type Dependencies struct {
 	}
 	S3Private         *s3client.Client              // private internal bucket client (may be nil)
 	BrandingService   *branding.Service             // white-label branding (nil when DB unavailable)
-	EmailBrand        *mail.BrandLoader             // server branding for outgoing email (nil sends Silo's default)
+	EmailBrand        *mail.BrandLoader             // server branding for outgoing email (nil sends Prairie's default)
 	FolderRepo        *catalog.FolderRepository     // media folder repository (may be nil)
 	FileRepo          *scanner.FileRepository       // media file repository (may be nil)
 	Scanner           *scanner.Scanner              // scanner instance (may be nil)
@@ -247,7 +247,7 @@ type Dependencies struct {
 	// sign-in provider at refresh (nil skips it).
 	AuthProviderRecheck *auth.ProviderRecheck
 	// PublicURL is the externally-reachable origin (scheme + host) for this
-	// silo instance. Used to build redirect_uri values handed to OAuth
+	// prairie instance. Used to build redirect_uri values handed to OAuth
 	// IdPs. Empty disables the /oauth/{install_id}/{init,callback} routes.
 	PublicURL              string
 	ImageResolver          catalog.ImageResolver             // plugin-based image URL resolver (may be nil)
@@ -2276,7 +2276,7 @@ func newChiRouter(deps Dependencies) chi.Router {
 	}
 
 	// ABS-compat routes are NOT mounted here — they live on a dedicated
-	// http.Server (see absCompatSrv in cmd/silo/main.go) so the discovery
+	// http.Server (see absCompatSrv in cmd/prairie/main.go) so the discovery
 	// probes (/ping, /healthcheck, /status, etc.) don't collide with the
 	// SPA fallback. Same pattern as the Jellyfin compat listener on 8096.
 
@@ -3155,7 +3155,7 @@ func newChiRouter(deps Dependencies) chi.Router {
 		}
 
 		// Autoscan webhook intake: public — Sonarr/Radarr POST here without a
-		// Silo session; the URL's bearer token authenticates the delivery and
+		// Prairie session; the URL's bearer token authenticates the delivery and
 		// maps it to its Autoscan source. Rate limited per-IP (plus the
 		// "autoscan_webhook" per-endpoint limit) since it is unauthenticated.
 		if autoscanHandler != nil {
@@ -3182,7 +3182,7 @@ func newChiRouter(deps Dependencies) chi.Router {
 			r.Get("/notifications/discord/link/callback", discordNotificationsHandler.HandleLinkCallback)
 
 			// Tokenized email links: public — clicked from mail clients on
-			// devices without a Silo session; the single-use token (verify)
+			// devices without a Prairie session; the single-use token (verify)
 			// or per-profile capability token (unsubscribe) authenticates the
 			// request. Static paths coexist with the authenticated
 			// /notifications subrouter below, same as the Discord callback.

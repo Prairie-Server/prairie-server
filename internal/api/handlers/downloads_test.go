@@ -17,16 +17,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	policyengine "github.com/Silo-Server/silo-server/internal/policy"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	policyengine "github.com/prairie-server/prairie-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // fakeDownloadService is a programmable DownloadService for handler tests. It
@@ -282,7 +282,7 @@ func downloadTestRequest(method, target string, body []byte, userID int, profile
 		r = r.WithContext(ctx)
 	}
 	if deviceID != "" {
-		r.Header.Set("X-Silo-Device-Id", deviceID)
+		r.Header.Set("X-Prairie-Device-Id", deviceID)
 	}
 	return r
 }
@@ -644,7 +644,7 @@ func TestHandleCreateDownloadCapacityUnavailableIsRetryable(t *testing.T) {
 
 // TestManagedCreateUsesHeaderDeviceNotBody verifies invariant 2's "device_id
 // authority is the header only": a device_id placed in the JSON body is ignored,
-// and the service receives the X-Silo-Device-Id header value + the profile.
+// and the service receives the X-Prairie-Device-Id header value + the profile.
 func TestManagedCreateUsesHeaderDeviceNotBody(t *testing.T) {
 	svc := &fakeDownloadService{created: &downloads.Download{ID: "dl1", ContentID: "c1", DeviceID: "devA"}}
 	h := NewDownloadHandler(svc)
@@ -1503,7 +1503,7 @@ func TestHandleCreateSubscriptionThreadsRequest(t *testing.T) {
 }
 
 // TestHandleCreateSubscriptionRequiresDevice enforces that monitoring is
-// device-scoped: a missing X-Silo-Device-Id header is a 400 even with a profile.
+// device-scoped: a missing X-Prairie-Device-Id header is a 400 even with a profile.
 func TestHandleCreateSubscriptionRequiresDevice(t *testing.T) {
 	h := NewDownloadHandler(&fakeDownloadService{})
 	body, _ := json.Marshal(subscriptionRequest{SeriesID: "s1", Mode: downloads.SubModeAll})

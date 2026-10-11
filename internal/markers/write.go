@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // SegmentPayload is the storage-agnostic per-segment marker write: its bounds

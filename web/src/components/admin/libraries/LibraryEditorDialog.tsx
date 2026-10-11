@@ -48,7 +48,7 @@ const SECTIONS: Array<{
     label: "Folders",
     icon: FolderOpen,
     title: "Folders",
-    description: "Silo scans these folders for media and watches them for changes.",
+    description: "Prairie scans these folders for media and watches them for changes.",
   },
   {
     id: "metadata",

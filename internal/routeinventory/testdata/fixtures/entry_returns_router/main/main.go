@@ -7,7 +7,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/entry_returns_router/listener"
+	"github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/entry_returns_router/listener"
 )
 
 func extra(w http.ResponseWriter, r *http.Request) {}

@@ -3,7 +3,7 @@ package playback
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 func TestFixedSourceAllowsIndependentViewerQuality(t *testing.T) {

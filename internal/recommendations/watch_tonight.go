@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // WatchTonightResult holds the recommendation-engine candidates for the

@@ -12,9 +12,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/apiv2"
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredSignupFamilyAcceptance(t *testing.T) {

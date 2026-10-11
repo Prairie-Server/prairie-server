@@ -1,6 +1,6 @@
 # Downloads & Offline Sync API (client integration guide)
 
-> **API lifecycle:** this documents the stable `/api/v2` native contract, which locks with Silo
+> **API lifecycle:** this documents the stable `/api/v2` native contract, which locks with Prairie
 > 1.0. The frozen alpha `/api/v1` surface is summarized in
 > [section 16](#16-bridge-the-frozen-apiv1-surface) and is retired after the pre-1.0 bridge
 > window. See [the native API contract](architecture/api-contract.md).
@@ -34,18 +34,18 @@ Downloads v2 has three pillars:
 ### Two download row lifecycles
 
 The `/downloads` family serves two lifecycles. The presence of
-`X-Silo-Device-Id` selects the managed path.
+`X-Prairie-Device-Id` selects the managed path.
 
 |                                 | Ephemeral / web row          | Managed device entry               |
 | ------------------------------- | ---------------------------- | ---------------------------------- |
-| Selected by                     | No `X-Silo-Device-Id` header | `X-Silo-Device-Id` header present  |
+| Selected by                     | No `X-Prairie-Device-Id` header | `X-Prairie-Device-Id` header present  |
 | Scope                           | Account (`user_id`)          | `(user_id, profile_id, device_id)` |
 | Durable "device has this file"? | No                           | Yes                                |
 | Manifest / artwork / subtitles  | Not applicable               | Yes                                |
 | Progress reconciliation target  | No                           | Yes                                |
 | Intended clients                | Web convenience download     | Mobile / TV offline library        |
 
-Mobile clients should always send `X-Silo-Device-Id` and operate on managed entries.
+Mobile clients should always send `X-Prairie-Device-Id` and operate on managed entries.
 
 Ephemeral rows are one-shot convenience records: the server prunes them
 automatically about 7 days after their last update. Managed device entries are
@@ -182,14 +182,14 @@ device id.
 | ------------------------------------ | -------------------------- | ----------------------------------------------------------- |
 | `Authorization: Bearer <token>`      | Always                     | JWT access token or API key (`sa_...`).                     |
 | `X-Profile-Id: <profile_id>`         | Managed ops, progress sync | Active household profile.                                   |
-| `X-Silo-Device-Id: <device_id>`      | Managed downloads          | Stable per-install UUID; its presence selects managed mode. |
-| `X-Silo-Device-Name: <name>`         | Optional                   | Display name, clamped server-side.                          |
-| `X-Silo-Device-Platform: <platform>` | Optional                   | Example: `android`, `ios`, `tvos`.                          |
+| `X-Prairie-Device-Id: <device_id>`      | Managed downloads          | Stable per-install UUID; its presence selects managed mode. |
+| `X-Prairie-Device-Name: <name>`         | Optional                   | Display name, clamped server-side.                          |
+| `X-Prairie-Device-Platform: <platform>` | Optional                   | Example: `android`, `ios`, `tvos`.                          |
 
-A managed call without `X-Silo-Device-Id` returns `400 device_id_required`; one
+A managed call without `X-Prairie-Device-Id` returns `400 device_id_required`; one
 without profile scope returns `400 profile_required`.
 
-On `/api/v2`, `X-Silo-Device-Id` must be sent exactly once and be a single device
+On `/api/v2`, `X-Prairie-Device-Id` must be sent exactly once and be a single device
 identifier: letters, digits, `.`, `_`, `:` or `-`, with no comma or interior
 whitespace (surrounding whitespace is ignored; each operation keeps its 128-character
 bound). A repeated header line or a comma-joined value is refused with
@@ -197,7 +197,7 @@ bound). A repeated header line or a comma-joined value is refused with
 joined value can never be stored as a device identity. v1 reads only the first header
 line and is unchanged.
 
-> **Warning:** any client that sends `X-Silo-Device-Id` on download routes MUST
+> **Warning:** any client that sends `X-Prairie-Device-Id` on download routes MUST
 > also send `X-Profile-Id`. A device header without a profile is rejected with
 > `400 profile_required`. The first-party web client sends both headers globally.
 
@@ -308,7 +308,7 @@ If `enabled` or `allowed` is false, hide download actions. `allowed` already fol
 POST /api/v2/downloads
 ```
 
-`createDownloads` requires `X-Profile-Id`. Send `X-Silo-Device-Id` as well for a
+`createDownloads` requires `X-Profile-Id`. Send `X-Prairie-Device-Id` as well for a
 managed entry.
 
 Request body:
@@ -484,7 +484,7 @@ replaying, refreshing revision guards, or falling back to v1.
 GET /api/v2/downloads
 ```
 
-With `X-Silo-Device-Id`, returns that profile and device's managed entries. Without
+With `X-Prairie-Device-Id`, returns that profile and device's managed entries. Without
 it, returns the account's ephemeral web rows.
 
 Response:
@@ -509,7 +509,7 @@ entries. Use this to poll for `ready` and reconcile entries on app launch.
 PATCH /api/v2/downloads/{id}
 ```
 
-Managed-only; `X-Silo-Device-Id` is required. The body is a revision-bound status
+Managed-only; `X-Prairie-Device-Id` is required. The body is a revision-bound status
 event:
 
 ```json
@@ -648,7 +648,7 @@ GET /api/v2/downloads/{id}/artwork/{kind}
 ```
 
 `kind` is `poster`, `backdrop`, `logo`, or `series_poster`, and
-`X-Silo-Device-Id` is required. `series_poster` exists only for episode entries and
+`X-Prairie-Device-Id` is required. `series_poster` exists only for episode entries and
 serves the parent series poster; access to the series is checked as well. The
 manifest's `artwork_urls` point here. Fetch each available image once while online
 and cache the bytes locally. Artwork and subtitle assets are whole-object,
@@ -665,7 +665,7 @@ GET /api/v2/downloads/{id}/subtitles/{ref}
 ```
 
 `ref` comes from `subtitles[].fetch_url` and encodes `external:{index}`,
-`embedded:{ordinal}`, or `downloaded:{id}`; `X-Silo-Device-Id` is required.
+`embedded:{ordinal}`, or `downloaded:{id}`; `X-Prairie-Device-Id` is required.
 `embedded` refs name an embedded ASS/SSA or PGS track by subtitle ordinal and
 return the complete track, as an ASS script or a `.sup` elementary stream,
 extracted from the source file.
@@ -783,7 +783,7 @@ server version.
 POST /api/v2/downloads/{id}/prepare
 ```
 
-Managed-only; `X-Silo-Device-Id` is required. Available when the capability reports
+Managed-only; `X-Prairie-Device-Id` is required. Available when the capability reports
 `prepare_again`.
 
 The server keeps a remux or transcode file only while some download still needs it,
@@ -1303,9 +1303,9 @@ Every managed request must include:
 ```http
 Authorization: Bearer <access_token>
 X-Profile-Id: <active_profile_id>
-X-Silo-Device-Id: <stable_install_id>
-X-Silo-Device-Name: <user_visible_device_name>
-X-Silo-Device-Platform: ios
+X-Prairie-Device-Id: <stable_install_id>
+X-Prairie-Device-Name: <user_visible_device_name>
+X-Prairie-Device-Platform: ios
 ```
 
 Recommended device id behavior:
@@ -1530,16 +1530,16 @@ Every managed request must include:
 ```http
 Authorization: Bearer <access_token>
 X-Profile-Id: <active_profile_id>
-X-Silo-Device-Id: <stable_install_id>
-X-Silo-Device-Name: <user_visible_device_name>
-X-Silo-Device-Platform: android
+X-Prairie-Device-Id: <stable_install_id>
+X-Prairie-Device-Name: <user_visible_device_name>
+X-Prairie-Device-Platform: android
 ```
 
 Recommended device id behavior:
 
 - Generate a UUID once on first launch and persist it in app-private storage
   (DataStore or equivalent); do not derive it from hardware identifiers.
-- Remember the pairing rule from section 2: `X-Silo-Device-Id` without
+- Remember the pairing rule from section 2: `X-Prairie-Device-Id` without
   `X-Profile-Id` is rejected with `400 profile_required`. Attach both headers to
   every downloads call.
 - Do not send device id in JSON bodies or query strings; the server ignores it.
@@ -1657,7 +1657,7 @@ Errors are RFC 9457 problem documents with `Content-Type: application/problem+js
   "title": "Validation failed",
   "status": 422,
   "detail": "quality must be one of the advertised presets",
-  "instance": "urn:silo:request:000000000000000000000026",
+  "instance": "urn:prairie:request:000000000000000000000026",
   "errors": [{ "location": "body.quality", "message": "unsupported value" }]
 }
 ```
@@ -1884,7 +1884,7 @@ page using the existing batch builder.
 ### Subscription reads
 
 `GET /api/v2/downloads/subscriptions` requires the active profile and
-`X-Silo-Device-Id`. It returns `{items, page}` with a default limit of 50 and a
+`X-Prairie-Device-Id`. It returns `{items, page}` with a default limit of 50 and a
 maximum of 100. The cursor binds the account, profile, access policy and device;
 rows follow descending creation time and ID. Paused monitors remain visible.
 Clients must finish every page before reconciling absent subscriptions.
@@ -1998,7 +1998,7 @@ The bundled DownloadVersionPicker captures account/session and current profile/P
 
 The alpha surface serves the same downloads and offline-sync features under
 `/api/v1` through the pre-1.0 bridge window. It is frozen: no feature work lands
-there, and Silo 1.0 answers the whole `/api/v1` namespace with `410 Gone` and the
+there, and Prairie 1.0 answers the whole `/api/v1` namespace with `410 Gone` and the
 `client_upgrade_required` problem code
 ([API contract](architecture/api-contract.md)).
 

@@ -6,15 +6,15 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/go-chi/chi/v5"
 )
 
 const (
-	siloDeviceIDHeader                 = "X-Silo-Device-Id"
+	siloDeviceIDHeader                 = "X-Prairie-Device-Id"
 	policyInternalErrorCode            = "internal_error"
 	activeProfileVerificationFailedMsg = "Failed to verify active profile"
 	metadataCurationRequiredMsg        = "Metadata curation permission required"

@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/logredact"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 type sessionContextKey string
@@ -32,7 +32,7 @@ const (
 	tokenRefreshTimeout = 30 * time.Second
 )
 
-// tokenRefresher exchanges a session's Silo refresh token for a new pair;
+// tokenRefresher exchanges a session's Prairie refresh token for a new pair;
 // *auth.Service implements it.
 type tokenRefresher interface {
 	Refresh(ctx context.Context, refreshToken string) (*auth.TokenPair, error)
@@ -42,7 +42,7 @@ type tokenRefresher interface {
 type Authenticator struct {
 	sessions *SessionStore
 	// refresher is nil when no auth service is configured; sessions then
-	// keep their Silo tokens unrefreshed.
+	// keep their Prairie tokens unrefreshed.
 	refresher tokenRefresher
 	now       func() time.Time
 }
@@ -127,7 +127,7 @@ func (a *Authenticator) RequireSession(next http.Handler) http.Handler {
 			return
 		}
 
-		// Refresh underlying Silo tokens if they're about to expire.
+		// Refresh underlying Prairie tokens if they're about to expire.
 		// Use a detached context so a client aborting the request mid-refresh
 		// (common on flaky mobile networks) doesn't revoke the compat session.
 		if a.refresher != nil && !session.StreamAppTokenExpiry.IsZero() &&

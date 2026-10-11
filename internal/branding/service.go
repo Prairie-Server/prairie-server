@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"path"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // SettingsStore is the subset of the server settings repository the branding

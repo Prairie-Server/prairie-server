@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 func TestHistoryImportUpstreamError(t *testing.T) {

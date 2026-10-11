@@ -26,7 +26,7 @@ const THREADS_TESTS = [
 ];
 
 // React and the router change far less often than the app, so they get a chunk
-// of their own. Its content hash then survives most Silo upgrades, and browsers
+// of their own. Its content hash then survives most Prairie upgrades, and browsers
 // keep it cached instead of downloading React again with every release. Rollup
 // adds the static dependencies of these packages to the chunk by itself, so
 // the list names only the packages the app imports.
@@ -181,7 +181,7 @@ export default defineConfig(({ mode }) => {
   // the dev UI from another device on the tailnet — has to be allowed here.
   // VITE_ALLOWED_HOSTS adds any others (comma-separated).
   const allowedHosts = [
-    "silo.local",
+    "prairie.local",
     ".ts.net",
     os.hostname(),
     ...(env.VITE_ALLOWED_HOSTS || "")
@@ -209,8 +209,8 @@ export default defineConfig(({ mode }) => {
       moveManifestOutOfDist(),
     ],
     define: {
-      // Reported in X-Silo-Client-Version on every v2 request (src/api/v2/request.ts).
-      __SILO_WEB_VERSION__: JSON.stringify(webVersion),
+      // Reported in X-Prairie-Client-Version on every v2 request (src/api/v2/request.ts).
+      __PRAIRIE_WEB_VERSION__: JSON.stringify(webVersion),
     },
     build: {
       // A font inlined into the CSS downloads for everyone, defeating the

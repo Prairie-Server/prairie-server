@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 // EncodedIDType distinguishes packed compat UUIDs.
@@ -86,7 +86,7 @@ func NewResourceIDCodec() *ResourceIDCodec {
 	}
 }
 
-// EncodeNumericID packs a numeric Silo identifier into a UUID.
+// EncodeNumericID packs a numeric Prairie identifier into a UUID.
 func EncodeNumericID(kind EncodedIDType, value uint64) uuid.UUID {
 	var raw [16]byte
 	raw[0] = byte(kind)
@@ -94,7 +94,7 @@ func EncodeNumericID(kind EncodedIDType, value uint64) uuid.UUID {
 	return uuid.UUID(raw)
 }
 
-// EncodeStringID encodes a Silo identifier into a Jellyfin UUID string.
+// EncodeStringID encodes a Prairie identifier into a Jellyfin UUID string.
 //
 // Content-id kinds (item, season) whose value is a structured or local
 // content_id are packed into the UUID reversibly (see contentid.Pack), so they
@@ -166,7 +166,7 @@ func (c *ResourceIDCodec) DecodeStringID(kind EncodedIDType, raw string) (string
 	return registered.value, nil
 }
 
-// isContentIDKind reports whether a compat id kind carries a Silo content_id (as
+// isContentIDKind reports whether a compat id kind carries a Prairie content_id (as
 // opposed to an arbitrary name like a genre or studio). Only these kinds use the
 // reversible content_id packing; everything else keeps the opaque hash + map.
 func isContentIDKind(kind EncodedIDType) bool {
@@ -252,7 +252,7 @@ func (c *ResourceIDCodec) ResolveMediaSourceOwner(ctx context.Context, fileID in
 }
 
 // mediaSourceIDsEqual reports whether two media-source IDs refer to the same
-// source, tolerating UUID format differences. Silo exposes the canonical
+// source, tolerating UUID format differences. Prairie exposes the canonical
 // dashed compat UUID (e.g. "03000000-0000-0000-0000-00000019e8c2"), but some
 // Jellyfin clients (e.g. Wholphin) echo it back in the compact 32-char hex
 // form ("0300000000000000000000000019e8c2"). Both parse to the same UUID, so

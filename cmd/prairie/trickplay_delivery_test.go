@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api"
-	"github.com/Silo-Server/silo-server/internal/apiv2"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/api"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 func TestTrickplayDeliveryBypassesLaggingExternalEndpoint(t *testing.T) {

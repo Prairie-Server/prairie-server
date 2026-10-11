@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/librarymonitor"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/librarymonitor"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Real-time library monitoring: the administrator status read and the

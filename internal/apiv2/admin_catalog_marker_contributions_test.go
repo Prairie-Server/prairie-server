@@ -3,9 +3,9 @@ package apiv2
 import (
 	"context"
 	"encoding/json"
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogsvc "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/markers"
 	"strings"
 	"testing"
 	"time"

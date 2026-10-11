@@ -15,9 +15,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 type Service struct {
@@ -210,10 +210,10 @@ func (s *Service) UpdateProfileMappings(ctx context.Context, userID int, id stri
 		return nil, err
 	}
 	for _, mapping := range input.Mappings {
-		if mapping.SiloProfileID == nil || *mapping.SiloProfileID == "" {
+		if mapping.PrairieProfileID == nil || *mapping.PrairieProfileID == "" {
 			continue
 		}
-		exists, err := s.repo.ProfileExistsForUser(ctx, userID, *mapping.SiloProfileID)
+		exists, err := s.repo.ProfileExistsForUser(ctx, userID, *mapping.PrairieProfileID)
 		if err != nil {
 			return nil, err
 		}
@@ -318,7 +318,7 @@ func (s *Service) ProcessWebhookBounded(ctx context.Context, secret string, r *h
 		result.ProfileID = profileID
 	} else {
 		result.Outcome = OutcomeSkipped
-		result.Summary = "Skipped because external user is not linked to a Silo profile"
+		result.Summary = "Skipped because external user is not linked to a Prairie profile"
 		return result, nil
 	}
 	profileID := result.ProfileID
@@ -348,7 +348,7 @@ func (s *Service) ProcessWebhookBounded(ctx context.Context, secret string, r *h
 	}
 	if match == nil {
 		result.Outcome = OutcomeUnmatched
-		result.Summary = "Received webhook event but found no matching Silo item"
+		result.Summary = "Received webhook event but found no matching Prairie item"
 		return result, nil
 	}
 	result.MatchedMediaItemID = match.MediaItemID
@@ -472,7 +472,7 @@ func (s *Service) ProcessWebhookBounded(ctx context.Context, secret string, r *h
 	return result, nil
 }
 
-// localProgressIsNewer reports whether the profile's Silo watch progress for
+// localProgressIsNewer reports whether the profile's Prairie watch progress for
 // the item is at least as recent as the event, so a delayed delivery cannot
 // overwrite or erase newer activity. An unreadable progress row is an error,
 // so a delivery never writes over progress it could not check.
@@ -491,7 +491,7 @@ func (s *Service) localProgressIsNewer(ctx context.Context, userID int, profileI
 // progressOutranksEvent reports whether progress last updated at updatedAt at
 // position wins over an event at eventAt. User stores keep updated_at in whole
 // seconds, so the event is compared at that precision too and a tie within one
-// second goes to Silo. The progress this external user and item's last event
+// second goes to Prairie. The progress this external user and item's last event
 // wrote is left to shouldSkipEvent, which orders events of the same pair,
 // including same-timestamp upgrades.
 func progressOutranksEvent(updatedAt time.Time, position float64, state *ItemState, eventAt time.Time) bool {
@@ -504,7 +504,7 @@ func progressOutranksEvent(updatedAt time.Time, position float64, state *ItemSta
 // isPairsOwnWrite reports whether progress is the write of the last event
 // applied for the pair: no newer than that event and at the position it
 // stored (user stores keep 0 for a completed item). As in history import, the
-// position tells it apart from Silo playback within the same second.
+// position tells it apart from Prairie playback within the same second.
 func isPairsOwnWrite(updatedAt time.Time, position float64, state *ItemState) bool {
 	if state == nil || updatedAt.After(state.LastEventAt) {
 		return false
@@ -549,7 +549,7 @@ func mappingsToDiscoveredUsers(mappings []ProfileMapping) []DiscoveredUser {
 }
 
 // endsPlaybackWithoutApplying reports whether a progress event that newer
-// Silo progress kept from applying should still be recorded as ending its
+// Prairie progress kept from applying should still be recorded as ending its
 // playback. A per-playback completion does, so the rest of that playback (a
 // stop in the credits, a repeated scrobble) stays ignored. An event no newer
 // than the pair's last one, such as a scrobble whose lookup finished late, is
@@ -590,10 +590,10 @@ func shouldSkipEvent(state *ItemState, event *CanonicalEvent) bool {
 }
 
 func resolveWebhookProfileID(mapping *ProfileMapping) (string, bool) {
-	if mapping == nil || mapping.SiloProfileID == nil || strings.TrimSpace(*mapping.SiloProfileID) == "" {
+	if mapping == nil || mapping.PrairieProfileID == nil || strings.TrimSpace(*mapping.PrairieProfileID) == "" {
 		return "", false
 	}
-	return *mapping.SiloProfileID, true
+	return *mapping.PrairieProfileID, true
 }
 
 func buildWebhookURL(baseURL, secret string) string {

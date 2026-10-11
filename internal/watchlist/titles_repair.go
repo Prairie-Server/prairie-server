@@ -8,8 +8,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // TitleObserver receives the outcome of TMDB detail fetches made for other

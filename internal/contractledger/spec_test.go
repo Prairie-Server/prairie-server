@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // TestRatifiedOperationsExistInSpec pins the ledger to the committed OpenAPI

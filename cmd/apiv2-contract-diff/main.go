@@ -18,7 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Silo-Server/silo-server/internal/contractspec"
+	"github.com/prairie-server/prairie-server/internal/contractspec"
 )
 
 func main() {

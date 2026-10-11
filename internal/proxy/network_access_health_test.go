@@ -3,7 +3,7 @@ package proxy
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // /health carries the provider report the API stores on this proxy's row.

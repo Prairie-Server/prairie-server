@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 	"github.com/google/uuid"
 )
 

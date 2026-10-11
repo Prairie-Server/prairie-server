@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 // ClientURLFor is the one accessor every client-facing proxy URL is built on.

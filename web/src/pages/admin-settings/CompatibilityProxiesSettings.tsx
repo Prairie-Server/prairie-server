@@ -326,7 +326,7 @@ export default function CompatibilityProxiesSettings() {
               )}
               {missingPrerequisites.length > 0 && (
                 <span className="text-muted-foreground text-sm">
-                  Silo cannot download it until these commands are installed on the server:{" "}
+                  Prairie cannot download it until these commands are installed on the server:{" "}
                   {missingPrerequisites.map((item) => item.command).join(", ")}
                 </span>
               )}
@@ -393,14 +393,14 @@ export default function CompatibilityProxiesSettings() {
           >
             <SettingField
               label="Name shown to Jellyfin apps"
-              description="Defaults to your Silo server name."
+              description="Defaults to your Prairie server name."
               value={form.getValue("jellyfin_compat.server_name")}
               onChange={(v) => form.setValue("jellyfin_compat.server_name", v)}
               restartRequired={restartKeys.has("jellyfin_compat.server_name")}
             />
             <SettingField
               label="Server ID"
-              description="Changing it makes saved clients treat Silo as a new server."
+              description="Changing it makes saved clients treat Prairie as a new server."
               value={form.getValue("jellyfin_compat.server_id")}
               onChange={(v) => form.setValue("jellyfin_compat.server_id", v)}
               restartRequired={restartKeys.has("jellyfin_compat.server_id")}
@@ -437,7 +437,7 @@ export default function CompatibilityProxiesSettings() {
             />
             <SettingField
               label="Web player install folder"
-              description="Leave blank to use the folder Silo manages."
+              description="Leave blank to use the folder Prairie manages."
               value={form.getValue("jellyfin_compat.web_install_dir")}
               onChange={(v) => form.setValue("jellyfin_compat.web_install_dir", v)}
               restartRequired={restartKeys.has("jellyfin_compat.web_install_dir")}

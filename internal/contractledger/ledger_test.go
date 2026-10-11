@@ -12,8 +12,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
-	apiv2registry "github.com/Silo-Server/silo-server/internal/apiv2"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
+	apiv2registry "github.com/prairie-server/prairie-server/internal/apiv2"
 )
 
 // TestLedgerMatchesInventory is the CI gate: the committed ledger must satisfy
@@ -661,7 +661,7 @@ func TestSchemaRejectsMisRootedCallSite(t *testing.T) {
 		"android": "android/shared/src/commonMain/kotlin/X.kt",
 		"apple":   "silo-apple/iosApp/iosApp/X.swift",
 		"web":     "web/src/x.ts",
-		"server":  "silo-server/internal/x.go",
+		"server":  "prairie-server/internal/x.go",
 	}
 	for repo, file := range cases {
 		t.Run(repo, func(t *testing.T) {

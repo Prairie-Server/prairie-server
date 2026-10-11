@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 	"github.com/danielgtaylor/huma/v2"
 )
 

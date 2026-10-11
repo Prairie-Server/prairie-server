@@ -2,7 +2,7 @@
 
 **Status:** Implemented 2026-06-11
 
-Silo's shared outbound email facility. It is deliberately feature-agnostic: any
+Prairie's shared outbound email facility. It is deliberately feature-agnostic: any
 feature that sends mail (notification emails, account flows, invites) composes
 a `mail.Message` and hands it to the shared `mail.Sender`, so SMTP
 configuration, security policy, and diagnostics live in exactly one place.
@@ -37,7 +37,7 @@ low):
 | `email.smtp_username` | — | empty = no auth |
 | `email.smtp_password` | — | encrypted at rest (`SensitiveSettingKeys`) |
 | `email.from_address` | — | required |
-| `email.from_name` | `Silo` | |
+| `email.from_name` | `Prairie` | |
 
 Admin UI: Admin Settings → Notifications → Email, including a synchronous test
 send (`POST /api/v1/admin/email/test`).
@@ -53,7 +53,7 @@ action and picks a dark or white label for contrast.
 The logo is embedded in each message as an inline PNG, not linked. Remote images
 are often blocked, the recipient may not reach the server, and uploaded logos
 are stored as WebP, which Outlook does not render. `mail.BrandLoader` reads the
-branding, converts the wordmark once per content ref, and falls back to the Silo
+branding, converts the wordmark once per content ref, and falls back to the Prairie
 wordmark when the asset cannot be read, so branding never blocks a send. A
 message rendered with a `mail.Brand` must carry `Brand.InlineImages()` as
 `Message.Inline`. Retained messages, such as queued address verifications, keep

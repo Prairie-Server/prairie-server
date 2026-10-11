@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func queueImageCacheCleanupJob(t *testing.T, r *Repository, prefixes []string) *models.AdminJob {

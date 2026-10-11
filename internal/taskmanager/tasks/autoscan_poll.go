@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // AutoscanPoller runs autoscan cycles. PollOnce honors per-source intervals;

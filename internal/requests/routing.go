@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 // Routing: Silo decides which server each quality tier of a request goes to,

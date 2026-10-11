@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 func TestConcatPathQuotesForFFconcat(t *testing.T) {

@@ -22,20 +22,20 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamlocation"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamlocation"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 const (
@@ -1799,7 +1799,7 @@ func (h *PlaybackHandler) HandleDeleteActiveEncodings(w http.ResponseWriter, r *
 		return
 	}
 	q := newCaseInsensitiveQuery(r.URL.Query())
-	// DeviceId is intentionally ignored: Silo's playback store is keyed by
+	// DeviceId is intentionally ignored: Prairie's playback store is keyed by
 	// PlaySessionId, clients always send it, and Jellyfin's own teardown matches
 	// by playSessionId (ignoring deviceId) whenever playSessionId is non-empty.
 	playSessionID := q.Get("PlaySessionId")
@@ -2850,7 +2850,7 @@ func (h *PlaybackHandler) ensureTranscodeSessionWithToneMapMode(
 	}
 
 	streamOriginSeconds := 0.0
-	copySeekAnchorResolved := source.SiloSeekReanchor && compatHLSCopiesVideo(source)
+	copySeekAnchorResolved := source.PrairieSeekReanchor && compatHLSCopiesVideo(source)
 	if copySeekAnchorResolved {
 		streamOriginSeconds, startSegmentNumber, err = playback.ResolveCopySeekAnchor(ctx, h.FFmpegPath, file.FilePath, initialSeekSeconds, h.compatSegmentDuration())
 		if err != nil {
@@ -3185,10 +3185,10 @@ func shouldGenerateCompatFullManifest(source PlaybackMediaSource, segmentDuratio
 // the source-aligned media playlist before it applies its own resume seek. A
 // pre-seeked process advertises segments 0..K-1 that can never exist and makes
 // the player's initial segment-zero request fail. Later segment-K requests use
-// the normal on-demand restart path. Clients opting into SiloSeekReanchor instead
+// the normal on-demand restart path. Clients opting into PrairieSeekReanchor instead
 // receive a fresh generation anchored at their explicit source-time request.
 func compatInitialTranscodePosition(source PlaybackMediaSource, _ int, requested float64) (float64, int) {
-	if source.SiloSeekReanchor && compatHLSCopiesVideo(source) {
+	if source.PrairieSeekReanchor && compatHLSCopiesVideo(source) {
 		return math.Max(0, requested), 0 // Segment numbering is resolved from the actual anchor before start.
 	}
 	return 0, 0

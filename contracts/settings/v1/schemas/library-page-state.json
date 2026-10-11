@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/contracts/settings/v1/schemas/library-page-state.json",
+  "$id": "https://prairie-server.dev/contracts/settings/v1/schemas/library-page-state.json",
   "title": "Library page state",
   "description": "Remembered per-library browse state. Mirrors web/src/hooks/queries/libraryPageState.ts.",
   "type": "object",

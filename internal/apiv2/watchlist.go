@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // The watchlist domain: the acting profile's watchlist, the same pattern as

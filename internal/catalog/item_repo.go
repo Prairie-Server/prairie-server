@@ -14,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/pathscope"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/pathscope"
 )
 
 // Sentinel errors for item repository operations.
@@ -2574,7 +2574,7 @@ type ExternalIDMatchRow struct {
 
 // LookupTMDBIDs returns one row per matching media item that has its tmdb_id
 // in the supplied list and is linked to at least one enabled library.
-// mediaType is "movie" or "series" (silo's internal naming).
+// mediaType is "movie" or "series" (prairie's internal naming).
 // When a media item is linked to multiple libraries the first matched row is
 // returned (ordered by library id for determinism).
 // The pluginhost.CatalogPresence adapter calls this to answer

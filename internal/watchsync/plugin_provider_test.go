@@ -12,9 +12,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	hostplugins "github.com/Silo-Server/silo-server/internal/plugins"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	hostplugins "github.com/prairie-server/prairie-server/internal/plugins"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 func (h *WatchTogetherHandler) FallbackWatchTogetherSource(ctx context.Context, room string, user int, profile, proof string, input watchtogether.SourceFallbackInput) (watchtogether.Snapshot, string, error) {

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 const (
@@ -41,7 +41,7 @@ const imageCacheWorkerMemoryBudget = 512 << 20
 // cap keeps a many-core server from monopolizing provider connections. The
 // original fixed pool of 2 measured roughly 60 images/minute on a ~600k-item
 // library; 48 workers measured roughly 2,900/minute over a 60-minute window
-// (RXWatcher/silo-server@3b377f5c2).
+// (RXWatcher/prairie-server@3b377f5c2).
 //
 // configured, when positive, is the administrator's metadata.image_workers
 // value and replaces the CPU-derived size outright; the memory cap still
@@ -321,7 +321,7 @@ func (t *CacheMetadataImagesTask) runLadderBackfill(
 ) {
 	hostname, _ := os.Hostname()
 	if hostname == "" {
-		hostname = "silo"
+		hostname = "prairie"
 	}
 	workerID := fmt.Sprintf("%s:ladder:%s", hostname, uuid.NewString())
 	progress.Report(0, "Regenerating cached artwork for the current image size ladder")
@@ -376,7 +376,7 @@ type metadataImageRunFunc func(context.Context, string, int, int, time.Duration,
 func executeMetadataImages(ctx context.Context, progress taskmanager.ProgressReporter, backfill bool, run metadataImageRunFunc) error {
 	hostname, _ := os.Hostname()
 	if hostname == "" {
-		hostname = "silo"
+		hostname = "prairie"
 	}
 	mode := "drain"
 	maxRuntime := cacheMetadataImagesMaxRuntime

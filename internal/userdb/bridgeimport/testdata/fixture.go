@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	_ "embed"
 
-	"github.com/Silo-Server/silo-server/internal/userdb"
+	"github.com/prairie-server/prairie-server/internal/userdb"
 )
 
 // Schema22 is sqlite_schema output from the schema22 NewUserDB constructor,

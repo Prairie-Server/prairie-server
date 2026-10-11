@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogsvc "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 func (f *fakeAdminCollections) ListAdminCollections(context.Context, *int) (handlers.AdminCollectionsList, error) {

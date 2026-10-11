@@ -24,7 +24,7 @@ type settingBatchWriter interface {
 // restart required): consumers read them through Settings, which caches reads
 // briefly. The enabled flags default to on and act as kill switches — except
 // webhooks and Discord, which are opt-in and stay off until an admin enables
-// them. Mobile push through the Silo relay defaults to on for new installs;
+// them. Mobile push through the Prairie relay defaults to on for new installs;
 // a migration pins it off for servers that existed before that default so
 // nobody is opted in without seeing the setup-wizard notice. Flood safety
 // comes from per-library seed markers, not from staged flag flips.
@@ -93,7 +93,7 @@ const (
 	// already passed, and the window is what keeps those visible.
 	defaultServerChannelsBatchSeconds = 300
 	minServerChannelsBatchSeconds     = 120
-	// DefaultPushRelayURL is the public Silo relay origin used when no
+	// DefaultPushRelayURL is the public Prairie relay origin used when no
 	// notifications.push_relay_url override is stored.
 	DefaultPushRelayURL = "https://push.siloserver.org"
 
@@ -477,7 +477,7 @@ func (s *Settings) EnabledPushPlatforms(ctx context.Context) []string {
 	return platforms
 }
 
-// PushRelayURL is the public Silo relay origin.
+// PushRelayURL is the public Prairie relay origin.
 func (s *Settings) PushRelayURL(ctx context.Context) string {
 	value := strings.TrimRight(strings.TrimSpace(s.raw(ctx, SettingPushRelayURL)), "/")
 	if value == "" {
@@ -486,7 +486,7 @@ func (s *Settings) PushRelayURL(ctx context.Context) string {
 	return value
 }
 
-// PushRelayAPIKey is the bearer credential for the Silo relay.
+// PushRelayAPIKey is the bearer credential for the Prairie relay.
 func (s *Settings) PushRelayAPIKey(ctx context.Context) string {
 	return strings.TrimSpace(s.raw(ctx, SettingPushRelayAPIKey))
 }

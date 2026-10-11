@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
-	"github.com/Silo-Server/silo-server/internal/contractledger"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
+	"github.com/prairie-server/prairie-server/internal/contractledger"
 )
 
 // LedgerEntry is the slice of a migration-ledger entry the gate and the

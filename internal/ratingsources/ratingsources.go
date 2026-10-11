@@ -18,8 +18,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Selection is the set of sources an administrator turned on in addition to

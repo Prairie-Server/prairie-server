@@ -1,12 +1,12 @@
 # Restart-resilient playback (TR-lease)
 
-How Silo keeps playback alive across a server restart, reconnect, or partial
+How Prairie keeps playback alive across a server restart, reconnect, or partial
 stream — and how the design arrived at **TR-lease** (token-carried
 reconstruction + a server-side session-deny marker for revocation).
 
 > **Status: both halves are implemented.** Token-carried reconstruction shipped
 > first; the session-deny marker now ships alongside it. The Redis key
-> `silo:streamauth:<session_id>` carries a TTL equal to the stream token
+> `prairie:streamauth:<session_id>` carries a TTL equal to the stream token
 > lifetime (`playback.MaxTokenTTL`, 24h) and is written by a user stop on v1 and
 > v2, by session expiry and stream abort, and by admin stop and terminate. The
 > API checks it before it serves or reconstructs a session (the
@@ -120,7 +120,7 @@ the §8 design note.)
 
 > **Status: implemented.** The deny-marker column describes the shipped
 > behavior. A stop, expiry, abort, or admin terminate writes
-> `silo:streamauth:<session_id>`, and the node withholds bytes on the next
+> `prairie:streamauth:<session_id>`, and the node withholds bytes on the next
 > serve rather than waiting out the 24h token TTL.
 
 ---
@@ -255,7 +255,7 @@ The revocation surface was deliberately
 kept to the *one* case the offloaded topology cannot otherwise cover, rather than
 a periodic re-check of every stream. Every event that ends a session — a user
 stop on v1 or v2, session expiry, a stream abort, and an admin stop or terminate
-— writes `silo:streamauth:<session_id> = deny` with a TTL equal to the stream
+— writes `prairie:streamauth:<session_id> = deny` with a TTL equal to the stream
 token lifetime (`playback.MaxTokenTTL`, 24h). The API reads it before it serves
 or reconstructs a session, and the offload node reads it (a node-local Redis
 GET, sub-ms, cached in process for about two seconds) before serving any bytes,
@@ -330,7 +330,7 @@ package.
 **Commit 2 — session-deny marker. (shipped)**
 
 - `playback.StreamDeny` (`internal/playback/streamdeny.go`): a deny-only Redis
-  store — `Deny(sessionID)` writes `silo:streamauth:<session_id>` with a TTL of
+  store — `Deny(sessionID)` writes `prairie:streamauth:<session_id>` with a TTL of
   `MaxTokenTTL`, and `Denied(sessionID)` is a fail-open reader with a ~2s
   in-process cache and a one-second lookup timeout. No poller, no allow-leases,
   no access re-resolver. A nil `*StreamDeny` (no Redis configured) is a no-op.
@@ -384,7 +384,7 @@ evolution:
   next-play + the ≤24h token; only the session-scoped events write a marker.
 - **Dedicated transcode-node restart (P-3 / tr-10). Fixed for both paths.**
   *Native:* the proxy forwards the verified stream token to the transcode node
-  (`X-Silo-Stream-Token`); on a manifest/segment miss the node re-verifies the
+  (`X-Prairie-Stream-Token`); on a manifest/segment miss the node re-verifies the
   token, decodes the recipe, and self-reconstructs ffmpeg seeked to the requested
   segment — single-flighted and concurrency-capped exactly like the integrated
   reconstruct. *Jellycompat:* the node-hop token is server-minted and *could* carry the
@@ -432,7 +432,7 @@ evolution:
   event, or accepting it. See §7.
 - **Monitoring.** Two distinct questions:
   - *Live "who is watching what right now"* — covered. Every node serve writes a
-    record to the Redis tracker (`silo:sessions:*`), now enriched with
+    record to the Redis tracker (`prairie:sessions:*`), now enriched with
     `auth_user_id` / `media_file_id` from the verified token, so the admin
     active-streams view answers who/what/where, tied to real byte-serving and
     surviving a central restart. Integrated (no-node) sessions show in central's
@@ -511,10 +511,10 @@ ASCII blocks render anywhere.
 
 ### 12.1 Topology — where state lives
 
-> Everything in the diagram is shipped: the `silo:streamauth:<session_id> = deny`
+> Everything in the diagram is shipped: the `prairie:streamauth:<session_id> = deny`
 > marker, the "Admin Stop/Terminate → write session-deny marker" arrow (stop,
 > expiry, and abort write it too), the node's "deny GET", the tracker
-> (`silo:sessions:*`), and the recipe handoff.
+> (`prairie:sessions:*`), and the recipe handoff.
 
 ```text
                          ┌─────────────────────────── CENTRAL (mode=server) ───────────────────────────┐
@@ -525,8 +525,8 @@ ASCII blocks render anywhere.
                                      │ Postgres                  │ Redis                 │
                                      ▼                           ▼                       │ (multi-node only)
                          ┌───────────────────────┐   ┌──────────────────────────┐       ▼
-                         │ catalog / access       │   │ silo:sessions:*  (tracker)│  ┌────────────────────────┐
-                         │ jellycompat_playback_  │   │ silo:streamauth:<sid>     │  │ Proxy node (mode=proxy) │
+                         │ catalog / access       │   │ prairie:sessions:*  (tracker)│  ┌────────────────────────┐
+                         │ jellycompat_playback_  │   │ prairie:streamauth:<sid>     │  │ Proxy node (mode=proxy) │
                          │   sessions (compat      │   │   = deny  (session kill)  │◀─│ verifyToken + deny GET  │
                          │   store, carries Recipe)│   └──────────────────────────┘  │ serves direct/remux     │
                          └───────────────────────┘                ▲                  │ proxies transcode ──────┼──▶ Transcode node
@@ -589,7 +589,7 @@ session ignores it.
 
 ### 12.4 Normal playback — native, multi-node (offloaded)
 
-> The `GET silo:streamauth:{sid}` guard below is shipped. A denied session
+> The `GET prairie:streamauth:{sid}` guard below is shipped. A denied session
 > answers `410 playback_session_ended` with no bytes; an absent marker or a
 > Redis error serves.
 
@@ -606,11 +606,11 @@ sequenceDiagram
     loop manifest + segments
         C->>N: GET /stream/transcode/TOKEN/...
         N->>N: verifyToken(TOKEN)
-        N->>R: GET silo:streamauth:{sid}   (deny marker, ~2s cached)
+        N->>R: GET prairie:streamauth:{sid}   (deny marker, ~2s cached)
         alt deny
             N-->>C: 410 playback_session_ended (no bytes)
         else allow / absent
-            N->>R: Track silo:sessions:{node}:{sid}  (uid, mfid from claims)
+            N->>R: Track prairie:sessions:{node}:{sid}  (uid, mfid from claims)
             N->>T: proxy /transcode/{sid}/...
             T-->>N: bytes
             N-->>C: bytes
@@ -641,7 +641,7 @@ sequenceDiagram
 - multi-node restart: the integrated front-end reconstructs only the `Session`
   (to learn `tnode`) and re-proxies; the transcode node keeps serving. If the
   transcode *node* itself reboots, the proxy forwards the stream token
-  (`X-Silo-Stream-Token`) and the node self-reconstructs ffmpeg seeked to the
+  (`X-Prairie-Stream-Token`) and the node self-reconstructs ffmpeg seeked to the
   requested segment (native path, P-3). A jellycompat session on a rebooted node
   reconstructs too: the node fetches the recipe central wrote to the shared Redis
   recipe store (`internal/noderecipe`) at transcode start, since the Jellyfin
@@ -665,11 +665,11 @@ flowchart TD
         PB -- yes --> PM[mint token]
     end
     subgraph Admin["Stop / expiry / abort / admin terminate (event, not a timer)"]
-        K[StreamDeny.Deny] --> WD[SET silo:streamauth:session_id = deny<br/>TTL = MaxTokenTTL 24h]
+        K[StreamDeny.Deny] --> WD[SET prairie:streamauth:session_id = deny<br/>TTL = MaxTokenTTL 24h]
         K --> WS[realtime WS stop + producer teardown]
     end
     subgraph Node["API, proxy, transcode node — every serve"]
-        G[verifyToken OK] --> L{GET silo:streamauth:session_id}
+        G[verifyToken OK] --> L{GET prairie:streamauth:session_id}
         L -- present deny --> F[410 playback_session_ended, no bytes]
         L -- absent / redis-err --> SV[serve bytes  fail-open]
     end
@@ -750,7 +750,7 @@ request; **—** = the path never executes on that role (nothing to reconstruct)
 |------|----------------|---------------------|
 | integrated | `?st` stream token — identity for direct/remux, full recipe for transcode | durable compat row `PlaybackSession.Recipe` |
 | proxy node | self-describing path token, re-derived per request — the proxy holds no per-session state | same path token (identity); the recipe is not needed at the proxy |
-| transcode node | forwarded `X-Silo-Stream-Token`, recipe-complete | identity token + Redis `noderecipe` recipe (the Jellyfin token cannot carry it) |
+| transcode node | forwarded `X-Prairie-Stream-Token`, recipe-complete | identity token + Redis `noderecipe` recipe (the Jellyfin token cannot carry it) |
 
 **Reading the matrix**
 

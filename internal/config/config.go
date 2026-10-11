@@ -233,7 +233,7 @@ type authConfigRaw struct {
 // AudiobookshelfCompatConfig holds the dedicated ABS-compat listener setting.
 // The listener binds its own port (:13378, ABS's
 // conventional port) and serves the full ABS protocol — login, libraries,
-// items, sessions — without colliding with silo's SPA on the main listener.
+// items, sessions — without colliding with prairie's SPA on the main listener.
 type AudiobookshelfCompatConfig struct {
 	Listen string `yaml:"-"`
 }
@@ -288,7 +288,7 @@ type RecommendationsConfig struct {
 	EmbeddingsJobTimeout time.Duration `yaml:"-"`
 }
 
-// AIConfig holds the shared connection settings for Silo's AI features
+// AIConfig holds the shared connection settings for Prairie's AI features
 // (subtitle translation, metadata translation, Whisper ASR): one
 // OpenAI-compatible endpoint the operator can point at OpenAI, Groq, a local
 // Ollama/llama.cpp server, etc., with an optional separate endpoint for audio
@@ -404,7 +404,7 @@ type ArtworkConfig struct {
 	LocalPath      string `yaml:"local_path"`
 }
 
-// Config is the top-level configuration for Silo.
+// Config is the top-level configuration for Prairie.
 type Config struct {
 	Server               ServerConfig               `yaml:"server"`
 	Database             DatabaseConfig             `yaml:"database"`
@@ -461,7 +461,7 @@ var dayRegexp = regexp.MustCompile(`^(\d+)d$`)
 
 var defaultJellyfinCompatServerID = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://silo.local/jellycompat"),
+	[]byte("https://prairie.local/jellycompat"),
 ).String()
 
 const playbackTranscodeDirSettingKey = "playback.transcode_dir"
@@ -482,7 +482,7 @@ const (
 
 // DefaultTranscodeDir is the fallback playback.transcode_dir; download
 // artifacts default to a sibling directory (see EffectiveDownloadArtifactDir).
-const DefaultTranscodeDir = "/tmp/silo-transcode"
+const DefaultTranscodeDir = "/tmp/prairie-transcode"
 
 // EffectiveDownloadArtifactDir resolves the shared prepared-download artifact
 // root. Keeping this path rule in config lets API and transcode-node processes
@@ -498,12 +498,12 @@ func EffectiveDownloadArtifactDir(artifactDir, transcodeDir string) string {
 	// "/srv/transcode", which would nest the artifact root INSIDE the transcode
 	// dir — where the orphaned-transcode sweep deletes non-active
 	// subdirectories, i.e. it would delete prepared downloads.
-	return filepath.Join(filepath.Dir(filepath.Clean(transcodeDir)), "silo-download-artifacts")
+	return filepath.Join(filepath.Dir(filepath.Clean(transcodeDir)), "prairie-download-artifacts")
 }
 
 const DefaultJellyfinCompatEmulatedServerVersion = "12.1.0"
 const DefaultJellyfinWebVersion = "12.1"
-const DefaultJellyfinWebInstallDir = "/var/lib/silo/compat/jellyfin-web"
+const DefaultJellyfinWebInstallDir = "/var/lib/prairie/compat/jellyfin-web"
 const DefaultJellyfinWebDir = DefaultJellyfinWebInstallDir + "/current"
 
 // parseDuration parses a duration string that supports Go's time.ParseDuration
@@ -562,7 +562,7 @@ func setDefaults() *configRaw {
 			MaxConcurrentScoped:    2,
 			RealtimeMonitoring:     true,
 		},
-		Artwork: ArtworkConfig{StorageBackend: artworkBackendAuto, LocalPath: "/var/lib/silo/artwork"},
+		Artwork: ArtworkConfig{StorageBackend: artworkBackendAuto, LocalPath: "/var/lib/prairie/artwork"},
 		Matcher: MatcherConfig{
 			Workers:                 8,
 			BatchSize:               500,
@@ -593,7 +593,7 @@ func setDefaults() *configRaw {
 			PublicURL:             "http://127.0.0.1:8097",
 			EmulatedServerVersion: DefaultJellyfinCompatEmulatedServerVersion,
 			ServerID:              defaultJellyfinCompatServerID,
-			ServerName:            "Silo",
+			ServerName:            "Prairie",
 			WebEnabled:            true,
 			WebVersion:            DefaultJellyfinWebVersion,
 			WebDir:                DefaultJellyfinWebDir,

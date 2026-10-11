@@ -3,9 +3,9 @@ package playback_test
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestSelectAudioTrack(t *testing.T) {
@@ -267,7 +267,7 @@ func TestMatchAudioTrackAcrossVersionsFallsBackToLanguageAcrossCodecs(t *testing
 
 func TestIsOriginalLanguagePreference(t *testing.T) {
 	for value, want := range map[string]bool{
-		"original": true, "Original": true, "x-silo-original": true, " X-Silo-Original ": true,
+		"original": true, "Original": true, "x-silo-original": true, " X-Prairie-Original ": true,
 		"": false, "en": false, "ja": false, "x-silo-other": false,
 	} {
 		if got := playback.IsOriginalLanguagePreference(value); got != want {

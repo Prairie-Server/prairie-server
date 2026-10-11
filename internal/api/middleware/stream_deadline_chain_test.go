@@ -9,8 +9,8 @@ import (
 
 	chimw "github.com/go-chi/chi/v5/middleware"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // TestStreamingDeadlineSurvivesMiddlewareChain guards the Unwrap chain: the

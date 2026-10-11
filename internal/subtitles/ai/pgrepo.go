@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

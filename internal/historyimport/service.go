@@ -11,12 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/workmetrics"
+	"github.com/prairie-server/prairie-server/internal/workmetrics"
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 // maxConcurrentRuns limits how many import runs execute simultaneously.
@@ -579,7 +579,7 @@ var undatedImportTime = time.Unix(0, 0).UTC()
 // out of the profile's Continue Watching, with a dismissal anchored to the
 // imported progress stamp. It acts only while the progress row still holds the
 // imported position and date, written by this run or an earlier one: newer
-// playback in Silo is never hidden, and re-running an import hides entries an
+// playback in Prairie is never hidden, and re-running an import hides entries an
 // earlier run brought in.
 func dismissImportedResume(ctx context.Context, store userstore.UserStore, profileID, itemID string, position float64, importedAt time.Time) error {
 	progress, err := store.GetProgress(ctx, profileID, itemID)

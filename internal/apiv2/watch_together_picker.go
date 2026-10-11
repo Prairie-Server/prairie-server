@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	mediacatalog "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/ratingsources"
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	mediacatalog "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/ratingsources"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 // WatchTogetherPickerService computes the "together" rows and resolves them

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeRequests is a MediaRequestService over a fixed request list and

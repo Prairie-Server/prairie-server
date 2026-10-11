@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // HardwareResolver turns the playback.hw_accel and playback.hw_device

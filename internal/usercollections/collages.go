@@ -3,8 +3,8 @@ package usercollections
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // CollectionDefinition is the part of a stored collection that decides which

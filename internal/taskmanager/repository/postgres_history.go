@@ -10,11 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/database/pglock"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
-const taskHistoryCleanupAdvisoryLock int64 = 0x53494C4F48495354 // "SILOHIST"
+const taskHistoryCleanupAdvisoryLock int64 = 0x53494C4F48495354 // "PRAIRIEHIST"
 
 type taskHistoryExecer interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
@@ -115,7 +115,7 @@ func (r *PgExecutionRepository) ListPage(ctx context.Context, key string, before
 }
 
 // Prune deletes bounded batches of execution history outside the retention
-// policy. A database advisory lock ensures only one Silo node prunes at a time.
+// policy. A database advisory lock ensures only one Prairie node prunes at a time.
 // It always preserves the newest execution for every task, including tasks
 // that are no longer registered.
 //

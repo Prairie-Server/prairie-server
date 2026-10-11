@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
-	"github.com/Silo-Server/silo-server/internal/contractspec"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
+	"github.com/prairie-server/prairie-server/internal/contractspec"
 )
 
 // The command owns file, approval and lock-marker handling. A small real

@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/logredact"
 )
 
 // ErrSessionNotFound is returned when a compat session does not exist.
@@ -23,7 +23,7 @@ type sessionPersistence interface {
 	DeleteByToken(ctx context.Context, token string) error
 }
 
-// Session stores a compat login plus upstream Silo credentials.
+// Session stores a compat login plus upstream Prairie credentials.
 type Session struct {
 	Token                 string
 	Username              string
@@ -210,7 +210,7 @@ func (s *SessionStore) Delete(token string) {
 	}
 }
 
-// EvictUser drops a Silo account's compat sessions from this store's memory.
+// EvictUser drops a Prairie account's compat sessions from this store's memory.
 // Signing an account out deletes its stored sessions in the revoking
 // transaction (auth.RevokeSignInsInTransaction); each replica then calls
 // EvictUser so the copies it already loaded stop working too.

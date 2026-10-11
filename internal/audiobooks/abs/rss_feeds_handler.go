@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 var slugRe = regexp.MustCompile(`^[a-z0-9-]{4,64}$`)
@@ -187,7 +187,7 @@ func renderFeedXML(f RSSFeed, item *models.MediaItem, files []*models.MediaFile,
 	b.WriteString("<channel>\n")
 	b.WriteString("<title>" + xmlEscape(item.Title) + "</title>\n")
 	b.WriteString("<link>" + xmlEscape(baseURL+"/feed/"+f.Slug+".xml") + "</link>\n")
-	b.WriteString("<description>silo audiobook feed</description>\n")
+	b.WriteString("<description>prairie audiobook feed</description>\n")
 	for _, mf := range files {
 		enc := baseURL + "/feed/" + f.Slug + "/file/" + strconv.Itoa(mf.ID)
 		b.WriteString("<item>\n")

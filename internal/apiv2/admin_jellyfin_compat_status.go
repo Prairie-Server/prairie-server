@@ -3,7 +3,7 @@ package apiv2
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 type AdminJellyfinCompatStatusService interface {

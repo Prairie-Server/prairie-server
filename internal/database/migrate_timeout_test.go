@@ -24,10 +24,10 @@ func TestMigrationTimeout(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.set {
-				t.Setenv("SILO_MIGRATE_TIMEOUT", tt.env)
+				t.Setenv("PRAIRIE_MIGRATE_TIMEOUT", tt.env)
 			} else {
 				// Ensure no ambient value leaks in.
-				t.Setenv("SILO_MIGRATE_TIMEOUT", "")
+				t.Setenv("PRAIRIE_MIGRATE_TIMEOUT", "")
 			}
 			if got := MigrationTimeout(); got != tt.want {
 				t.Fatalf("MigrationTimeout() = %v, want %v", got, tt.want)
@@ -38,7 +38,7 @@ func TestMigrationTimeout(t *testing.T) {
 
 func TestMigrationContextDeadline(t *testing.T) {
 	// A positive timeout yields a context with a deadline.
-	t.Setenv("SILO_MIGRATE_TIMEOUT", "50ms")
+	t.Setenv("PRAIRIE_MIGRATE_TIMEOUT", "50ms")
 	ctx, cancel := MigrationContext(context.Background())
 	defer cancel()
 	if _, ok := ctx.Deadline(); !ok {
@@ -48,7 +48,7 @@ func TestMigrationContextDeadline(t *testing.T) {
 
 func TestMigrationContextNoDeadline(t *testing.T) {
 	// Zero disables the deadline entirely (for one-off heavy migrations).
-	t.Setenv("SILO_MIGRATE_TIMEOUT", "0")
+	t.Setenv("PRAIRIE_MIGRATE_TIMEOUT", "0")
 	ctx, cancel := MigrationContext(context.Background())
 	defer cancel()
 	if deadline, ok := ctx.Deadline(); ok {

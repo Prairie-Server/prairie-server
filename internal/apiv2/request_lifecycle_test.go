@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 type fakeLifecycle struct {

@@ -23,23 +23,23 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/settingsresolve"
-	"github.com/Silo-Server/silo-server/internal/streamlocation"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/access"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
+	"github.com/prairie-server/prairie-server/internal/streamlocation"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
 
 const (
@@ -215,7 +215,7 @@ func headerAuthenticatedMediaV3(clientFeatures []string) mediaAuthModeV3 {
 }
 
 // recipeCardStoreV3 is the shared control-plane store central hands a recipe
-// card to another Silo process through (*noderecipe.Store). One instance owns
+// card to another Prairie process through (*noderecipe.Store). One instance owns
 // one key space; the handler holds two of them, and what a stored card
 // authorizes or rebuilds is the field's business, not the interface's — see
 // PlaybackHandler.ProxyGrantStore and PlaybackHandler.NodeRecipeStore.
@@ -1895,7 +1895,7 @@ type playbackStartRequestDigestsV3 struct {
 }
 
 // playbackClientInfoForStartV3 resolves the client's app identity for a v3
-// start request. The X-Silo-Client-* headers win because they are present on
+// start request. The X-Prairie-Client-* headers win because they are present on
 // every request; the start body's client_playback_context is the fallback for
 // clients that report their app identity only there. All values stay opaque —
 // they are trimmed and length-clamped when the session stamps them.

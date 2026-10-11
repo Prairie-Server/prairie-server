@@ -14,7 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 var testTrickplayGrid = catalog.TrickplayGrid{Width: 300, Height: 126, TileColumns: 10, TileRows: 10, ThumbnailCount: 250, IntervalMS: 10000, Bandwidth: 1600}

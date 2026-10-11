@@ -1,24 +1,24 @@
-# Silo Trademark & Brand Policy
+# Prairie Trademark & Brand Policy
 
-Silo's source code is free and open source under the **GNU Affero General Public
+Prairie's source code is free and open source under the **GNU Affero General Public
 License v3.0 or later** (`AGPL-3.0-or-later`). You are welcome to use, study,
 modify, and redistribute it under those terms.
 
-**That freedom applies to the code — not to the Silo name and brand.** The Silo
+**That freedom applies to the code — not to the Silo name and brand.** The Prairie
 trademarks identify the official project and its official builds. This policy
 explains how they may and may not be used. It exists for a simple reason:
 anyone should be free to fork the software, while users can still trust that
-something called "Silo" actually comes from us.
+something called "Prairie" actually comes from us.
 
 ## Marks covered
 
-The following are trademarks of **Silo Media L.L.C.** ("Silo Media"), whether or
+The following are trademarks of **Silo Media L.L.C.** ("Prairie Media"), whether or
 not registered:
 
-- the names **Silo** and **Silo Server**
+- the names **Prairie** and **Prairie Server**
 - the **Silo logo** and **wordmark**
-- Silo **product and component names**, including **SiloRemote**, **SiloMac**,
-  and other "Silo…" names
+- Prairie **product and component names**, including **PrairieRemote**, **PrairieMac**,
+  and other "Prairie…" names
 - confusingly similar variations of the above
 
 The AGPL license over the source code **does not grant any license to these
@@ -26,12 +26,12 @@ marks.** This reservation is expressly permitted by AGPL-3.0 §7(e).
 
 ## Uses that are always fine — no permission needed
 
-- **Referring to Silo truthfully** — "compatible with Silo," "a plugin for
-  Silo," "built on Silo," "a fork of Silo." Use the word to refer to *our*
+- **Referring to Prairie truthfully** — "compatible with Silo," "a plugin for
+  Prairie," "built on Prairie," "a fork of Silo." Use the word to refer to *our*
   project, not to brand *yours*.
 - **Redistributing official, unmodified builds** under the Silo name, with all
   notices kept intact.
-- **Running, modifying, and self-hosting** Silo for yourself or your
+- **Running, modifying, and self-hosting** Prairie for yourself or your
   organization.
 - **Editorial and educational** use — articles, tutorials, talks, reviews.
 
@@ -43,62 +43,62 @@ marks.** This reservation is expressly permitted by AGPL-3.0 §7(e).
   identity.
 - Using the marks in a **company, product, domain, or app name** in a way that
   reads as official (see *Naming your project*; wordplay is exempt), or in any
-  way that implies Silo Media operates or endorses your offering.
+  way that implies Prairie Media operates or endorses your offering.
 - **Merchandise**, or using the logo or wordmark to sell your own product
-  beyond a referential "works with Silo" placement.
+  beyond a referential "works with Prairie" placement.
 
 Never use the marks to promote piracy or to impersonate the project.
 
 ## Naming your project
 
-Give your client, plugin, or fork its own name, then mention Silo in the
-tagline or description: "Bramble — a Silo client for Android TV," "Trakt sync
-plugin for Silo." That is referential use and needs no permission.
+Give your client, plugin, or fork its own name, then mention Prairie in the
+tagline or description: "Bramble — a Prairie client for Android TV," "Trakt sync
+plugin for Prairie." That is referential use and needs no permission.
 
-Official products use "Silo" alone, **Silo Server**, or "Silo" joined to a
-product word (**SiloRemote**, **SiloMac**). Those patterns are reserved and
+Official products use "Prairie" alone, **Prairie Server**, or "Prairie" joined to a
+product word (**PrairieRemote**, **PrairieMac**). Those patterns are reserved and
 need written permission:
 
-- "Silo" on its own, or as the first word of a product name, including
-  generic descriptors used as the name such as "Silo Client" or "Silo Player"
-- "Silo[word]" names such as SiloTV or SiloPlay, which read as official apps
-- "[word]Silo" names such as OpenSilo or MySilo, which read as the project
+- "Prairie" on its own, or as the first word of a product name, including
+  generic descriptors used as the name such as "Prairie Client" or "Prairie Player"
+- "Prairie[word]" names such as PrairieTV or PrairiePlay, which read as official apps
+- "[word]Prairie" names such as OpenPrairie or MyPrairie, which read as the project
 - misspellings and look-alikes such as Sylo or Si1o
 
-Repository and package names such as `silo-plugin-trakt` are fine when "silo"
+Repository and package names such as `prairie-plugin-trakt` are fine when "prairie"
 only describes what the code plugs into.
 
 **Wordplay is fine, and is the exception to the rules above.** A name such as
-"Siloette" or "Silodeon" contains the mark but reads as its own word, not as an
+"Prairieette" or "Prairiedeon" contains the mark but reads as its own word, not as an
 official product, so it needs no permission, wherever you publish it, including
 app stores and commercial offerings. The test is whether a reasonable user would
-think the Silo team made it. Keep a description that says what the project is
-("Siloette, a Silo client"), use your own logo, and do not describe the project
-as official. Describing your project as "a Silo client" is fine; naming it
-"Silo Client" is not.
+think the Prairie team made it. Keep a description that says what the project is
+("Prairieette, a Prairie client"), use your own logo, and do not describe the project
+as official. Describing your project as "a Prairie client" is fine; naming it
+"Prairie Client" is not.
 
 ## Writing the name
 
-- Prose and UI text: **Silo**, capital S, one word. The server product is
-  **Silo Server**.
-- Repositories, packages, and command-line binaries: lowercase `silo`
-  (`silo-server`). App bundles and product names keep the display form
-  (`Silo`, `SiloTV`).
+- Prose and UI text: **Prairie**, capital S, one word. The server product is
+  **Prairie Server**.
+- Repositories, packages, and command-line binaries: lowercase `prairie`
+  (`prairie-server`). App bundles and product names keep the display form
+  (`Prairie`, `PrairieTV`).
 - Paths and config directories: follow the platform convention
-  (`/var/lib/silo`, `~/Library/Application Support/Silo`).
-- Never SILO, SiLo, or a typeset "Silo" in place of the supplied wordmark.
+  (`/var/lib/prairie`, `~/Library/Application Support/Prairie`).
+- Never PRAIRIE, SiLo, or a typeset "Prairie" in place of the supplied wordmark.
 
 ## Colors and motif
 
-You may use the Silo colors, and the three-bar motif from the website, in your
+You may use the Prairie colors, and the three-bar motif from the website, in your
 own interface. The logo, wordmark, and icons are what we reserve, so keep your
-own logo a different shape and do not build the Silo mark into it.
+own logo a different shape and do not build the Prairie mark into it.
 
 ## Forks must rebrand
 
-You may fork Silo — that is your right under the AGPL. But a **distributed** fork
+You may fork Prairie — that is your right under the AGPL. But a **distributed** fork
 must not use the Silo name or logo as its identity. Pick your own name and logo,
-remove the Silo brand assets (below), and you may state factually that your
+remove the Prairie brand assets (below), and you may state factually that your
 project "is based on Silo" or "is a fork of Silo." This is the same model used by
 Mozilla, Rust, and many other open-source projects: **open code, protected
 identity.**
@@ -112,14 +112,14 @@ See the `NOTICE` file in the brand-asset directories.
 
 ## Official sources
 
-The only official Silo software comes from:
+The only official Prairie software comes from:
 
-- the **Silo-Server** organization on GitHub — <https://github.com/Silo-Server>
+- the **Prairie-Server** organization on GitHub — <https://github.com/Prairie-Server>
 - the official website — <https://siloserver.org>
 - official app-store listings published by **Silo Media L.L.C.**
 
-Any app-store listing, download, or "Silo" app that does not originate from the
-above is **not** official and is **not** authorized to present itself as Silo.
+Any app-store listing, download, or "Prairie" app that does not originate from the
+above is **not** official and is **not** authorized to present itself as Prairie.
 Third-party projects that follow *Naming your project*, including wordplay
 names, are unaffected.
 
@@ -131,13 +131,13 @@ The goal of this policy is only to prevent user confusion and unauthorized
 "official-looking" releases.
 
 The canonical copy of this policy is the one in the siloserver.org repository:
-<https://github.com/Silo-Server/siloserver.org/blob/main/TRADEMARK.md>. Other
-Silo repositories carry synchronized copies. The brand page at
+<https://github.com/prairie-server/siloserver.org/blob/main/TRADEMARK.md>. Other
+Prairie repositories carry synchronized copies. The brand page at
 <https://siloserver.org/brand> is the practical guide and asset library, and
 follows the canonical file.
 
 ---
 
-*Silo and the Silo logo are trademarks of Silo Media L.L.C. The **™** symbol is
+*Prairie and the Silo logo are trademarks of Silo Media L.L.C. The **™** symbol is
 used with the Silo wordmark until federal registration issues, after which **®**
 applies.*

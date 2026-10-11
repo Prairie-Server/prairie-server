@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // TestRouter_MissingEndpointsRegistered exercises the newly added routes through

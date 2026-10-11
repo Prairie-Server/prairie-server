@@ -19,31 +19,31 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
-	"github.com/Silo-Server/silo-server/internal/settingsresolve"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // SessionManagerInterface defines the operations the PlaybackHandler needs
@@ -425,7 +425,7 @@ func (h *PlaybackHandler) playbackConfig() config.PlaybackConfig {
 	}
 	return config.PlaybackConfig{
 		TranscodeEnabled: true,
-		TranscodeDir:     filepath.Join(os.TempDir(), "silo-transcode"),
+		TranscodeDir:     filepath.Join(os.TempDir(), "prairie-transcode"),
 		Routing:          config.DefaultPlaybackRoutingPolicy(),
 	}
 }
@@ -1710,7 +1710,7 @@ func alignedSeekSeconds(seekSeconds float64, segmentDuration int, targetVideoCod
 // Errors: 404 (playback_session_not_found / not_found) when the session is
 // missing or cannot be reconstructed, 503 (unavailable) while the transcode is
 // temporarily unavailable, and — for tone-map execution failures — 422
-// (unsupported) with an X-Silo-Tone-Map-Execution-Error header of
+// (unsupported) with an X-Prairie-Tone-Map-Execution-Error header of
 // source_revision_changed or source_preflight_rejected. The 422 responses are
 // additive to the existing 404 and 503 cases; the Jellyfin-compatible 415
 // mapping is a separate surface and unchanged.
@@ -1821,7 +1821,7 @@ func writePlaybackToneMapExecutionError(w http.ResponseWriter, err error) bool {
 // missing or cannot be reconstructed, or the segment does not exist; 503
 // (unavailable) while the transcode is temporarily unavailable; and — for
 // tone-map execution failures — 422 (unsupported) with an
-// X-Silo-Tone-Map-Execution-Error header of source_revision_changed or
+// X-Prairie-Tone-Map-Execution-Error header of source_revision_changed or
 // source_preflight_rejected. The 422 responses are additive to the existing
 // 404 and 503 cases; the Jellyfin-compatible 415 mapping is a separate surface
 // and unchanged.
@@ -2103,7 +2103,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 		transcodeproxy.PrepareRequest(req, r)
 	}
 	// Best-effort forward of the stream token as a header so the node's
-	// reconstruct path (X-Silo-Stream-Token) can rebuild after a self-restart.
+	// reconstruct path (X-Prairie-Stream-Token) can rebuild after a self-restart.
 	// Verify at the API boundary and confirm it belongs to this session; an
 	// invalid or missing token never blocks the live proxy. validToken is kept so
 	// the same verified token can be re-injected into the node's manifest segment
@@ -2112,7 +2112,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	if stToken != "" && h.JWTSecret != "" {
 		claims, verifyErr := streamtoken.Verify(stToken, h.JWTSecret)
 		if verifyErr == nil && claims.SessionID == sessionID {
-			req.Header.Set("X-Silo-Stream-Token", stToken)
+			req.Header.Set("X-Prairie-Stream-Token", stToken)
 			validToken = stToken
 		} else if verifyErr != nil {
 			slog.WarnContext(r.Context(), "stream token not forwarded to transcode node", "component", "api", "error", verifyErr, "playback_session_id", sessionID)

@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 func TestRecommendationCardItemsPreservesRankedOrder(t *testing.T) {

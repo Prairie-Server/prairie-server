@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/collage"
+	"github.com/prairie-server/prairie-server/internal/collage"
 )
 
 // A collection without an uploaded, template or imported poster shows a

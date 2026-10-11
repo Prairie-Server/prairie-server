@@ -3,8 +3,8 @@ package playback
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // A Profile 8.1 source with an HDR10-compatible base layer, on an output that

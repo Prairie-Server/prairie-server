@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/Silo-Server/silo-server/internal/librarykind"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
 )
 
 const (

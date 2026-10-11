@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // NativeSessionActivity bridges durable compatibility pings to the process

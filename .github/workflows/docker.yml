@@ -19,8 +19,8 @@ env:
   # continuity so a new build remains greater than every existing build tag.
   BUILD_NUMBER_OFFSET: 0
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*
+  GONOSUMDB: github.com/prairie-server/*
 
 jobs:
   prepare:
@@ -79,7 +79,7 @@ jobs:
       contents: read
       actions: read
       packages: write
-    uses: Silo-Server/silo-server/.github/workflows/trusted-linux-build.yml@main
+    uses: Prairie-Server/prairie-server/.github/workflows/trusted-linux-build.yml@main
     with:
       platform: ${{ matrix.platform }}
       build_number: ${{ needs.prepare.outputs.build_number }}

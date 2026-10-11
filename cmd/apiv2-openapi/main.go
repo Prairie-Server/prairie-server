@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Silo-Server/silo-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/apiv2"
 )
 
 func main() {

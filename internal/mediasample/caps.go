@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // listingTimeout bounds each ffmpeg listing command.

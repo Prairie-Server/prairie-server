@@ -11,12 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
-	"github.com/Silo-Server/silo-server/internal/secret"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 var updateOfflineRoutes = flag.Bool("update-offline-routes", false, "rewrite contracts/api/v2/offline-routes.txt from the real router")

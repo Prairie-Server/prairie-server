@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/downloads"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/downloads"
 )
 
 type fakeDownloadCreation struct {

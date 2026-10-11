@@ -615,7 +615,7 @@ func consumerFixtureConfig(name string) Config {
 			{
 				ID: "v2", Description: "fixture v2 listener", Dir: "v2", Func: "NewHandler", Constructor: "newChiRouter",
 				DelegatedBy:    "api",
-				RouterConsumer: "github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/" + name + "/adapter.New",
+				RouterConsumer: "github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/" + name + "/adapter.New",
 			},
 		},
 		AuditDirs: []string{"api", "v2"},

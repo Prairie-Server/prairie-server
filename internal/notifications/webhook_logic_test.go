@@ -175,7 +175,7 @@ func TestBuildDiscordWebhookPayload(t *testing.T) {
 	if err := json.Unmarshal(payload, &body); err != nil {
 		t.Fatalf("payload is not valid JSON: %v", err)
 	}
-	if body.Username != "Silo" || len(body.Embeds) != 1 {
+	if body.Username != "Prairie" || len(body.Embeds) != 1 {
 		t.Fatalf("unexpected body shape: %+v", body)
 	}
 	embed := body.Embeds[0]
@@ -185,7 +185,7 @@ func TestBuildDiscordWebhookPayload(t *testing.T) {
 	if embed.Color != discordColorFavorite {
 		t.Fatalf("favorite reason must pick the favorite color, got %d", embed.Color)
 	}
-	if embed.Author == nil || embed.Author.Name != "New episode on Silo" {
+	if embed.Author == nil || embed.Author.Name != "New episode on Prairie" {
 		t.Fatalf("unexpected author %+v", embed.Author)
 	}
 	if embed.URL != "https://www.themoviedb.org/tv/95396" {
@@ -207,7 +207,7 @@ func TestBuildDiscordWebhookPayload(t *testing.T) {
 		embed.Fields[2].Value != "Drama, Sci-Fi & Fantasy" {
 		t.Fatalf("unexpected fields: %+v", embed.Fields)
 	}
-	if embed.Footer == nil || embed.Footer.Text != "Silo • TV-MA" {
+	if embed.Footer == nil || embed.Footer.Text != "Prairie • TV-MA" {
 		t.Fatalf("unexpected footer %+v", embed.Footer)
 	}
 	// The privacy contract: only public provider origins may appear — never
@@ -301,10 +301,10 @@ func TestDiscordPosterURLModes(t *testing.T) {
 	// Local artwork storage signs root-relative URLs; Discord fetches from
 	// outside, so they are anchored to server.public_url or dropped.
 	local := &System{
-		Settings: NewSettings(mapSettingReader{SettingDiscordPosterMode: "server", "server.public_url": "https://silo.example/"}),
+		Settings: NewSettings(mapSettingReader{SettingDiscordPosterMode: "server", "server.public_url": "https://prairie.example/"}),
 		images:   relativePresigner{},
 	}
-	if got := local.discordPosterURL(ctx, cachedKey, ""); got != "https://silo.example/api/v2/artwork/"+cachedKey+"?exp=1&sig=abc" {
+	if got := local.discordPosterURL(ctx, cachedKey, ""); got != "https://prairie.example/api/v2/artwork/"+cachedKey+"?exp=1&sig=abc" {
 		t.Fatalf("local artwork must be anchored to the public URL, got %q", got)
 	}
 	unpublished := &System{
@@ -365,7 +365,7 @@ func TestBuildDiscordWebhookPayloadRequestFulfilled(t *testing.T) {
 	if embed.Title != "Dune (2021)" {
 		t.Fatalf("unexpected title %q", embed.Title)
 	}
-	if embed.Author == nil || embed.Author.Name != "Your request is now available on Silo" {
+	if embed.Author == nil || embed.Author.Name != "Your request is now available on Prairie" {
 		t.Fatalf("unexpected author %+v", embed.Author)
 	}
 	if embed.URL != "https://www.themoviedb.org/movie/438631" {
@@ -445,7 +445,7 @@ func TestBuildDiscordWebhookPayloadRequestLifecycle(t *testing.T) {
 	if embed.Title != "Dune (2021)" {
 		t.Fatalf("unexpected title %q", embed.Title)
 	}
-	if embed.Author == nil || embed.Author.Name != "Your request was declined on Silo" {
+	if embed.Author == nil || embed.Author.Name != "Your request was declined on Prairie" {
 		t.Fatalf("unexpected author %+v", embed.Author)
 	}
 	if embed.URL != "https://www.themoviedb.org/movie/438631" {
@@ -470,7 +470,7 @@ func TestBuildDiscordWebhookPayloadRequestLifecycle(t *testing.T) {
 		t.Fatalf("payload is not valid JSON: %v", err)
 	}
 	embed = body.Embeds[0]
-	if embed.Author == nil || embed.Author.Name != "Your request was approved on Silo" {
+	if embed.Author == nil || embed.Author.Name != "Your request was approved on Prairie" {
 		t.Fatalf("unexpected author %+v", embed.Author)
 	}
 	if embed.Color != serverChannelColorApproved {
@@ -544,7 +544,7 @@ func TestBuildDiscordWebhookPayloadTestMarker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build failed: %v", err)
 	}
-	if !strings.Contains(string(payload), "Silo test notification") {
+	if !strings.Contains(string(payload), "Prairie test notification") {
 		t.Fatal("test sends must be clearly marked in the footer")
 	}
 }

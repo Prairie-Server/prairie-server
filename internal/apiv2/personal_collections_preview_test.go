@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	catalogsvc "github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // previewCollections answers only the smart preview. The embedded lifecycle

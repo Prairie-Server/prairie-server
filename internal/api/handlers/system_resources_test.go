@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
 )
 
 func TestSystemResourcesReportsLocalSample(t *testing.T) {

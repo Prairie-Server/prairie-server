@@ -3,7 +3,7 @@ package webhooksync
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 func TestPlexWebhookAction(t *testing.T) {
@@ -69,12 +69,12 @@ func TestResolveWebhookProfileRequiresExplicitMapping(t *testing.T) {
 		},
 		{
 			name:    "empty profile mapping is skipped",
-			mapping: &ProfileMapping{SiloProfileID: ptrString("")},
+			mapping: &ProfileMapping{PrairieProfileID: ptrString("")},
 			wantOK:  false,
 		},
 		{
 			name:    "explicit profile mapping is used",
-			mapping: &ProfileMapping{SiloProfileID: &linkedProfileID},
+			mapping: &ProfileMapping{PrairieProfileID: &linkedProfileID},
 			want:    linkedProfileID,
 			wantOK:  true,
 		},

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 func TestRouteSnapshotCannotChangeSealedDirectRoutes(t *testing.T) {

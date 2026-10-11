@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/scanner"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // matroskaTrackBackfillAdvisoryLock spells "SILOMKVT".

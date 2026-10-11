@@ -90,7 +90,7 @@ func (r *Repository) ListMappingsForSource(ctx context.Context, sourceID int) ([
 		return nil, fmt.Errorf("iterating mappings: %w", err)
 	}
 
-	// Enrich with silo user/profile names.
+	// Enrich with prairie user/profile names.
 	for i := range mappings {
 		if enriched, err := enrichMapping(ctx, r, &mappings[i]); err == nil {
 			mappings[i] = *enriched
@@ -334,7 +334,7 @@ func scanMapping(s mappingScanner) (*UserMapping, error) {
 	var lastImportedAt *time.Time
 	err := s.Scan(
 		&m.ID, &m.SourceID, &m.ExternalUserID, &m.ExternalUserName,
-		&m.SiloUserID, &m.SiloProfileID, &lastImportedAt,
+		&m.PrairieUserID, &m.PrairieProfileID, &lastImportedAt,
 		&m.CreatedAt, &m.UpdatedAt, &m.Revision,
 	)
 	if err != nil {
@@ -352,14 +352,14 @@ func scanMappingRow(s mappingRowScanner) (*UserMapping, error) {
 	return scanMapping(s)
 }
 
-// enrichMapping looks up the Silo username and profile name for display purposes.
+// enrichMapping looks up the Prairie username and profile name for display purposes.
 func enrichMapping(ctx context.Context, r *Repository, m *UserMapping) (*UserMapping, error) {
 	_ = r.pool.QueryRow(ctx, `
 		SELECT u.username, COALESCE(p.name, '')
 		FROM users u
 		LEFT JOIN user_profiles p ON p.user_id = u.id AND p.id = $2
-		WHERE u.id = $1`, m.SiloUserID, m.SiloProfileID,
-	).Scan(&m.SiloUsername, &m.SiloProfileName)
+		WHERE u.id = $1`, m.PrairieUserID, m.PrairieProfileID,
+	).Scan(&m.PrairieUsername, &m.PrairieProfileName)
 	// Non-fatal — enrichment is best-effort for display purposes.
 	return m, nil
 }

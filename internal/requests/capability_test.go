@@ -3,8 +3,8 @@ package requests
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestRequestCapabilityAllowedUsesAccountAndGroupPolicy(t *testing.T) {

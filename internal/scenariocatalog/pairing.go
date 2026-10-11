@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // openAPIOperation is the slice of one embedded v2 operation the validators read.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // TestDiffToolIsPinned: oasdiff is a go.mod requirement at an exact release,

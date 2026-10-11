@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func assertOnboardingProgressEffect(t *testing.T, e *Env, method string, request scenariocatalog.Request, start, end time.Time, before, after json.RawMessage) {

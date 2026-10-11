@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func importSections(ctx context.Context, source *sql.Tx, target pgx.Tx, userID int) (TableVerification, error) {

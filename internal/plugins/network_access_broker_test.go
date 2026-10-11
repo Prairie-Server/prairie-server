@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	sdkruntime "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/runtime"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	sdkruntime "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/runtime"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type callbackListener struct {

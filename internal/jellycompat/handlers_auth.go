@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type authenticateByNameRequest struct {
@@ -197,7 +197,7 @@ func (h *AuthHandler) HandleCurrentUser(w http.ResponseWriter, r *http.Request) 
 //
 // Jellyfin's user-list endpoint accepts any authenticated caller (including an
 // API key) and is what Tunarr probes to verify an API-key connection (the key
-// has no "me"). Silo separates login accounts from household profiles and is
+// has no "me"). Prairie separates login accounts from household profiles and is
 // multi-account, so we return only the caller's own user as a single-element
 // list rather than enumerating every account's profiles — listing all users
 // would leak identities across households.
@@ -286,8 +286,8 @@ func (h *AuthHandler) userDTO(session *Session) userDTOResponse {
 			MaxActiveSessions:               0,
 			EnablePublicSharing:             false,
 			RemoteClientBitrateLimit:        0,
-			AuthenticationProviderID:        "silo-local",
-			PasswordResetProviderID:         "silo-local",
+			AuthenticationProviderID:        "prairie-local",
+			PasswordResetProviderID:         "prairie-local",
 			SyncPlayAccess:                  "None",
 		},
 		Configuration: userConfigurationResponse{

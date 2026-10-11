@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/google/uuid"
 )
 

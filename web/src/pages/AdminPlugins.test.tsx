@@ -19,14 +19,14 @@ function makeCatalogEntry(
   overrides: { displayName?: string; summary?: string } = {},
 ): PluginCatalogEntry {
   const suffix = String(index).padStart(2, "0");
-  const repoURL = `https://github.com/Silo-Server/plugin-${suffix}`;
+  const repoURL = `https://github.com/prairie-server/plugin-${suffix}`;
   return {
     repository_id: 1,
-    plugin_id: `silo.plugin-${suffix}`,
+    plugin_id: `prairie.plugin-${suffix}`,
     version: "1.0.0",
     archive_url: `${repoURL}/releases/download/v1.0.0/plugin-linux-amd64`,
-    source_kind: "silo",
-    repository_name: "Silo plugins",
+    source_kind: "prairie",
+    repository_name: "Prairie plugins",
     repo_url: repoURL,
     presentation: {
       display_name: overrides.displayName ?? `Plugin ${suffix}`,
@@ -37,8 +37,8 @@ function makeCatalogEntry(
       source_url: repoURL,
       support_url: `${repoURL}/issues`,
       changelog_url: `${repoURL}/releases`,
-      publisher_name: "Silo",
-      publisher_url: "https://github.com/Silo-Server",
+      publisher_name: "Prairie",
+      publisher_url: "https://github.com/Prairie-Server",
       license_spdx: "AGPL-3.0-or-later",
     },
     capabilities: [],
@@ -54,13 +54,13 @@ function makeInstallation(index: number, displayName: string): PluginInstallatio
   return {
     id: index,
     repository_id: 1,
-    plugin_id: `silo.installed-${suffix}`,
+    plugin_id: `prairie.installed-${suffix}`,
     version: "1.0.0",
     install_path: `/plugins/installed-${suffix}`,
     enabled: true,
     runtime: { resident: false, state: "stopped", restart_count: 0 },
-    source_kind: "silo",
-    repository_name: "Silo plugins",
+    source_kind: "prairie",
+    repository_name: "Prairie plugins",
     updates_paused: false,
     presentation: {
       display_name: displayName,
@@ -68,11 +68,11 @@ function makeInstallation(index: number, displayName: string): PluginInstallatio
       description_markdown: `Installed description ${suffix}.`,
       setup_markdown: "Configure it.",
       homepage_url: "",
-      source_url: `https://github.com/Silo-Server/installed-${suffix}`,
+      source_url: `https://github.com/prairie-server/installed-${suffix}`,
       support_url: "",
       changelog_url: "",
-      publisher_name: "Silo",
-      publisher_url: "https://github.com/Silo-Server",
+      publisher_name: "Prairie",
+      publisher_url: "https://github.com/Prairie-Server",
       license_spdx: "AGPL-3.0-or-later",
     },
     capabilities: [],
@@ -306,7 +306,7 @@ describe("AdminPlugins", () => {
       repositories: [],
       catalogSettings: undefined,
       isLoading: false,
-      installations: [{ ...makeInstallation(1, "Installed One"), plugin_id: "silo.plugin-01" }],
+      installations: [{ ...makeInstallation(1, "Installed One"), plugin_id: "prairie.plugin-01" }],
       catalog: [makeCatalogEntry(1), makeCatalogEntry(2), external],
     });
 
@@ -316,7 +316,7 @@ describe("AdminPlugins", () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain("Made by Silo");
+    expect(markup).toContain("Made by Prairie");
     expect(markup).toContain("Other sources");
     expect(markup).not.toContain("Approved community");
     // Uninstalled plugins come first within a group.
@@ -329,7 +329,7 @@ describe("AdminPlugins", () => {
     (install?.onClick as () => void)();
     expect(installPluginMutateMock).toHaveBeenCalledWith({
       repository_id: 1,
-      plugin_id: "silo.plugin-02",
+      plugin_id: "prairie.plugin-02",
       version: "1.0.0",
     });
   });
@@ -393,7 +393,7 @@ describe("AdminPlugins", () => {
     expect(markup).toContain("No catalog plugins match");
   });
 
-  it.each([["silo.theintrodb"], ["silo.not-installed"]])(
+  it.each([["silo.theintrodb"], ["prairie.not-installed"]])(
     "forwards the old ?configure=%s link to the plugin page",
     async (pluginID) => {
       function Probe() {

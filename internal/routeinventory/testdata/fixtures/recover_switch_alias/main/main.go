@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/recover_switch_alias/listener"
+	"github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/recover_switch_alias/listener"
 )
 
 type routerAlias = chi.Router

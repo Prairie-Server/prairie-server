@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 const compatSessionTranscode = "Transcode"
 
-// Jellyfin RepeatMode and PlaybackOrder values for a Silo session, which has
+// Jellyfin RepeatMode and PlaybackOrder values for a Prairie session, which has
 // no queue controls.
 const (
 	compatRepeatNone           = "RepeatNone"

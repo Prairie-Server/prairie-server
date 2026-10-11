@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 type NotificationEmailVerificationService interface {

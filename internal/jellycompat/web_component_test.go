@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func seedWebSeekSources(t *testing.T, root string) {
@@ -115,7 +115,7 @@ func TestInstallWebComponentUsesTwoPartUpstreamTag(t *testing.T) {
 				return os.WriteFile(filepath.Join(dir, "LICENSE"), []byte("GPL-2.0 fixture"), 0o644)
 			}
 			npmCalls = append(npmCalls, args)
-			for path, marker := range map[string]string{webPlaybackManagerSource: "SiloSeekReanchor: true", webHTMLVideoPlayerSource: "canSeekTo(milliseconds)"} {
+			for path, marker := range map[string]string{webPlaybackManagerSource: "PrairieSeekReanchor: true", webHTMLVideoPlayerSource: "canSeekTo(milliseconds)"} {
 				data, err := os.ReadFile(filepath.Join(dir, path))
 				if err != nil || !strings.Contains(string(data), marker) {
 					t.Fatalf("npm ran before patch %s: %v", path, err)
@@ -223,9 +223,9 @@ func TestWebInstallNPMCommandUsesUpstreamEngineRange(t *testing.T) {
 // Set this to an unmodified upstream checkout to verify the guarded patch
 // against complete source files as well as the small executable excerpts.
 func TestManagedWebSeekPatchUpstreamCheckout(t *testing.T) {
-	upstream := os.Getenv("SILO_TEST_JELLYFIN_WEB_SOURCE")
+	upstream := os.Getenv("PRAIRIE_TEST_JELLYFIN_WEB_SOURCE")
 	if upstream == "" {
-		t.Skip("SILO_TEST_JELLYFIN_WEB_SOURCE is not set")
+		t.Skip("PRAIRIE_TEST_JELLYFIN_WEB_SOURCE is not set")
 	}
 	root := t.TempDir()
 	for _, path := range []string{webPlaybackManagerSource, webHTMLVideoPlayerSource} {
@@ -285,7 +285,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 		"jellyfin_compat.enabled":     "false",
 		"jellyfin_compat.listen":      ":8096",
 		"jellyfin_compat.public_url":  "http://127.0.0.1:8096",
-		"jellyfin_compat.server_name": "Silo",
+		"jellyfin_compat.server_name": "Prairie",
 	})
 	if err != nil {
 		t.Fatalf("LoadFromDB: %v", err)
@@ -295,7 +295,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 		"jellyfin_compat.enabled":                 "true",
 		"jellyfin_compat.listen":                  ":19096",
 		"jellyfin_compat.public_url":              "https://compat.example.test",
-		"jellyfin_compat.server_name":             "Silo Compat",
+		"jellyfin_compat.server_name":             "Prairie Compat",
 		"jellyfin_compat.emulated_server_version": "10.11.6",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -310,7 +310,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 	if status.PublicURL != "https://compat.example.test" {
 		t.Fatalf("PublicURL = %q, want persisted public URL", status.PublicURL)
 	}
-	if status.ServerName != "Silo Compat" {
+	if status.ServerName != "Prairie Compat" {
 		t.Fatalf("ServerName = %q, want persisted server name", status.ServerName)
 	}
 	if !status.RestartRequired {
@@ -324,7 +324,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 		"jellyfin_compat.enabled":                 "true",
 		"jellyfin_compat.listen":                  ":8096",
 		"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
-		"jellyfin_compat.server_name":             "Silo",
+		"jellyfin_compat.server_name":             "Prairie",
 		"jellyfin_compat.emulated_server_version": "10.11.0",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -335,7 +335,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 
 	status := WebComponentStatusForConfig(cfg, map[string]string{
 		"jellyfin_compat.public_url":              "https://compat.example.test",
-		"jellyfin_compat.server_name":             "Silo Compat",
+		"jellyfin_compat.server_name":             "Prairie Compat",
 		"jellyfin_compat.emulated_server_version": "10.11.6",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -344,7 +344,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 	if status.PublicURL != "https://compat.example.test" {
 		t.Fatalf("PublicURL = %q, want persisted public URL", status.PublicURL)
 	}
-	if status.ServerName != "Silo Compat" {
+	if status.ServerName != "Prairie Compat" {
 		t.Fatalf("ServerName = %q, want persisted server name", status.ServerName)
 	}
 	if status.EmulatedVersion != "10.11.6" {

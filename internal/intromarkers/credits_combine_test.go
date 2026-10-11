@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 var fixtureClasses = map[byte]keyframeClass{'c': keyframeContent, 'b': keyframeBlack, 'L': keyframeLettered, 'C': keyframeCard, 'm': keyframeMostlyBlack}

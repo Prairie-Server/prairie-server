@@ -10,7 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/logstream"
+	"github.com/prairie-server/prairie-server/internal/logstream"
 )
 
 // TestConsumerRunPersistsBufferedEntriesOnStopDB stops the consumer with

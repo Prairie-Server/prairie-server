@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
 )
 
 func settingsOwner() map[string]string { return with(bearer(memberToken), "X-Profile-Id", "p-owner") }

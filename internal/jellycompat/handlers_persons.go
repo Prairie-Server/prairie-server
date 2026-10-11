@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type personSearchSource interface {
@@ -64,7 +64,7 @@ func (h *PersonsHandler) HandleGetPersons(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	// Silo favorites are content items only (see handleFavoriteMutation), so
+	// Prairie favorites are content items only (see handleFavoriteMutation), so
 	// no person is a favorite. Listing everyone would fill a client's
 	// Favorites > People tab with the whole catalog.
 	if isFavorite := q.Get("IsFavorite"); isFavorite != "" && parseBool(isFavorite, false) || hasFilter(q.Get("Filters"), "IsFavorite") {

@@ -1,6 +1,6 @@
 # Node.js for the runtime Jellyfin Web installer, which builds upstream
 # jellyfin-web in the container. Jellyfin Web 12.x requires Node.js >=24,
-# independent of the Silo frontend toolchain. The installer runs the npm
+# independent of the Prairie frontend toolchain. The installer runs the npm
 # release each Jellyfin Web version declares in engines.npm.
 FROM node:24-slim AS jellyfin_web_node
 
@@ -27,8 +27,8 @@ COPY --from=frontend /app/web/dist/. /
 FROM golang:1.26 AS build
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOPRIVATE=github.com/Silo-Server/*
-ENV GONOSUMDB=github.com/Silo-Server/*
+ENV GOPRIVATE=github.com/prairie-server/*
+ENV GONOSUMDB=github.com/prairie-server/*
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -44,14 +44,14 @@ RUN --network=none go build ./internal/... ./migrations/... ./contracts/...
 COPY cmd/ cmd/
 COPY web/embed.go web/embed.go
 COPY --from=frontend_dist / web/dist
-RUN --network=none go build -o /silo ./cmd/silo/
+RUN --network=none go build -o /prairie ./cmd/prairie/
 ARG BUILD_REVISION
 ARG BUILD_DIRTY=false
 ARG BUILD_NUMBER
 ARG BUILD_DATE
 RUN --network=none go build \
-    -ldflags "-X github.com/Silo-Server/silo-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/Silo-Server/silo-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY} -X github.com/Silo-Server/silo-server/internal/buildinfo.buildNumberOverride=${BUILD_NUMBER} -X github.com/Silo-Server/silo-server/internal/buildinfo.builtAtOverride=${BUILD_DATE}" \
-    -o /silo ./cmd/silo/
+    -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY} -X github.com/prairie-server/prairie-server/internal/buildinfo.buildNumberOverride=${BUILD_NUMBER} -X github.com/prairie-server/prairie-server/internal/buildinfo.builtAtOverride=${BUILD_DATE}" \
+    -o /prairie ./cmd/prairie/
 
 # Stage 3: Runtime
 FROM debian:trixie-slim
@@ -87,19 +87,19 @@ RUN if [ "${TARGETARCH}" = "amd64" ]; then \
       cd / && \
       rm -rf "${runtime_dir}" /var/lib/apt/lists/*; \
     fi
-RUN mkdir -p /tmp/silo-transcode /var/lib/silo/artwork /var/lib/silo/compat/jellyfin-web
+RUN mkdir -p /tmp/prairie-transcode /var/lib/prairie/artwork /var/lib/prairie/compat/jellyfin-web
 COPY --from=jellyfin_web_node /usr/local/bin/node /usr/local/bin/node
 COPY --from=jellyfin_web_node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-COPY --from=build /silo /usr/local/bin/silo
+COPY --from=build /prairie /usr/local/bin/prairie
 EXPOSE 8080 8096 13378
-# Silo runs database migrations before its HTTP listener starts, and an
+# Prairie runs database migrations before its HTTP listener starts, and an
 # upgrade on a large library can migrate for many minutes. The start period
-# covers the default 20-minute migration budget (SILO_MIGRATE_TIMEOUT) so a
+# covers the default 20-minute migration budget (PRAIRIE_MIGRATE_TIMEOUT) so a
 # migrating server is not reported unhealthy and restarted mid-migration; the
 # first passing check still marks it healthy at once. A deployment that raises
-# SILO_MIGRATE_TIMEOUT should raise the start period to match.
+# PRAIRIE_MIGRATE_TIMEOUT should raise the start period to match.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20m --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/api/v1/health || exit 1
-ENTRYPOINT ["silo"]
+ENTRYPOINT ["prairie"]

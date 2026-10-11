@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
 )
 
 func mkvTrack(number, kind uint64, codec string) mediaprobe.MatroskaTrack {

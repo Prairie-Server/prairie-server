@@ -233,7 +233,7 @@ function AdminUsersPage() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Users</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage access, defaults, and invite flow for the people using Silo.
+            Manage access, defaults, and invite flow for the people using Prairie.
           </p>
           {serverSettings !== undefined && (
             <Link

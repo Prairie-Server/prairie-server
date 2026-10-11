@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics/contract"
+	"github.com/prairie-server/prairie-server/internal/diagnostics/contract"
 )
 
 const (

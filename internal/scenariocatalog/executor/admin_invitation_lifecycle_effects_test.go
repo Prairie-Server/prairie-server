@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/invitations"
+	"github.com/prairie-server/prairie-server/internal/invitations"
 )
 
 func assertInvitationLifecycleEffects(t *testing.T, e *Env, id string, resp response, before, after json.RawMessage, started, finished, applicationStarted, applicationFinished time.Time) {

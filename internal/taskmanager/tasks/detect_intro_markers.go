@@ -8,10 +8,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/intromarkers"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 type MarkerSettingsReader interface {
@@ -33,7 +33,7 @@ type markerAnalysisRunner interface {
 	RunMovies(ctx context.Context, kinds intromarkers.EpisodeMarkerKinds, progress intromarkers.ProgressFunc) (intromarkers.RunSummary, error)
 }
 
-// detectMarkersAdvisoryLock spells "SILOMRKR".
+// detectMarkersAdvisoryLock spells "PRAIRIEMRKR".
 const detectMarkersAdvisoryLock int64 = 0x53494C4F4D524B52
 
 // DetectIntroMarkersTask runs the library-wide marker analysis. Every API

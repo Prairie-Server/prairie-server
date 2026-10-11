@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // DiscoverBrandCard is one card on the Studios / Networks / Genres carousels.
@@ -121,7 +121,7 @@ var validBrowseSorts = map[string]string{
 const defaultBrowseSort = "popularity"
 
 // BrowseStudio returns a page of movies from a bundled studio, enriched with
-// Silo availability and request state.
+// Prairie availability and request state.
 func (s *Service) BrowseStudio(ctx context.Context, viewer Viewer, slug, sort string, page int) (*DiscoverBrowseResponse, error) {
 	if s == nil || s.store == nil || s.tmdb == nil {
 		return nil, fmt.Errorf("request service is not configured")
@@ -276,7 +276,7 @@ func (s *Service) BrowseGenre(ctx context.Context, viewer Viewer, slug string, r
 	}, nil
 }
 
-// certificationCeilingFor maps a Silo rating ceiling (which spans both the
+// certificationCeilingFor maps a Prairie rating ceiling (which spans both the
 // movie and TV ladders, and every national one — see access.RatingRank) onto
 // the US certification string TMDB's certification.lte understands for the
 // given media type.

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 // ReconcileWatchHistoryTask re-resolves orphaned watch history rows against

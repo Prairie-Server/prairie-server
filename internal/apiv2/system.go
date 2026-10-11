@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
 )
 
 // The system domain: discovery before login or profile selection.

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	serverlang "github.com/Silo-Server/silo-server/internal/lang"
+	serverlang "github.com/prairie-server/prairie-server/internal/lang"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 

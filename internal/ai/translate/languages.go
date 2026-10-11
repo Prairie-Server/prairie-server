@@ -3,7 +3,7 @@ package aitranslate
 import (
 	"strings"
 
-	serverlang "github.com/Silo-Server/silo-server/internal/lang"
+	serverlang "github.com/prairie-server/prairie-server/internal/lang"
 )
 
 // languageNames maps common ISO 639-1 codes to English names. The model handles

@@ -3,7 +3,7 @@ package downloads
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestProxyDeliveryAllowedPreservesAggregateBandwidthLimits(t *testing.T) {

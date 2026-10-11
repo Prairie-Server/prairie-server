@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
 )
 
 func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
@@ -19,7 +19,7 @@ func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
 		entries: []CatalogEntry{
 			{
 				RepositoryID: 7,
-				RepoURL:      "https://github.com/Silo-Server/silo-plugin-metadata-tmdb",
+				RepoURL:      "https://github.com/Prairie-Server/prairie-plugin-metadata-tmdb",
 				Manifest: &pluginv1.PluginManifest{
 					PluginId: "silo.tmdb",
 					Version:  "1.2.10",
@@ -28,7 +28,7 @@ func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
 		},
 		resolved: &ResolvedCatalogInstall{
 			RepositoryID: 7,
-			ArchiveURL:   "https://github.com/Silo-Server/silo-plugin-metadata-tmdb/releases/download/v1.2.10/plugin-linux-amd64",
+			ArchiveURL:   "https://github.com/Prairie-Server/prairie-plugin-metadata-tmdb/releases/download/v1.2.10/plugin-linux-amd64",
 			Checksum:     "deadbeef",
 		},
 	}

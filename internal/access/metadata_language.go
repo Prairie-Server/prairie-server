@@ -3,7 +3,7 @@ package access
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // PreferredMetadataLanguage resolves catalog.metadata_language canonically for

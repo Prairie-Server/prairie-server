@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // GetSetting retrieves a setting value by key. Returns empty string if not found.

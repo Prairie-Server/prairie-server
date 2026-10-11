@@ -28,7 +28,7 @@ vi.mock("@/api/client", () => ({
 // object and keys array (pages memoize keys), so fresh objects per render
 // would loop forever.
 const KEYS = ["branding.server_name", "database.max_connections"];
-const settingsData = { "branding.server_name": "Silo", "database.max_connections": "20" };
+const settingsData = { "branding.server_name": "Prairie", "database.max_connections": "20" };
 const sensitiveData = { configured: [], managed_by_env: [] };
 
 vi.mock("@/hooks/queries/admin/settings", () => ({

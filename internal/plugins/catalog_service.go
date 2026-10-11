@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 type PlatformBinary struct {
@@ -87,7 +87,7 @@ func (t *ResolvedCatalogInstall) BinaryRequest() InstallBinaryRequest {
 
 type CatalogServiceOptions struct {
 	HTTPClient     *http.Client
-	SiloAPIVersion string
+	PrairieAPIVersion string
 	CurrentOS      string
 	CurrentArch    string
 }
@@ -106,9 +106,9 @@ func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions
 		httpClient = http.DefaultClient
 	}
 
-	apiVersion := opts.SiloAPIVersion
+	apiVersion := opts.PrairieAPIVersion
 	if apiVersion == "" {
-		apiVersion = DefaultSiloAPIVersion
+		apiVersion = DefaultPrairieAPIVersion
 	}
 
 	currentOS := opts.CurrentOS
@@ -268,7 +268,7 @@ func (s *CatalogService) fetchRepositoryIndex(ctx context.Context, repositoryURL
 	}
 	var index RepositoryIndex
 	if err := json.Unmarshal(data, &index); err != nil {
-		return nil, packageError(fmt.Errorf("decode repository index %q: %w", repositoryURL, err), "Silo couldn't read %s: it isn't a valid plugin catalog.", subject)
+		return nil, packageError(fmt.Errorf("decode repository index %q: %w", repositoryURL, err), "Prairie couldn't read %s: it isn't a valid plugin catalog.", subject)
 	}
 	return &index, nil
 }
@@ -302,7 +302,7 @@ func (s *CatalogService) catalogEntryFromPackage(repository *Repository, pkg Cat
 		if err := ValidateCatalogManifest(pkg.Manifest); err != nil {
 			return CatalogEntry{}, false, err
 		}
-		if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
+		if pkg.Manifest.GetPrairieApiVersion() != s.siloAPIVersion {
 			return CatalogEntry{}, false, nil
 		}
 
@@ -349,7 +349,7 @@ func (s *CatalogService) catalogEntryFromPackage(repository *Repository, pkg Cat
 	if err := ValidateManifest(pkg.Manifest); err != nil {
 		return CatalogEntry{}, false, err
 	}
-	if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
+	if pkg.Manifest.GetPrairieApiVersion() != s.siloAPIVersion {
 		return CatalogEntry{}, false, nil
 	}
 	if !supportsPlatform(pkg.Manifest, s.currentOS, s.currentArch) {
@@ -375,8 +375,8 @@ func (s *CatalogService) installTargetFromPackage(ctx context.Context, repositor
 		if err := ValidateCatalogManifest(pkg.Manifest); err != nil {
 			return nil, packageError(err, "The catalog's entry for this plugin is invalid: %v.", err)
 		}
-		if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
-			return nil, unsupportedAPIVersionError(pkg.Manifest.GetSiloApiVersion(), s.siloAPIVersion)
+		if pkg.Manifest.GetPrairieApiVersion() != s.siloAPIVersion {
+			return nil, unsupportedAPIVersionError(pkg.Manifest.GetPrairieApiVersion(), s.siloAPIVersion)
 		}
 
 		platformKey := s.currentOS + "/" + s.currentArch
@@ -403,7 +403,7 @@ func (s *CatalogService) installTargetFromPackage(ctx context.Context, repositor
 		} else {
 			if strings.TrimSpace(pkg.ChecksumsURL) == "" {
 				return nil, packageError(fmt.Errorf("plugin binary checksum is required for platform %s", platformKey),
-					"The catalog lists no SHA-256 checksum for this plugin, so Silo can't verify it.")
+					"The catalog lists no SHA-256 checksum for this plugin, so Prairie can't verify it.")
 			}
 			resolvedChecksumsURL, err := resolveRepositoryURL(repository.URL, pkg.ChecksumsURL)
 			if err != nil {
@@ -426,8 +426,8 @@ func (s *CatalogService) installTargetFromPackage(ctx context.Context, repositor
 	if err := ValidateManifest(pkg.Manifest); err != nil {
 		return nil, packageError(err, "The catalog's entry for this plugin is invalid: %v.", err)
 	}
-	if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
-		return nil, unsupportedAPIVersionError(pkg.Manifest.GetSiloApiVersion(), s.siloAPIVersion)
+	if pkg.Manifest.GetPrairieApiVersion() != s.siloAPIVersion {
+		return nil, unsupportedAPIVersionError(pkg.Manifest.GetPrairieApiVersion(), s.siloAPIVersion)
 	}
 	if !supportsPlatform(pkg.Manifest, s.currentOS, s.currentArch) {
 		return nil, unsupportedPlatformError(pkg.Manifest, s.currentOS+"/"+s.currentArch)
@@ -451,7 +451,7 @@ func (s *CatalogService) fetchChecksumForBinary(ctx context.Context, checksumsUR
 	}
 	checksum, err := checksumForBinary(string(data), binaryURL)
 	if err != nil {
-		return "", packageError(err, "This plugin's checksum file has no valid SHA-256 checksum for its download, so Silo can't verify it.")
+		return "", packageError(err, "This plugin's checksum file has no valid SHA-256 checksum for its download, so Prairie can't verify it.")
 	}
 	return checksum, nil
 }

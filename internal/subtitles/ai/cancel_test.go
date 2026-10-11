@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
 )
 
 type cancelRepository struct {

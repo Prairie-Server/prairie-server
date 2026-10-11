@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakeOAuthClient struct {
@@ -140,7 +140,7 @@ func newOAuthRig(t *testing.T) *oauthTestRig {
 			return rig.client, "oidc", nil
 		},
 		LoginCompleter:       rig.comp,
-		HostBaseURL:          "https://silo.test",
+		HostBaseURL:          "https://prairie.test",
 		StateTTL:             10 * time.Minute,
 		FrontendCompletePath: "/login/oauth-complete",
 		ServerID:             func(context.Context) (string, error) { return testServerID, nil },
@@ -180,7 +180,7 @@ func (rig *oauthTestRig) start(t *testing.T, target string) (*httptest.ResponseR
 // callback answers the provider redirect with the given cookie.
 func (rig *oauthTestRig) callback(t *testing.T, installID, query string, cookie *http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
-	r := withInstallID(httptest.NewRequest(http.MethodGet, "https://silo.test/api/v1/auth/oauth/"+installID+"/callback?"+query, nil), installID)
+	r := withInstallID(httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v1/auth/oauth/"+installID+"/callback?"+query, nil), installID)
 	if cookie != nil {
 		r.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 	}
@@ -195,7 +195,7 @@ func (rig *oauthTestRig) stateQuery() string {
 
 func TestOAuthInit_SetsBindingCookieAndRedirects(t *testing.T) {
 	rig := newOAuthRig(t)
-	w, cookie := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init?next=/me")
+	w, cookie := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init?next=/me")
 	if w.Code != http.StatusFound || w.Header().Get("Location") != "https://idp.example/authorize" {
 		t.Fatalf("code = %d location = %q body = %s", w.Code, w.Header().Get("Location"), w.Body.String())
 	}
@@ -223,7 +223,7 @@ func TestOAuthInit_SetsBindingCookieAndRedirects(t *testing.T) {
 			t.Errorf("ProviderState missing PKCE: %s", row.ProviderState)
 		}
 	}
-	if rig.client.gotInit.GetRedirectUri() != "https://silo.test/api/v1/auth/oauth/42/callback" || rig.client.gotInit.GetLinking() {
+	if rig.client.gotInit.GetRedirectUri() != "https://prairie.test/api/v1/auth/oauth/42/callback" || rig.client.gotInit.GetLinking() {
 		t.Errorf("init = %+v", rig.client.gotInit)
 	}
 }
@@ -232,14 +232,14 @@ func TestOAuthInit_BouncesToPublicOriginOnce(t *testing.T) {
 	rig := newOAuthRig(t)
 	for _, target := range []string{
 		"http://192.168.1.20:8080/api/v1/auth/oauth/42/init?next=/me",
-		"http://silo.test/api/v1/auth/oauth/42/init?next=/me", // same host, wrong scheme
-		"https://silo.test:8443/api/v1/auth/oauth/42/init?next=/me",
+		"http://prairie.test/api/v1/auth/oauth/42/init?next=/me", // same host, wrong scheme
+		"https://prairie.test:8443/api/v1/auth/oauth/42/init?next=/me",
 	} {
 		w, cookie := rig.start(t, target)
 		if w.Code != http.StatusTemporaryRedirect || cookie != nil {
 			t.Fatalf("%s: code = %d cookie = %v", target, w.Code, cookie)
 		}
-		want := "https://silo.test/api/v1/auth/oauth/42/init?bounce=1&next=%2Fme"
+		want := "https://prairie.test/api/v1/auth/oauth/42/init?bounce=1&next=%2Fme"
 		if got := w.Header().Get("Location"); got != want {
 			t.Fatalf("%s: Location = %q, want %q", target, got, want)
 		}
@@ -254,7 +254,7 @@ func TestOAuthInit_BouncesToPublicOriginOnce(t *testing.T) {
 		t.Fatalf("bounced start: code = %d cookie = %v inits = %d", w.Code, cookie, rig.client.inits)
 	}
 	// The default port is the same origin.
-	if _, cookie := rig.start(t, "https://SILO.test:443/api/v1/auth/oauth/42/init"); cookie == nil {
+	if _, cookie := rig.start(t, "https://PRAIRIE.test:443/api/v1/auth/oauth/42/init"); cookie == nil {
 		t.Fatal("explicit default port was treated as another origin")
 	}
 }
@@ -278,13 +278,13 @@ func TestOAuthInit_RefusalsComeBeforeTheBounce(t *testing.T) {
 func TestOAuthInit_PluginErrors(t *testing.T) {
 	rig := newOAuthRig(t)
 	rig.client.initErr = errors.New("upstream db dsn leaked")
-	w, cookie := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init")
+	w, cookie := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init")
 	if w.Code != http.StatusBadGateway || cookie != nil || strings.Contains(w.Body.String(), "upstream") {
 		t.Fatalf("code = %d cookie = %v body = %q", w.Code, cookie, w.Body.String())
 	}
 	rig.client.initErr = nil
 	rig.client.initResp = &pluginv1.InitAuthorizeResponse{}
-	if w, _ := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init"); w.Code != http.StatusBadGateway {
+	if w, _ := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init"); w.Code != http.StatusBadGateway {
 		t.Fatalf("empty authorize url: code = %d", w.Code)
 	}
 }
@@ -292,7 +292,7 @@ func TestOAuthInit_PluginErrors(t *testing.T) {
 func TestOAuthInit_WithoutPublicURLIsConflict(t *testing.T) {
 	rig := newOAuthRig(t)
 	rig.h.SetHostBaseURL("")
-	if w, _ := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init"); w.Code != http.StatusConflict {
+	if w, _ := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init"); w.Code != http.StatusConflict {
 		t.Fatalf("code = %d", w.Code)
 	}
 }
@@ -308,7 +308,7 @@ func TestOAuthStart_V2FailuresRedirect(t *testing.T) {
 			req.CodeChallenge, req.AppState = nativeChallenge, appState
 		}
 		w := httptest.NewRecorder()
-		rig.h.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/"+strconv.Itoa(installID)+"/start", nil), req, "", http.StatusFound)
+		rig.h.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/"+strconv.Itoa(installID)+"/start", nil), req, "", http.StatusFound)
 		return w
 	}
 	const webFailure = "/login?error=oauth_failed&reason=provider_unavailable"
@@ -327,7 +327,7 @@ func TestOAuthStart_V2FailuresRedirect(t *testing.T) {
 			loc, _ := url.Parse(w.Header().Get("Location"))
 			if w.Code != http.StatusFound || loc == nil || loc.Scheme+":"+loc.Path != NativeAppRedirectURI ||
 				loc.Query().Get("error") != OAuthReasonProviderUnavailable || loc.Query().Get("state") != "app-1" ||
-				loc.Query().Get("iss") != "https://silo.test" {
+				loc.Query().Get("iss") != "https://prairie.test" {
 				t.Fatalf("native: code = %d location = %q", w.Code, w.Header().Get("Location"))
 			}
 			// Without a valid app_state there is no app redirect to trust.
@@ -338,7 +338,7 @@ func TestOAuthStart_V2FailuresRedirect(t *testing.T) {
 	}
 	rig := newOAuthRig(t)
 	w := httptest.NewRecorder()
-	rig.h.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/start", nil),
+	rig.h.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/start", nil),
 		OAuthStartRequest{InstallID: 42, Prefix: "/api/v2", Prompt: "consent"}, "", http.StatusFound)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("a malformed start: code = %d", w.Code)
@@ -385,7 +385,7 @@ func TestNormalizeOAuthNext(t *testing.T) {
 
 func TestOAuthCallback_HappyPath_DeliversOneTimeCompletionCode(t *testing.T) {
 	rig := newOAuthRig(t)
-	if _, cookie := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init?next=/me"); cookie == nil {
+	if _, cookie := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init?next=/me"); cookie == nil {
 		t.Fatal("no cookie")
 	} else {
 		wCb := rig.callback(t, "42", rig.stateQuery(), cookie)
@@ -400,7 +400,7 @@ func TestOAuthCallback_HappyPath_DeliversOneTimeCompletionCode(t *testing.T) {
 			t.Error("callback did not clear the binding cookie")
 		}
 		loc := wCb.Header().Get("Location")
-		if !strings.HasPrefix(loc, "https://silo.test/login/oauth-complete?") || strings.Contains(loc, "acc.tok") {
+		if !strings.HasPrefix(loc, "https://prairie.test/login/oauth-complete?") || strings.Contains(loc, "acc.tok") {
 			t.Fatalf("redirect = %q", loc)
 		}
 		parsed, _ := url.Parse(loc)
@@ -473,7 +473,7 @@ func TestOAuthCallback_RequiresTheStartingBrowser(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			rig := newOAuthRig(t)
-			_, real := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init")
+			_, real := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init")
 			w := rig.callback(t, "42", rig.stateQuery(), cookie(real))
 			if got := w.Header().Get("Location"); got != "/login?error=oauth_failed&reason=state_invalid" {
 				t.Fatalf("Location = %q", got)
@@ -523,7 +523,7 @@ func TestOAuthCallback_FailureReasons(t *testing.T) {
 			if tc.setup != nil {
 				tc.setup(rig)
 			}
-			_, cookie := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init")
+			_, cookie := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init")
 			query := rig.stateQuery()
 			if tc.query != nil {
 				query = tc.query(rig)
@@ -566,7 +566,7 @@ func (rig *oauthTestRig) nativeStart(t *testing.T, query string) (*httptest.Resp
 	q, _ := url.ParseQuery(query)
 	req := OAuthStartRequest{InstallID: 42, Prefix: "/api/v2", Native: true,
 		CodeChallenge: q.Get("code_challenge"), AppState: q.Get("app_state"), LinkTicket: q.Get("link_ticket")}
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/native/start?"+query, nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/native/start?"+query, nil)
 	w := httptest.NewRecorder()
 	rig.h.ServeStart(w, r, req, "", 0)
 	var binder *http.Cookie
@@ -584,7 +584,7 @@ func (rig *oauthTestRig) webStart(t *testing.T, query string) (*httptest.Respons
 	t.Helper()
 	q, _ := url.ParseQuery(query)
 	req := OAuthStartRequest{InstallID: 42, Prefix: "/api/v2", Next: q.Get("next"), LinkTicket: q.Get("link_ticket")}
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/start?"+query, nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/start?"+query, nil)
 	w := httptest.NewRecorder()
 	rig.h.ServeStart(w, r, req, rig.h.PublicURL("/api/v2/auth/oauth/42/start", url.Values{"bounce": {"1"}}), http.StatusFound)
 	var binder *http.Cookie
@@ -598,7 +598,7 @@ func (rig *oauthTestRig) webStart(t *testing.T, query string) (*httptest.Respons
 
 func (rig *oauthTestRig) v2Callback(t *testing.T, cookie *http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
 	if cookie != nil {
 		r.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 	}
@@ -609,7 +609,7 @@ func (rig *oauthTestRig) v2Callback(t *testing.T, cookie *http.Cookie) *httptest
 
 func (rig *oauthTestRig) nativeCallback(t *testing.T, cookie *http.Cookie) *url.URL {
 	t.Helper()
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
 	if cookie != nil {
 		r.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 	}
@@ -645,7 +645,7 @@ func TestOAuthNative_HandsOffToTheAppWithAVerifierBoundCode(t *testing.T) {
 	}
 	q := loc.Query()
 	code := q.Get("code")
-	if len(code) < 32 || q.Get("state") != "app-state-1" || q.Get("server") != testServerID || q.Get("iss") != "https://silo.test" || q.Get("error") != "" {
+	if len(code) < 32 || q.Get("state") != "app-state-1" || q.Get("server") != testServerID || q.Get("iss") != "https://prairie.test" || q.Get("error") != "" {
 		t.Fatalf("redirect query = %v", q)
 	}
 
@@ -690,7 +690,7 @@ func TestOAuthNative_HandsOffToTheAppWithAVerifierBoundCode(t *testing.T) {
 
 func TestOAuthNative_WebCodeRefusesAVerifier(t *testing.T) {
 	rig := newOAuthRig(t)
-	_, cookie := rig.start(t, "https://silo.test/api/v1/auth/oauth/42/init")
+	_, cookie := rig.start(t, "https://prairie.test/api/v1/auth/oauth/42/init")
 	w := rig.callback(t, "42", rig.stateQuery(), cookie)
 	loc, _ := url.Parse(w.Header().Get("Location"))
 	code, browser := loc.Query().Get("code"), completionCookieValue(t, w)
@@ -725,14 +725,14 @@ func TestOAuthNative_FailureGoesToTheApp(t *testing.T) {
 	rig.comp.err = ErrNotPermitted
 	_, cookie := rig.nativeStart(t, "code_challenge="+nativeChallenge+"&app_state=s1")
 	q := rig.nativeCallback(t, cookie).Query()
-	if q.Get("error") != "not_permitted" || q.Get("state") != "s1" || q.Get("server") != testServerID || q.Get("iss") != "https://silo.test" || q.Get("code") != "" {
+	if q.Get("error") != "not_permitted" || q.Get("state") != "s1" || q.Get("server") != testServerID || q.Get("iss") != "https://prairie.test" || q.Get("code") != "" {
 		t.Fatalf("query = %v", q)
 	}
 	// Without the binding cookie the browser is not trusted with the app's
 	// state: the web login page answers instead.
 	rig = newOAuthRig(t)
 	rig.nativeStart(t, "code_challenge="+nativeChallenge+"&app_state=s1")
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/42/callback?"+rig.stateQuery(), nil)
 	w := httptest.NewRecorder()
 	rig.h.ServeCallback(w, r, "/api/v2", 42)
 	if got := w.Header().Get("Location"); got != "/login?error=oauth_failed&reason=state_invalid" {
@@ -773,7 +773,7 @@ func (rig *oauthTestRig) nativeStartOn(origin, appState, ticket string) *httptes
 
 // resumeNative opens a parked native start on the public origin.
 func (rig *oauthTestRig) resumeNative(flow string, installID int) *httptest.ResponseRecorder {
-	return rig.serveStart(httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/"+strconv.Itoa(installID)+"/native/start?flow="+url.QueryEscape(flow), nil),
+	return rig.serveStart(httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/"+strconv.Itoa(installID)+"/native/start?flow="+url.QueryEscape(flow), nil),
 		OAuthStartRequest{InstallID: installID, Prefix: "/api/v2", Native: true, Flow: flow})
 }
 
@@ -782,7 +782,7 @@ func (rig *oauthTestRig) resumeNative(flow string, installID int) *httptest.Resp
 func parkedFlow(t *testing.T, w *httptest.ResponseRecorder) string {
 	t.Helper()
 	loc, err := url.Parse(w.Header().Get("Location"))
-	if err != nil || w.Code != http.StatusFound || loc.Scheme+"://"+loc.Host+loc.Path != "https://silo.test/api/v2/auth/oauth/42/native/start" {
+	if err != nil || w.Code != http.StatusFound || loc.Scheme+"://"+loc.Host+loc.Path != "https://prairie.test/api/v2/auth/oauth/42/native/start" {
 		t.Fatalf("not moved to the public origin: code = %d location = %q", w.Code, w.Header().Get("Location"))
 	}
 	if binderOf(w) != nil {
@@ -833,7 +833,7 @@ func TestOAuthNative_StartOffThePublicOriginIsParked(t *testing.T) {
 	}
 	// Presented anywhere but the public origin, the ID is refused like an
 	// unknown one and stays parked for the public origin.
-	for _, origin := range []string{lanOrigin, "http://silo.test", "https://other.example"} {
+	for _, origin := range []string{lanOrigin, "http://prairie.test", "https://other.example"} {
 		w := rig.serveStart(httptest.NewRequest(http.MethodGet, origin+"/api/v2/auth/oauth/42/native/start?flow="+flow, nil),
 			OAuthStartRequest{InstallID: 42, Prefix: "/api/v2", Native: true, Flow: flow})
 		if w.Code != http.StatusBadRequest || binderOf(w) != nil || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/plain") ||
@@ -918,7 +918,7 @@ func TestOAuthNative_FailuresNameTheStartOrigin(t *testing.T) {
 		t.Fatal(err)
 	}
 	flow := parkedFlow(t, rig.nativeStartOn(lanOrigin, "s3", ticket.Ticket))
-	if len(rig.store.tickets) != 0 || strings.Contains(rig.store.starts[flow].StartOrigin, "silo.test") || rig.store.starts[flow].LinkingUserID != 7 {
+	if len(rig.store.tickets) != 0 || strings.Contains(rig.store.starts[flow].StartOrigin, "prairie.test") || rig.store.starts[flow].LinkingUserID != 7 {
 		t.Fatalf("parked link = %+v, tickets left = %d", rig.store.starts[flow], len(rig.store.tickets))
 	}
 	cookie := binderOf(rig.resumeNative(flow, 42))
@@ -951,12 +951,12 @@ func TestOAuthNative_StartOriginComesFromTheRequest(t *testing.T) {
 
 	// Relayed to the public origin: the flow opens there and names it.
 	rig := newOAuthRig(t)
-	w := rig.serveStart(relayed("https://silo.test"), req)
+	w := rig.serveStart(relayed("https://prairie.test"), req)
 	cookie := binderOf(w)
 	if w.Code != http.StatusFound || cookie == nil || len(rig.store.starts) != 0 {
 		t.Fatalf("public start: code = %d location = %q", w.Code, w.Header().Get("Location"))
 	}
-	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://silo.test" {
+	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://prairie.test" {
 		t.Fatalf("iss = %q", got)
 	}
 
@@ -982,7 +982,7 @@ func TestOAuthNative_StartOriginComesFromTheRequest(t *testing.T) {
 	}
 	// The same proxy forwarding the public origin opens the flow directly.
 	rig = newOAuthRig(t)
-	r = relayed("http://silo.test")
+	r = relayed("http://prairie.test")
 	r.Header.Set("X-Forwarded-Proto", "https")
 	if w := rig.serveStartVia(clientip.NewResolver([]*net.IPNet{trusted}), r, req); binderOf(w) == nil || len(rig.store.starts) != 0 {
 		t.Fatalf("trusted proxy on the public origin: code = %d location = %q", w.Code, w.Header().Get("Location"))
@@ -1036,9 +1036,9 @@ func TestOAuthNative_StartOnAnUnknownHostIsRefused(t *testing.T) {
 
 	// A connected network access provider's origin is known.
 	rig = newOAuthRig(t)
-	rig.h.deps.KnownOrigins = func() []string { return []string{"https://Silo.Tailnet.Example"} }
-	flow := parkedFlow(t, rig.serveStart(forged("https://silo.tailnet.example"), req))
-	if got := rig.store.starts[flow].StartOrigin; got != "https://silo.tailnet.example" {
+	rig.h.deps.KnownOrigins = func() []string { return []string{"https://Prairie.Tailnet.Example"} }
+	flow := parkedFlow(t, rig.serveStart(forged("https://prairie.tailnet.example"), req))
+	if got := rig.store.starts[flow].StartOrigin; got != "https://prairie.tailnet.example" {
 		t.Fatalf("provider origin: start origin = %q", got)
 	}
 }
@@ -1053,19 +1053,19 @@ func TestOAuthNative_TrustedProxyForwardedHost(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8096/api/v2/auth/oauth/42/native/start?code_challenge="+nativeChallenge+"&code_challenge_method=S256&app_state=proxied", nil)
 	r.RemoteAddr = "198.51.100.7:4321"
 	r.Header.Set("X-Forwarded-Proto", "https")
-	r.Header.Set("X-Forwarded-Host", "silo.test")
+	r.Header.Set("X-Forwarded-Host", "prairie.test")
 	w := rig.serveStartVia(clientip.NewResolver([]*net.IPNet{trusted}), r, req)
 	cookie := binderOf(w)
 	if w.Code != http.StatusFound || cookie == nil || len(rig.store.starts) != 0 {
 		t.Fatalf("start: code = %d location = %q parked = %d", w.Code, w.Header().Get("Location"), len(rig.store.starts))
 	}
-	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://silo.test" {
+	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://prairie.test" {
 		t.Fatalf("iss = %q", got)
 	}
 }
 
 func TestOAuthKnownStartOrigin(t *testing.T) {
-	h := NewOAuthHandler(OAuthHandlerDeps{HostBaseURL: "https://silo.test", KnownOrigins: func() []string {
+	h := NewOAuthHandler(OAuthHandlerDeps{HostBaseURL: "https://prairie.test", KnownOrigins: func() []string {
 		return []string{"https://media.tailnet.example:443", "not a url"}
 	}})
 	for origin, want := range map[string]bool{
@@ -1080,10 +1080,10 @@ func TestOAuthKnownStartOrigin(t *testing.T) {
 		"http://[::1]:8096":               true,
 		"http://nas:8096":                 true,
 		"http://nas.local:8096":           true,
-		"http://silo.lan":                 true,
-		"http://silo.localdomain":         true,
-		"https://silo.home.arpa":          true,
-		"http://silo.corp.internal":       true,
+		"http://prairie.lan":                 true,
+		"http://prairie.localdomain":         true,
+		"https://prairie.home.arpa":          true,
+		"http://prairie.corp.internal":       true,
 		"https://media.tailnet.example":   true,
 		"http://media.tailnet.example":    false,
 		"https://hostile.example":         false,
@@ -1091,7 +1091,7 @@ func TestOAuthKnownStartOrigin(t *testing.T) {
 		"http://203.0.113.9:8096":         false,
 		"http://[2001:db8::1]":            false,
 		"http://100.128.0.1":              false,
-		"https://silo.example.ts.net":     false,
+		"https://prairie.example.ts.net":     false,
 		"":                                false,
 	} {
 		if got := h.knownStartOrigin(origin); got != want {
@@ -1101,7 +1101,7 @@ func TestOAuthKnownStartOrigin(t *testing.T) {
 }
 
 func TestOAuthSessionNativeNeedsStartOrigin(t *testing.T) {
-	sess := OAuthSession{State: "s", InstallID: "1", RedirectURI: "https://silo.test/cb", Kind: OAuthFlowNative, CodeChallenge: nativeChallenge, ExpiresAt: time.Now().Add(time.Minute)}
+	sess := OAuthSession{State: "s", InstallID: "1", RedirectURI: "https://prairie.test/cb", Kind: OAuthFlowNative, CodeChallenge: nativeChallenge, ExpiresAt: time.Now().Add(time.Minute)}
 	if err := validateSession(&sess); err == nil {
 		t.Fatal("native session without a start origin was accepted")
 	}
@@ -1220,7 +1220,7 @@ func TestOAuthLinkTickets(t *testing.T) {
 	}
 	q := rig.nativeCallback(t, cookie).Query()
 	code := q.Get("code")
-	if code == "" || q.Get("link") != "1" || q.Get("state") != "s2" || q.Get("server") != testServerID || q.Get("iss") != "https://silo.test" || rig.comp.links != links {
+	if code == "" || q.Get("link") != "1" || q.Get("state") != "s2" || q.Get("server") != testServerID || q.Get("iss") != "https://prairie.test" || rig.comp.links != links {
 		t.Fatalf("native link redirect = %v, links = %d", q, rig.comp.links)
 	}
 	if _, err := rig.h.Complete(ctx, code, nativeVerifier, ""); !errors.Is(err, ErrOAuthCompletionInvalid) {
@@ -1259,7 +1259,7 @@ func TestOAuthLinkTickets(t *testing.T) {
 	if cookie != nil {
 		t.Fatal("an expired ticket started a flow")
 	}
-	if loc, _ := url.Parse(w.Header().Get("Location")); loc == nil || loc.Query().Get("error") != "session_expired" || loc.Query().Get("iss") != "https://silo.test" {
+	if loc, _ := url.Parse(w.Header().Get("Location")); loc == nil || loc.Query().Get("error") != "session_expired" || loc.Query().Get("iss") != "https://prairie.test" {
 		t.Fatalf("expired ticket: Location = %q", w.Header().Get("Location"))
 	}
 }
@@ -1374,7 +1374,7 @@ func TestOAuthCompletionExpires(t *testing.T) {
 func TestOAuthProviderLogoutURL(t *testing.T) {
 	rig := newOAuthRig(t)
 	got, err := rig.h.ProviderLogoutURL(context.Background(), 7)
-	if err != nil || got != "https://idp.example/logout?user="+url.QueryEscape("https://silo.test/login") {
+	if err != nil || got != "https://idp.example/logout?user="+url.QueryEscape("https://prairie.test/login") {
 		t.Fatalf("got %q, %v", got, err)
 	}
 	rig.h.SetHostBaseURL("")
@@ -1482,8 +1482,8 @@ func TestOAuthRoutesRefuseCredentialsInstallations(t *testing.T) {
 // form, so the app can compare it with its saved server's origin.
 func TestOAuthNative_IssuerSerialization(t *testing.T) {
 	for _, tc := range []struct{ scheme, host, want string }{
-		{"https", "silo.test", "https://silo.test"},
-		{"HTTPS", "Silo.Example.TEST:443", "https://silo.example.test"},
+		{"https", "prairie.test", "https://prairie.test"},
+		{"HTTPS", "Prairie.Example.TEST:443", "https://prairie.example.test"},
 		{"http", "10.0.0.5:80", "http://10.0.0.5"},
 		{"http", "10.0.0.5:8096", "http://10.0.0.5:8096"},
 		{"https", "[FE80::1]:8443", "https://[fe80::1]:8443"},
@@ -1497,9 +1497,9 @@ func TestOAuthNative_IssuerSerialization(t *testing.T) {
 	// A start on the public origin of a public URL with a path, a default
 	// port and upper case names its origin only.
 	rig := newOAuthRig(t)
-	rig.h.SetHostBaseURL("HTTPS://Silo.Test:443/media/")
+	rig.h.SetHostBaseURL("HTTPS://Prairie.Test:443/media/")
 	_, cookie := rig.nativeStart(t, "code_challenge="+nativeChallenge+"&app_state=s1")
-	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://silo.test" {
+	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://prairie.test" {
 		t.Fatalf("iss = %q", got)
 	}
 	// Without a public URL the request origin issues the failure.
@@ -1544,10 +1544,10 @@ func TestSameOriginComparesCanonicalHosts(t *testing.T) {
 		{"https", "[::1]", "https://[0:0:0:0:0:0:0:1]", true},
 		{"https", "[::1]:443", "https://[0:0:0:0:0:0:0:1]", true},
 		{"http", "[::1]:8096", "http://[::1]:8096", true},
-		{"https", "Silo.Example.test", "https://silo.example.test:443", true},
+		{"https", "Prairie.Example.test", "https://prairie.example.test:443", true},
 		{"https", "[::2]", "https://[::1]", false},
-		{"http", "silo.example.test", "https://silo.example.test", false},
-		{"https", "silo.example.test:8443", "https://silo.example.test", false},
+		{"http", "prairie.example.test", "https://prairie.example.test", false},
+		{"https", "prairie.example.test:8443", "https://prairie.example.test", false},
 	}
 	for _, tc := range cases {
 		base, err := url.Parse(tc.base)

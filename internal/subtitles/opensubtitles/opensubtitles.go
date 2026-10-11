@@ -15,13 +15,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 const (
 	defaultBaseURL   = "https://api.opensubtitles.com/api/v1"
 	defaultAPIKey    = "Hsn0IpAAGNFVIbAvK0gtJqCi8lAYuugT"
-	defaultUserAgent = "Silo v1.0"
+	defaultUserAgent = "Prairie v1.0"
 )
 
 // Config holds the configuration for the OpenSubtitles provider.

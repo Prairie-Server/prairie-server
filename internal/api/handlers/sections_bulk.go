@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 // BulkSectionRepo is the minimal repo surface needed for bulk-create.

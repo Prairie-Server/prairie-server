@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 type RequestService interface {

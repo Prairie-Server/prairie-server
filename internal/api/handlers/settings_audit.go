@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 )
 
 // Audit records for settings changes made *for someone else*.

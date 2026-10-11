@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore/blobstoretest"
-	"github.com/Silo-Server/silo-server/internal/librarymonitor"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
+	"github.com/prairie-server/prairie-server/internal/librarymonitor"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakeLibraryMonitoring struct {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestQueryExecutor_NamePrefix_PushedIntoWHERE asserts that when AccessFilter

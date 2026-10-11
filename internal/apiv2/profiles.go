@@ -9,7 +9,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 // The profiles domain: household members of a login account.

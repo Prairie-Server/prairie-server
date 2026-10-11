@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // weightedAverage computes a weighted average of embedding vectors. Each entry

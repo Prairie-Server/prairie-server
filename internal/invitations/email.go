@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // emailContent is one rendered invitation email.

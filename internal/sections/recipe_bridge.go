@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 // ErrNoFetcher is returned when InstallRecipeDelegate(nil) was called and a recipe is resolved.

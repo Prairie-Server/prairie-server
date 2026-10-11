@@ -1,5 +1,5 @@
 // Package llm provides the shared OpenAI-compatible API client used by every
-// AI feature in Silo (subtitle translation, metadata translation, Whisper ASR).
+// AI feature in Prairie (subtitle translation, metadata translation, Whisper ASR).
 // One endpoint configuration, one retry/backoff implementation; the operator
 // can point it at OpenAI, Groq, a local Ollama/llama.cpp/faster-whisper
 // server, etc.

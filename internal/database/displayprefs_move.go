@@ -7,7 +7,7 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat/displayprefs"
+	"github.com/prairie-server/prairie-server/internal/jellycompat/displayprefs"
 )
 
 // displayPrefsMoveVersion sorts immediately after

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
 )
@@ -210,7 +210,7 @@ func (s *webPushSender) send(ctx context.Context, sub *WebPushSubscription, mess
 		Keys:     webpush.Keys{P256dh: sub.P256dh, Auth: sub.Auth},
 	}, &webpush.Options{
 		HTTPClient:      s.client,
-		Subscriber:      "https://github.com/Silo-Server/silo-server",
+		Subscriber:      "https://github.com/Prairie-Server/prairie-server",
 		TTL:             webPushTTLSeconds,
 		Urgency:         webpush.UrgencyNormal,
 		VAPIDPublicKey:  publicKey,

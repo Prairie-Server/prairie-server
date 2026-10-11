@@ -1,6 +1,6 @@
 package dashmetrics
 
-import "github.com/Silo-Server/silo-server/internal/streamtelemetry"
+import "github.com/prairie-server/prairie-server/internal/streamtelemetry"
 
 // egressDelta is the viewer bytes one process served between two telemetry
 // snapshots. Total covers every viewer-egress byte; Download is the subset

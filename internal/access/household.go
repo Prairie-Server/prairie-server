@@ -1,6 +1,6 @@
 package access
 
-import "github.com/Silo-Server/silo-server/internal/userstore"
+import "github.com/prairie-server/prairie-server/internal/userstore"
 
 // ProfileIsLimited reports whether acting as the profile is narrower than
 // acting as its account: the profile is PIN-protected, has active maturity

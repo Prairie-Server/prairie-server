@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/metadata/translation"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/metadata/translation"
 )
 
 func (h *MetadataAIHandler) TranslateAdminMetadata(ctx context.Context, contentID string, req TranslateMetadataRequest, userID int) (*translation.Job, error) {

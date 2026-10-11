@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/contracts/settings/v1/schemas/card-overlays.json",
+  "$id": "https://prairie-server.dev/contracts/settings/v1/schemas/card-overlays.json",
   "title": "Card overlay preferences",
   "description": "Badges painted on poster cards. Mirrors CardOverlayPrefs in web/src/lib/overlays/types.ts.",
   "type": "object",

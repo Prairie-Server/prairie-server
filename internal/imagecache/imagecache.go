@@ -18,10 +18,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 const (
@@ -344,7 +344,7 @@ func (c *Cacher) uploadVariants(ctx context.Context, result *imageutil.VariantRe
 
 func variantRevision(result *imageutil.VariantResult) string {
 	h := sha256.New()
-	_, _ = io.WriteString(h, "silo-artwork-v1\x00")
+	_, _ = io.WriteString(h, "prairie-artwork-v1\x00")
 	_, _ = io.WriteString(h, result.Ext)
 	_, _ = h.Write([]byte{0})
 	variants := append([]imageutil.Variant(nil), result.Variants...)

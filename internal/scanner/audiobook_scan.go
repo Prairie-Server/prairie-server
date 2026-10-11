@@ -14,10 +14,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/titleutil"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/titleutil"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -208,9 +208,9 @@ func (s *Scanner) audiobookFolderShouldSkip(ctx context.Context, folder *models.
 // audiobookScanWorkers returns the configured number of parallel workers
 // for audiobook reconciliation. Defaults to 8 — high enough to keep all
 // cores busy on the ffprobe step (which dominates per-book wall time)
-// without overwhelming a small server. Override with SILO_AUDIOBOOK_SCAN_WORKERS.
+// without overwhelming a small server. Override with PRAIRIE_AUDIOBOOK_SCAN_WORKERS.
 func audiobookScanWorkers() int {
-	if v := os.Getenv("SILO_AUDIOBOOK_SCAN_WORKERS"); v != "" {
+	if v := os.Getenv("PRAIRIE_AUDIOBOOK_SCAN_WORKERS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
 		}

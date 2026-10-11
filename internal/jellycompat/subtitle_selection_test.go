@@ -17,9 +17,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 func ptrString(p *int) string {
@@ -224,7 +224,7 @@ func defaultSubtitleStreamFromResponse(t *testing.T, resp playbackInfoResponseDT
 	return index, found
 }
 
-// A viewer with no subtitle mode gets Jellyfin's Default mode, which Silo
+// A viewer with no subtitle mode gets Jellyfin's Default mode, which Prairie
 // resolves to the embedded default track ahead of an external subtitle file.
 func TestHandlePlaybackInfo_DefaultModePrefersEmbeddedDefaultSubtitle(t *testing.T) {
 	handler, routeID := newSubtitleSelectionHandler(t)

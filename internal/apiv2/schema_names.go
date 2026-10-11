@@ -3,10 +3,10 @@ package apiv2
 import (
 	"reflect"
 
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/onboarding"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/onboarding"
 	"github.com/danielgtaylor/huma/v2"
 )
 

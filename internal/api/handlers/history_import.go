@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/access"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 type HistoryImportHandler struct {
@@ -384,7 +384,7 @@ func (h *HistoryImportHandler) writeHistoryImportError(w http.ResponseWriter, er
 // historyImportAPIError maps a history import failure onto the v1 decision
 // (status, code, message). Upstream statuses carry the historyimport
 // upstream-error code so the v2 listener can tell a rejected source
-// credential from a Silo authentication failure.
+// credential from a Prairie authentication failure.
 func historyImportAPIError(err error) *APIError {
 	if message, refused := historyimport.ServerAddressMessage(err); refused {
 		return &APIError{Status: http.StatusBadRequest, Code: policyErrorBadRequest, Message: message, cause: err}
@@ -426,8 +426,8 @@ func historyImportAPIError(err error) *APIError {
 }
 
 // ErrHistoryImportUpstream is the cause of an *APIError that reports the
-// source server's answer rather than Silo's: errors.Is distinguishes it from
-// a Silo authentication problem on the same status.
+// source server's answer rather than Prairie's: errors.Is distinguishes it from
+// a Prairie authentication problem on the same status.
 var errHistoryImportUpstream = errors.New("history import: upstream server error")
 
 // IsHistoryImportUpstreamError reports whether err wraps a source server

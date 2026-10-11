@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 type fakeAdminRecommendations struct {

@@ -17,8 +17,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // PersonRepository manages the people table.
@@ -1460,7 +1460,7 @@ const (
 )
 
 // PersonMetadataIncomplete reports whether a provider could still fill in
-// metadata Silo does not have. A photo_path of "-" is the "provider has no
+// metadata Prairie does not have. A photo_path of "-" is the "provider has no
 // photo" sentinel — an answer, not a gap — so it counts as complete, matching
 // the SQL predicate in ClaimRefreshCandidates.
 func PersonMetadataIncomplete(person models.Person) bool {

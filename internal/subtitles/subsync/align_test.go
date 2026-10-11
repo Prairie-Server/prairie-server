@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 // dialogCues returns cues of a two-hour title: lines of 1-5 s with gaps of

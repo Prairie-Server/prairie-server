@@ -3,14 +3,14 @@ package plugins
 import (
 	"testing"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugins(t *testing.T) {
 	entries := []CatalogEntry{
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
+			SourceKind:   RepositorySourcePrairie,
 			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "0.1.0"},
 		},
 		{
@@ -32,7 +32,7 @@ func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugi
 func TestCatalogEntriesForDiscoveryHidesTransferredPluginWhenCommunityIsDisabled(t *testing.T) {
 	result := catalogEntriesForDiscovery([]CatalogEntry{{
 		RepositoryID: 1,
-		SourceKind:   RepositorySourceSilo,
+		SourceKind:   RepositorySourcePrairie,
 		Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.seerr", Version: "0.1.0"},
 	}})
 	if len(result) != 0 {
@@ -45,12 +45,12 @@ func TestCatalogEntriesForDiscoveryPreventsExternalSourceShadowing(t *testing.T)
 		{
 			RepositoryID: 9,
 			SourceKind:   RepositorySourceExternal,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "99.0.0"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "99.0.0"},
 		},
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.0.0"},
+			SourceKind:   RepositorySourcePrairie,
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.0.0"},
 		},
 	})
 	if len(result) != 1 {
@@ -65,13 +65,13 @@ func TestCatalogEntriesForDiscoveryShowsLatestVersionFromSelectedRepository(t *t
 	result := catalogEntriesForDiscovery([]CatalogEntry{
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.9"},
+			SourceKind:   RepositorySourcePrairie,
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.2.9"},
 		},
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.10"},
+			SourceKind:   RepositorySourcePrairie,
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.2.10"},
 		},
 	})
 	if len(result) != 1 {

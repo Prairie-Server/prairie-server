@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 // AdminSection is the complete saved definition, including disabled rows.

@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	v2 "github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/consumer_ok/v2"
+	v2 "github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/consumer_ok/v2"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {}

@@ -15,7 +15,7 @@ describe("formatDocumentTitle", () => {
   });
 
   it("prefixes the current page label", () => {
-    expect(formatDocumentTitle("Inception")).toBe("Inception · Silo");
+    expect(formatDocumentTitle("Inception")).toBe("Inception · Prairie");
   });
 });
 
@@ -37,7 +37,7 @@ describe("resolveAdminDocumentTitle", () => {
     expect(resolveAdminDocumentTitle("/admin/access-groups")).toBe("Admin Access Groups");
     expect(resolveAdminDocumentTitle("/admin/autoscan")).toBe("Admin Autoscan");
     expect(resolveAdminDocumentTitle("/admin/plugins")).toBe("Admin Plugins");
-    expect(resolveAdminDocumentTitle("/admin/plugins/silo.mdblist")).toBe("Admin Plugin");
+    expect(resolveAdminDocumentTitle("/admin/plugins/prairie.mdblist")).toBe("Admin Plugin");
     expect(resolveAdminDocumentTitle("/admin/collections")).toBe("Admin Collections");
     expect(resolveAdminDocumentTitle("/admin/diagnostics")).toBe("Admin Client Diagnostics");
     expect(resolveAdminDocumentTitle("/admin/downloads")).toBe("Admin Downloads");

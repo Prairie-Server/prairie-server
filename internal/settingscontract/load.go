@@ -11,7 +11,7 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	settingsv1 "github.com/Silo-Server/silo-server/contracts/settings/v1"
+	settingsv1 "github.com/prairie-server/prairie-server/contracts/settings/v1"
 )
 
 // contractFS is the embedded canonical contract. Clients vendor a pinned copy

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
 )

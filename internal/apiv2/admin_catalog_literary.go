@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/literaryworks"
 )
 
 // AdminLiteraryWorkService is the existing literary administration domain service.

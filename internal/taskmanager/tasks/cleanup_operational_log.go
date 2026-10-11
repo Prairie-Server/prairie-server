@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/opslog"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/opslog"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // OperationalLogCleanupTask prunes expired operational log rows and partitions.

@@ -3,7 +3,7 @@ package mediasample
 import (
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // Hardware decode backends a hardware attempt can use, named as

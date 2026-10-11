@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
-	"github.com/Silo-Server/silo-server/internal/invitations"
+	"github.com/prairie-server/prairie-server/internal/invitations"
 )
 
 // hashInvite mirrors invitations.HashToken so seeded rows match raw tokens.

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 // absSubject normalizes an ABS user id onto the shared telemetry subject space.

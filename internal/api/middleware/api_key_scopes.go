@@ -5,7 +5,7 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 // A scoped API key is an allowlist credential: it may only call the routes

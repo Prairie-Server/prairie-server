@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/config"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/config"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 const jellyfinCompatWebOperationUpdatedEvent = "jellyfin_compat.web_operation.updated"
@@ -131,7 +131,7 @@ func jellyfinCompatSettingUpdates(req AdminJellyfinCompatSettingsPatch, settings
 		}
 		managedPath := jellycompat.ManagedWebInstallPath(root)
 		if raw := strings.TrimSpace(*req.WebDir); raw != "" && filepath.Clean(raw) != filepath.Clean(managedPath) {
-			return nil, apiError(400, "bad_request", "Jellyfin Web active directory is managed by Silo and cannot point at an arbitrary path")
+			return nil, apiError(400, "bad_request", "Jellyfin Web active directory is managed by Prairie and cannot point at an arbitrary path")
 		}
 		updates["jellyfin_compat.web_dir"] = managedPath
 	}

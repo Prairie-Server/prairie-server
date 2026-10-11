@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type Capabilities struct {
@@ -23,7 +23,7 @@ type Capabilities struct {
 	ExportWatchlist bool `json:"export_watchlist"`
 	RemoveWatchlist bool `json:"remove_watchlist"`
 	// ProvidesWatchlistOrder is true when the provider returns its watchlist in a
-	// user-configurable order that Silo can mirror locally.
+	// user-configurable order that Prairie can mirror locally.
 	ProvidesWatchlistOrder bool `json:"provides_watchlist_order"`
 	ScrobblePlayback       bool `json:"scrobble_playback"`
 	// ImportRatings and ExportRatings cover movie and series ratings.
@@ -217,7 +217,7 @@ type RatingExporter interface {
 }
 
 // RatingKindFilter is implemented by providers that rate only some of the item
-// kinds Silo syncs (historyimport.KindMovie, historyimport.KindSeries). Items
+// kinds Prairie syncs (historyimport.KindMovie, historyimport.KindSeries). Items
 // of any other kind are left out of the sync: never sent and never read as
 // removed.
 type RatingKindFilter interface {
@@ -225,7 +225,7 @@ type RatingKindFilter interface {
 }
 
 // RatingExportWatchGate is implemented by providers where rating a title also
-// records it as watched. Silo then sends a new rating of such a kind only once
+// records it as watched. Prairie then sends a new rating of such a kind only once
 // the profile has a completed play of the title.
 type RatingExportWatchGate interface {
 	RatingExportRequiresWatched(kind string) bool
@@ -579,7 +579,7 @@ type RemoteRating struct {
 	RatedAt time.Time
 }
 
-// LocalRating is a Silo rating to send to a provider. The embedded
+// LocalRating is a Prairie rating to send to a provider. The embedded
 // LocalFavorite carries the item identity. Rating is already converted to the
 // provider scale, an integer from 1 to 10.
 type LocalRating struct {
@@ -595,7 +595,7 @@ type RemoteDropped struct {
 	DroppedAt time.Time
 }
 
-// DroppedSyncState records that Silo and a provider agreed a series is
+// DroppedSyncState records that Prairie and a provider agreed a series is
 // dropped; no state means they agreed it is not. RemoteSeen records that a
 // provider read confirmed the drop. ProviderAccountID scopes the row to the
 // provider account it was agreed with.
@@ -619,8 +619,8 @@ type LocalRatingEvent struct {
 	MediaItemIDs []string
 }
 
-// RatingSyncState is the last rating Silo and a provider agreed on for one item,
-// in Silo stars (1 to 5). No state means the sides agreed the item is unrated.
+// RatingSyncState is the last rating Prairie and a provider agreed on for one item,
+// in Prairie stars (1 to 5). No state means the sides agreed the item is unrated.
 // RemoteSeen records that a provider read confirmed the agreed rating.
 // ProviderAccountID scopes the row to the provider account it was agreed with.
 type RatingSyncState struct {

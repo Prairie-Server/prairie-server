@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 // Where a location's directory or budget comes from.

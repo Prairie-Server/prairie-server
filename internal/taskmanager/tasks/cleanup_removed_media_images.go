@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobgc"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/blobgc"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // removedMediaImagesPerRun bounds one run. A run that stops at the bound

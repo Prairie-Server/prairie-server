@@ -3,9 +3,9 @@ package transcodenode
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
 )
 
 // TestRouteInventoryMatchesRuntimeRouter proves the source-built inventory and

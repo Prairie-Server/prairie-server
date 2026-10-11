@@ -20,7 +20,7 @@ type flatItemKind struct {
 	// dedupe-key prefix ("audiobook:{library_id}:{item_id}").
 	Kind string
 	// ItemType is the media_items.type value the kind announces. It doubles
-	// as the display noun in copy ("New audiobook available on Silo").
+	// as the display noun in copy ("New audiobook available on Prairie").
 	ItemType string
 	// AvailabilityTable receives the one-way "first became available in this
 	// library" facts for the kind.

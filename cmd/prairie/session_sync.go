@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/worker"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/worker"
 )
 
 // buildLiveSessionSyncs builds the live admin snapshot for a node. A play the

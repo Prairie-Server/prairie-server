@@ -18,10 +18,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/s3client"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type collectionArtworkS3Recorder struct {

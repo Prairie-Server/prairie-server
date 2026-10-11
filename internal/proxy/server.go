@@ -16,27 +16,27 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
 
 // proxyRangeHeader is the HTTP Range header the media routes accept.
@@ -102,7 +102,7 @@ type Server struct {
 	// networkAccessHost drives the provider instances for the bearer
 	// network-access routes; nil answers 503 there. See network_access.go.
 	networkAccessHost NetworkAccessProviderHost
-	// ingressTokens validates the X-Silo-Ingress-Token a provider plugin
+	// ingressTokens validates the X-Prairie-Ingress-Token a provider plugin
 	// stamps on requests it proxies to this listener, so the access path is
 	// known here too. Nil accepts no tokens (the header is still stripped).
 	ingressTokens *netaccess.Registry
@@ -1169,7 +1169,7 @@ func (s *Server) proxyToTranscodeNode(w http.ResponseWriter, r *http.Request, cl
 	// of 404ing (the integrated server already does this from the same token). The
 	// node re-verifies the token independently before trusting it.
 	if forwardToken != "" {
-		req.Header.Set("X-Silo-Stream-Token", forwardToken)
+		req.Header.Set("X-Prairie-Stream-Token", forwardToken)
 	}
 
 	resp, err := telemetry.DoTrustedNode(s.httpClient, req, "stream")

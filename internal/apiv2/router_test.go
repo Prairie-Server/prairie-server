@@ -19,11 +19,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/policy"
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
 )
 
 // newTestHandler builds the real listener with the probe operations.

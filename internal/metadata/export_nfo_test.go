@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // NFOSeriesHarness bridges the in-package fakes to the external NFO

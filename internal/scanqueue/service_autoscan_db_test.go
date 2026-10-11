@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 func TestEnqueueAutoscanScansReportsRunPerTarget(t *testing.T) {

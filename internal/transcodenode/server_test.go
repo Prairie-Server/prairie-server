@@ -19,17 +19,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
 
 const testSecret = "node-reconstruct-test-secret"
@@ -749,13 +749,13 @@ func TestHandleDownloadPreparePublishesToneMapReceiptAndStatusAttestation(t *tes
 	if headRecorder.Code != http.StatusOK {
 		t.Fatalf("HEAD status = %d, body = %s", headRecorder.Code, headRecorder.Body.String())
 	}
-	if got := headRecorder.Header().Get("X-Silo-Tone-Map-Recipe-Version"); got != want.ToneMapRecipeVersion {
+	if got := headRecorder.Header().Get("X-Prairie-Tone-Map-Recipe-Version"); got != want.ToneMapRecipeVersion {
 		t.Fatalf("recipe header = %q, want %q", got, want.ToneMapRecipeVersion)
 	}
-	if got := headRecorder.Header().Get("X-Silo-Tone-Map-Mode"); got != string(want.ToneMapMode) {
+	if got := headRecorder.Header().Get("X-Prairie-Tone-Map-Mode"); got != string(want.ToneMapMode) {
 		t.Fatalf("mode header = %q, want %q", got, want.ToneMapMode)
 	}
-	if got := headRecorder.Header().Get("X-Silo-Tone-Map-Source-Revision-Fingerprint"); got != want.ToneMapSourceRevisionFingerprint {
+	if got := headRecorder.Header().Get("X-Prairie-Tone-Map-Source-Revision-Fingerprint"); got != want.ToneMapSourceRevisionFingerprint {
 		t.Fatalf("source revision header = %q, want %q", got, want.ToneMapSourceRevisionFingerprint)
 	}
 }
@@ -1918,7 +1918,7 @@ func TestHandleProgressiveRemuxExecutesSignedTranscodeRoute(t *testing.T) {
 		t.Fatal(err)
 	}
 	req := httptest.NewRequest(http.MethodGet, "/remux/transport-1?seek=2", nil)
-	req.Header.Set("X-Silo-Stream-Token", token)
+	req.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", "transport-1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
@@ -1960,7 +1960,7 @@ func TestHandleProgressiveRemuxHeadDoesNotStartFFmpeg(t *testing.T) {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodHead, "/remux/transport-head", nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", "transport-head")
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
@@ -1980,7 +1980,7 @@ func TestHandleProgressiveRemuxHeadDoesNotStartFFmpeg(t *testing.T) {
 
 	server.SetRecipeStore(&stubRecipeStore{})
 	stoppedRequest := httptest.NewRequest(http.MethodHead, "/remux/transport-head", nil)
-	stoppedRequest.Header.Set("X-Silo-Stream-Token", token)
+	stoppedRequest.Header.Set("X-Prairie-Stream-Token", token)
 	stoppedRouteContext := chi.NewRouteContext()
 	stoppedRouteContext.URLParams.Add("session_id", "transport-head")
 	stoppedRequest = stoppedRequest.WithContext(context.WithValue(stoppedRequest.Context(), chi.RouteCtxKey, stoppedRouteContext))
@@ -2042,7 +2042,7 @@ func TestHandleProgressiveRemuxRejectsConcurrentRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/remux/"+claims.TranscodeTransportID, nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", claims.TranscodeTransportID)
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
@@ -2107,7 +2107,7 @@ func TestHandleProgressiveRemuxRejectsProxyExecutionToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	req := httptest.NewRequest(http.MethodGet, "/remux/transport-1", nil)
-	req.Header.Set("X-Silo-Stream-Token", token)
+	req.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", "transport-1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeContext))
@@ -2318,7 +2318,7 @@ func TestHandleProgressiveRemuxRefusesStoppedTransportAfterRestart(t *testing.T)
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/remux/transport-1", nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", "transport-1")
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
@@ -2362,7 +2362,7 @@ func TestHandleProgressiveRemuxWaitsForForceReloadGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/remux/transport-reload-gate", nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", "transport-reload-gate")
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
@@ -2612,7 +2612,7 @@ func TestForceReloadTeardownDrainsRealProgressiveRemuxWithBlockedClient(t *testi
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/remux/"+claims.TranscodeTransportID, nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", claims.TranscodeTransportID)
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
@@ -2731,7 +2731,7 @@ func TestForceReloadTeardownRetriesStableNodeIDAfterProcessRestart(t *testing.T)
 func requestWithToken(sessionID, token string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "/transcode/"+sessionID+"/master.m3u8", nil)
 	if token != "" {
-		r.Header.Set("X-Silo-Stream-Token", token)
+		r.Header.Set("X-Prairie-Stream-Token", token)
 	}
 	return r
 }
@@ -3801,7 +3801,7 @@ func TestShutdownDrainsProgressiveRemuxAndRejectsLateRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 	request := httptest.NewRequest(http.MethodGet, "/remux/"+claims.TranscodeTransportID, nil)
-	request.Header.Set("X-Silo-Stream-Token", token)
+	request.Header.Set("X-Prairie-Stream-Token", token)
 	routeContext := chi.NewRouteContext()
 	routeContext.URLParams.Add("session_id", claims.TranscodeTransportID)
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))

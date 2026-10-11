@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 func speechRequestBody(t *testing.T, mutate func(*mediasample.Request)) []byte {

@@ -4,20 +4,20 @@ const STORAGE_KEYS = {
   PROFILE_ID: "profile_id",
   PROFILE_TOKEN: "profile_token",
   CURRENT_PROFILE: "current_profile",
-  PROFILE_LAUNCH: "silo-profile-launch",
-  DEVICE_ID: "silo-device-id",
+  PROFILE_LAUNCH: "prairie-profile-launch",
+  DEVICE_ID: "prairie-device-id",
   VOLUME: "player-volume",
   MUTED: "player-muted",
   AUDIOBOOK_SKIP_BACK: "audiobook-skip-back",
   AUDIOBOOK_SKIP_FORWARD: "audiobook-skip-forward",
   AUDIOBOOK_SMART_REWIND: "audiobook-smart-rewind",
   AUDIOBOOK_RATES: "audiobook-rates",
-  UI_TEXT_SCALE: "silo-ui-text-scale",
-  UI_TEXT_WEIGHT: "silo-ui-text-weight",
-  UI_HIGH_CONTRAST: "silo-ui-high-contrast",
-  UI_DATE_FORMAT: "silo-ui-date-format",
-  UI_TIME_FORMAT: "silo-ui-time-format",
-  UI_CACHE_OWNER: "silo-ui-cache-owner",
+  UI_TEXT_SCALE: "prairie-ui-text-scale",
+  UI_TEXT_WEIGHT: "prairie-ui-text-weight",
+  UI_HIGH_CONTRAST: "prairie-ui-high-contrast",
+  UI_DATE_FORMAT: "prairie-ui-date-format",
+  UI_TIME_FORMAT: "prairie-ui-time-format",
+  UI_CACHE_OWNER: "prairie-ui-cache-owner",
   CALENDAR_PRESET: "calendar:preset",
 } as const;
 
@@ -91,15 +91,15 @@ const PROFILE_SELECTION_KEYS: ReadonlySet<string> = new Set([
  * moment: changing the setting to "ask" takes effect in new tabs, and
  * {@link adoptTabProfileSelection} moves a tab back to the shared choice.
  */
-const PROFILE_SCOPE_KEY = "silo-profile-scope";
+const PROFILE_SCOPE_KEY = "prairie-profile-scope";
 /** Prefix for a tab's own profile choice, distinct from the legacy sessionStorage proof key. */
-const TAB_PROFILE_PREFIX = "silo-tab-profile:";
+const TAB_PROFILE_PREFIX = "prairie-tab-profile:";
 /**
  * Changes whenever the signed-in account changes (sign-in, sign-out, a refused
  * session). A tab's own choice records the epoch it was made in and is void
  * once that changes, so signing out in one tab clears the choice in all of them.
  */
-const PROFILE_EPOCH_KEY = "silo-profile-epoch";
+const PROFILE_EPOCH_KEY = "prairie-profile-epoch";
 const TAB_PROFILE_EPOCH_KEY = `${TAB_PROFILE_PREFIX}epoch`;
 
 type ProfileScope = "shared" | "tab";
@@ -218,7 +218,7 @@ function namespaceFor(owner: string | null): string {
  * high contrast, and date/time format.
  *
  * Values are namespaced by the identity that owns them — user id plus active
- * profile id (`silo-ui-text-scale:7:p1`) — so a second account or a sibling profile
+ * profile id (`prairie-ui-text-scale:7:p1`) — so a second account or a sibling profile
  * signing in on a shared browser simply finds nothing where the first one's
  * values would have been. A miss is just a miss: every caller
  * already parses a missing value into the correct default, and the settings

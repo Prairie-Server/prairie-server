@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/markers"
 )
 
 // AdminMarkerProvidersHandler serves the per-provider marker config + key

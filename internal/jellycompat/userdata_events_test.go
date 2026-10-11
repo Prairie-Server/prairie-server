@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 type recordedUserStateEvent struct {

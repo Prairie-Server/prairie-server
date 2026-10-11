@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// genericWebhookBody is the canonical Silo webhook JSON
+// genericWebhookBody is the canonical Prairie webhook JSON
 // (docs/architecture/notifications.md, "Generic payload and HMAC signing").
-// The HMAC signature is computed over the literal bytes Silo sends;
+// The HMAC signature is computed over the literal bytes Prairie sends;
 // receivers verify against the literal bytes they received, so no
 // canonicalization is required on either side. No server URL, no absolute
 // artwork URLs, no library name.
@@ -57,7 +57,7 @@ type genericWebhookRequest struct {
 	Reason    string `json:"reason,omitempty"`
 }
 
-// BuildGenericWebhookPayload renders a delivery as canonical Silo JSON. Pure
+// BuildGenericWebhookPayload renders a delivery as canonical Prairie JSON. Pure
 // function.
 func BuildGenericWebhookPayload(row DeliveryRow, webhookID string, test bool) ([]byte, error) {
 	createdAt := row.CreatedAt
@@ -102,7 +102,7 @@ func BuildGenericWebhookPayload(row DeliveryRow, webhookID string, test bool) ([
 	return json.Marshal(body)
 }
 
-// SignGenericWebhook computes the X-Silo-Signature header value for a body:
+// SignGenericWebhook computes the X-Prairie-Signature header value for a body:
 // "t=<epoch>,v1=<hex(hmac_sha256(secret, "<epoch>.<body>"))>", following
 // Stripe's signing convention so receivers can reuse existing verifiers.
 func SignGenericWebhook(secret string, timestamp int64, body []byte) string {
@@ -119,10 +119,10 @@ func SignGenericWebhook(secret string, timestamp int64, body []byte) string {
 func genericWebhookHeaders(webhookID, deliveryID, secret string, now time.Time, body []byte) map[string]string {
 	timestamp := now.Unix()
 	return map[string]string{
-		"X-Silo-Event":       EventNotificationCreated,
-		"X-Silo-Webhook-Id":  webhookID,
-		"X-Silo-Delivery-Id": deliveryID,
-		"X-Silo-Timestamp":   fmt.Sprintf("%d", timestamp),
-		"X-Silo-Signature":   SignGenericWebhook(secret, timestamp, body),
+		"X-Prairie-Event":       EventNotificationCreated,
+		"X-Prairie-Webhook-Id":  webhookID,
+		"X-Prairie-Delivery-Id": deliveryID,
+		"X-Prairie-Timestamp":   fmt.Sprintf("%d", timestamp),
+		"X-Prairie-Signature":   SignGenericWebhook(secret, timestamp, body),
 	}
 }

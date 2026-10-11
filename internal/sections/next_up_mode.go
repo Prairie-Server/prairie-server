@@ -3,8 +3,8 @@ package sections
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // NextUpModeCombined keeps next-up episodes inside Continue Watching;

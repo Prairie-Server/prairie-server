@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func TestInstallerInstallBinaryPersistsPackagedArchive(t *testing.T) {
@@ -21,7 +21,7 @@ func TestInstallerInstallBinaryPersistsPackagedArchive(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
@@ -52,7 +52,7 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
@@ -61,7 +61,7 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	result, err := installer.replaceBinary(ctx, &Installation{
 		ID:           15,
 		RepositoryID: &oldRepository,
-		PluginID:     "silo.metadb",
+		PluginID:     "prairie.metadb",
 		Version:      "0.0.18",
 		InstallPath:  oldPath,
 		Enabled:      true,
@@ -167,7 +167,7 @@ func testPluginManifest(t *testing.T, pluginID, version string) *pluginv1.Plugin
 		PluginId:       pluginID,
 		Version:        version,
 		Checksum:       "sha256-placeholder",
-		SiloApiVersion: DefaultSiloAPIVersion,
+		PrairieApiVersion: DefaultPrairieAPIVersion,
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: "darwin", Arch: "arm64"},
 		},

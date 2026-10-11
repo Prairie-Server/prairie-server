@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredProfileListAcceptance(t *testing.T) {

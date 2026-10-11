@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 // The attachment boundary for every compat media handler is AUTHORIZATION

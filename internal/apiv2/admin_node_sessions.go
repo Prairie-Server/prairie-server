@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
 )
 
 // adminNodeSessionTiebreaker orders node sessions within a node.

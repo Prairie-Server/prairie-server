@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory"
+	"github.com/prairie-server/prairie-server/internal/routeinventory"
 )
 
 // householdGateExemptPrefixes are /api/v1 namespaces whose profile-optional

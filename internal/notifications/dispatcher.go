@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // EventNotificationCreated is published on ChannelNotifications when a new

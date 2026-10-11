@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ebooks"
-	"github.com/Silo-Server/silo-server/internal/librarykind"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 const (
 	ebookMetadataExecutionBudget = 4 * time.Minute
-	ebookBackfillMaxClaimsEnv    = "SILO_EBOOK_BACKFILL_MAX_CLAIMS"
-	ebookBackfillBatchDelayEnv   = "SILO_EBOOK_BACKFILL_BATCH_DELAY"
+	ebookBackfillMaxClaimsEnv    = "PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS"
+	ebookBackfillBatchDelayEnv   = "PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY"
 )
 
 type ebookMetadataEnricher interface {

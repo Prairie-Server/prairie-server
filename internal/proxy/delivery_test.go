@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // deliveryCounter serves handler behind the same middleware the stream routes

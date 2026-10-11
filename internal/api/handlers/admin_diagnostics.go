@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 const diagnosticsDownloadExpiry = 15 * time.Minute
@@ -223,7 +223,7 @@ func diagnosticsReportFilename(report *diagnostics.Report) string {
 	if name == "" {
 		name = "report"
 	}
-	return "silo-diagnostics-" + name + ".tar.gz"
+	return "prairie-diagnostics-" + name + ".tar.gz"
 }
 
 func diagnosticsProxyDownloadRequested(r *http.Request) bool {

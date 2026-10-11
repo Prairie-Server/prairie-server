@@ -7,17 +7,17 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/database/pglock"
-	"github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// requestReconcileAdvisoryLock spells "SILORQRC". It lets one server run each
+// requestReconcileAdvisoryLock spells "PRAIRIERQRC". It lets one server run each
 // reconcile pass.
 const requestReconcileAdvisoryLock int64 = 0x53494C4F52515243
 
-// requestTargetWriteAdvisoryLock spells "SILORQTW". It keeps the reconcile pass
+// requestTargetWriteAdvisoryLock spells "PRAIRIERQTW". It keeps the reconcile pass
 // and the download refresh pass from writing request targets at the same time:
 // reconcile waits for it, and the refresh skips while it is held.
 const requestTargetWriteAdvisoryLock int64 = 0x53494C4F52515457
@@ -119,7 +119,7 @@ func NewReconcileRequestsTask(reconciler RequestReconciler, limit int, pool *pgx
 func (t *ReconcileRequestsTask) Key() string  { return "reconcile_requests" }
 func (t *ReconcileRequestsTask) Name() string { return "Reconcile Requests" }
 func (t *ReconcileRequestsTask) Description() string {
-	return "Checks approved and active media requests against Radarr, Sonarr, and the Silo catalog"
+	return "Checks approved and active media requests against Radarr, Sonarr, and the Prairie catalog"
 }
 func (t *ReconcileRequestsTask) Category() taskmanager.TaskCategory {
 	return taskmanager.TaskCategoryLibrary

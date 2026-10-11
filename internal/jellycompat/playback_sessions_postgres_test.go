@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -242,9 +242,9 @@ func TestNegotiatedPlaybackScopeIsPostgresSafeAndUnambiguous(t *testing.T) {
 
 func newCompatTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -499,7 +499,7 @@ func TestDurableCompatPlaybackStore_EmptyTokenFindByRouteNoDBScan(t *testing.T) 
 
 	// The dedicated live pool exposes database work independently of whether a
 	// query would return any rows.
-	if dsn := os.Getenv("SILO_TEST_DATABASE_URL"); dsn != "" {
+	if dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL"); dsn != "" {
 		pool := newCompatTestPool(t)
 		s := NewDurableCompatPlaybackStore(pool, time.Hour, nil)
 		before := pool.Stat().AcquireCount()

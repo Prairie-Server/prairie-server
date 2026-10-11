@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // ServeDownloadFile is the shared frozen/v2 file lifecycle. Both transports

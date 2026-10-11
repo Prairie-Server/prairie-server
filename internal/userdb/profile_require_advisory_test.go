@@ -3,7 +3,7 @@ package userdb
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // The SQLite backend stores the strict advisory flag the same way Postgres

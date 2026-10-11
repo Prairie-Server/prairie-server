@@ -15,11 +15,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type fakeServerSettingsStore struct {
@@ -371,7 +371,7 @@ func TestAdminUpdateSettingsCommitsOneValidatedBatch(t *testing.T) {
 }
 
 func TestAdminUpdateSettingsRejectsWholeBatchBeforeWrite(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -388,7 +388,7 @@ func TestAdminUpdateSettingsRejectsWholeBatchBeforeWrite(t *testing.T) {
 	if settings.setManyCalls != 0 {
 		t.Fatalf("SetMany calls = %d, want 0", settings.setManyCalls)
 	}
-	if settings.values["branding.server_name"] != "Silo" {
+	if settings.values["branding.server_name"] != "Prairie" {
 		t.Fatalf("valid sibling value was partially persisted: %#v", settings.values)
 	}
 }
@@ -745,7 +745,7 @@ func TestAdminUpdateSettingsSkipsFunctionalNoOp(t *testing.T) {
 }
 
 func TestAdminUpdateSettingsPersistsClearWhenOverrideEqualsDefault(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings, RestartStatus: NewServerRestartStatusTracker()}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -769,7 +769,7 @@ func TestAdminUpdateSettingsPersistsClearWhenOverrideEqualsDefault(t *testing.T)
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if response.Values["branding.server_name"] != "Silo" || response.RestartRequired {
+	if response.Values["branding.server_name"] != "Prairie" || response.RestartRequired {
 		t.Fatalf("response = %#v, want unchanged effective default without restart", response)
 	}
 }
@@ -799,14 +799,14 @@ func TestAdminUpdateSettingsReturnsEffectiveDefaultAfterClear(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
-	if response.Values["branding.server_name"] != "Silo" {
+	if response.Values["branding.server_name"] != "Prairie" {
 		t.Fatalf("response values = %#v, want effective default", response.Values)
 	}
 	if settings.values["branding.server_name"] != "" {
 		t.Fatalf("stored value = %q, want cleared override", settings.values["branding.server_name"])
 	}
-	if callbackValue != "Silo" {
-		t.Fatalf("callback value = %q, want effective default Silo", callbackValue)
+	if callbackValue != "Prairie" {
+		t.Fatalf("callback value = %q, want effective default Prairie", callbackValue)
 	}
 }
 
@@ -836,16 +836,16 @@ func TestAdminUpdateSettingReturnsEffectiveDefaultAfterClear(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
-	if response.Value != "Silo" {
+	if response.Value != "Prairie" {
 		t.Fatalf("response value = %q, want effective default", response.Value)
 	}
-	if callbackValue != "Silo" {
-		t.Fatalf("callback value = %q, want effective default Silo", callbackValue)
+	if callbackValue != "Prairie" {
+		t.Fatalf("callback value = %q, want effective default Prairie", callbackValue)
 	}
 }
 
 func TestAdminUpdateSettingPersistsClearWhenOverrideEqualsDefault(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -870,7 +870,7 @@ func TestAdminUpdateSettingPersistsClearWhenOverrideEqualsDefault(t *testing.T) 
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if response.Value != "Silo" || response.RestartRequired {
+	if response.Value != "Prairie" || response.RestartRequired {
 		t.Fatalf("response = %#v, want unchanged effective default without restart", response)
 	}
 }
@@ -999,7 +999,7 @@ func TestCheckS3ObjectPermissionsCleansUpAfterAmbiguousPutFailure(t *testing.T) 
 		return errors.New("response lost")
 	}
 
-	err := checkS3ObjectPermissions(context.Background(), client, "silo")
+	err := checkS3ObjectPermissions(context.Background(), client, "prairie")
 
 	if err == nil || !strings.Contains(err.Error(), "write probe object: response lost") {
 		t.Fatalf("error = %v, want ambiguous write failure", err)
@@ -1025,7 +1025,7 @@ func TestCheckS3ObjectPermissionsUsesFreshContextForFailureCleanup(t *testing.T)
 		},
 	}
 
-	err := checkS3ObjectPermissions(ctx, client, "silo")
+	err := checkS3ObjectPermissions(ctx, client, "prairie")
 
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error = %v, want context cancellation", err)
@@ -1045,7 +1045,7 @@ func TestCheckS3ObjectPermissionsSurfacesCleanupFailure(t *testing.T) {
 		},
 	}
 
-	err := checkS3ObjectPermissions(context.Background(), client, "silo")
+	err := checkS3ObjectPermissions(context.Background(), client, "prairie")
 
 	if err == nil || !strings.Contains(err.Error(), "cleanup probe object: delete failed") {
 		t.Fatalf("error = %v, want cleanup failure", err)
@@ -1333,7 +1333,7 @@ func TestHandleCheckSettingsConnectionS3UsesPersistedSensitiveValues(t *testing.
 		SettingsRepo: &fakeServerSettingsStore{
 			values: map[string]string{
 				"s3.public_endpoint":   "https://persisted.example.test",
-				"s3.public_bucket":     "silo",
+				"s3.public_bucket":     "prairie",
 				"s3.public_key_prefix": "persisted/prefix",
 				"s3.public_access_key": "persisted-access",
 				"s3.public_secret_key": "persisted-secret",
@@ -1469,7 +1469,7 @@ func TestHandleCheckSettingsConnectionRejectsInvalidDraftValues(t *testing.T) {
 		SettingsRepo: &fakeServerSettingsStore{
 			values: map[string]string{
 				"s3.public_endpoint": "https://persisted.example.test",
-				"s3.public_bucket":   "silo",
+				"s3.public_bucket":   "prairie",
 			},
 		},
 	}

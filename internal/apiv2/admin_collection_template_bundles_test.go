@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func (f *fakeAdminCollections) ListAdminCollectionTemplates(context.Context) ([]templates.BundleWithTemplates, error) {

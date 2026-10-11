@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/blobstore/blobstoretest"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
 )
 
 // countingMarkerStore counts every Get and List, including misses, which the

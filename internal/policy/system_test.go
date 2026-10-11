@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 func TestSystemCrossNodeConvergenceEventAndPoll(t *testing.T) {
@@ -48,7 +48,7 @@ func TestSystemDegradedBootUsesVendorPolicy(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	pool, err := pgxpool.New(ctx, "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}

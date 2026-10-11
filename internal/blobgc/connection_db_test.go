@@ -11,10 +11,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/blobgc"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
-	"github.com/Silo-Server/silo-server/internal/trickplay"
+	"github.com/prairie-server/prairie-server/internal/blobgc"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 )
 
 func singleConnectionPool(t *testing.T, prefixes []string) *pgxpool.Pool {

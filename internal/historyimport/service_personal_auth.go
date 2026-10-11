@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // preparePersonalRun performs upstream exchanges without holding database locks.

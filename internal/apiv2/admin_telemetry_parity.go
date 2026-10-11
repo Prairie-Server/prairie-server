@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 type AdminTelemetryParityService interface {

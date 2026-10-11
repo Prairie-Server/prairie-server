@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
 )
 
 // fakeOriginalsPage is one scripted cleaner page.

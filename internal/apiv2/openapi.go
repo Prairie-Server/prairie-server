@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // OpenAPIDocumentOutput is the getOpenAPIDocument response: the committed

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 )
 
 func TestIsRemote(t *testing.T) {

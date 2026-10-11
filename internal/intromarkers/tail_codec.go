@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/Silo-Server/silo-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
 )
 
 // creditsTailFormat names the credits_tail payload encoding.

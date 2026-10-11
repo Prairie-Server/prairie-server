@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // AuthenticatePlex exchanges Plex username/password for an auth token via plex.tv.
@@ -54,17 +54,17 @@ func (s *Service) DiscoverExternalUsers(ctx context.Context, sourceID int) ([]Ex
 	}
 }
 
-// CreateMapping persists a new (source user → Silo user + profile) mapping.
+// CreateMapping persists a new (source user → Prairie user + profile) mapping.
 func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (*UserMapping, error) {
 	return s.repo.CreateMapping(ctx, input)
 }
 
-// ListMappings returns all mappings for a source, enriched with Silo user/profile names.
+// ListMappings returns all mappings for a source, enriched with Prairie user/profile names.
 func (s *Service) ListMappings(ctx context.Context, sourceID int) ([]UserMapping, error) {
 	return s.repo.ListMappingsForSource(ctx, sourceID)
 }
 
-// UpdateMapping changes the Silo target of an existing mapping.
+// UpdateMapping changes the Prairie target of an existing mapping.
 func (s *Service) UpdateMapping(ctx context.Context, id int, input UpdateMappingInput) (*UserMapping, error) {
 	return s.repo.UpdateMapping(ctx, id, input)
 }

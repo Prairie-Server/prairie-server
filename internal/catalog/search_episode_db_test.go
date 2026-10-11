@@ -13,9 +13,9 @@ import (
 )
 
 func TestEpisodeSearchPostgresAndDocumentSource(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -44,7 +44,7 @@ func TestEpisodeSearchPostgresAndDocumentSource(t *testing.T) {
 
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO media_items (content_id, type, title, status, genres)
-		VALUES ($1, 'series', 'Silo Search Fixture', 'matched', '{}'::text[]),
+		VALUES ($1, 'series', 'Prairie Search Fixture', 'matched', '{}'::text[]),
 		       ($2, 'podcast', 'Podcast Search Fixture', 'matched', '{}'::text[])
 	`, seriesID, podcastID); err != nil {
 		t.Fatalf("seed parent items: %v", err)
@@ -115,9 +115,9 @@ func TestEpisodeSearchPostgresAndDocumentSource(t *testing.T) {
 }
 
 func TestEpisodeSearchOverviewVectorRefreshesOnOverviewUpdate(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -180,9 +180,9 @@ func TestEpisodeSearchOverviewVectorRefreshesOnOverviewUpdate(t *testing.T) {
 }
 
 func TestEpisodeSearchOutboxStatementTriggers(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

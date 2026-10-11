@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 const maxAudiobookSidecarCoverSize = 8 * 1024 * 1024
@@ -34,7 +34,7 @@ type audiobookCoverMetadataStore interface {
 }
 
 // FFmpegPathFromFFprobe derives the ffmpeg binary path from a configured
-// ffprobe path. They live side by side in every silo deployment.
+// ffprobe path. They live side by side in every prairie deployment.
 func FFmpegPathFromFFprobe(ffprobePath string) string {
 	if ffprobePath == "" {
 		return ""
@@ -49,7 +49,7 @@ func FFmpegPathFromFFprobe(ffprobePath string) string {
 }
 
 // ExtractAndUploadAudiobookCover reads the embedded cover image (if any)
-// from the given audio file via ffmpeg, pushes it through the silo
+// from the given audio file via ffmpeg, pushes it through the prairie
 // imagecache (resize + thumbhash + S3 upload), and returns the
 // poster_path S3 key plus thumbhash. Returns "", "" (no error) when no
 // embedded cover exists or the cacher is unavailable.

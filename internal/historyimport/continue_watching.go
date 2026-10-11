@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // SeriesDropStore is the dropped-series store the Continue Watching pass

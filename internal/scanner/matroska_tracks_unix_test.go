@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
 )
 
 // Opening a FIFO with no writer blocks, the way a read on stalled network

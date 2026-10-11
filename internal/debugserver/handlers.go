@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
 )
 
 const (

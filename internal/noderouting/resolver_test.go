@@ -5,8 +5,8 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 func TestResolveFallsBackAcrossSoftPreference(t *testing.T) {

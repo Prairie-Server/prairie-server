@@ -7,7 +7,7 @@ import (
 	"hash/fnv"
 	"strconv"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 const settingMutationAdvisoryClass int32 = 0x534d5554 // "SMUT"

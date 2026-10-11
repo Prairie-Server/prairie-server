@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // TestGenerateEndToEndDB runs the whole path with a real ffmpeg, database,

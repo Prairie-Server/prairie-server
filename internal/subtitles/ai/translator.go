@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	aitranslate "github.com/Silo-Server/silo-server/internal/ai/translate"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	aitranslate "github.com/prairie-server/prairie-server/internal/ai/translate"
 )
 
 // LLMTranslator translates subtitle cues with an OpenAI-compatible chat model

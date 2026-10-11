@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // SubtitleCache stores complete SUP, VTT, and ASS subtitle extracts on disk

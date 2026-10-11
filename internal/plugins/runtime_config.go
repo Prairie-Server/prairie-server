@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 var (
@@ -384,7 +384,7 @@ var ErrAuthProviderAlreadyEnabled = errors.New("another external sign-in provide
 
 // authBindingsLock serializes auth binding writes so two concurrent enables
 // cannot both pass the one-provider check.
-const authBindingsLock = "silo:plugin_auth_bindings"
+const authBindingsLock = "prairie:plugin_auth_bindings"
 
 // AuthBindingIsNetworkSQL is the SQL test that the auth binding named by the
 // installation and capability expressions declares the "network" auth mode.

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func TestEffectiveAdminSettingsUsesRuntimeDefaults(t *testing.T) {
@@ -264,7 +264,7 @@ func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 		{key: "notifications.server_channels.batch_seconds", value: "119"},
 		{key: "catalog.search.meilisearch.semantic_ratio", value: "1.2"},
 		{key: "email.smtp_port", value: "70000"},
-		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json"},
+		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/Prairie-Server/prairie-themes/main/catalog.json"},
 		{key: "theme.catalog_url", value: "https://example.com/catalog.json"},
 		{key: "redis.url", value: "not-a-url"},
 		{key: "playback.segment_retention_seconds", value: "119"},
@@ -308,12 +308,12 @@ func TestNormalizeAdminSettingAcceptsSegmentRetentionBounds(t *testing.T) {
 func TestNormalizeAdminSettingAcceptsApprovedThemeCatalogURL(t *testing.T) {
 	got, err := NormalizeAdminSetting(
 		"theme.catalog_url",
-		"https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json/",
+		"https://raw.githubusercontent.com/Prairie-Server/prairie-themes/main/catalog.json/",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json" {
+	if got != "https://raw.githubusercontent.com/Prairie-Server/prairie-themes/main/catalog.json" {
 		t.Fatalf("normalized URL = %q", got)
 	}
 }
@@ -470,7 +470,7 @@ func TestNormalizeAdminSettingKeepsPermissiveScannerGrace(t *testing.T) {
 }
 
 // TestOpslogCaptureLevelAcceptsWarningAlias mirrors the startup reader in
-// cmd/silo, which treats "warning" as "warn".
+// cmd/prairie, which treats "warning" as "warn".
 func TestOpslogCaptureLevelAcceptsWarningAlias(t *testing.T) {
 	got, err := NormalizeAdminSetting("opslog.capture_level", "WARNING")
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	sdkruntime "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/runtime"
+	sdkruntime "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/runtime"
 )
 
 const (

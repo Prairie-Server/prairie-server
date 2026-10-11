@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
 )
 
 var storageFixtureAt = time.Date(2026, 10, 8, 9, 30, 0, 0, time.UTC)

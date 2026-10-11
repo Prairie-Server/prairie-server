@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // RunAtomicJellycompatProgress requires the fixture to reject position 321 at

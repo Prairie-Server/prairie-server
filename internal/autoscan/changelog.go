@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 // MaxEventChangeRecords bounds how many per-change records one autoscan event

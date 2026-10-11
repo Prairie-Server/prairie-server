@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
 )
 
 // Scheduler picks user-owned collections whose next_sync_at is in the past

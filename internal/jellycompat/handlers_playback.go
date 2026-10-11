@@ -20,27 +20,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/netaccess"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderouting"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamlocation"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderouting"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamlocation"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Tests override this to exercise indeterminate remote-start failures without
@@ -57,7 +57,7 @@ const (
 type playbackInfoRequest struct {
 	serverBitrateCapKbps                int
 	streamLocation                      string
-	SiloSeekReanchor                    bool            `json:"SiloSeekReanchor"`
+	PrairieSeekReanchor                    bool            `json:"PrairieSeekReanchor"`
 	UserID                              string          `json:"UserId"`
 	MediaSourceID                       string          `json:"MediaSourceId"`
 	AudioStreamIndex                    *compatIntValue `json:"AudioStreamIndex,omitempty"`
@@ -1169,7 +1169,7 @@ func compatVideoToolboxToneMapBitrateKbps(version catalog.FileVersion, recipe co
 }
 
 // compatTargetResolutionForBitrate is the encoder height a Jellyfin client's
-// bitrate limit earns on Silo's shared ladder (playback.LadderClassForBitrate),
+// bitrate limit earns on Prairie's shared ladder (playback.LadderClassForBitrate),
 // fit to the source's aspect ratio. Empty leaves the source unscaled: at 20
 // Mbps and above, and whenever the source already fits the class.
 func compatTargetResolutionForBitrate(kbps int64, track models.VideoTrack) string {
@@ -1202,7 +1202,7 @@ func NewPlaybackHandler(
 	fileResolver FilePathResolver,
 	storeProvider userstore.UserStoreProvider,
 ) *PlaybackHandler {
-	transcodeDir := filepath.Join(os.TempDir(), "silo-transcode")
+	transcodeDir := filepath.Join(os.TempDir(), "prairie-transcode")
 	ffmpegPath := ""
 	hwAccel := ""
 	segmentRetentionSeconds := 600
@@ -1620,7 +1620,7 @@ func (h *PlaybackHandler) startRemoteTranscodeWithToneMapMode(
 		startSegmentNumber = int(initialSeekSeconds / float64(segmentDuration))
 	}
 	streamOriginSeconds := 0.0
-	copySeekAnchorResolved := source.SiloSeekReanchor && compatHLSCopiesVideo(source)
+	copySeekAnchorResolved := source.PrairieSeekReanchor && compatHLSCopiesVideo(source)
 	if copySeekAnchorResolved {
 		var seekErr error
 		streamOriginSeconds, startSegmentNumber, seekErr = playback.ResolveCopySeekAnchor(ctx, h.FFmpegPath, file.FilePath, initialSeekSeconds, segmentDuration)
@@ -2336,7 +2336,7 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 			source.TargetVideoCodec = compatTargetVideoCodec
 			source.SupportsTranscoding = profile.supportsTranscodingOutput(version, source.TargetAudioChannels, source.TargetBitrateKbps, source.TargetResolution)
 		}
-		source.SiloSeekReanchor = req.SiloSeekReanchor && compatHLSCopiesVideo(source) && source.SupportsTranscoding
+		source.PrairieSeekReanchor = req.PrairieSeekReanchor && compatHLSCopiesVideo(source) && source.SupportsTranscoding
 		sources = append(sources, source)
 		dto := h.mediaSourceDTO(routeItemID, playSessionID, session.Token, source)
 		warmSubtitles = append(warmSubtitles, compatWarmsTextSubtitles(subtitleMode, dto.MediaStreams))
@@ -2658,7 +2658,7 @@ func supportedHLSRemuxAudioStreamIndexes(version catalog.FileVersion, profile De
 func (h *PlaybackHandler) mediaSourceDTO(routeItemID, playSessionID, compatToken string, source PlaybackMediaSource) mediaSourceDTO {
 	selectedAudioStreamIndex := effectiveCompatAudioStreamIndex(source)
 	dto := mediaSourceDTO{
-		SiloSeekReanchor:                    source.SiloSeekReanchor,
+		PrairieSeekReanchor:                    source.PrairieSeekReanchor,
 		Protocol:                            "File",
 		ID:                                  source.ID,
 		Path:                                compatMediaPath(source.Version),
@@ -3561,7 +3561,7 @@ func downloadedSubtitlePath(version catalog.FileVersion, sub subtitles.Downloade
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, "\\", "-")
 	filename := name + "." + subtitleRouteFormat(string(sub.Format))
-	return filepath.ToSlash(filepath.Join("/silo/subtitles", filename))
+	return filepath.ToSlash(filepath.Join("/prairie/subtitles", filename))
 }
 
 func compatVideoPath(routeItemID string, audioV2 bool) string {
@@ -3635,8 +3635,8 @@ func applyPlaybackQueryOverrides(req *playbackInfoRequest, query url.Values) {
 	if value, ok := parseOptionalInt(firstQueryValue(query, "MaxAudioChannels")); ok {
 		req.MaxAudioChannels = value
 	}
-	if value, ok := parseOptionalBool(firstQueryValue(query, "SiloSeekReanchor")); ok {
-		req.SiloSeekReanchor = value
+	if value, ok := parseOptionalBool(firstQueryValue(query, "PrairieSeekReanchor")); ok {
+		req.PrairieSeekReanchor = value
 	}
 	if value, ok := parseOptionalBool(firstQueryValue(query, "AlwaysBurnInSubtitleWhenTranscoding")); ok {
 		req.AlwaysBurnInSubtitleWhenTranscoding = value

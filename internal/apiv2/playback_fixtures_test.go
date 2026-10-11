@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 type fixturePlaybackService struct{ fakePlaybackService }

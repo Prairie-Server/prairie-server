@@ -1,4 +1,4 @@
-// Package idgen provides unique ID generation for Silo entities.
+// Package idgen provides unique ID generation for Prairie entities.
 // All content IDs (media items, seasons, episodes) are generated locally
 // using Sonyflake — a distributed unique ID generator that produces
 // time-sorted 64-bit integers encoded as decimal strings.

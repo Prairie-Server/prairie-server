@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 var pushRetrySchedule = []time.Duration{
@@ -156,7 +156,7 @@ type pushSender struct {
 
 func newPushSender(devices *PushDeviceRepository, deliveries *DeliveryRepository, cipher *secret.Cipher, settings *Settings) *pushSender {
 	// The Worker allows APNs up to 10 seconds. Leave enough room for edge
-	// routing and response processing so Silo receives the relay's classified
+	// routing and response processing so Prairie receives the relay's classified
 	// outcome instead of manufacturing an ambiguous client-side timeout.
 	client := newNotificationHTTPClient(nil, pushRelayRequestTimeout)
 	return &pushSender{
@@ -166,7 +166,7 @@ func newPushSender(devices *PushDeviceRepository, deliveries *DeliveryRepository
 		settings:            settings,
 		client:              client,
 		logger:              slog.Default().With("component", "notifications.apple_push"),
-		developmentRelayURL: os.Getenv("SILO_PUSH_RELAY_DEVELOPMENT_URL"),
+		developmentRelayURL: os.Getenv("PRAIRIE_PUSH_RELAY_DEVELOPMENT_URL"),
 		now:                 time.Now,
 	}
 }
@@ -488,7 +488,7 @@ func (s *pushSender) sendWithCapability(ctx context.Context, attempt PushDeliver
 	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Silo-Push/1.0")
+	req.Header.Set("User-Agent", "Prairie-Push/1.0")
 	// One logical delivery attempt keeps the same key across every transport
 	// retry. The relay can then distinguish a safe retry from a new delivery and
 	// refuse to resend an ambiguous APNs outcome.

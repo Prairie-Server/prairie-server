@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
+	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
 )
 
 // ListEnabledWithCapabilityTypes backs the resident supervisor's reconcile:

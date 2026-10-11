@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestPlayStart_ChaptersMatchItemDetail(t *testing.T) {

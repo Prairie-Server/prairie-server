@@ -1,7 +1,7 @@
 # Native API contract: Huma and `/api/v2`
 
 **Status: accepted for Silo 1.0; implementation pending.** Tracking issue:
-[#135](https://github.com/Silo-Server/silo-server/issues/135). Commands assume the repository
+[#135](https://github.com/Prairie-Server/prairie-server/issues/135). Commands assume the repository
 root is the cwd.
 
 This document records the contract and release decision for Silo's native API. It is durable
@@ -1681,7 +1681,7 @@ empty arrays rather than `null`.
    client contains a legacy native transport path to clean up.
 
 Retirement is a separate maintainer decision tracked in
-[issue #886](https://github.com/Silo-Server/silo-server/issues/886). Before removing v1, record
+[issue #886](https://github.com/Prairie-Server/prairie-server/issues/886). Before removing v1, record
 the bridge release tags, confirm v2-capable server and app builds are available, and announce
 the removal release and upgrade instructions. Merging v2 into main does not retire the bridge.
 

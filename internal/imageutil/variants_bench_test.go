@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 )
 
 func BenchmarkGenerateVariants(b *testing.B) {

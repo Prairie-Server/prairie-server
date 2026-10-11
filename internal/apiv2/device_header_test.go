@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/downloads"
 )
 
 // A client that attaches X-Silo-Device-Id twice reaches Huma as "id,id";

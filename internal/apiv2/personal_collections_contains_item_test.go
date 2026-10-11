@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 )
 
 // TestListCollectionsContainsItem pins contains_item on listCollections: each

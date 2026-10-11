@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	apiv2 "github.com/Silo-Server/silo-server/contracts/api/v2"
+	apiv2 "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // OfflineRouteSet is the committed answer to "which rows does the API

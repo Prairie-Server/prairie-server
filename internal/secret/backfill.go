@@ -71,7 +71,7 @@ func ColumnBackfillTargets() []BackfillTarget {
 		{Table: "history_import_sources", Column: "admin_token", KeyExpr: "id::text"},
 		{Table: "history_import_connect_sessions", Column: "connect_access_token", KeyExpr: "id::text"},
 		{Table: "history_import_plex_sessions", Column: "auth_token", KeyExpr: "id::text"},
-		// Jellyfin-compat sessions — bridged Silo access/refresh tokens, keyed by
+		// Jellyfin-compat sessions — bridged Prairie access/refresh tokens, keyed by
 		// the session token (the table's primary key; itself left in plaintext).
 		{Table: "jellycompat_sessions", Column: "streamapp_access_token", KeyExpr: "token"},
 		{Table: "jellycompat_sessions", Column: "streamapp_refresh_token", KeyExpr: "token"},

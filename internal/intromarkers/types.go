@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // AlgorithmVersion keys the fingerprint cache; changing it discards every

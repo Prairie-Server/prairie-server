@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 // GetViewerSubtitleForDeletion retains file access AND account ownership. A

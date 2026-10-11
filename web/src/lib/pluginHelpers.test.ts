@@ -86,7 +86,7 @@ describe("pluginPresentation", () => {
     expect(safeExternalURL("data:text/html,x")).toBeUndefined();
     expect(safeExternalURL("not a url")).toBeUndefined();
     expect(
-      pluginResourceLinks(undefined, "https://github.com/Silo-Server/x").map((l) => l.label),
+      pluginResourceLinks(undefined, "https://github.com/prairie-server/x").map((l) => l.label),
     ).toEqual(["Source code"]);
     // A rejected presentation URL falls back to the repository URL.
     expect(
@@ -104,9 +104,9 @@ describe("pluginPresentation", () => {
           publisher_url: "",
           license_spdx: "",
         },
-        "https://github.com/Silo-Server/x",
+        "https://github.com/prairie-server/x",
       ),
-    ).toEqual([{ label: "Source code", url: "https://github.com/Silo-Server/x" }]);
+    ).toEqual([{ label: "Source code", url: "https://github.com/prairie-server/x" }]);
   });
 
   it("falls back to a readable name and license", () => {

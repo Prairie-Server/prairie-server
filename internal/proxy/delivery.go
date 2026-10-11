@@ -3,7 +3,7 @@ package proxy
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // deliveryRecorder tells the API's idle sweep that this node is still

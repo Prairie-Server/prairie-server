@@ -1,4 +1,4 @@
-export const PUSH_RELAY_SOURCE_URL = "https://github.com/Silo-Server/silo-push-relay";
+export const PUSH_RELAY_SOURCE_URL = "https://github.com/Prairie-Server/prairie-push-relay";
 
 export function MobilePushPrivacyDisclosure() {
   return (

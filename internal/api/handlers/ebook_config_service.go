@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // EbookConfigGuard runs while the current configuration row is locked. Nil

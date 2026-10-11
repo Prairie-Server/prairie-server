@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
+	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
 )
 
 func TestRuntimeGenerationCountsConcurrentConfigSavesAndRestarts(t *testing.T) {

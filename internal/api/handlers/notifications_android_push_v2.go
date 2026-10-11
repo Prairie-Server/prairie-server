@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 func (h *NotificationsHandler) OrderedAndroidPushAvailable() bool {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/blobgc"
+	"github.com/prairie-server/prairie-server/internal/blobgc"
 )
 
 // BlobNamespace describes chapter thumbnail storage to blobgc. A file's

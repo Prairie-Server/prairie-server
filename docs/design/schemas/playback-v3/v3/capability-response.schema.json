@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/schemas/playback-v3/v3/capability-response.schema.json",
+  "$id": "https://prairie-server.dev/schemas/playback-v3/v3/capability-response.schema.json",
   "title": "Silo Playback Protocol v3 Capability Response",
   "description": "Response body of GET /api/v1/playback/capability, mirroring CapabilityResponseV3 in internal/playback/protocol_v3.go. A client reads this before its first start request so it plans against what the server actually advertises instead of a compiled-in assumption. Protocol v3 is the server's only playback protocol, so enabled is always true; there is no disabled response shape.",
   "type": "object",

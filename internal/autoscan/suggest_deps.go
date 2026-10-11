@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/requests/arrclient"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/requests/arrclient"
 )
 
 // rootFolderTimeout is generous: Radarr/Sonarr compute unmappedFolders by

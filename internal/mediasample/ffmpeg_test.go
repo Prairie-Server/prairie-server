@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
 )
 
 // realFFmpeg returns an ffmpeg from PATH and its capabilities, or skips.

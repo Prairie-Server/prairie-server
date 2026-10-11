@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 func (h *WatchTogetherHandler) PromoteRoomSuggestion(ctx context.Context, room, id string, user int, profile string) (watchtogether.Snapshot, string, error) {

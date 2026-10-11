@@ -3,10 +3,10 @@ package transcodenode
 import (
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/workerprotocol"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/workerprotocol"
 	"github.com/danielgtaylor/huma/v2"
 )
 

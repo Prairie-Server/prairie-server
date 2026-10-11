@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
 )
 
 func TestListDownloadArtifactsReportsFilesAndDirectory(t *testing.T) {

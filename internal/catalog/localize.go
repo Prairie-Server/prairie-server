@@ -3,7 +3,7 @@ package catalog
 import (
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // fieldImagesLocked matches metadata.FieldImages. Catalog cannot import

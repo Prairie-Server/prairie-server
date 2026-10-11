@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 func (h *WatchTogetherHandler) StartWatchTogetherPlayback(ctx context.Context, room string, user int, profile string) (watchtogether.Snapshot, string, error) {

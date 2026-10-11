@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // AdminDownloadStorageService reads and cleans up prepared download files on

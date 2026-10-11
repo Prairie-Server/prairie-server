@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	metatrakt "github.com/Silo-Server/silo-server/internal/metadata/trakt"
+	metatrakt "github.com/prairie-server/prairie-server/internal/metadata/trakt"
 )
 
 type fakeAppClientIDs struct {

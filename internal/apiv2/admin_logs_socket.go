@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/auditmutation"
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/auditmutation"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/danielgtaylor/huma/v2"
 )
 

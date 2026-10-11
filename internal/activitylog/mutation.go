@@ -1,6 +1,6 @@
 package activitylog
 
-import "github.com/Silo-Server/silo-server/internal/auditmutation"
+import "github.com/prairie-server/prairie-server/internal/auditmutation"
 
 type Change = auditmutation.Change
 

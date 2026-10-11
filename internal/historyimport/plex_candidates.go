@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // MaxPlexConnectionCandidates bounds how many advertised Plex connections one

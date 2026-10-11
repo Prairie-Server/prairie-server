@@ -3,7 +3,7 @@ package proxy
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 func TestTranscodeTransportIDFromClaims(t *testing.T) {

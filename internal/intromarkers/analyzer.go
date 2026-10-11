@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/mediaartifact"
-	"github.com/Silo-Server/silo-server/internal/mediasample"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/mediaartifact"
+	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type Analyzer struct {
@@ -114,7 +114,7 @@ func NewAnalyzer(repo *Repository, config Config, logger *slog.Logger) *Analyzer
 	}
 	node, _ := os.Hostname()
 	if node == "" {
-		node = "silo"
+		node = "prairie"
 	}
 	extractor := NewChromaprintExtractor(config)
 	extractor.logger = logger
@@ -169,7 +169,7 @@ func (a *Analyzer) nodeName() string {
 	if a.node != "" {
 		return a.node
 	}
-	return "silo"
+	return "prairie"
 }
 
 // workerCount is the current number of season workers.

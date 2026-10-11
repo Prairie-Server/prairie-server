@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/animeids"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/animeids"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // AnimeIDsRefresher replaces the stored anime list. Satisfied by

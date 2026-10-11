@@ -14,7 +14,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
 )
 
 // CanonicalMDBListURL normalizes a list URL and rejects anything that is not

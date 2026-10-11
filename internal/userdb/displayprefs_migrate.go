@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat/displayprefs"
+	"github.com/prairie-server/prairie-server/internal/jellycompat/displayprefs"
 )
 
 // moveJellycompatDisplayPrefs is the one-time move of Jellyfin

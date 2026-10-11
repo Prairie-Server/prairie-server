@@ -3,7 +3,7 @@ package apiv2
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type AdminTaskMetricsService interface {

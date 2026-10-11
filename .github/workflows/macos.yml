@@ -11,8 +11,8 @@ concurrency:
 
 env:
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*
+  GONOSUMDB: github.com/prairie-server/*
   GOWORK: off
 
 permissions:
@@ -63,14 +63,14 @@ jobs:
       - name: Validate SDK resolves from the module graph
         run: |
           sdk_module_json="$(mktemp)"
-          go list -m -json github.com/Silo-Server/silo-plugin-sdk > "$sdk_module_json"
+          go list -m -json github.com/prairie-server/prairie-plugin-sdk > "$sdk_module_json"
           if grep -q '"Replace":' "$sdk_module_json"; then
-            echo "silo-plugin-sdk resolved through a module replacement."
+            echo "prairie-plugin-sdk resolved through a module replacement."
             cat "$sdk_module_json"
             exit 1
           fi
           if grep -q '"Main": true' "$sdk_module_json"; then
-            echo "silo-plugin-sdk resolved from the local workspace instead of go.mod."
+            echo "prairie-plugin-sdk resolved from the local workspace instead of go.mod."
             cat "$sdk_module_json"
             exit 1
           fi
@@ -81,7 +81,7 @@ jobs:
       - name: Build native server archive
         id: build
         env:
-          BUILDINFO_PKG: github.com/Silo-Server/silo-server/internal/buildinfo
+          BUILDINFO_PKG: github.com/prairie-server/prairie-server/internal/buildinfo
         run: |
           built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           archive="silo-darwin-arm64-${GITHUB_SHA::8}.tar.gz"

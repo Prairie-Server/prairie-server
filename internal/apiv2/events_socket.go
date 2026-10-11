@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/danielgtaylor/huma/v2"
 )
 

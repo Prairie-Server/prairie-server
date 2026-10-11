@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestRouterRegistersTranscodeShutdownWork(t *testing.T) {
@@ -97,7 +97,7 @@ func TestRouterReportsDisabledCompatWebAssets(t *testing.T) {
 				"jellyfin_compat.enabled":     "true",
 				"jellyfin_compat.web_enabled": "false",
 			},
-			wantBody: "Jellyfin Web UI is disabled in Silo settings",
+			wantBody: "Jellyfin Web UI is disabled in Prairie settings",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

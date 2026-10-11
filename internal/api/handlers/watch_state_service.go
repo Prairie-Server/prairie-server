@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Leaf item types whose progress is per item rather than aggregated.

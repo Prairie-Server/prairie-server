@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 func (h *WebhookSyncHandler) ListWebhookConnections(ctx context.Context, userID int, after *webhooksync.PageKey, limit int) ([]webhooksync.Connection, bool, error) {

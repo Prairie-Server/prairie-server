@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // emailMaxItemsRendered caps how many lines one email renders; the remainder
@@ -212,7 +212,7 @@ func emailSubject(mode string, items emailItems) string {
 	summary := strings.Join(parts, ", ")
 
 	if mode == EmailModeDailyDigest {
-		return "Silo daily digest: " + summary
+		return "Prairie daily digest: " + summary
 	}
 	if items.episodes == 1 && len(items.requests) == 0 && len(items.others) == 0 {
 		row := items.series[0].episodes[0]
@@ -228,7 +228,7 @@ func emailSubject(mode string, items emailItems) string {
 	if items.episodes == 0 && len(items.requests) == 1 && len(items.others) == 0 {
 		return requestLine(items.requests[0])
 	}
-	return "Silo: " + summary
+	return "Prairie: " + summary
 }
 
 // itemURL builds a deep link; empty when no external URL is configured.
@@ -241,7 +241,7 @@ func itemURL(baseURL, itemID string) string {
 
 // emailComposeOptions carries the per-send rendering context.
 type emailComposeOptions struct {
-	// Brand styles the shell; the zero value is Silo's default branding.
+	// Brand styles the shell; the zero value is Prairie's default branding.
 	Brand mail.Brand
 	// BaseURL is the admin-configured external URL; empty renders without
 	// links.
@@ -354,7 +354,7 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 		closeList()
 	}
 	if remainder := total - emailMaxItemsRendered; remainder > 0 {
-		more := fmt.Sprintf("…and %d more in your Silo inbox.", remainder)
+		more := fmt.Sprintf("…and %d more in your Prairie inbox.", remainder)
 		text.WriteString(more + "\n")
 		body.WriteString(fmt.Sprintf(`<p style="margin:14px 0 0;font:400 13px/1.5 %s;color:%s;">%s</p>`,
 			mail.EmailFont, mail.EmailColorMuted, html.EscapeString(more)))
@@ -378,7 +378,7 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 		profileLabel = "the profile “" + opts.ProfileName + "”"
 	}
 	footer := fmt.Sprintf("You're receiving this because email notifications are enabled for"+
-		" %s on your Silo account. Manage them in Settings → Notifications.", profileLabel)
+		" %s on your Prairie account. Manage them in Settings → Notifications.", profileLabel)
 	footerHTML := html.EscapeString(footer)
 	if baseURL != "" {
 		settingsURL := html.EscapeString(baseURL + "/settings/notifications")

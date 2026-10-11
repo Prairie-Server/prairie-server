@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // Only the mutation gate installs this overlay. Each transport starts with

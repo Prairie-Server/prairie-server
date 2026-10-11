@@ -20,13 +20,13 @@ const (
 	// comma-separated CIDR list of trusted reverse proxies.
 	SettingTrustedProxies = "clientip.trusted_proxies"
 	// EnvTrustedProxies overrides SettingTrustedProxies at startup when set.
-	EnvTrustedProxies = "SILO_TRUSTED_PROXIES"
+	EnvTrustedProxies = "PRAIRIE_TRUSTED_PROXIES"
 	// DefaultTrustedProxies: RFC 1918 private ranges + loopback.
 	DefaultTrustedProxies = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128"
 )
 
 // SeedDefaults ensures the trusted proxy setting exists. When the
-// SILO_TRUSTED_PROXIES environment variable is set it wins: the value is
+// PRAIRIE_TRUSTED_PROXIES environment variable is set it wins: the value is
 // validated and persisted so the admin UI shows the effective config (and is
 // re-applied on every startup while the variable remains set). Otherwise the
 // default list is written only if the setting is unset.

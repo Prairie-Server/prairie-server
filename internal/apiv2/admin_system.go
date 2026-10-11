@@ -5,8 +5,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
 )
 
 // AdminResourceSampler reads the immutable sample already published by the host.

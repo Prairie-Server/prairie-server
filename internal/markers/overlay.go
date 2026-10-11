@@ -3,7 +3,7 @@ package markers
 import (
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // OverlayOnline returns a copy of stored with the online and plugin markers of

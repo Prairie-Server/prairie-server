@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // RunAtomicJellycompatParentFavorite verifies favorite failures roll back every

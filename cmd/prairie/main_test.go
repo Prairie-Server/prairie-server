@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/api"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	"github.com/prairie-server/prairie-server/internal/api"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 func TestConfigureS3Clients_SetsCORSOnPublicAssetsBucket(t *testing.T) {
@@ -567,7 +567,7 @@ func (s firstPartyWatchSyncStore) ListCapabilities(context.Context, int) ([]*plu
 	return s.capabilities, nil
 }
 
-// fakeWatchSyncPluginService treats every installation as Silo-managed. Its
+// fakeWatchSyncPluginService treats every installation as Prairie-managed. Its
 // seeding is create-only like the real one, and a seed that saves config runs
 // onSeed, as the lifecycle hook a config save fires does.
 type fakeWatchSyncPluginService struct {
@@ -581,7 +581,7 @@ func (f *fakeWatchSyncPluginService) InvalidateInstallationCache() {
 	f.cacheInvalidations++
 }
 
-func (f *fakeWatchSyncPluginService) InstalledFromSiloRepository(context.Context, *plugins.Installation) (bool, error) {
+func (f *fakeWatchSyncPluginService) InstalledFromPrairieRepository(context.Context, *plugins.Installation) (bool, error) {
 	return true, nil
 }
 
@@ -656,8 +656,8 @@ func traktPluginCapabilities(t *testing.T) []*plugins.Capability {
 func TestReloadWatchSyncPluginProvidersKeepsOneFirstPartyInstallation(t *testing.T) {
 	store := firstPartyWatchSyncStore{
 		installations: []*plugins.Installation{
-			{ID: 9, PluginID: "silo.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin},
-			{ID: 7, PluginID: "silo.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin},
+			{ID: 9, PluginID: "prairie.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin},
+			{ID: 7, PluginID: "prairie.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin},
 		},
 		capabilities: traktPluginCapabilities(t),
 	}
@@ -686,7 +686,7 @@ func TestReloadWatchSyncPluginProvidersKeepsOneFirstPartyInstallation(t *testing
 // reloads again. The nested reload must not wait on the outer one.
 func TestReloadWatchSyncPluginProvidersSeedsOutsideTheReloadLock(t *testing.T) {
 	store := firstPartyWatchSyncStore{
-		installations: []*plugins.Installation{{ID: 7, PluginID: "silo.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin}},
+		installations: []*plugins.Installation{{ID: 7, PluginID: "prairie.watchprovider.trakt", Enabled: true, Kind: plugins.KindPlugin}},
 		capabilities:  traktPluginCapabilities(t),
 	}
 	registry := watchsync.NewRegistry()

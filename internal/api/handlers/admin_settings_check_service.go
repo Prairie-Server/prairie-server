@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 var ErrAdminSettingsCheckKind = errors.New("unsupported settings check kind")

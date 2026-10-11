@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type pluginMetadataResolver interface {
@@ -66,7 +66,7 @@ type PluginProvider struct {
 	// carries any of them, even without an ID of the provider's own.
 	lookupProviderIDs []string
 	// declaredRatingSources are the rating sources of its own the capability
-	// declared (rating_sources); GetMetadata keeps them alongside Silo's
+	// declared (rating_sources); GetMetadata keeps them alongside Prairie's
 	// built-in sources.
 	declaredRatingSources map[string]struct{}
 	clientFactory         pluginMetadataClientFactory
@@ -604,7 +604,7 @@ func stringMapFromStruct(value *structpb.Struct) map[string]string {
 }
 
 // ratingsFromStruct reads the four flat ratings a plugin sends. IMDb and TMDB
-// are Silo's own and always kept. The Rotten Tomatoes scores are kept only
+// are Prairie's own and always kept. The Rotten Tomatoes scores are kept only
 // when the plugin declared rt_critic or rt_audience, the same rule
 // ratings.sources follows, so a plugin that does not declare them cannot fill
 // the columns another provider's declaration shows.
@@ -698,7 +698,7 @@ func ratingSourceVotes(value *structpb.Value) int64 {
 	return int64(votes)
 }
 
-// Advisory sources Silo stores, mirroring the names the MDBList plugin emits.
+// Advisory sources Prairie stores, mirroring the names the MDBList plugin emits.
 const (
 	// AdvisorySourceCommonSense marks an age MDBList attributed to Common
 	// Sense Media via its "commonsense" flag.
@@ -732,7 +732,7 @@ const maxAdvisoryAge = 21
 // The input is a plugin's word, so it is treated as hostile: structpb numbers
 // arrive as float64 and a fractional, negative, or out-of-range age is dropped
 // rather than rounded. The age and the source are all-or-nothing, because an
-// age Silo cannot attribute is an anonymous number shown to a parent choosing
+// age Prairie cannot attribute is an anonymous number shown to a parent choosing
 // what a child may watch.
 func advisoryFromPluginMetadata(value *structpb.Struct) (int, string) {
 	if value == nil {

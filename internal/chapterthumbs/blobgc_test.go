@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/blobgc"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobgc"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 func TestImagesGroup(t *testing.T) {

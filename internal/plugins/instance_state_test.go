@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 func instanceStateTestCipher(t *testing.T) *secret.Cipher {

@@ -3,7 +3,7 @@ package plugins
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type hostAdapter struct {

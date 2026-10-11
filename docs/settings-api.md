@@ -1108,7 +1108,7 @@ the configured interval even if an operating system supplies its own default
 without dispatching those handlers; there is no portable API to configure that
 UI, and such controls are not guaranteed to honor these preferences.
 
-Native adoption is tracked in [Apple #267](https://github.com/Silo-Server/silo-apple/issues/267)
-and [Android #300](https://github.com/Silo-Server/silo-android/issues/300).
+Native adoption is tracked in [Apple #267](https://github.com/prairie-server/silo-apple/issues/267)
+and [Android #300](https://github.com/prairie-server/silo-android/issues/300).
 Jellyfin clients keep their own seek controls; this does not extend the
 Jellyfin protocol.

@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 // ignoredNamePatterns is the fixed ignore list, matched case-insensitively

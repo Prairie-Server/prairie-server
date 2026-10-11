@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	subtitleai "github.com/Silo-Server/silo-server/internal/subtitles/ai"
+	subtitleai "github.com/prairie-server/prairie-server/internal/subtitles/ai"
 )
 
 // stringOr returns the value from the map for the given key, or the fallback if absent/empty.
@@ -143,7 +143,7 @@ func durationOr(m map[string]string, key string, fallback time.Duration) (time.D
 // no server_id is set in the database settings.
 var defaultJellyfinCompatServerIDFromDB = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://silo.local/jellycompat"),
+	[]byte("https://prairie.local/jellycompat"),
 ).String()
 
 // LoadFromDB builds a Config from a map of server_settings key-value pairs.
@@ -322,7 +322,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 
 	// Artwork
 	cfg.Artwork.StorageBackend = stringOr(m, "artwork.storage_backend", "auto")
-	cfg.Artwork.LocalPath = stringOr(m, "artwork.local_path", "/var/lib/silo/artwork")
+	cfg.Artwork.LocalPath = stringOr(m, "artwork.local_path", "/var/lib/prairie/artwork")
 
 	// Metadata
 	cacheImages, err := boolOr(m, "metadata.cache_images", true)
@@ -430,7 +430,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.JellyfinCompat.PublicURL = stringOr(m, "jellyfin_compat.public_url", "http://127.0.0.1:8096")
 	cfg.JellyfinCompat.EmulatedServerVersion = stringOr(m, "jellyfin_compat.emulated_server_version", DefaultJellyfinCompatEmulatedServerVersion)
 	cfg.JellyfinCompat.ServerID = stringOr(m, "jellyfin_compat.server_id", defaultJellyfinCompatServerIDFromDB)
-	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Silo")
+	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Prairie")
 	webEnabled, err := boolOr(m, "jellyfin_compat.web_enabled", true)
 	if err != nil {
 		return nil, err

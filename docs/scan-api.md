@@ -1,11 +1,11 @@
 # Scan API
 
-> **API lifecycle:** this documents the stable `/api/v2` native contract, which locks with Silo
+> **API lifecycle:** this documents the stable `/api/v2` native contract, which locks with Prairie
 > 1.0. The frozen alpha `/api/v1` scan routes are summarized in [Bridge note](#bridge-note) and
 > are retired after the pre-1.0 bridge window. See
 > [the native API contract](architecture/api-contract.md).
 
-Silo's scan API lets external tools trigger media library scans on demand. Use it to integrate
+Prairie's scan API lets external tools trigger media library scans on demand. Use it to integrate
 with download managers like Sonarr and Radarr, or with relay tools like Autoscan that notify your
 server when new media arrives.
 
@@ -15,9 +15,9 @@ accepted scan does and does not promise — is in
 
 ## Prerequisites
 
-- Silo must be running in **integrated** or **api** mode. In `proxy` and `transcode` modes the
+- Prairie must be running in **integrated** or **api** mode. In `proxy` and `transcode` modes the
   scan operations are not registered.
-- You need an **admin API key**. Create one in the Silo web UI under **Settings > API Keys**.
+- You need an **admin API key**. Create one in the Prairie web UI under **Settings > API Keys**.
   Keys start with the `sa_` prefix.
 
 ## Authentication
@@ -41,7 +41,7 @@ curl -s http://your-server:8090/api/v2/libraries \
 ```
 
 `listLibraries` returns `{items, page}`. Library IDs are opaque strings; send them back exactly as
-received. You can also find them in the Silo web UI under **Settings > Libraries**.
+received. You can also find them in the Prairie web UI under **Settings > Libraries**.
 
 ## Operations
 
@@ -218,34 +218,34 @@ curl -X POST http://your-server:8090/api/v2/scan \
 ## Integration with Autoscan
 
 [Autoscan](https://github.com/Cloudbox/autoscan) monitors Sonarr, Radarr, and other sources for
-new downloads, then relays scan requests to media servers. Silo supports Autoscan's stock
+new downloads, then relays scan requests to media servers. Prairie supports Autoscan's stock
 Jellyfin target through the Jellyfin compatibility server.
 
 Use:
 
-- URL: Silo's Jellyfin compatibility URL, usually `http://your-server:8096`
-- Token: a Silo admin API key beginning with `sa_`
+- URL: Prairie's Jellyfin compatibility URL, usually `http://your-server:8096`
+- Token: a Prairie admin API key beginning with `sa_`
 - Target type: Autoscan `jellyfin`
 
 Autoscan discovers library roots from `GET /Library/VirtualFolders` and sends changed paths to
-`POST /Library/Media/Updated`. The paths must be server-side paths as Silo sees them.
+`POST /Library/Media/Updated`. The paths must be server-side paths as Prairie sees them.
 
 ### Alternative: Autoscan custom script target
 
-Create a script (for example `silo-scan.sh`) that Autoscan calls with the changed path:
+Create a script (for example `prairie-scan.sh`) that Autoscan calls with the changed path:
 
 ```bash
 #!/bin/bash
-# silo-scan.sh — called by Autoscan with the path as $1
-SILO_URL="http://your-server:8090"
+# prairie-scan.sh — called by Autoscan with the path as $1
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 BODY=$(jq -n --arg path "$1" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v2/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v2/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan request failed for: $1" >&2
+  -d "$BODY" || echo "Prairie scan request failed for: $1" >&2
 ```
 
 ## Integration with Sonarr / Radarr
@@ -254,14 +254,14 @@ Sonarr and Radarr can trigger external scripts or webhooks when a download compl
 
 ### Built-in autoscan receiver
 
-Silo also ships a first-class receiver. An administrator creates a webhook on an autoscan source
+Prairie also ships a first-class receiver. An administrator creates a webhook on an autoscan source
 with `POST /api/v2/admin/autoscan/sources/{id}/webhook` (`createAdminAutoscanSourceWebhook`) and
 configures the resulting token URL in the external service. Events arrive at
 `POST /api/v2/autoscan/webhooks/{token}` (`receiveAutoscanWebhook`), which authenticates on the
 token alone and answers `202 {"status":"accepted"}`. `GET /api/v2/autoscan/capabilities` reports
 whether the ingress is available. Rotate a token with
 `POST /api/v2/admin/autoscan/sources/{id}/webhook/rotate` and remove it with
-`DELETE /api/v2/admin/autoscan/sources/{id}/webhook`; Silo does not redirect a retired token URL.
+`DELETE /api/v2/admin/autoscan/sources/{id}/webhook`; Prairie does not redirect a retired token URL.
 
 ### Sonarr custom script
 
@@ -269,8 +269,8 @@ Where you prefer a script, Sonarr sets environment variables on import:
 
 ```bash
 #!/bin/bash
-# silo-sonarr.sh — Sonarr Connect > Custom Script
-SILO_URL="http://your-server:8090"
+# prairie-sonarr.sh — Sonarr Connect > Custom Script
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 # Sonarr sets these environment variables on import:
@@ -305,18 +305,18 @@ case "$sonarr_eventtype" in
     ;;
 esac
 
-# If Sonarr and Silo see files at different mount points, remap here:
+# If Sonarr and Prairie see files at different mount points, remap here:
 # SCAN_PATH="${SCAN_PATH/#\/tv//mnt/media/tv}"
 
 BODY=$(jq -n --arg path "$SCAN_PATH" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v2/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v2/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan failed for: $SCAN_PATH" >&2
+  -d "$BODY" || echo "Prairie scan failed for: $SCAN_PATH" >&2
 ```
 
-Place this script somewhere accessible (for example `/opt/scripts/silo-sonarr.sh`), make it
+Place this script somewhere accessible (for example `/opt/scripts/prairie-sonarr.sh`), make it
 executable (`chmod +x`), then in Sonarr go to **Settings > Connect > + > Custom Script** and set
 the path. Use the **Test** button to verify connectivity.
 
@@ -326,8 +326,8 @@ Radarr works the same way with different environment variables:
 
 ```bash
 #!/bin/bash
-# silo-radarr.sh — Radarr Connect > Custom Script
-SILO_URL="http://your-server:8090"
+# prairie-radarr.sh — Radarr Connect > Custom Script
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 # Radarr sets these environment variables on import:
@@ -360,15 +360,15 @@ case "$radarr_eventtype" in
     ;;
 esac
 
-# If Radarr and Silo see files at different mount points, remap here:
+# If Radarr and Prairie see files at different mount points, remap here:
 # SCAN_PATH="${SCAN_PATH/#\/movies//mnt/media/movies}"
 
 BODY=$(jq -n --arg path "$SCAN_PATH" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v2/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v2/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan failed for: $SCAN_PATH" >&2
+  -d "$BODY" || echo "Prairie scan failed for: $SCAN_PATH" >&2
 ```
 
 ## How scanning works
@@ -413,11 +413,11 @@ that folder. Scans running on different servers in a cluster are not serialized.
 - **Sending a file path is fine.** For video libraries the server scans the file's directory
   when that directory exists, which catches the replaced version, renames, and new sidecar files
   alongside the file you named. Sending the season or movie folder directly is equivalent.
-- **Full library scans are expensive.** Reserve these for periodic maintenance (Silo runs one
+- **Full library scans are expensive.** Reserve these for periodic maintenance (Prairie runs one
   daily at 02:00 server-local time by default). Do not trigger full scans from download
   automation.
-- **Paths must be server-side paths.** The path you send must match the filesystem as the Silo
-  server sees it. If Sonarr and Silo see files at different mount points (common with Docker),
+- **Paths must be server-side paths.** The path you send must match the filesystem as the Prairie
+  server sees it. If Sonarr and Prairie see files at different mount points (common with Docker),
   uncomment and adjust the path remapping line in the scripts above.
 - **Scripts require `jq`.** The integration scripts use `jq` to build JSON safely, which handles
   paths containing quotes or backslashes. Install it with your package manager (`apt install jq`,
@@ -427,5 +427,5 @@ that folder. Scans running on different servers in a cluster are not serialized.
 
 The frozen alpha surface serves the same two commands at `POST /api/v1/scan` and
 `POST /api/v1/scan/cancel`, with integer `library_id` values, a flat `{error, message}` error
-envelope, and no problem-document `type`. Those routes are frozen: no feature work lands on them, and Silo 1.0 answers the whole `/api/v1` namespace with
+envelope, and no problem-document `type`. Those routes are frozen: no feature work lands on them, and Prairie 1.0 answers the whole `/api/v1` namespace with
 `410 Gone` and the `client_upgrade_required` problem code. Point new integrations at `/api/v2`.

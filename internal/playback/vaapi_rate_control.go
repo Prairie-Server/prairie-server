@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // vaapiCappedModes are the VAAPI rate-control modes that keep a capped encode

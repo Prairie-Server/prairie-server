@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Silo-Server/silo-server/contracts/api/v2/scenarios"
+	"github.com/prairie-server/prairie-server/contracts/api/v2/scenarios"
 )
 
 // TestCatalogsPassGate is the CI gate behind make verify-scenario-catalogs.

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // copySafetyScanTimeout bounds one asynchronous multi-PPS scan. The scan reads

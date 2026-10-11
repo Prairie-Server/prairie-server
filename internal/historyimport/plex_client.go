@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 const (
-	plexClientIdentifier = "silo-history-import"
-	plexProduct          = "Silo"
+	plexClientIdentifier = "prairie-history-import"
+	plexProduct          = "Prairie"
 	plexVersion          = "1.0.0"
 	plexTVBaseURL        = "https://plex.tv"
 	// plexDiscoverBaseURL hosts account-level metadata (the user's

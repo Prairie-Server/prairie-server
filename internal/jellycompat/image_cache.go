@@ -27,7 +27,7 @@ type cachedImage struct {
 }
 
 // ImageCache keeps short-lived mappings from Jellyfin-style image requests to
-// the underlying Silo image URLs. Both maps are bounded, and an entry is never
+// the underlying Prairie image URLs. Both maps are bounded, and an entry is never
 // served within imageCacheExpirySafetyMargin, or half the URL's remaining life
 // if that is shorter, of its signed URL's expiry when the cache knows that
 // expiry (passed in, or read from the URL).
@@ -176,12 +176,12 @@ func normalizeImageCacheSize(size string) string {
 	return normalized
 }
 
-// artworkCapabilityPath is the route of Silo artwork capability URLs, the
+// artworkCapabilityPath is the route of Prairie artwork capability URLs, the
 // only URLs whose "exp" query parameter the cache trusts.
 const artworkCapabilityPath = "/api/v2/artwork/"
 
 // signedImageURLExpiry reads the expiry a signed image URL carries in its
-// query: Silo artwork capability URLs sign an "exp" Unix time, and S3 SigV4
+// query: Prairie artwork capability URLs sign an "exp" Unix time, and S3 SigV4
 // presigned URLs carry X-Amz-Date plus X-Amz-Expires. List and detail
 // responses only hold the URL string, so this is how their entries learn the
 // real expiry. "exp" is read only on artwork capability paths, because a

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scenariocatalog"
+	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // TestRequiredOutageAcceptance pairs the three frozen public reads whose

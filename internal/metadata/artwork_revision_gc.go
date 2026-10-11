@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 )
 
 const (

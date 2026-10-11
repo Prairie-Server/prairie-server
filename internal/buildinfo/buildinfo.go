@@ -16,7 +16,7 @@ var (
 	builtAtOverride     string
 )
 
-// Info describes the running Silo build from Go VCS metadata and CI-injected
+// Info describes the running Prairie build from Go VCS metadata and CI-injected
 // container identity.
 type Info struct {
 	Display     string `json:"display"`
@@ -41,9 +41,9 @@ func Current() Info {
 	return resolve(info.Settings, overrideRevision, overrideDirty, overrideBuildNumber, overrideBuiltAt)
 }
 
-// UserAgent names this Silo build for third-party APIs that ask callers to
-// identify their application and version, for example "Silo/ce6a0f53". A build
-// without revision metadata reports "Silo/dev".
+// UserAgent names this Prairie build for third-party APIs that ask callers to
+// identify their application and version, for example "Prairie/ce6a0f53". A build
+// without revision metadata reports "Prairie/dev".
 func UserAgent() string { return userAgent() }
 
 var userAgent = sync.OnceValue(func() string { return userAgentFor(Current()) })
@@ -64,7 +64,7 @@ func userAgentFor(info Info) string {
 	if version == "" {
 		version = "dev"
 	}
-	return "Silo/" + version
+	return "Prairie/" + version
 }
 
 func resolve(settings []debug.BuildSetting, fallbackRevision string, fallbackDirty bool, buildNumber uint64, builtAt string) Info {

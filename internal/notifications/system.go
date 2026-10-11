@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/discord"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/discord"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -108,7 +108,7 @@ type System struct {
 // NewSystem wires the notification system. hub may be nil (no realtime
 // publishing); redisClient may be nil (in-memory websocket tickets);
 // mailSender may be nil (no email channel); emailBrand may be nil (emails
-// carry Silo's default branding).
+// carry Prairie's default branding).
 func NewSystem(
 	pool *pgxpool.Pool,
 	settingsReader SettingReader,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/routeinventory/testdata/fixtures/consumer_closure_route/adapter"
+	"github.com/prairie-server/prairie-server/internal/routeinventory/testdata/fixtures/consumer_closure_route/adapter"
 )
 
 // NewHandler is the fixture entry point; it seals the router.

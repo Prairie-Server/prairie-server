@@ -16,9 +16,9 @@ import (
 // clear-art logo, while leaving an otherwise complete item, including one with
 // a TVDB ClearLogo, alone.
 func TestQuickRefreshListsLanguageOrArtworkIncompleteItems(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -120,9 +120,9 @@ func TestQuickRefreshListsLanguageOrArtworkIncompleteItems(t *testing.T) {
 }
 
 func TestQuickRefreshIgnoresHistoricalSecondaryStaleIDs(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

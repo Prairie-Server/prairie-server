@@ -12,7 +12,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/Silo-Server/silo-server/internal/transcodeproxy"
+	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
 
 // TestRemoteCompatRelayReusesNodeConnectionsAndRecordsDependencyMetrics guards

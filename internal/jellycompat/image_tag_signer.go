@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const imageTagSignatureDomain = "silo:jellycompat:image-tag:v1"
+const imageTagSignatureDomain = "prairie:jellycompat:image-tag:v1"
 
 type imageTagSigner struct {
 	secret []byte

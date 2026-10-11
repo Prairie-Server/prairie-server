@@ -3,8 +3,8 @@ package jellycompat
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 func TestCompatHEVCReportsCPUEncodeWithHardwareToneMapping(t *testing.T) {

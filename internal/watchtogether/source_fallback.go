@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 const fallbackReasonLowerResolution = "no_alternate_version"

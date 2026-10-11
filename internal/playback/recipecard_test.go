@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TestRecipeCardRoundTripOpts verifies recipe cards restore transcode options.
@@ -15,7 +15,7 @@ func TestRecipeCardRoundTripOpts(t *testing.T) {
 	revision := tonemap.SourceRevision{MediaFileID: 77, FileSize: 100, FileModifiedUnixNano: 200, StreamSignature: "stream"}
 	opts := TranscodeOpts{
 		InputPath:                "/media/movie.mkv",
-		OutputDir:                "/tmp/silo-transcode/abc",
+		OutputDir:                "/tmp/prairie-transcode/abc",
 		SessionID:                "abc",
 		SourceVideoCodec:         "hevc",
 		SourceVideoProfile:       "Main 10",
@@ -60,7 +60,7 @@ func TestRecipeCardRoundTripOpts(t *testing.T) {
 	}
 
 	// Rebuild opts; environment-specific fields are re-supplied by the caller.
-	got := card.TranscodeOpts("/tmp/silo-transcode/abc", "/usr/bin/ffmpeg", nil)
+	got := card.TranscodeOpts("/tmp/prairie-transcode/abc", "/usr/bin/ffmpeg", nil)
 	if got.StartSegmentNumber != 450 {
 		t.Errorf("StartSegmentNumber = %d, want 450", got.StartSegmentNumber)
 	}

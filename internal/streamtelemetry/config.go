@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 const (

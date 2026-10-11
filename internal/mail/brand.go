@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 )
 
 // Email branding follows the web sidebar (web/src/components/SiloBrand.tsx):

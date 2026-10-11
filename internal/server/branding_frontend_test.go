@@ -11,8 +11,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/branding"
 )
 
 // fakeSettings is an in-memory branding.SettingsStore.
@@ -46,7 +46,7 @@ func withBranding(t *testing.T, settings fakeSettings) {
 	prevFS, prevBranding := WebDistFS, Branding
 	WebDistFS = fstest.MapFS{
 		"index.html": &fstest.MapFile{Data: []byte(
-			`<!doctype html><html lang="en" data-theme="midnight-cinema"><head><title>Silo</title>` +
+			`<!doctype html><html lang="en" data-theme="midnight-cinema"><head><title>Prairie</title>` +
 				`<link rel="icon" href="/favicon.ico" sizes="any" /></head><body></body></html>`)},
 		"favicon.ico": &fstest.MapFile{Data: []byte("STATIC_ICO")},
 	}
@@ -150,7 +150,7 @@ func TestFrontendCustomSvgFaviconIsHardened(t *testing.T) {
 	store := &fakeAssetStore{data: map[string][]byte{"branding/favicon/abc.svg": []byte("<svg/>")}}
 	prevFS, prevBranding := WebDistFS, Branding
 	WebDistFS = fstest.MapFS{
-		"index.html":  &fstest.MapFile{Data: []byte("<title>Silo</title>")},
+		"index.html":  &fstest.MapFile{Data: []byte("<title>Prairie</title>")},
 		"favicon.ico": &fstest.MapFile{Data: []byte("STATIC_ICO")},
 	}
 	Branding = branding.NewService(fakeSettings{"branding.favicon_ref": "abc.svg"}, store)

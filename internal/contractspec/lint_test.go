@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // TestCommittedArtifactPassesLint is the spec-lint gate over the committed

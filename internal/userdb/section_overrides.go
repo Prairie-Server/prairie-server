@@ -3,7 +3,7 @@ package userdb
 import (
 	"database/sql"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // ListSectionOverrides returns all section overrides for a profile+scope+library.

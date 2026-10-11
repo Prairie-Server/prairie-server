@@ -16,8 +16,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/metadata/nfo"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata/nfo"
 )
 
 func writeFixtureFile(t *testing.T, path, contents string) {

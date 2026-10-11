@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Sentinel errors for repository operations.
@@ -724,7 +724,7 @@ func derefSlice(value *[]int) []int {
 // InitialSetupAdvisoryLock serializes first-administrator setup across every
 // API process sharing the database. It is transaction-scoped, so a crashed
 // caller releases it with its transaction.
-const InitialSetupAdvisoryLock int64 = 0x53494C4F53455455 // "SILOSETU"
+const InitialSetupAdvisoryLock int64 = 0x53494C4F53455455 // "PRAIRIESETU"
 
 // ClaimInitialSetup runs provision inside the database-wide first-setup
 // boundary: one transaction that holds the setup advisory lock, re-checks that

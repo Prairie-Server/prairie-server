@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
 )
 
 // ArtifactExpired marks a prepared file whose bytes were deleted because no

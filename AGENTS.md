@@ -1,18 +1,18 @@
-# Silo Server
+# Prairie Server
 
-Go backend for Silo: API contracts, auth/session, catalog/scanner/playback services, database
-migrations, Jellyfin compatibility, and the host-side plugin runtime. `cmd/silo` is the
+Go backend for Prairie: API contracts, auth/session, catalog/scanner/playback services, database
+migrations, Jellyfin compatibility, and the host-side plugin runtime. `cmd/prairie` is the
 entrypoint, backend code is under `internal/` by domain, the React frontend is `web/src/`.
 
-Silo is pre-1.0, with the current focus on QA, correctness, and UX polish.
+Prairie is pre-1.0, with the current focus on QA, correctness, and UX polish.
 Architectural changes are welcome when they serve the requested outcome and improve
 long-term maintainability; keep unrelated redesign out of a bounded fix.
 
-## What Silo is
+## What Prairie is
 
 A modern, open-source media server built from the ground up on current infrastructure —
 Postgres, S3, Redis — rather than SQLite and local disk. The foundational bet is horizontal
-scale: Silo deploys as a cluster (Kubernetes, remote transcode nodes) and stays fast on large
+scale: Prairie deploys as a cluster (Kubernetes, remote transcode nodes) and stays fast on large
 libraries, whether it's one node serving a household or a deployment streaming to thousands of
 users. Weigh every design against that full spectrum; treat a node dying mid-stream as a normal
 event, not an edge case.
@@ -64,7 +64,7 @@ server-side (`watchstate`, `userdb`, `settingsresolve`).
 - **Session** — ambiguous; always say which: playback session (`internal/playback`) or login
   session (`internal/auth`).
 - **jellycompat vs the native API** — jellycompat is the Jellyfin-protocol surface for ecosystem
-  clients; "the API" means Silo's native surface, which spans `/api/v1` (the frozen alpha
+  clients; "the API" means Prairie's native surface, which spans `/api/v1` (the frozen alpha
   contract, served through the pre-1.0 bridge window) and `/api/v2` (the stable 1.0 target and the
   native API going forward). See "API contract rules" below.
 
@@ -117,7 +117,7 @@ filesystem paths or transient worktree IDs — use repository-relative paths and
 
 **Docs audience.** Docs in this repo are for people and agents changing the code:
 architecture, invariants, API contracts, development setup. Guides for installing, configuring,
-operating, or troubleshooting Silo belong in the user manual (`siloserver.org`, see Multi-repo).
+operating, or troubleshooting Prairie belong in the user manual (`siloserver.org`, see Multi-repo).
 Do not add operator or user guides here. The one exception is `docs/update-to-1.0.md`, a draft
 that moves to the manual when 1.0 ships. When a change affects the manual, follow "Update the
 user manual" in CONTRIBUTING.md.
@@ -133,11 +133,11 @@ Sibling repos are usually checked out side-by-side in the same parent directory.
 
 - `silo-android` — Android phone and TV clients.
 - `silo-apple` — iOS, tvOS, and macOS clients.
-- `silo-plugin-sdk` — public plugin SDK, protobuf contracts, generated plugin API, manifest
+- `prairie-plugin-sdk` — public plugin SDK, protobuf contracts, generated plugin API, manifest
   helpers, runtime bootstrap.
-- `silo-plugins` — central plugin catalog / repository manifest.
+- `prairie-plugins` — central plugin catalog / repository manifest.
 - `siloserver.org` — project website and user manual.
-- First-party plugins (`silo-plugin-metadata-tmdb`, `silo-plugin-metadata-tvdb`, …) each have
+- First-party plugins (`prairie-plugin-metadata-tmdb`, `prairie-plugin-metadata-tvdb`, …) each have
   their own repo.
 
 When a task mentions plugins, work out first whether it belongs here, in the SDK, in the
@@ -155,7 +155,7 @@ done until each of these has been handled or ruled out:
 
 Separately, any change that leaves the user manual on siloserver.org wrong or incomplete (a
 setting, default, label, setup step, or feature behavior it describes) is not done until an
-issue is open on `Silo-Server/siloserver.org`.
+issue is open on `Prairie-Server/siloserver.org`.
 [Update the user manual](CONTRIBUTING.md#update-the-user-manual) covers when to open one and
 what goes in it.
 
@@ -189,9 +189,9 @@ Go stays `gofmt`/`goimports` clean; the frontend follows `web/.prettierrc`.
 
 ## Development environment
 
-Copy `.silo-dev.env.example` to `.silo-dev.env` and fill in how to
-reach your Silo deployment — URL, SSH target, database, an account to debug with. That file is
-gitignored and is the only place hosts, passwords, and tokens belong. `scripts/silo-dev doctor`
+Copy `.prairie--dev.env.example` to `.prairie--dev.env` and fill in how to
+reach your Prairie deployment — URL, SSH target, database, an account to debug with. That file is
+gitignored and is the only place hosts, passwords, and tokens belong. `scripts/prairie-dev doctor`
 checks it end to end.
 
 ## Writing
@@ -223,7 +223,7 @@ Run a final readability pass on other human-facing documents and status updates.
 
 ## API contract rules
 
-`/api/v2` is Silo's first stable native API and locks with Silo 1.0. `/api/v1` is a frozen alpha
+`/api/v2` is Prairie's first stable native API and locks with Prairie 1.0. `/api/v1` is a frozen alpha
 contract: it is carried unchanged through at least two published pre-1.0 bridge releases.
 Retirement requires a separate maintainer decision tracked in issue #886, after which the main
 API listener answers the `/api/v1` business routes with a
@@ -256,7 +256,7 @@ Design new endpoints today so they can live under that regime tomorrow.
 ## 1.0 validation
 
 Until 1.0 ships, maintainers check each 1.0 feature by hand on the
-[Silo v1.0.0 board](https://github.com/orgs/Silo-Server/projects/5). A `[v1] <Feature>` issue
+[Prairie v1.0.0 board](https://github.com/orgs/Prairie-Server/projects/5). A `[v1] <Feature>` issue
 holds the acceptance criteria. Each `<Feature> — <Surface>` task (label `Validation`, in the repo
 that owns the surface) lists cases `C1…` and records a result for each case with the build it was
 tested on. A passed case is a person's evidence that the feature works; a later change can
@@ -294,7 +294,7 @@ personal data, or private media details. Check text and attachments before posti
 authorization to open a PR does not authorize publishing private evidence.
 
 The one private link allowed is an evidence page on `evidence.siloserver.org`,
-which only Silo maintainers and the page's owner (for a pull request's own page,
+which only Prairie maintainers and the page's owner (for a pull request's own page,
 its author) can open after GitHub sign-in. Put it on one line in a PR body's
 Evidence section or a validation hand-off comment:
 `Evidence: https://evidence.siloserver.org/r/<repo>/<topic>/`. Link the page;
@@ -312,15 +312,15 @@ never attach or embed its media.
   mobile web captures (or show that mobile is unaffected). Write
   `Evidence: none, no user-visible change` only when that is true.
 - Attach evidence on GitHub under the PR body's Evidence heading, or publish it
-  with `npx @silo-server/evidence publish <folder> --pr <number>` and put its
+  with `npx @prairie-server/evidence publish <folder> --pr <number>` and put its
   `Evidence:` link there. GitHub has no API for attaching images to a pull
   request, so an agent either publishes with the CLI or gives the developer the
   captures to attach. Check media for private information before it goes on
   GitHub. When publishing exits 4, ask the developer to run
-  `npx @silo-server/evidence login`; never approve that login or read the saved
+  `npx @prairie-server/evidence login`; never approve that login or read the saved
   key. Never commit PR-only assets such as `.github/pr-assets/`.
 - Put a `Closes #NNN` line in the body for every issue the pull request fully
-  resolves (`Closes Silo-Server/<repo>#NNN` across repositories), so GitHub closes
+  resolves (`Closes Prairie-Server/<repo>#NNN` across repositories), so GitHub closes
   it on merge to `main`. `Related issue:` does not close anything; use it for the
   capability epic, sub-issue, or partly addressed issue the work serves, and write
   `Related issue: N/A` when none applies. Keep both lines accurate when the pull
@@ -336,7 +336,7 @@ never attach or embed its media.
   and dismiss false positives with a written reason. Remain quiet when nothing
   new has appeared. Stop when the latest commit is green.
 
-Pull requests are welcome from contributors who have had one merged in a Silo
+Pull requests are welcome from contributors who have had one merged in a Prairie
 repository, or when a maintainer asks for one; others are closed without review.
 When working for someone in neither group, write an issue instead of opening a
 pull request.

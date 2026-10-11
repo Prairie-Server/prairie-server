@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	apiv2registry "github.com/Silo-Server/silo-server/internal/apiv2"
+	apiv2registry "github.com/prairie-server/prairie-server/internal/apiv2"
 )
 
 func TestConcurrencyUsesMappedMethod(t *testing.T) {

@@ -18,7 +18,7 @@ type clientLogDocumentResponse struct {
 
 // HandleClientLogDocument accepts POST /ClientLog/Document. Clients (Jellyfin
 // Android TV, Wholphin, Fire TV apps) upload crash/diagnostic bundles here; with
-// no route they hit a chi 404 and "upload logs" silently fails. Silo has no
+// no route they hit a chi 404 and "upload logs" silently fails. Prairie has no
 // client-log store, so the body is drained and discarded, but we answer 200 with
 // a generated FileName to match Jellyfin's contract (it returns the stored file
 // name, never 204). Oversized uploads get 413 like Jellyfin's MaxDocumentSize.
@@ -27,7 +27,7 @@ func HandleClientLogDocument(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusRequestEntityTooLarge, "PayloadTooLarge", "Client log document is too large")
 		return
 	}
-	// Drain (bounded) and discard: Silo does not persist client logs, but the
+	// Drain (bounded) and discard: Prairie does not persist client logs, but the
 	// body must be consumed so the client's upload completes cleanly.
 	_, _ = io.Copy(io.Discard, io.LimitReader(r.Body, maxClientLogBytes))
 

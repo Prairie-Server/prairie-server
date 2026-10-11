@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 func simplifyColumns(ctx context.Context, t *testing.T, pool *pgxpool.Pool, table string) map[string]bool {

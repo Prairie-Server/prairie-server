@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func scanWatchProgress(scanner interface {
@@ -442,7 +442,7 @@ func (s *PostgresUserStore) markWatchedBatchTx(ctx context.Context, tx pgx.Tx, p
 	}
 
 	if explicitDates {
-		if _, err := tx.Exec(ctx, "SELECT set_config('silo.explicit_progress_event_time', 'on', true)"); err != nil {
+		if _, err := tx.Exec(ctx, "SELECT set_config('prairie.explicit_progress_event_time', 'on', true)"); err != nil {
 			return nil, fmt.Errorf("set explicit batch progress dates: %w", err)
 		}
 	}

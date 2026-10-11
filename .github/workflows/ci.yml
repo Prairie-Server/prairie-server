@@ -18,8 +18,8 @@ concurrency:
 
 env:
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*
+  GONOSUMDB: github.com/prairie-server/*
   # Pinned so a lint gate cannot change its mind between two runs of the same
   # commit. Built from source below rather than downloaded: a released binary
   # refuses to run against a Go version newer than the one it was built with,
@@ -37,6 +37,6 @@ jobs:
     permissions:
       actions: write
       contents: read
-    uses: Silo-Server/silo-server/.github/workflows/trusted-linux-ci.yml@main
+    uses: Prairie-Server/prairie-server/.github/workflows/trusted-linux-ci.yml@main
     with:
       self_hosted: false

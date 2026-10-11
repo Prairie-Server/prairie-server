@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/contracts/settings/v1/schemas/metadata-language-overrides.json",
+  "$id": "https://prairie-server.dev/contracts/settings/v1/schemas/metadata-language-overrides.json",
   "title": "Metadata language exceptions",
   "description": "Maps a media item's canonical original-language code to the metadata language a profile wants for that item. x-silo-original means use the source language itself.",
   "type": "object",

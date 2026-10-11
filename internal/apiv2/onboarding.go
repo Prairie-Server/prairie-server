@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/onboarding"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/onboarding"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type OnboardingService interface {

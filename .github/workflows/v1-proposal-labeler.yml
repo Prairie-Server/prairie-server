@@ -3,7 +3,7 @@ name: v1 proposal labeler
 # The issue form applies `v1-proposed` automatically, but only for submissions
 # through the web form. Contributors filing via the API/CLI (or from a fork)
 # cannot apply labels without triage/write access, so their proposals would land
-# unlabeled and never auto-add to the Silo v1 project. This stamps `v1-proposed`
+# unlabeled and never auto-add to the Prairie v1 project. This stamps `v1-proposed`
 # on any issue whose title starts with `[v1]`, regardless of who filed it.
 
 on:

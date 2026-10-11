@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 )
 
 // cleanupStore records DeletePrefix calls. Only DeletePrefix is implemented;

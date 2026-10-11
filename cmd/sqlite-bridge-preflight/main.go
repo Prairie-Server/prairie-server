@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Silo-Server/silo-server/internal/userdb/bridgeimport"
+	"github.com/prairie-server/prairie-server/internal/userdb/bridgeimport"
 )
 
 func main() {

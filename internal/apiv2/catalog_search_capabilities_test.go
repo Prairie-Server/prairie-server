@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func (f *fakeCatalog) SearchContinuationCapabilities(context.Context) (catalogpkg.SearchContinuationCapabilities, error) {

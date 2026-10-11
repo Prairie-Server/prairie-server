@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 type AdminPluginRepositoryUpdateService interface {

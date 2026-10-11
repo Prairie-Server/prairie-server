@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // conflictingPPSAnnexB is a two-NAL Annex-B stream that redefines

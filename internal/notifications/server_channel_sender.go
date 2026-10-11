@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // serverChannelSender owns the transport for server-channel posts: ciphertext
@@ -40,7 +40,7 @@ func (s *serverChannelSender) decryptSecret(ch *ServerChannel) (string, error) {
 }
 
 // buildPayload renders the type-specific body and headers for one post:
-// Discord bodies go unsigned, generic bodies get the signed Silo headers.
+// Discord bodies go unsigned, generic bodies get the signed Prairie headers.
 func (s *serverChannelSender) buildPayload(ch *ServerChannel, event string, buildDiscord, buildGeneric func() ([]byte, error)) (body []byte, headers map[string]string, err error) {
 	switch ch.Type {
 	case WebhookTypeDiscord:

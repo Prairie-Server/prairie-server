@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/userstore/storetest"
+	"github.com/prairie-server/prairie-server/internal/userstore/storetest"
 )
 
 func TestPostgresGetMissingCollection(t *testing.T) {

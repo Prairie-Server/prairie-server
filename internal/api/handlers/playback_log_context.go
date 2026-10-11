@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 )
 
 func setPlaybackSessionLogContext(r *http.Request, sessionID string) {

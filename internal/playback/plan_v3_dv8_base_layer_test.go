@@ -3,7 +3,7 @@ package playback
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // A single-layer Profile 8.1 source on a client whose active output carries

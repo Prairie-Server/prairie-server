@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// newWebhookDBTest connects to SILO_TEST_DATABASE_URL (skipping when unset or
+// newWebhookDBTest connects to PRAIRIE_TEST_DATABASE_URL (skipping when unset or
 // unmigrated) and returns a repository plus a fresh webhook-mode source row.
 func newWebhookDBTest(t *testing.T) (context.Context, *Repository, Source) {
 	t.Helper()

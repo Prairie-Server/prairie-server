@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 var ErrAdminSubtitleBytesUnavailable = errors.New("subtitle byte administration unavailable")

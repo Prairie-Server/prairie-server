@@ -8,7 +8,7 @@ import (
 )
 
 // siloSenderName labels Discord posts and embed footers.
-const siloSenderName = "Silo"
+const siloSenderName = "Prairie"
 
 // Server-channel embed accent colors (decimal RGB).
 const (
@@ -185,11 +185,11 @@ func BuildServerChannelDiscordContent(groups []ContentGroup, test bool) ([]byte,
 	now := time.Now().UTC().Format(time.RFC3339)
 	embeds := make([]discordEmbed, 0, len(groups))
 	for _, group := range groups {
-		author := "New episodes available on Silo"
+		author := "New episodes available on Prairie"
 		if flat, ok := flatKindByString(group.Kind); ok {
-			author = "New " + flat.ItemType + " available on Silo"
+			author = "New " + flat.ItemType + " available on Prairie"
 		} else if len(group.Episodes) == 1 {
-			author = "New episode available on Silo"
+			author = "New episode available on Prairie"
 		}
 		ids := group.Meta.providerIDs()
 		fields := make([]discordEmbedField, 0, 3)
@@ -224,7 +224,7 @@ func BuildServerChannelDiscordContent(groups []ContentGroup, test bool) ([]byte,
 	}
 	body := discordWebhookBody{Embeds: embeds, Username: siloSenderName}
 	if overflow > 0 {
-		body.Content = fmt.Sprintf("…and %d more new items on Silo", overflow)
+		body.Content = fmt.Sprintf("…and %d more new items on Prairie", overflow)
 	}
 	return json.Marshal(body)
 }
@@ -262,7 +262,7 @@ type serverChannelContentRow struct {
 	EpisodeLabel string `json:"episode_label,omitempty"`
 }
 
-// BuildServerChannelGenericContent renders a content digest as canonical Silo
+// BuildServerChannelGenericContent renders a content digest as canonical Prairie
 // JSON. Pure function.
 func BuildServerChannelGenericContent(groups []ContentGroup, channelID string, test bool) ([]byte, error) {
 	truncated := 0
@@ -310,13 +310,13 @@ func BuildServerChannelGenericContent(groups []ContentGroup, channelID string, t
 func requestEventDescription(event string) string {
 	switch event {
 	case ServerChannelEventRequestSubmitted:
-		return "New media request on Silo"
+		return "New media request on Prairie"
 	case ServerChannelEventRequestApproved:
 		return "Media request approved"
 	case ServerChannelEventRequestDeclined:
 		return "Media request declined"
 	case ServerChannelEventRequestFulfilled:
-		return "Requested media is now available on Silo"
+		return "Requested media is now available on Prairie"
 	default:
 		return genericNotificationTitle
 	}
@@ -412,7 +412,7 @@ type serverChannelRequestPayload struct {
 }
 
 // BuildServerChannelRequestGeneric renders one request lifecycle event as
-// canonical Silo JSON. Pure function.
+// canonical Prairie JSON. Pure function.
 func BuildServerChannelRequestGeneric(event string, info RequestEventInfo, channelID string) ([]byte, error) {
 	return json.Marshal(serverChannelRequestBody{
 		Event:     event,
@@ -444,13 +444,13 @@ func mediaTypeLabel(mediaType string) string {
 
 // serverChannelHeaders builds the signed delivery headers for a generic
 // server-channel POST, mirroring the per-profile webhook convention
-// (X-Silo-Signature follows Stripe's t=...,v1=... form).
+// (X-Prairie-Signature follows Stripe's t=...,v1=... form).
 func serverChannelHeaders(event, channelID, secret string, now time.Time, body []byte) map[string]string {
 	timestamp := now.Unix()
 	return map[string]string{
-		"X-Silo-Event":      event,
-		"X-Silo-Channel-Id": channelID,
-		"X-Silo-Timestamp":  fmt.Sprintf("%d", timestamp),
-		"X-Silo-Signature":  SignGenericWebhook(secret, timestamp, body),
+		"X-Prairie-Event":      event,
+		"X-Prairie-Channel-Id": channelID,
+		"X-Prairie-Timestamp":  fmt.Sprintf("%d", timestamp),
+		"X-Prairie-Signature":  SignGenericWebhook(secret, timestamp, body),
 	}
 }

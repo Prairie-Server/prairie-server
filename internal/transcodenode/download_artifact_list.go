@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/downloadstorage"
+	"github.com/prairie-server/prairie-server/internal/downloadstorage"
 )
 
 // artifactListTimeout bounds how long the listing route waits for the

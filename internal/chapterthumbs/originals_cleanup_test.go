@@ -16,8 +16,8 @@ import (
 
 	"github.com/h2non/bimg"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 )
 
 func testFrameJPEG(t *testing.T, width, height int) []byte {

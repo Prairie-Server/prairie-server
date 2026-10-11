@@ -8,7 +8,7 @@ import (
 	"net/mail"
 	"time"
 
-	silomail "github.com/Silo-Server/silo-server/internal/mail"
+	silomail "github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // EmailHandler exposes admin operations for the shared outbound email
@@ -20,7 +20,7 @@ type EmailHandler struct {
 }
 
 // NewEmailHandler creates an EmailHandler. brand styles the test message so
-// it previews the server's branded emails; nil sends Silo's default branding.
+// it previews the server's branded emails; nil sends Prairie's default branding.
 func NewEmailHandler(sender silomail.Sender, brand *silomail.BrandLoader) *EmailHandler {
 	return &EmailHandler{sender: sender, brand: brand}
 }
@@ -74,14 +74,14 @@ func (h *EmailHandler) sendTestEmail(ctx context.Context, to string) (int64, err
 	brand := h.brand.Load(ctx)
 	err := h.sender.Send(ctx, silomail.Message{
 		To:      []string{to},
-		Subject: "Silo test email",
-		TextBody: "This is a test email from your Silo server.\n\n" +
+		Subject: "Prairie test email",
+		TextBody: "This is a test email from your Prairie server.\n\n" +
 			"If you received it, outbound email is configured correctly.",
 		HTMLBody: silomail.RenderLayout(silomail.LayoutOptions{
 			Brand:     brand,
-			Preheader: "Outbound email from your Silo server is configured correctly.",
+			Preheader: "Outbound email from your Prairie server is configured correctly.",
 			Title:     "Outbound email is working",
-			BodyHTML: silomail.EmailParagraph("This is a test email from your Silo server.") +
+			BodyHTML: silomail.EmailParagraph("This is a test email from your Prairie server.") +
 				silomail.EmailParagraph("If you're reading it, the SMTP settings are correct and "+
 					"notification emails will look like this one."),
 		}),

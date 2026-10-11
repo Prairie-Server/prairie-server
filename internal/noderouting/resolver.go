@@ -3,7 +3,7 @@ package noderouting
 import (
 	"log/slog"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
 type eligibleSessionPlanner interface {

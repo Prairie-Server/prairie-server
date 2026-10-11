@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 // DeleteAdminDiagnosticReport makes the report absent. The owning service

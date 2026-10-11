@@ -28,7 +28,7 @@ export function SigningSecretDialog({
         <DialogHeader>
           <DialogTitle>Save your signing secret</DialogTitle>
           <DialogDescription>
-            Silo signs every delivery with this secret so your receiver can verify it. It is shown
+            Prairie signs every delivery with this secret so your receiver can verify it. It is shown
             only once — store it on the receiving service now. You can rotate it later if it is
             lost.
           </DialogDescription>

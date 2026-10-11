@@ -5,9 +5,9 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/artworkurl"
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 // Clients and CDNs cache images by full URL, so every new URL for unchanged

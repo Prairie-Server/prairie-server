@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 func TestNormalizeQueryDefinitionJSON_RejectsPersonalizedSortWithoutProfileScope(t *testing.T) {

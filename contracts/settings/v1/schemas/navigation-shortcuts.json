@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/contracts/settings/v1/schemas/navigation-shortcuts.json",
+  "$id": "https://prairie-server.dev/contracts/settings/v1/schemas/navigation-shortcuts.json",
   "title": "Navigation shortcuts",
   "description": "Profile-wide catalog of pinned libraries, sections, and collections that client-family menus may surface.",
   "$comment": "Contract validation also rejects repeated semantic destination identities even when labels differ: library(library_id), section(library_id, section_id), collection(optional library_id, collection_id).",

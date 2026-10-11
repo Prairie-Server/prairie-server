@@ -11,7 +11,7 @@ interface MockBuildInfoResult {
 }
 
 const mockUseServerBranding = vi.fn(() => ({
-  serverName: "Silo",
+  serverName: "Prairie",
   loginSubtitle: "Sign in with an existing account.",
 }));
 const defaultBuildInfo: BuildInfo = {

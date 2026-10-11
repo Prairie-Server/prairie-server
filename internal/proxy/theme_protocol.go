@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/Silo-Server/silo-server/internal/workerprotocol"
+	"github.com/prairie-server/prairie-server/internal/workerprotocol"
 )
 
 // ProtocolThemeAudio describes the routed theme-audio surface. Theme tokens

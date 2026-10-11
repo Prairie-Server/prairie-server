@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/webhooksync/webhooksynctest"
+	"github.com/prairie-server/prairie-server/internal/webhooksync/webhooksynctest"
 )
 
 // Use the actual cleanup predicate against the migrated schema and live webhook

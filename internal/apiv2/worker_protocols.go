@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/proxy"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/workerprotocol"
+	"github.com/prairie-server/prairie-server/internal/proxy"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/workerprotocol"
 	"github.com/danielgtaylor/huma/v2"
 )
 

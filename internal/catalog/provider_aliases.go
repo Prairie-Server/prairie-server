@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/contentid"
 )
 
 // resolvableAliasProviders are the providers ResolveProviderAliases matches.

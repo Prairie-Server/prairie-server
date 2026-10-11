@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/nodemetrics"
 )
 
 // newFakeSampler answers with a fixed reading so the handlers under test are

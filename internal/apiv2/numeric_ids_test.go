@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	catalogpkg "github.com/Silo-Server/silo-server/internal/catalog"
+	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestNumericIdentifiersRequireCanonicalPositiveDecimal(t *testing.T) {

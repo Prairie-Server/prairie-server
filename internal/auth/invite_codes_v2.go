@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 var ErrInviteCodeConflict = errors.New("invite code already exists with different configuration")

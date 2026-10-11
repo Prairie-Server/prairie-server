@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/onboarding"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/onboarding"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func (h *OnboardingHandler) ReadOnboardingFlow(ctx context.Context, userID int, profileID, surface string) (onboarding.Flow, error) {

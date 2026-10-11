@@ -9,8 +9,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // smartCollectionBody is the JSON body for POST and PATCH
@@ -378,7 +378,7 @@ func (h *Handler) handleSmartCollectionItems(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, pagedEnvelope(results, total, limit, page, qd.Sort.Field, qd.Sort.Order == "desc", "", false, ""))
 }
 
-// siloItemToSmartcollItem maps a silo *models.MediaItem into the
+// siloItemToSmartcollItem maps a prairie *models.MediaItem into the
 // audiobook-domain Item shape the smartcoll evaluator walks.
 func siloItemToSmartcollItem(mi *models.MediaItem) smartcoll.Item {
 	if mi == nil {

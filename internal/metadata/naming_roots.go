@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func (s *MetadataService) configuredNamingRoots(ctx context.Context, folderID int) ([]string, error) {

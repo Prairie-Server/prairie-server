@@ -7,7 +7,7 @@ import (
 	netmail "net/mail"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Sentinel errors for authentication operations.

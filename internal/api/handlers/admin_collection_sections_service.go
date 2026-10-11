@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 // AdminCollectionSection is an admin Home or library page row that shows a

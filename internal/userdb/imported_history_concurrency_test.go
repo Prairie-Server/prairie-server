@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore/storetest"
+	"github.com/prairie-server/prairie-server/internal/userstore/storetest"
 )
 
 func TestImportedHistoryConcurrent(t *testing.T) {

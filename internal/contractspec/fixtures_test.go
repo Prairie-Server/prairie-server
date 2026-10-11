@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	contracts "github.com/Silo-Server/silo-server/contracts/api/v2"
+	contracts "github.com/prairie-server/prairie-server/contracts/api/v2"
 )
 
 // TestCommittedFixturesValidate is the fixture gate: every committed body

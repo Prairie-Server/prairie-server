@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 const jsonNullLiteral = "null"

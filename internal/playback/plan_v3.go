@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 type PlannerSettingsV3 struct {
@@ -453,7 +453,7 @@ func PlanPlaybackV3(input PlannerInputV3) (result PlannerResultV3) {
 
 	// Profile 7 is normalized on the client against the original range-capable
 	// source. A decoder profile/max-instance claim alone is not proof of native
-	// dual-layer output, so the default Android route mirrors Silo Apple: P8.1
+	// dual-layer output, so the default Android route mirrors Prairie Apple: P8.1
 	// base-layer Dolby Vision first, then same-file HDR10.
 	if source.DVProfile == 7 && quality.PreservesSource && videoOK && containerOK && audioOK && originalAudioSelectionOK && originalSubtitleOK {
 		if clientDV81Eligible {
@@ -2317,7 +2317,7 @@ func hdrSupportsDolbyVisionSourceV3(hdr HDRCapabilitiesV3, source SourceDescript
 func dolbyVisionSourceFitsLevelV3(source SourceDescriptorV3, maxLevel int) bool {
 	// Dolby Vision Version 2.0 defines levels by maximum pixel rate, decoded
 	// width, and high-tier bitrate. Use those physical bounds for legacy rows
-	// scanned before Silo persisted ffprobe's exact dv_level.
+	// scanned before Prairie persisted ffprobe's exact dv_level.
 	type levelLimit struct {
 		pixelRate   float64
 		width       int

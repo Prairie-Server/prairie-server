@@ -3,7 +3,7 @@ package apiv2
 import (
 	"context"
 
-	catalogsvc "github.com/Silo-Server/silo-server/internal/catalog"
+	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type AdminCatalogSearchService interface {

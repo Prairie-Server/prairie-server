@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/server"
+	"github.com/prairie-server/prairie-server/internal/server"
 )
 
 // newRootHandler builds the handler the primary port serves.

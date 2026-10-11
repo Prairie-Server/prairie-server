@@ -3,7 +3,7 @@ package historyimport
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/netguard"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // trustLoopback marks ctx as trusted with the local network. Test upstream

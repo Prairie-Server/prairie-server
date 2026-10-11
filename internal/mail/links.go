@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/branding"
 )
 
 // AccountLinkBase is the externally reachable origin that account emails

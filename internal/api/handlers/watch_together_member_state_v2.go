@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/watchtogether"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/watchtogether"
 )
 
 // WatchTogetherAvailable reports whether rooms are served at all; the

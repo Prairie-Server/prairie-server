@@ -17,14 +17,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/librarykind"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
-	"github.com/Silo-Server/silo-server/internal/pathscope"
-	"github.com/Silo-Server/silo-server/internal/rootcheck"
-	"github.com/Silo-Server/silo-server/internal/themesongs"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/pathscope"
+	"github.com/prairie-server/prairie-server/internal/rootcheck"
+	"github.com/prairie-server/prairie-server/internal/themesongs"
 )
 
 // ignoredDirNames is the set of directory names skipped during scanning.

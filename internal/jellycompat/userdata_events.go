@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // UserStateEvents is the realtime hub that carries per-profile watched-state

@@ -1,6 +1,6 @@
 import { Navigate } from "react-router";
 
-import { SiloBrand } from "@/components/SiloBrand";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useHasUnsavedChanges } from "@/hooks/useUnsavedChanges";
@@ -67,9 +67,9 @@ function WizardContent() {
       <div className="setup-frame">
         <aside className="setup-side">
           <div className="setup-brand">
-            <SiloBrand variant="mark" className="size-9" />
+            <PrairieBrand variant="mark" className="size-9" />
             <span>
-              <span className="setup-brand-name">Silo</span>
+              <span className="setup-brand-name">Prairie</span>
               <span className="setup-brand-sub">First-run setup</span>
             </span>
           </div>

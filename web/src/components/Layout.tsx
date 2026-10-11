@@ -18,7 +18,7 @@ import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import AppSidebar from "@/components/AppSidebar";
 import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
-import { SiloBrand } from "@/components/SiloBrand";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import { buildQueryCatalogHref, parseCatalogSearchParams } from "@/pages/catalogSearchParams";
@@ -405,7 +405,7 @@ export default function Layout({ children }: LayoutProps) {
               <Menu className="h-5 w-5" />
             </button>
             <ViewTransitionLink to="/" className="flex items-center gap-2.5">
-              <SiloBrand className="h-10 w-[94px]" />
+              <PrairieBrand className="h-10 w-[94px]" />
             </ViewTransitionLink>
           </div>
           <div className="flex items-center gap-2">

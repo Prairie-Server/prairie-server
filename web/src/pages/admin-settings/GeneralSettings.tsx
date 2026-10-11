@@ -59,7 +59,7 @@ export default function GeneralSettings() {
             label="Server name"
             settingKey="branding.server_name"
             dirty={form.isDirty("branding.server_name")}
-            hint="Silo"
+            hint="Prairie"
             value={form.getValue("branding.server_name")}
             onChange={(v) => form.setValue("branding.server_name", v)}
             restartRequired={restartKeys.has("branding.server_name")}
@@ -82,11 +82,11 @@ export default function GeneralSettings() {
           dirty={anyDirty(NETWORK_KEYS)}
         >
           <SettingField
-            label="Silo public URL"
+            label="Prairie public URL"
             settingKey="server.public_url"
             dirty={form.isDirty("server.public_url")}
             description="The HTTPS address users open. Used for websocket origins and links in email notifications."
-            hint="https://silo.example.com"
+            hint="https://prairie.example.com"
             value={form.getValue("server.public_url")}
             onChange={(v) => form.setValue("server.public_url", v)}
             restartRequired={restartKeys.has("server.public_url")}
@@ -96,7 +96,7 @@ export default function GeneralSettings() {
             settingKey="server.lan_discovery"
             dirty={form.isDirty("server.lan_discovery")}
             type="toggle"
-            description="Silo apps on the same network list this server when adding one, so nobody has to type its address. Needs a network that passes multicast (Docker host networking, not the default bridge)."
+            description="Prairie apps on the same network list this server when adding one, so nobody has to type its address. Needs a network that passes multicast (Docker host networking, not the default bridge)."
             value={form.getValue("server.lan_discovery")}
             onChange={(v) => form.setValue("server.lan_discovery", v)}
             restartRequired={restartKeys.has("server.lan_discovery")}

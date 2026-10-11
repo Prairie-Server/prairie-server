@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	"github.com/danielgtaylor/huma/v2"
 	chimw "github.com/go-chi/chi/v5/middleware"
 )

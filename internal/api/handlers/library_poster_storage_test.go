@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/blobstore"
-	"github.com/Silo-Server/silo-server/internal/blobstore/blobstoretest"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

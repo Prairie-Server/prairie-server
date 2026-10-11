@@ -20,14 +20,14 @@ for taking the time to write things up well.
 
 ## Write a useful issue
 
-Use the [GitHub issue forms](https://github.com/Silo-Server/silo-server/issues/new/choose).
+Use the [GitHub issue forms](https://github.com/Prairie-Server/prairie-server/issues/new/choose).
 Problems that only affect a native client belong in
-[`silo-apple`](https://github.com/Silo-Server/silo-apple) or
-[`silo-android`](https://github.com/Silo-Server/silo-android). Search first; if
+[`silo-apple`](https://github.com/prairie-server/silo-apple) or
+[`silo-android`](https://github.com/prairie-server/silo-android). Search first; if
 an issue already covers the problem, add what's new there.
 
 Using Claude Code or Codex? The
-[Silo troubleshooting skill](https://github.com/Silo-Server/silo-troubleshooting-skill)
+[Silo troubleshooting skill](https://github.com/Prairie-Server/prairie-troubleshooting-skill)
 helps you collect these details and drafts the issue, then has independent
 reviewers check it against your evidence before you post it.
 
@@ -85,14 +85,14 @@ Documentation in this repository is for people and coding agents changing the
 code: architecture, invariants, API contracts, and development setup. Guides
 for installing, configuring, operating, or troubleshooting Silo belong in the
 [user manual](https://siloserver.org/docs), which lives in
-[Silo-Server/siloserver.org](https://github.com/Silo-Server/siloserver.org).
+[Prairie-Server/siloserver.org](https://github.com/prairie-server/siloserver.org).
 This repository does not accept operator or user guides; open those pull
 requests against the website repository instead.
 
 Choose the repository that owns the behavior before implementation begins.
 This repository owns the backend, web app, native API, Jellyfin compatibility,
 and plugin host. Client-only work belongs in `silo-apple` or `silo-android`;
-plugin contracts belong in `silo-plugin-sdk`; provider behavior belongs in the
+plugin contracts belong in `prairie-plugin-sdk`; provider behavior belongs in the
 individual plugin repository. Cross-repository changes should identify all
 affected repositories in the issue and pull request.
 
@@ -117,7 +117,7 @@ review.
 
 [DEVELOPMENT.md](DEVELOPMENT.md) covers prerequisites, local services, builds,
 migrations, and repository layout, including how to iterate against
-`silo-plugin-sdk`.
+`prairie-plugin-sdk`.
 
 ## Validate your change
 
@@ -233,7 +233,7 @@ private infrastructure. Never claim a check passed or ran on a target it did not
 
 The user manual and feature pages on [siloserver.org](https://siloserver.org)
 live in a separate repository,
-[Silo-Server/siloserver.org](https://github.com/Silo-Server/siloserver.org),
+[Prairie-Server/siloserver.org](https://github.com/prairie-server/siloserver.org),
 and nothing updates them automatically. To write or fix a guide, open a pull
 request there. When a code change here leaves the site wrong or incomplete,
 open an issue there.
@@ -252,7 +252,7 @@ search the site for the feature.
 
 Open the issue when the pull request is ready for review, or as soon as you
 notice that an already merged change needs one. Reference the pull request as
-`Silo-Server/silo-server#NNN` so GitHub links the two, and say that the site
+`Prairie-Server/prairie-server#NNN` so GitHub links the two, and say that the site
 update waits for it to merge. In the issue:
 
 - say what changed for users;
@@ -260,8 +260,8 @@ update waits for it to merge. In the issue:
   defaults copied from the app source;
 - note what is out of scope, such as apps that need no change.
 
-[#29](https://github.com/Silo-Server/siloserver.org/issues/29) and
-[#30](https://github.com/Silo-Server/siloserver.org/issues/30) are examples.
+[#29](https://github.com/prairie-server/siloserver.org/issues/29) and
+[#30](https://github.com/prairie-server/siloserver.org/issues/30) are examples.
 If an open issue already covers the same pages, comment on it instead. Update
 the issue when review changes the behavior, and close it if the pull request
 closes without merging.
@@ -281,7 +281,7 @@ template or issue form.
 
 Use a [Conventional Commit](https://www.conventionalcommits.org/) title and fill
 in the pull request template. For each issue the change fully resolves, add a
-`Closes #NNN` line (`Closes Silo-Server/<repo>#NNN` for another repository) so
+`Closes #NNN` line (`Closes Prairie-Server/<repo>#NNN` for another repository) so
 GitHub closes the issue when the pull request merges into `main`; the
 `Related issue:` line alone does not close anything. Name an epic, scope item,
 or partly addressed issue on `Related issue:`, and write `Related issue: N/A`
@@ -361,11 +361,11 @@ one of two places:
   with `Before:` and `After:` become a side-by-side comparison, and recordings
   get a player. Upload from the Details link of the pull request's `Evidence`
   check, or with the command line (Node.js 22 or later):
-  `npx @silo-server/evidence login` once on each computer, then
-  `npx @silo-server/evidence publish <folder> --pr <number>`. The
-  [package README](https://www.npmjs.com/package/@silo-server/evidence) describes
+  `npx @prairie-server/evidence login` once on each computer, then
+  `npx @prairie-server/evidence publish <folder> --pr <number>`. The
+  [package README](https://www.npmjs.com/package/@prairie-server/evidence) describes
   the folder. Then write
-  `Evidence: https://evidence.siloserver.org/r/silo-server/pr-<number>/` under
+  `Evidence: https://evidence.siloserver.org/r/prairie-server/pr-<number>/` under
   the Evidence heading. Until a pull request of yours has merged here, a
   maintainer approves you once before your first upload.
 
