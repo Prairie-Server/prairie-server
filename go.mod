@@ -1,6 +1,7 @@
 module github.com/prairie-server/prairie-server
 
 go 1.26.7
+
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.6
@@ -15,7 +16,21 @@ require (
 	golang.org/x/crypto v0.57.0
 	golang.org/x/sys v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
+	github.com/mattn/go-sqlite3 v1.14.34
+	github.com/miekg/dns v1.1.61
+	github.com/PuerkitoBio/goquery v1.8.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/mmcdole/goxpp v1.1.1-0.20240225020742-a0c311522b23 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	go.yaml.in/yaml/v2 v2.4.4 // indirect
 )
+
+require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/abadojack/whatlanggo v1.0.1
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.23.10
@@ -45,6 +60,9 @@ require (
 	golang.org/x/tools v0.50.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+)
+
+require (
 	cloud.google.com/go v0.123.0 // indirect
 	github.com/TwiN/go-color v1.4.1 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
@@ -111,6 +129,9 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688 // indirect
+)
+
+require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect
@@ -154,9 +175,6 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 	modernc.org/sqlite v1.60.1
+)
+
 replace github.com/zishang520/webtransport-go => ./internal/compat/zishang520-webtransport-go
-	github.com/mattn/go-sqlite3 v1.14.34
-	github.com/miekg/dns v1.1.61
-	github.com/json-iterator/go v1.1.12 // indirect
-	sigs.k8s.io/yaml v1.6.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
