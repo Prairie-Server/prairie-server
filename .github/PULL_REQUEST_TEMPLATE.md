@@ -49,9 +49,9 @@ affected surface, and a short recording when motion, timing, or focus matters. F
 app and web admin changes also visible at phone width, include desktop and mobile web
 captures (or show that mobile is unaffected). Crop or blur private details in
 anything attached here. To keep captures private instead, publish them to
-evidence.siloserver.org, where only you and Silo maintainers can open them, and
+evidence.prairieserver.org, where only you and Prairie maintainers can open them, and
 replace the table with
-`Evidence: https://evidence.siloserver.org/r/prairie-server/pr-<number>/`. When nothing
+`Evidence: https://evidence.prairieserver.org/r/prairie-server/pr-<number>/`. When nothing
 visible changes, replace this section's content with "Evidence: none, no user-visible
 change". -->
 

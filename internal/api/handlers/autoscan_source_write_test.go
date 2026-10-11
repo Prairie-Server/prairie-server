@@ -97,7 +97,7 @@ func TestAdminAutoscanSourceWriteWebhookAndFailure(t *testing.T) {
 // Sonarr/Radarr poller.
 func requiredConnectionTriggerer() *fakeAutoscanTriggerer {
 	return &fakeAutoscanTriggerer{available: []autoscan.AvailableScanSource{{
-		PluginID:     "silo.autoscan.arr",
+		PluginID:     "prairie.autoscan.arr",
 		CapabilityID: "arr",
 		Descriptor: autoscan.ScanSourceDescriptor{
 			DeliveryModes: []string{autoscan.DeliveryModePoll},
@@ -112,18 +112,18 @@ func TestAdminAutoscanSourceCreateRequiresDescriptorConnection(t *testing.T) {
 		wantErr bool
 	}{
 		"enabled without connection": {
-			in:      AdminAutoscanSourceWrite{PluginID: "silo.autoscan.arr", CapabilityID: "arr", Enabled: true},
+			in:      AdminAutoscanSourceWrite{PluginID: "prairie.autoscan.arr", CapabilityID: "arr", Enabled: true},
 			wantErr: true,
 		},
 		"blank connection counts as none": {
-			in:      AdminAutoscanSourceWrite{PluginID: "silo.autoscan.arr", CapabilityID: "arr", Enabled: true, ConnectionID: new("  ")},
+			in:      AdminAutoscanSourceWrite{PluginID: "prairie.autoscan.arr", CapabilityID: "arr", Enabled: true, ConnectionID: new("  ")},
 			wantErr: true,
 		},
 		"enabled with connection": {
-			in: AdminAutoscanSourceWrite{PluginID: "silo.autoscan.arr", CapabilityID: "arr", Enabled: true, ConnectionID: new("connection")},
+			in: AdminAutoscanSourceWrite{PluginID: "prairie.autoscan.arr", CapabilityID: "arr", Enabled: true, ConnectionID: new("connection")},
 		},
 		"disabled without connection": {
-			in: AdminAutoscanSourceWrite{PluginID: "silo.autoscan.arr", CapabilityID: "arr"},
+			in: AdminAutoscanSourceWrite{PluginID: "prairie.autoscan.arr", CapabilityID: "arr"},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -152,7 +152,7 @@ func TestAdminAutoscanSourceCreateRequiresDescriptorConnection(t *testing.T) {
 // be editable: the edit that keeps it enabled has to supply a server, but it
 // can always be switched off.
 func TestAdminAutoscanSourceUpdateRequiresDescriptorConnection(t *testing.T) {
-	stored := autoscan.Source{ID: "existing", PluginID: "silo.autoscan.arr", CapabilityID: "arr", Enabled: true, DeliveryMode: autoscan.DeliveryModePoll}
+	stored := autoscan.Source{ID: "existing", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", Enabled: true, DeliveryMode: autoscan.DeliveryModePoll}
 	for name, tc := range map[string]struct {
 		in      AdminAutoscanSourceWrite
 		svc     autoscanTriggerer

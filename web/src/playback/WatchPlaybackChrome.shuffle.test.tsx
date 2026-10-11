@@ -276,11 +276,11 @@ describe("WatchPlaybackHost shuffle", () => {
     client.setQueryData(shuffleKeys.detail("shuffle-1"), shuffleWith("movie-1", "movie-2"));
     mocks.getShuffle.mockRejectedValue(
       new V2ProblemError("getShuffle", {
-        type: "https://siloserver.org/docs/api/v2/problems/conflict",
+        type: "https://prairieserver.org/docs/api/v2/problems/conflict",
         title: "Conflict",
         status: 409,
         detail: "Nothing here can be played.",
-        instance: "urn:silo:request:1",
+        instance: "urn:prairie:request:1",
       }),
     );
     const movie = await renderPlayback({ contentId: "movie-1", shuffleId: "shuffle-1" }, client);

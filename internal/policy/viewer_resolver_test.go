@@ -534,7 +534,7 @@ func TestViewerResolverHiddenLibrariesRespectOverride(t *testing.T) {
 		settingValues: []userstore.SettingValue{hiddenLibrariesRow("prof-1", `[2,3]`)},
 	}}
 	engine, err := NewEngineWithCustom(ctx, map[string]ActiveSource{
-		"scope": {Source: `package silo_custom.scope
+		"scope": {Source: `package prairie_custom.scope
 
 import rego.v1
 

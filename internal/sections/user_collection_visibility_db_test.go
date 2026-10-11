@@ -30,9 +30,9 @@ func (s stubCollectionOwners) OwnerFilter(_ context.Context, _ int, ownerProfile
 // what both its owner and the viewer can access, and another profile's
 // private collection shows nothing.
 func TestFetchUserCollectionProfileVisibilityPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

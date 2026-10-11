@@ -147,7 +147,7 @@ func compatDefaultSubtitleStreamIndex(candidates []compatSubtitleCandidate, pref
 	}
 	matches := func(language string) bool { return compatMatchesPreferredLanguage(language, preferred) }
 	// Sort: default > preferred full > preferred forced > undefined forced >
-	// forced > embedded. Upstream ranks external first; Silo prefers a
+	// forced > embedded. Upstream ranks external first; Prairie prefers a
 	// file's own tracks and only breaks ties with the source, so a full
 	// external track still beats an embedded forced one. The sort is stable,
 	// as LINQ's OrderBy is.

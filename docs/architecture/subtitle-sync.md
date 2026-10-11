@@ -37,7 +37,7 @@ bytes never change.
 
 ## Sidecar subtitles
 
-Silo is a media server, not a media manager: it never writes a sidecar file.
+Prairie is a media server, not a media manager: it never writes a sidecar file.
 A sidecar's correction is a row keyed by the media file and the SHA-256 of the
 sidecar's bytes.
 
@@ -159,7 +159,7 @@ stale-job reaping. A job reaped after a crash ends `failed`; it is not resumed.
   outcome) sends `subtitle_sync_updated` to the file's playback sessions; an
   applied result or a manual timing change also sends
   `subtitle_timing_changed`. Both reach sessions on every API server through
-  the event bus (`silo:playback`). They are best effort; clients also read the
+  the event bus (`prairie:playback`). They are best effort; clients also read the
   job state through the API.
 
 ## Where the audio is decoded

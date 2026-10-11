@@ -22,7 +22,7 @@ function track(overrides: Partial<PlayerSubtitleInfo>): PlayerSubtitleInfo {
     label: "English",
     source: "external",
     sync_key: "external-" + "a".repeat(64),
-    url: "https://silo.example/api/v1/stream/s1/subtitles/3.vtt?file_id=42&token=t",
+    url: "https://prairie.example/api/v1/stream/s1/subtitles/3.vtt?file_id=42&token=t",
     ...overrides,
   };
 }

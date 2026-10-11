@@ -1,6 +1,6 @@
 # Server discovery
 
-A client with no saved address should be able to list the Silo servers it can
+A client with no saved address should be able to list the Prairie servers it can
 reach instead of asking the user to type one. Two networks matter: the local
 network, and an overlay network that a network access provider joins
 ([network-access.md](network-access.md)). Neither discovery path is trusted:
@@ -14,9 +14,9 @@ service once its API listener is bound (`internal/landiscovery`):
 
 | Field | Value |
 |---|---|
-| Service type | `_silo._tcp` in `local.` |
+| Service type | `_prairie._tcp` in `local.` |
 | Instance name | `branding.server_name`, trimmed to 56 bytes so a conflict suffix fits the 63-byte label |
-| Host | `silo-<first 8 alphanumerics of the server ID>-<6 random hex>.local`, one per API process |
+| Host | `prairie-<first 8 alphanumerics of the server ID>-<6 random hex>.local`, one per API process |
 | Port | the port the API process listens on; it speaks plain HTTP |
 | Addresses | A and AAAA records for the families the API listener accepts, from the interface the query arrived on; never link-local IPv6 |
 | TXT `v` | `1`; changes only if an existing key changes meaning |
@@ -34,8 +34,8 @@ Rules a client relies on:
 - **Connect by resolved address.** Build the URL from the address the
   platform resolver returns (IPv4 preferred, IPv6 in brackets). `.local` names
   do not resolve on every Android release.
-- **Instance names are not unique.** Two servers named `Silo` on one link
-  probe and one becomes `Silo (2)`: the later one, or the tiebreak loser when
+- **Instance names are not unique.** Two servers named `Prairie` on one link
+  probe and one becomes `Prairie (2)`: the later one, or the tiebreak loser when
   both start together. A rename in the admin settings
   is picked up within the check interval below. Clients label entries with the
   live name from `GET /api/v2/theme/branding` and tell servers apart by `id`.
@@ -44,7 +44,7 @@ Rules a client relies on:
   interfaces is resolved once per interface. Group by `id`.
 - **Unknown TXT keys are ignored.** New keys are added without bumping `v`.
 
-The responder is Silo's own (`internal/landiscovery/responder.go`), not a
+The responder is Prairie's own (`internal/landiscovery/responder.go`), not a
 general mDNS library, and it is deliberately narrow:
 
 - It shares UDP 5353 with the operating system's mDNS daemon (avahi,
@@ -86,19 +86,19 @@ on, not a port a container runtime publishes it under.
 Overlay networks do not carry multicast, and a phone or TV app cannot read the
 overlay's device list (another app's local API is out of reach). What clients
 can use is overlay DNS: Tailscale MagicDNS adds the tailnet's domain as a DNS
-search domain on every device, so the bare name `silo` resolves to the node
-whose machine name is `silo`, the Tailscale plugin's default.
+search domain on every device, so the bare name `prairie` resolves to the node
+whose machine name is `prairie`, the Tailscale plugin's default.
 
 A bare name cannot be used with HTTPS directly, because the node's certificate
-covers only the full name (`silo.<tailnet>.ts.net`). So a provider answers plain
+covers only the full name (`prairie.<tailnet>.ts.net`). So a provider answers plain
 HTTP on its API host's overlay port 80 with a `307` redirect to its HTTPS API
 origin, keeping the path and query. The redirect handler never proxies: no
-request reaches Silo without TLS, and methods other than `GET` and `HEAD`
+request reaches Prairie without TLS, and methods other than `GET` and `HEAD`
 are refused. Proxy nodes do not answer; nobody types their names.
 
 Client flow:
 
-1. Probe `http://silo/api/v2/system/identity`, and `silo-1` and `silo-2` (the
+1. Probe `http://prairie/api/v2/system/identity`, and `prairie-1` and `prairie-2` (the
    names a second and third node with the default name receive), with a
    short timeout. Follow at most one redirect, only to an `https` URL whose
    host is the probed name plus a domain, and accept the answer only when
@@ -108,7 +108,7 @@ Client flow:
    a local network can resolve the bare name to one and route it to itself.
 2. On success, the final origin is the server's overlay address: save that,
    never the bare-name URL. The redirect only answers reads, so a client that
-   keeps `http://silo/` as its base URL fails at the first `POST` (sign-in
+   keeps `http://prairie/` as its base URL fails at the first `POST` (sign-in
    included) and pays a redirect on every request. Treat the final origin as a
    candidate like a LAN one, labelled with the provider; a request on it also
    gets the network sign-in offer from `GET /api/v2/auth/providers` when the
@@ -127,7 +127,7 @@ is a convenience, not part of connection setup.
 
 - Jellyfin's UDP 7359 "who is JellyfinServer" broadcast. jellycompat's `Id`
   defaults to one fixed value on every install, so answering the broadcast
-  would make every Silo server look like one; it needs a per-deployment
+  would make every Prairie server look like one; it needs a per-deployment
   compat ID first.
 - Listing servers a user can reach over the internet. A client learns the
   public and provider addresses of a known server from

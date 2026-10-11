@@ -79,13 +79,13 @@ interface AuthState {
   signup: (username: string, email: string, password: string, inviteCode: string) => Promise<void>;
   beginImpersonation: (data: LoginResponse, returnPath: string) => void;
   endImpersonation: () => Promise<void>;
-  /** Signs out of Silo and, when the sign-in provider offers it, out of the provider too. */
+  /** Signs out of Prairie and, when the sign-in provider offers it, out of the provider too. */
   logout: () => void;
   /**
-   * Signs out of Silo only, leaving the sign-in provider's own session open,
+   * Signs out of Prairie only, leaving the sign-in provider's own session open,
    * for "Not you? Switch account" before signing in as someone else.
    */
-  logoutOfSiloOnly: () => void;
+  logoutOfPrairieOnly: () => void;
   clearLoginSession: () => void;
   selectProfile: (profile: Profile, profileToken?: string) => void;
   verifyProfilePin: (profileId: string, pin: string) => Promise<ProfileVerification>;
@@ -470,7 +470,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // An administrator viewing as someone leaves the account's provider
   // session alone: the server answers no provider sign-out for it anyway.
   const logout = useCallback(() => endSession(!isImpersonating), [endSession, isImpersonating]);
-  const logoutOfSiloOnly = useCallback(() => endSession(false), [endSession]);
+  const logoutOfPrairieOnly = useCallback(() => endSession(false), [endSession]);
   // A successful session revocation already ended the server session.
   const clearLoginSession = useCallback(() => {
     markSessionEnded("signed-out");
@@ -810,7 +810,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         beginImpersonation,
         endImpersonation,
         logout,
-        logoutOfSiloOnly,
+        logoutOfPrairieOnly,
         clearLoginSession,
         selectProfile,
         verifyProfilePin,

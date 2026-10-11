@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func packageErrorTestManifest(pluginID, version string) *pluginv1.PluginManifest {
@@ -22,7 +22,7 @@ func packageErrorTestManifest(pluginID, version string) *pluginv1.PluginManifest
 		PluginId:           pluginID,
 		Version:            version,
 		Checksum:           strings.Repeat("a", 64),
-		SiloApiVersion:     DefaultSiloAPIVersion,
+		PrairieApiVersion:     DefaultPrairieAPIVersion,
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{{Os: "linux", Arch: "amd64"}},
 		Capabilities: []*pluginv1.CapabilityDescriptor{
 			{Type: "metadata_provider.v1", Id: "fixture", DisplayName: "Fixture"},
@@ -129,7 +129,7 @@ func TestInstallBinaryRejectsBinaryNotListedByCatalog(t *testing.T) {
 		name     string
 		manifest *pluginv1.PluginManifest
 	}{
-		{name: "other plugin", manifest: packageErrorTestManifest("silo.tmdb", "1.0.0")},
+		{name: "other plugin", manifest: packageErrorTestManifest("prairie.tmdb", "1.0.0")},
 		{name: "other version", manifest: packageErrorTestManifest("test.plugin", "2.0.0")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -207,13 +207,13 @@ func TestChecksumFileFailuresAreClassified(t *testing.T) {
 // the same API version and catalog identity checks as binaries.
 func TestInstallArchiveRefusesUnsupportedOrUnlistedPlugins(t *testing.T) {
 	future := testPluginManifest(t, "test.plugin", "1.0.0")
-	future.SiloApiVersion = "v2"
+	future.PrairieApiVersion = "v2"
 	for _, tc := range []struct {
 		name string
 		req  InstallArchiveRequest
 		want string
 	}{
-		{name: "unsupported API", req: InstallArchiveRequest{}, want: `needs Silo plugin API "v2"`},
+		{name: "unsupported API", req: InstallArchiveRequest{}, want: `needs Prairie plugin API "v2"`},
 		{name: "other plugin", req: InstallArchiveRequest{PluginID: "test.other", Version: "1.0.0"}, want: "not the test.other 1.0.0 its catalog lists"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -254,8 +254,8 @@ func TestResolvedCatalogInstallArchiveRequestCarriesCatalogIdentity(t *testing.T
 // An uploaded archive the installer would refuse is refused with its reason
 // before an installed copy of the plugin is stopped.
 func TestServiceInstallLocalRefusesBeforeStoppingInstalledPlugin(t *testing.T) {
-	future := testPluginManifest(t, "silo.metadb", "0.0.36")
-	future.SiloApiVersion = "v2"
+	future := testPluginManifest(t, "prairie.metadb", "0.0.36")
+	future.PrairieApiVersion = "v2"
 	for _, tc := range []struct {
 		name  string
 		write func(t *testing.T, path string)
@@ -277,7 +277,7 @@ func TestServiceInstallLocalRefusesBeforeStoppingInstalledPlugin(t *testing.T) {
 				t.Fatal(err)
 			}
 		}},
-		{name: "unsupported API", want: `needs Silo plugin API "v2"`, write: func(t *testing.T, path string) {
+		{name: "unsupported API", want: `needs Prairie plugin API "v2"`, write: func(t *testing.T, path string) {
 			writePluginArchive(t, path, future)
 		}},
 	} {
@@ -285,7 +285,7 @@ func TestServiceInstallLocalRefusesBeforeStoppingInstalledPlugin(t *testing.T) {
 			archivePath := filepath.Join(t.TempDir(), "plugin.zip")
 			tc.write(t, archivePath)
 			events := []string{}
-			store := newFakeServiceInstallationStore(&Installation{ID: 7, PluginID: "silo.metadb", Version: "0.0.34", InstallPath: t.TempDir(), Enabled: true})
+			store := newFakeServiceInstallationStore(&Installation{ID: 7, PluginID: "prairie.metadb", Version: "0.0.34", InstallPath: t.TempDir(), Enabled: true})
 			store.events = &events
 			service := &Service{
 				installations: store,

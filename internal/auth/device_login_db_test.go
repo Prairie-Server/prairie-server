@@ -13,13 +13,13 @@ import (
 )
 
 // deviceLoginTestService builds a DeviceLoginService on the migrated database
-// named by SILO_TEST_DATABASE_URL, plus one enabled account to approve with
+// named by PRAIRIE_TEST_DATABASE_URL, plus one enabled account to approve with
 // and a namer for this test's device names, which cleanup deletes by.
 func deviceLoginTestService(t *testing.T) (*DeviceLoginService, *pgxpool.Pool, int, func(string) string) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -308,7 +308,7 @@ func TestDeviceLoginCancelExpiredDB(t *testing.T) {
 func TestDeviceLoginAcrossNodesDB(t *testing.T) {
 	nodeA, _, userID, name := deviceLoginTestService(t)
 	ctx := t.Context()
-	poolB, err := pgxpool.New(ctx, os.Getenv("SILO_TEST_DATABASE_URL"))
+	poolB, err := pgxpool.New(ctx, os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatalf("connect second node: %v", err)
 	}

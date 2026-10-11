@@ -33,7 +33,7 @@ const (
 	// arrPluginID and arrCapabilityID identify the first-party Sonarr/Radarr
 	// polling plugin. It reads import history from the bound server, so it
 	// cannot poll without a connection.
-	arrPluginID     = "silo.autoscan.arr"
+	arrPluginID     = "prairie.autoscan.arr"
 	arrCapabilityID = "arr"
 )
 

@@ -1,7 +1,7 @@
 # Trickplay
 
 Trickplay previews are the thumbnails a player shows while the viewer hovers
-over or drags the seek bar. Silo generates them per media file, for the video
+over or drags the seek bar. Prairie generates them per media file, for the video
 libraries whose `trickplay_enabled` setting is on (off by default), as JPEG
 sprite sheets of thumbnails, and publishes a manifest that says how to cut
 them. `internal/trickplay` owns the queue, the manifests, and the storage

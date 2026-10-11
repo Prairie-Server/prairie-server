@@ -11,14 +11,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// BeginAfterPlexDrop opens a transaction on SILO_TEST_DATABASE_URL that rolls
+// BeginAfterPlexDrop opens a transaction on PRAIRIE_TEST_DATABASE_URL that rolls
 // back when the test ends. It skips when the URL is unset and fails unless the
 // schema has dropped the retired Plex sync tables.
 func BeginAfterPlexDrop(t *testing.T) pgx.Tx {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	conn, err := pgx.Connect(t.Context(), dsn)
 	if err != nil {

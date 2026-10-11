@@ -21,9 +21,9 @@ import (
 
 func searchOptimizationPool(t *testing.T, tracer pgx.QueryTracer) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -39,9 +39,9 @@ func searchOptimizationPool(t *testing.T, tracer pgx.QueryTracer) *pgxpool.Pool 
 }
 
 func TestSearchUsesCustomPlansPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

@@ -34,9 +34,9 @@ func (o failingOwners) OwnerFilter(context.Context, int, string) (catalog.Access
 // interval, and a schedule edited while the sync ran, on any node, keeps
 // what the edit wrote.
 func TestSchedulerFailedSyncRetryAndEditsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

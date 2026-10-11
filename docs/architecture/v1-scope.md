@@ -10,7 +10,7 @@ tombstone. The removals table below remains the authoritative record of the v1 r
 during alpha.
 
 Propose capabilities with the **v1 capability proposal** issue template; triage happens on the
-[Silo v1 project](https://github.com/orgs/Prairie-Server/projects/5).
+[Prairie v1 project](https://github.com/orgs/Prairie-Server/projects/5).
 
 When the scope locks, this file becomes the source of truth and will contain:
 

@@ -27,7 +27,7 @@ fi
 
 repo_root=$(git rev-parse --show-toplevel)
 cd "$repo_root"
-scratch=$(mktemp -d "${TMPDIR:-/tmp}/silo-lint-changed.XXXXXX")
+scratch=$(mktemp -d "${TMPDIR:-/tmp}/prairie-lint-changed.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
 
 run_lint() {

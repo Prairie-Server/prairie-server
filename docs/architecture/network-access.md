@@ -74,7 +74,7 @@ plugin's loopback source is indistinguishable from any other local proxy.
 - The plugin stamps `X-Prairie-Ingress-Token` on every request it proxies, keeps
   `Host`, overwrites `X-Forwarded-Proto` with `https`, and sets
   `X-Forwarded-For` to the overlay peer. It also replaces any client value of
-  `X-Silo-Ingress-Peer` with the overlay peer's IP when it can identify that
+  `X-Prairie-Ingress-Peer` with the overlay peer's IP when it can identify that
   peer on its overlay.
 - `netaccess.Middleware` runs on all four listeners (API, Jellyfin, ABS and
   the proxy node's) before logging or any handler. It validates the token in

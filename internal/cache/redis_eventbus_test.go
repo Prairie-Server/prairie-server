@@ -76,8 +76,8 @@ func TestRedisClientsTakeDatabaseNumberFromRedisDB(t *testing.T) {
 // Runs without a Redis server: the name Redis receives must carry the database
 // number that the same connection selected.
 func TestRedisEventBusSendsScopedChannelToRedis(t *testing.T) {
-	bare := []string{"SUBSCRIBE silo:admin on database 0", "PUBLISH silo:admin on database 0"}
-	db5 := []string{"SUBSCRIBE silo:admin@db5 on database 5", "PUBLISH silo:admin@db5 on database 5"}
+	bare := []string{"SUBSCRIBE prairie:admin on database 0", "PUBLISH prairie:admin on database 0"}
+	db5 := []string{"SUBSCRIBE prairie:admin@db5 on database 5", "PUBLISH prairie:admin@db5 on database 5"}
 	for _, tc := range []struct {
 		name string
 		path string
@@ -85,7 +85,7 @@ func TestRedisEventBusSendsScopedChannelToRedis(t *testing.T) {
 		want []string
 		bare bool
 	}{
-		{"database 3", "/3", "", []string{"SUBSCRIBE silo:admin@db3 on database 3", "PUBLISH silo:admin@db3 on database 3"}, false},
+		{"database 3", "/3", "", []string{"SUBSCRIBE prairie:admin@db3 on database 3", "PUBLISH prairie:admin@db3 on database 3"}, false},
 		{"database 0", "/0", "", bare, false},
 		{"no database number", "", "", bare, false},
 		{"negative database number", "/-1", "", bare, false},
@@ -141,13 +141,13 @@ func TestRedisEventBusRejectsInvalidDatabaseOnBareAddress(t *testing.T) {
 
 func testRedisOptions(t *testing.T, db int) *redis.Options {
 	t.Helper()
-	rawURL := os.Getenv("SILO_TEST_REDIS_URL")
+	rawURL := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if rawURL == "" {
-		t.Skip("SILO_TEST_REDIS_URL not set")
+		t.Skip("PRAIRIE_TEST_REDIS_URL not set")
 	}
 	options, err := redis.ParseURL(rawURL)
 	if err != nil {
-		t.Fatalf("parse SILO_TEST_REDIS_URL: %v", err)
+		t.Fatalf("parse PRAIRIE_TEST_REDIS_URL: %v", err)
 	}
 	options.DB = db
 	return options
@@ -184,7 +184,7 @@ func nextEvent(t *testing.T, events <-chan Event) Event {
 // not receive each other's events, while the nodes of one install still do.
 func TestRedisEventBusKeepsDatabaseNumbersApart(t *testing.T) {
 	node, peer, otherInstall := testEventBus(t, 1), testEventBus(t, 1), testEventBus(t, 2)
-	channel := fmt.Sprintf("silo:test:%d", time.Now().UnixNano())
+	channel := fmt.Sprintf("prairie:test:%d", time.Now().UnixNano())
 	peerEvents := collectEvents(t, peer, channel)
 	otherEvents := collectEvents(t, otherInstall, channel)
 	ctx := t.Context()
@@ -217,7 +217,7 @@ func TestRedisEventBusKeepsDatabaseNumbersApart(t *testing.T) {
 // channels were scoped, which publish and subscribe on the bare channel name.
 func TestRedisEventBusOnDatabaseZeroUsesBareChannel(t *testing.T) {
 	bus := testEventBus(t, 0)
-	channel := fmt.Sprintf("silo:test:%d", time.Now().UnixNano())
+	channel := fmt.Sprintf("prairie:test:%d", time.Now().UnixNano())
 	events := collectEvents(t, bus, channel)
 	ctx := t.Context()
 

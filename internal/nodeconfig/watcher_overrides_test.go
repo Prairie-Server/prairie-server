@@ -76,7 +76,7 @@ func TestApplySettingsOverlaysNodeHWOverrides(t *testing.T) {
 // A node's own prepared-download directory replaces the cluster setting; with
 // no override the cluster value stands.
 func TestApplySettingsOverlaysNodeArtifactDir(t *testing.T) {
-	dir := "/mnt/fast-ssd/silo-downloads"
+	dir := "/mnt/fast-ssd/prairie-downloads"
 	for _, test := range []struct {
 		name      string
 		overrides nodeHWOverrides

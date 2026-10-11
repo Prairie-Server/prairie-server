@@ -16,9 +16,9 @@ import (
 // columns. Once a first-party plugin serves the same key, the row must read
 // as before and gain the full credential bundle on its next token write.
 func TestFormerBuiltInConnectionCarriesOverToItsPluginDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -81,9 +81,9 @@ func TestFormerBuiltInConnectionCarriesOverToItsPluginDB(t *testing.T) {
 }
 
 func TestFirstPartyMigrationMarkerDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -116,7 +116,7 @@ func TestFirstPartyMigrationMarkerDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Contains(toInstall, "silo.watchprovider.simkl") {
+	if !slices.Contains(toInstall, "prairie.watchprovider.simkl") {
 		t.Fatalf("plugins to install = %v, want Simkl while it has connections", toInstall)
 	}
 	if err := MarkFirstPartyMigrated(ctx, repo, "simkl"); err != nil {
@@ -130,7 +130,7 @@ func TestFirstPartyMigrationMarkerDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if slices.Contains(toInstall, "silo.watchprovider.simkl") {
+	if slices.Contains(toInstall, "prairie.watchprovider.simkl") {
 		t.Fatalf("plugins to install = %v, want Simkl dropped once migrated", toInstall)
 	}
 }

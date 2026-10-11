@@ -21,9 +21,9 @@ import (
 // watchlist. A title the library received and promotion moved is still on,
 // so the add and delete race handling never withdraws its request.
 func TestWatchlistTitleOffDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -126,9 +126,9 @@ func (s failingRemoveStore) RemoveFromWatchlist(ctx context.Context, profileID, 
 // every TMDB ID the title has had, so a retry still finds a library item
 // known only by a former ID and takes both off.
 func TestRemoveWatchlistTitleRetryKeepsFormerIDsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -218,9 +218,9 @@ func TestRemoveWatchlistTitleRetryKeepsFormerIDsDB(t *testing.T) {
 // the first page: a later page leaves an arrived title where it is, and the
 // next first page moves it.
 func TestListWatchlistTitlesPagePromotesOnFirstPageOnlyDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

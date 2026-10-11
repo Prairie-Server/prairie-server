@@ -172,7 +172,7 @@ jobs:
     name: Go lint
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-lint"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-go-lint"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     steps:
       # github.com/h2non/bimg binds libvips through cgo and pkg-config, so
       # nothing under ./... compiles without the headers. The Dockerfile
@@ -351,7 +351,7 @@ jobs:
     name: Go test
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-test"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-go-test"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     steps:
       - *libvips-cache-key
       - *libvips-restore
@@ -407,9 +407,9 @@ jobs:
     name: Go integration
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-integration"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-go-integration"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
-      SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/silo_test?sslmode=disable
+      PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5433/prairie_test?sslmode=disable
     steps:
       - *libvips-cache-key
       - *libvips-restore
@@ -422,7 +422,7 @@ jobs:
         run: docker run -d --rm --cidfile "$RUNNER_TEMP/pg" -p 5432:5432 --tmpfs /var/lib/postgresql/data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=watch_party postgres:17-alpine > "$RUNNER_TEMP/pg.log" 2>&1 &
 
       - name: Start pgvector Postgres
-        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pgvector" -p 5433:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=silo_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pgvector.log" 2>&1 &
+        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pgvector" -p 5433:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=prairie_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pgvector.log" 2>&1 &
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -440,23 +440,23 @@ jobs:
           # shellcheck disable=SC2016
           timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pg")" pg_isready -h 127.0.0.1 -U postgres -d watch_party; do sleep 1; done' || { cat "$RUNNER_TEMP/pg.log"; exit 1; }
           # shellcheck disable=SC2016
-          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pgvector")" pg_isready -h 127.0.0.1 -U postgres -d silo_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pgvector.log"; exit 1; }
+          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pgvector")" pg_isready -h 127.0.0.1 -U postgres -d prairie_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pgvector.log"; exit 1; }
 
       - name: Migrate the test database
-        run: DATABASE_URL="$SILO_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run ./cmd/silo/ --migrate-only
+        run: DATABASE_URL="$PRAIRIE_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run ./cmd/prairie/ --migrate-only
 
       - name: Test Watch Party coordination against Postgres
         env:
-          SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
+          PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
         run: |
-          : "${SILO_TEST_DATABASE_URL:?A disposable PG17 database is required}"
+          : "${PRAIRIE_TEST_DATABASE_URL:?A disposable PG17 database is required}"
           go test -race -count=1 ./internal/watchtogether/
 
       - name: Test history import cancellation and profile authorization against Postgres
         env:
-          SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
+          PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
         run: |
-          : "${SILO_TEST_DATABASE_URL:?A disposable PG17 database is required}"
+          : "${PRAIRIE_TEST_DATABASE_URL:?A disposable PG17 database is required}"
           go test -race -count=1 -run '^(TestHistoryImportCancellation.*|TestQueue.*|TestHistoryImportV1ProfileAuthorization)$' ./migrations/ ./internal/historyimport/ ./internal/api/handlers/
 
       # 20260925144545 moves marker claims between rows that share a payload
@@ -465,9 +465,9 @@ jobs:
       # the original. make test-go has no database, so only this step runs it.
       - name: Test the marker claim migration against Postgres
         env:
-          SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
+          PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/watch_party?sslmode=disable
         run: |
-          : "${SILO_TEST_DATABASE_URL:?A disposable PG17 database is required}"
+          : "${PRAIRIE_TEST_DATABASE_URL:?A disposable PG17 database is required}"
           go test -race -count=1 -run '^TestMarkerContributionClaimsByTargetMigrationPostgres$' ./migrations/
 
       - name: Test image cache cleanup resumption against Postgres
@@ -480,7 +480,7 @@ jobs:
         run: go test -race -count=1 -run '^TestUpsertTasteClusters.*Postgres$' ./internal/recommendations/
 
       - name: Test Jellyfin detail preferences against Postgres
-        run: go test -race -count=1 -run '^TestCompatDetailServiceResolvesViewerSubtitleDefaultsPostgres$' ./cmd/silo/
+        run: go test -race -count=1 -run '^TestCompatDetailServiceResolvesViewerSubtitleDefaultsPostgres$' ./cmd/prairie/
 
       - name: Save the Go cache
         if: success() && runner.environment == 'github-hosted' && github.ref_name == github.event.repository.default_branch && github.event_name != 'pull_request'
@@ -502,9 +502,9 @@ jobs:
     name: Go DB pins
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-pins"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-go-db-pins"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
-      SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/silo_test?sslmode=disable
+      PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/prairie_test?sslmode=disable
     steps:
       - *libvips-cache-key
       - *libvips-restore
@@ -512,7 +512,7 @@ jobs:
 
       # The image docker-compose.yml runs: the schema needs pgvector.
       - name: Start Postgres
-        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pg" -p 5432:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=silo_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pg.log" 2>&1 &
+        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pg" -p 5432:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=prairie_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pg.log" 2>&1 &
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -529,12 +529,12 @@ jobs:
       - name: Wait for Postgres
         run: |
           # shellcheck disable=SC2016
-          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pg")" pg_isready -h 127.0.0.1 -U postgres -d silo_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pg.log"; exit 1; }
+          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pg")" pg_isready -h 127.0.0.1 -U postgres -d prairie_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pg.log"; exit 1; }
 
       # A throwaway key: it only has to pass the bootstrap length check, and
       # nothing encrypted with it outlives the job.
       - name: Migrate the test database
-        run: DATABASE_URL="$SILO_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run ./cmd/silo/ --migrate-only
+        run: DATABASE_URL="$PRAIRIE_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run ./cmd/prairie/ --migrate-only
 
       - name: Run the query-budget pins
         run: make test-db-pins
@@ -556,16 +556,16 @@ jobs:
     name: Go DB external auth
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.go != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-go-db-auth"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-go-db-auth"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     env:
-      SILO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/silo_test?sslmode=disable
+      PRAIRIE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/prairie_test?sslmode=disable
     steps:
       - *libvips-cache-key
       - *libvips-restore
       - *libvips-install
 
       - name: Start Postgres
-        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pg" -p 5432:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=silo_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pg.log" 2>&1 &
+        run: docker run -d --rm --cidfile "$RUNNER_TEMP/pg" -p 5432:5432 --tmpfs /var/lib/postgresql -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=prairie_test pgvector/pgvector:pg18 > "$RUNNER_TEMP/pg.log" 2>&1 &
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -582,14 +582,14 @@ jobs:
       - name: Wait for Postgres
         run: |
           # shellcheck disable=SC2016
-          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pg")" pg_isready -h 127.0.0.1 -U postgres -d silo_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pg.log"; exit 1; }
+          timeout 60 sh -c 'until docker exec "$(cat "$RUNNER_TEMP/pg")" pg_isready -h 127.0.0.1 -U postgres -d prairie_test; do sleep 1; done' || { cat "$RUNNER_TEMP/pg.log"; exit 1; }
 
       # A throwaway key: it only has to pass the bootstrap length check, and
       # nothing encrypted with it outlives the job.
       # Every test in this job runs with -race, so migrating with -race reuses
       # the race build instead of caching a second, non-race copy of the tree.
       - name: Migrate the test database
-        run: DATABASE_URL="$SILO_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run -race ./cmd/silo/ --migrate-only
+        run: DATABASE_URL="$PRAIRIE_TEST_DATABASE_URL" SECRET_KEY="$(openssl rand -base64 48)" go run -race ./cmd/prairie/ --migrate-only
 
       # Account resolution and linking, the local-password policy, the OAuth
       # flow store across nodes, provider re-checks, network identity sign-in
@@ -614,7 +614,7 @@ jobs:
     name: Web (${{ matrix.part }})
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.web != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-web"]', github.run_id, github.run_attempt)) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -653,7 +653,7 @@ jobs:
       - name: Read the web check cache directory
         if: matrix.part == 'checks' && runner.environment == 'github-hosted'
         id: web-cache
-        run: echo "path=${XDG_CACHE_HOME:-$RUNNER_TEMP}/silo-web" >> "$GITHUB_OUTPUT"
+        run: echo "path=${XDG_CACHE_HOME:-$RUNNER_TEMP}/prairie-web" >> "$GITHUB_OUTPUT"
 
       - name: Restore the web check cache
         if: matrix.part == 'checks' && runner.environment == 'github-hosted' && github.event_name == 'pull_request'
@@ -677,7 +677,7 @@ jobs:
           ESLINT_CACHE_ID: ${{ hashFiles('web/pnpm-lock.yaml', 'web/eslint.config.*') }}
           PRETTIER_CACHE_ID: ${{ hashFiles('web/pnpm-lock.yaml', 'web/.prettierrc*', 'web/.prettierignore', 'web/prettier.config.*', 'web/tailwind.config.*') }}
         run: |
-          cache_dir="${XDG_CACHE_HOME:-$RUNNER_TEMP}/silo-web"
+          cache_dir="${XDG_CACHE_HOME:-$RUNNER_TEMP}/prairie-web"
           mkdir -p "$cache_dir"
           pnpm run format:check --cache --cache-strategy content --cache-location "$cache_dir/prettier-${PRETTIER_CACHE_ID}" &
           failed=0
@@ -689,7 +689,7 @@ jobs:
         if: matrix.part == 'build' && runner.environment == 'github-hosted' && github.event_name == 'pull_request'
         uses: actions/cache/restore@v4
         with:
-          path: ${{ runner.temp }}/silo-tsc
+          path: ${{ runner.temp }}/prairie-tsc
           key: tsc-${{ runner.os }}-${{ github.sha }}
           restore-keys: tsc-${{ runner.os }}-
 
@@ -697,14 +697,14 @@ jobs:
         if: matrix.part == 'build' && runner.environment == 'github-hosted' && github.event_name != 'pull_request'
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/silo-tsc
+          path: ${{ runner.temp }}/prairie-tsc
           key: tsc-${{ runner.os }}-${{ github.sha }}
           restore-keys: tsc-${{ runner.os }}-
 
       - name: Typecheck and build
         if: matrix.part == 'build'
         run: |
-          cache_dir="$RUNNER_TEMP/silo-tsc"
+          cache_dir="$RUNNER_TEMP/prairie-tsc"
           mkdir -p "$cache_dir"
           # -p --incremental reuses content checks after checkout resets mtimes; tsc -b rechecks.
           pnpm exec tsc -p tsconfig.app.json --incremental --tsBuildInfoFile "$cache_dir/app.tsbuildinfo" &
@@ -762,7 +762,7 @@ jobs:
     name: Web test (${{ matrix.shard }}/4)
     needs: select
     if: ${{ !cancelled() && (needs.select.result != 'success' || needs.select.outputs.web != 'false') }}
-    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.SILO_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","silo-linux","silo-run-{0}-{1}","silo-job-web-test-{2}"]', github.run_id, github.run_attempt, matrix.shard)) || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.self_hosted && (github.repository == 'Prairie-Server/prairie-server' && ((github.event_name == 'pull_request' && contains(fromJSON(vars.PRAIRIE_CI_MEMBERS || '[]'), github.event.pull_request.user.login)) || (github.event_name != 'pull_request' && contains(fromJSON('["refs/heads/main","refs/heads/apiv2"]'), github.ref)))) && fromJSON(format('["self-hosted","linux","x64","prairie-linux","prairie-run-{0}-{1}","prairie-job-web-test-{2}"]', github.run_id, github.run_attempt, matrix.shard)) || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:

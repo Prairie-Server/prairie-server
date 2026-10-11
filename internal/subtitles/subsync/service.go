@@ -139,7 +139,7 @@ func NewService(d Deps) *Service {
 		notifier: d.Notifier, node: d.Node, now: time.Now,
 	}
 	if s.node == "" {
-		s.node = "silo"
+		s.node = "prairie"
 	}
 	s.runner = jobrunner.New(d.AppContext, jobrunner.NewSemaphore(concurrentJobs), d.Jobs, "subtitle sync", nil)
 	s.runner.Recover()

@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 // An omitted refresh_state retains the stored token. Repeating a refusal of

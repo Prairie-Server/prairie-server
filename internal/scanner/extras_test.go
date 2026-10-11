@@ -224,7 +224,7 @@ func TestClassifyExtraPathScopedProbeSkipsUnwalkedFiles(t *testing.T) {
 		files map[string]string
 	}{
 		{"sample", map[string]string{"sample.mkv": "sample"}},
-		{"siloignore", map[string]string{"bonus.mkv": "video", ".siloignore": "bonus.mkv\n"}},
+		{"prairieignore", map[string]string{"bonus.mkv": "video", ".prairieignore": "bonus.mkv\n"}},
 		{"nomedia", map[string]string{"bonus.mkv": "video", ".nomedia": ""}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

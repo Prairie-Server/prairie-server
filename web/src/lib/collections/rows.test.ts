@@ -36,7 +36,7 @@ function row(overrides: Partial<CollectionRow>): CollectionRow {
 }
 
 function paramsOf(path: string) {
-  return new URL(path, "https://silo.test").searchParams;
+  return new URL(path, "https://prairie.test").searchParams;
 }
 
 describe("collection rows", () => {

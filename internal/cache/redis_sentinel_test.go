@@ -263,7 +263,7 @@ func respTestSentinel(t *testing.T, addr string) func(args []string) (string, bo
 func TestSentinelURLReachesTheMasterSentinelNames(t *testing.T) {
 	master := startRESPTestServer(t, nil, respTestRedis)
 	sentinel := startRESPTestServer(t, nil, respTestSentinel(t, master.addr))
-	rawURL := "redis://watcher:sentinel-secret@" + sentinel.addr + "/4?master_name=mymaster&username=silo&password=redis-secret"
+	rawURL := "redis://watcher:sentinel-secret@" + sentinel.addr + "/4?master_name=mymaster&username=prairie&password=redis-secret"
 
 	client, err := NewRedisClientForRole(config.RedisConfig{URL: rawURL}, "checks")
 	if err != nil {
@@ -286,14 +286,14 @@ func TestSentinelURLReachesTheMasterSentinelNames(t *testing.T) {
 		}
 	}
 	subscribe := "SUBSCRIBE " + redisChannel(ChannelAdmin, 4)
-	for _, want := range []string{"AUTH silo redis-secret", "SELECT 4", "SET key value", subscribe} {
+	for _, want := range []string{"AUTH prairie redis-secret", "SELECT 4", "SET key value", subscribe} {
 		if !slices.Contains(atMaster, want) {
 			t.Errorf("the master did not receive %q; it received %q", want, atMaster)
 		}
 	}
 	// The key-value client alone would satisfy the checks above.
 	subscriber := master.connectionThatReceived(subscribe)
-	for _, want := range []string{"AUTH silo redis-secret", "SELECT 4"} {
+	for _, want := range []string{"AUTH prairie redis-secret", "SELECT 4"} {
 		if !slices.Contains(subscriber, want) {
 			t.Errorf("the event bus connection did not send %q; it sent %q", want, subscriber)
 		}
@@ -363,9 +363,9 @@ func TestUnparsedRedisValueIsDialedOnlyWhenItIsABareAddress(t *testing.T) {
 		}
 	}
 	refused := []string{
-		"redis://silo:secret@redis.example:6379/x",
+		"redis://prairie:secret@redis.example:6379/x",
 		"redis://:secret",
-		"silo:secret@redis.example:6379",
+		"prairie:secret@redis.example:6379",
 		"redis.example:6379?password=secret",
 		"redis.example:6379,password=secret,ssl=True",
 		"redis.example:6379 secret",
@@ -900,16 +900,16 @@ func TestSentinelURLWithTLSVerifiesTheMasterAgainstTheURLHost(t *testing.T) {
 
 // Fails the Sentinel-managed master over and requires both a key-value client
 // and the event bus to keep working against the new master. It needs
-// SILO_TEST_REDIS_SENTINEL_URL to name a disposable Sentinel deployment with
+// PRAIRIE_TEST_REDIS_SENTINEL_URL to name a disposable Sentinel deployment with
 // at least one replica, because it triggers a real failover.
 func TestSentinelURLFollowsFailover(t *testing.T) {
-	rawURL := os.Getenv("SILO_TEST_REDIS_SENTINEL_URL")
+	rawURL := os.Getenv("PRAIRIE_TEST_REDIS_SENTINEL_URL")
 	if rawURL == "" {
-		t.Skip("SILO_TEST_REDIS_SENTINEL_URL not set")
+		t.Skip("PRAIRIE_TEST_REDIS_SENTINEL_URL not set")
 	}
 	_, failover, err := config.ParseRedisURL(rawURL)
 	if err != nil || failover == nil {
-		t.Fatalf("SILO_TEST_REDIS_SENTINEL_URL is not a Sentinel URL: %v", err)
+		t.Fatalf("PRAIRIE_TEST_REDIS_SENTINEL_URL is not a Sentinel URL: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
 	defer cancel()
@@ -922,7 +922,7 @@ func TestSentinelURLFollowsFailover(t *testing.T) {
 	bus := newRedisEventBus(config.RedisConfig{URL: rawURL})
 	t.Cleanup(func() { _ = bus.Close() })
 
-	key := fmt.Sprintf("silo:test:sentinel:%d", time.Now().UnixNano())
+	key := fmt.Sprintf("prairie:test:sentinel:%d", time.Now().UnixNano())
 	channel := key
 	t.Cleanup(func() { _ = client.Del(context.Background(), key).Err() })
 	events := make(chan Event, 64)

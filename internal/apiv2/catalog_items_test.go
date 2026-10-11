@@ -563,7 +563,7 @@ func TestGetCatalogItem(t *testing.T) {
 }
 
 // TestGetCatalogItemResolvesDeviceAudio covers the device-scoped audio
-// override on item detail and its versions: the declared X-Silo-Device-Id
+// override on item detail and its versions: the declared X-Prairie-Device-Id
 // reaches the detail service, so the device's French override wins, and a
 // request without the header answers the profile's English.
 func TestGetCatalogItemResolvesDeviceAudio(t *testing.T) {

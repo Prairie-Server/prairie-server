@@ -19,7 +19,7 @@ import { adminSignInErrorText } from "@/lib/externalSignInAdmin";
 import { newPasswordProblem, passwordErrorMessage } from "@/lib/newPassword";
 
 /**
- * Sets a Silo password on an account that has no password sign-in, such as
+ * Sets a Prairie password on an account that has no password sign-in, such as
  * one connected to a sign-in provider. The server turns the account's
  * password sign-in back on when an administrator writes a password, which is
  * how an account whose provider is gone is recovered. A reset link needs
@@ -34,7 +34,7 @@ export function AdminUserSetPasswordDialog({
 }: {
   user: AdminUser;
   /**
-   * Whether Silo passwords sign in on this server (auth.local_password_login).
+   * Whether Prairie passwords sign in on this server (auth.local_password_login).
    * While it is off only break-glass accounts sign in with a password.
    */
   serverPasswordLoginOn?: boolean;
@@ -98,7 +98,7 @@ export function AdminUserSetPasswordDialog({
           <DialogHeader>
             <DialogTitle>Set a password</DialogTitle>
             <DialogDescription>
-              {user.username} can't sign in with a Silo password now. Setting one turns password
+              {user.username} can't sign in with a Prairie password now. Setting one turns password
               sign-in back on for this account. A connected sign-in provider keeps working.
               {waitsForServer
                 ? " Password sign-in is off for the server, so the password works only once it's turned back on in Settings → Sign-in."

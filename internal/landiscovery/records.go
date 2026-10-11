@@ -27,7 +27,7 @@ const (
 
 // service is what one responder advertises.
 type service struct {
-	instance string // instance label, unescaped ("Silo", "Silo (2)")
+	instance string // instance label, unescaped ("Prairie", "Prairie (2)")
 	host     string // host label without ".local"
 	serverID string
 	port     int

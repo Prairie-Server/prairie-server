@@ -69,7 +69,7 @@ func TestBrandLoaderDefaults(t *testing.T) {
 	var nilLoader *BrandLoader
 	for _, loader := range []*BrandLoader{nilLoader, NewBrandLoader(nil)} {
 		brand := loader.Load(context.Background())
-		if brand.Name != "Silo" || brand.AccentColor != "" || !bytes.Equal(brand.logo.png, defaultWordmarkPNG) {
+		if brand.Name != "Prairie" || brand.AccentColor != "" || !bytes.Equal(brand.logo.png, defaultWordmarkPNG) {
 			t.Fatalf("want default brand, got name=%q accent=%q", brand.Name, brand.AccentColor)
 		}
 	}
@@ -108,7 +108,7 @@ func TestBrandLoaderFallsBackWhenLogoUnavailable(t *testing.T) {
 	source := &countingSource{Service: brandedService(t, settings), fail: errors.New("bucket down")}
 	brand := NewBrandLoader(source).Load(context.Background())
 	if brand.Name != "Harbor" || !bytes.Equal(brand.logo.png, defaultWordmarkPNG) {
-		t.Fatalf("want the Silo wordmark with the server name, got name=%q", brand.Name)
+		t.Fatalf("want the Prairie wordmark with the server name, got name=%q", brand.Name)
 	}
 
 	// A transient failure is not cached: the next email retries.
@@ -136,7 +136,7 @@ func TestNormalizeHexColor(t *testing.T) {
 }
 
 func TestBuildMessageEmbedsInlineImages(t *testing.T) {
-	cfg := &smtpConfig{fromAddress: "silo@example.com", fromName: "Silo"}
+	cfg := &smtpConfig{fromAddress: "prairie@example.com", fromName: "Prairie"}
 	brand := DefaultBrand()
 	message, err := buildMessage(cfg, Message{
 		To:       []string{"user@example.com"},
@@ -155,8 +155,8 @@ func TestBuildMessageEmbedsInlineImages(t *testing.T) {
 	output := rendered.String()
 	for _, want := range []string{
 		"multipart/related", "multipart/alternative",
-		"Content-Id: <silo-logo>", "Content-Disposition: inline", "Content-Type: image/png",
-		`src=3D"cid:silo-logo"`,
+		"Content-Id: <prairie-logo>", "Content-Disposition: inline", "Content-Type: image/png",
+		`src=3D"cid:prairie-logo"`,
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("rendered message missing %q:\n%s", want, output[:min(len(output), 4000)])

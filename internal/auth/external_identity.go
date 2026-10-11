@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -44,7 +44,7 @@ var (
 	ErrProviderPasswordExpired = errors.New("password expired at the sign-in provider")
 	// ErrProviderAccountDisabled: the provider answered that the person's
 	// account there is disabled, locked or expired. It is an ErrUserDisabled,
-	// so sign-in treats it like a disabled Silo account; directory linking
+	// so sign-in treats it like a disabled Prairie account; directory linking
 	// tells the two apart.
 	ErrProviderAccountDisabled = fmt.Errorf("account disabled at the sign-in provider: %w", ErrUserDisabled)
 	// ErrIdentityNotFound: no identity with that id belongs to the account.

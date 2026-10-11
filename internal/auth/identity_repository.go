@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// LinkedIdentity is one external identity linked to a Silo account: the
+// LinkedIdentity is one external identity linked to a Prairie account: the
 // plugin installation, the provider's exact subject, and what the provider
 // last said about the person.
 type LinkedIdentity struct {
@@ -58,7 +58,7 @@ func scanIdentity(row pgx.Row) (*LinkedIdentity, error) {
 // sign-ins of the same person cannot both create an account.
 func lockExternalSubject(ctx context.Context, tx pgx.Tx, installationID int, subject string) error {
 	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-		fmt.Sprintf("silo:auth-identity:%d:%s", installationID, subject)); err != nil {
+		fmt.Sprintf("prairie:auth-identity:%d:%s", installationID, subject)); err != nil {
 		return fmt.Errorf("locking external identity: %w", err)
 	}
 	return nil

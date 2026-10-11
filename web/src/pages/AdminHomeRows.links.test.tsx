@@ -353,7 +353,7 @@ describe("?return= on admin Home rows", () => {
   it("hands back the history state the link arrived with, after adding or not", async () => {
     const arrived = { returnTo: "/admin/collections?view=list&q=ghibli" };
     const entry = (): { pathname: string; search: string; state: unknown } => {
-      const url = new URL(link("/admin/collections/lib-1/edit"), "https://silo.test");
+      const url = new URL(link("/admin/collections/lib-1/edit"), "https://prairie.test");
       return { pathname: url.pathname, search: url.search, state: arrived };
     };
     const added = setup(entry());

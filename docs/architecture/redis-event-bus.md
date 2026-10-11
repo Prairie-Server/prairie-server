@@ -9,23 +9,23 @@ in the process.
 
 ## Channels and database numbers
 
-The bus has five channels: `silo:catalog`, `silo:admin`, `silo:playback`,
-`silo:logs` and `silo:events`. Code, logs and other documents use these names.
+The bus has five channels: `prairie:catalog`, `prairie:admin`, `prairie:playback`,
+`prairie:logs` and `prairie:events`. Code, logs and other documents use these names.
 
 Redis scopes keys by database number but not pub/sub. A published message
 reaches every subscriber of the channel on that server, whichever database
 either connection selected. The bus therefore adds the database number of its
 own connection to the name it gives Redis:
 
-| `REDIS_URL` | Redis channel for `silo:admin` |
+| `REDIS_URL` | Redis channel for `prairie:admin` |
 | --- | --- |
-| `redis://host:6379` or `redis://host:6379/0` | `silo:admin` |
-| `redis://host:6379/3` | `silo:admin@db3` |
-| `redis://sentinel-1:26379/3?master_name=mymaster` | `silo:admin@db3` |
+| `redis://host:6379` or `redis://host:6379/0` | `prairie:admin` |
+| `redis://host:6379/3` | `prairie:admin@db3` |
+| `redis://sentinel-1:26379/3?master_name=mymaster` | `prairie:admin@db3` |
 
 The number is the one the bus's connection selects. A `redis.db` setting with a
 value replaces the number in a saved `redis.url`, so a saved
-`redis://host:6379/3` with `redis.db` 5 gives `silo:admin@db5`. `REDIS_URL`
+`redis://host:6379/3` with `redis.db` 5 gives `prairie:admin@db5`. `REDIS_URL`
 supplies the whole connection, and a process started with it does not apply
 `redis.db`.
 
@@ -67,8 +67,8 @@ server to move to.
   sessions for that account, and one that misses `node_pool_changed` keeps its
   old node list until it restarts or a node change is made through it. The
   scoping itself had this effect on installs on a non-zero database number.
-- Keep every Redis channel name under `silo:`. A Redis ACL user can be granted
-  channels by pattern (`&silo:*`), and a node that is refused a subscription
+- Keep every Redis channel name under `prairie:`. A Redis ACL user can be granted
+  channels by pattern (`&prairie:*`), and a node that is refused a subscription
   exits at startup.
 - A Sentinel subscription has to notice a silent master by itself. Read
   through `pubsub.Channel()`, it stays on a master that froze for as long as

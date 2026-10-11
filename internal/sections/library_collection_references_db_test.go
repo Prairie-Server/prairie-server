@@ -19,9 +19,9 @@ import (
 // turned-off Home rows, which no viewer sees; the total keeps them because
 // they still block a delete.
 func TestLibraryCollectionReferencesDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(t.Context(), dsn)
 	if err != nil {

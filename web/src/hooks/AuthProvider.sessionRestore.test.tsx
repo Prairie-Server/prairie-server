@@ -235,7 +235,7 @@ describe("AuthProvider session restore", () => {
       </MemoryRouter>,
     );
     await server.answer(await server.held("POST /api/v2/auth/refresh"), 503, {
-      type: "https://siloserver.org/problems/provider_unavailable",
+      type: "https://prairieserver.org/problems/provider_unavailable",
       title: "Provider unavailable",
       status: 503,
       detail: "The sign-in provider could not be reached; the session stays valid.",
@@ -282,7 +282,7 @@ describe("AuthProvider session restore", () => {
       </MemoryRouter>,
     );
     await server.answer(await server.held("POST /api/v2/auth/refresh"), 503, {
-      type: "https://siloserver.org/problems/dependency_unavailable",
+      type: "https://prairieserver.org/problems/dependency_unavailable",
       title: "Dependency unavailable",
       status: 503,
       detail: "The session store is unavailable.",
@@ -296,7 +296,7 @@ describe("AuthProvider session restore", () => {
   it("discards the stored session when the boot refresh is refused", async () => {
     render(<Harness oauthPage={false} />);
     await server.answer(await server.held("POST /api/v2/auth/refresh"), 401, {
-      type: "https://siloserver.org/problems/session_expired",
+      type: "https://prairieserver.org/problems/session_expired",
       title: "Session expired",
       status: 401,
       detail: "The session has ended.",

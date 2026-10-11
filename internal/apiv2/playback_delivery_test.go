@@ -94,7 +94,7 @@ func TestPlaybackDecisionV2ProjectsOnlyLocalMediaURLs(t *testing.T) {
 	for _, tc := range []struct{ path, want string }{
 		{"/api/v1/stream/session?st=opaque%2Btoken", "/api/v2/stream/session?st=opaque%2Btoken"},
 		{"/api/v1/playback/transcode/session/master.m3u8?st=opaque%2Btoken", "/api/v2/playback/transcode/session/master.m3u8?st=opaque%2Btoken"},
-		{"https://silo.example.test/opaque", "https://silo.example.test/opaque"},
+		{"https://prairie.example.test/opaque", "https://prairie.example.test/opaque"},
 		{"/stream/s/subtitles/0.vtt?st=a%2Fb&file_id=7", "/api/v2/stream/s/subtitles/0.vtt?st=a%2Fb&file_id=7"},
 		{"/stream/s/subtitles/0/fonts?st=a%2Fb", "/api/v2/stream/s/subtitles/0/fonts?st=a%2Fb"},
 		{"/playback/transcode/s/master.m3u8?st=a%2Fb", "/api/v2/playback/transcode/s/master.m3u8?st=a%2Fb"},

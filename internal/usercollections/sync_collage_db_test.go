@@ -49,9 +49,9 @@ func (g *syncCollageGenerator) ComposeCollectionCollage(_ context.Context, colle
 // TestSyncBuildsTheOwnersCollageDB checks that a finished sync builds the
 // collage its owner sees, from the synced titles the owner can access.
 func TestSyncBuildsTheOwnersCollageDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,7 +20,7 @@ import (
 )
 
 // externalSignInEnv is one test's slice of the migrated database named by
-// SILO_TEST_DATABASE_URL: an auth plugin installation with a binding, a
+// PRAIRIE_TEST_DATABASE_URL: an auth plugin installation with a binding, a
 // resolver that creates profiles in Postgres, and a suffix every account
 // name of the test carries so cleanup finds them.
 type externalSignInEnv struct {
@@ -33,9 +33,9 @@ type externalSignInEnv struct {
 
 func newExternalSignInEnv(t *testing.T) *externalSignInEnv {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -885,7 +885,7 @@ func TestSignupRefusedWhileLocalLoginIsOffDB(t *testing.T) {
 	}
 }
 
-// TestExternalSignInEmailAutoMatchRevokesCredentialsDB: Silo never verified
+// TestExternalSignInEmailAutoMatchRevokesCredentialsDB: Prairie never verified
 // the email an invited account registered with, so whoever registered it may
 // hold the account's credentials. Email auto-match links the account but ends
 // every credential the provider did not vouch for: login and Audiobookshelf

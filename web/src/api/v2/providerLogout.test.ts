@@ -36,7 +36,7 @@ it("asks for the end-session URL before logging out, then goes there", async () 
   expect(navigate).toHaveBeenCalledWith("https://id.example.test/logout?x=1");
 });
 
-it("only logs out of Silo when the provider offers no URL", async () => {
+it("only logs out of Prairie when the provider offers no URL", async () => {
   const calls = stubFetch(json(200, { end_session_url: "" }));
   const navigate = vi.fn();
   await endSessionWithProvider("tok", navigate);
@@ -61,7 +61,7 @@ it("never navigates to a non-http URL", async () => {
   expect(navigate).not.toHaveBeenCalled();
 });
 
-it("leaves the provider alone when asked to end only the Silo session", async () => {
+it("leaves the provider alone when asked to end only the Prairie session", async () => {
   const calls = stubFetch(json(200, { end_session_url: "https://id.example.test/logout" }));
   const navigate = vi.fn();
   await endSessionWithProvider("tok", navigate, { withProvider: false });
@@ -69,7 +69,7 @@ it("leaves the provider alone when asked to end only the Silo session", async ()
   expect(navigate).not.toHaveBeenCalled();
 });
 
-it("logs out of Silo when the provider lookup hangs past its bound", async () => {
+it("logs out of Prairie when the provider lookup hangs past its bound", async () => {
   const bound = new AbortController();
   const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(bound.signal);
   try {

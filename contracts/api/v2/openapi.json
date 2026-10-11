@@ -51221,7 +51221,7 @@
           "account"
         ],
         "x-silo-class": "authenticated",
-        "x-silo-service-backed": true
+        " PRAIRIEKEEP service-backed": true
       }
     },
     "/api/v2/account/identities/link-complete": {
@@ -65962,10 +65962,10 @@
         "tags": [
           "admin-collections"
         ],
-        "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
-        "x-silo-service-backed": true
+        " PRAIRIEKEEP class": "acting_admin",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
+        " PRAIRIEKEEP service-backed": true
       }
     },
     "/api/v2/admin/collections/{id}/poster": {
@@ -68716,8 +68716,8 @@
         "tags": [
           "admin"
         ],
-        "x-silo-class": "acting_admin",
-        "x-silo-service-backed": true
+        " PRAIRIEKEEP class": "acting_admin",
+        " PRAIRIEKEEP service-backed": true
       }
     },
     "/api/v2/admin/downloads/entries": {
@@ -68922,7 +68922,7 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-service-backed": true
+        " PRAIRIEKEEP service-backed": true
       }
     },
     "/api/v2/admin/downloads/preparations": {
@@ -69078,7 +69078,7 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-service-backed": true
+        " PRAIRIEKEEP service-backed": true
       }
     },
     "/api/v2/admin/downloads/preparations/cancel": {
@@ -72409,8 +72409,8 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -73803,9 +73803,9 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-guarded": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP guarded": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       },
       "get": {
@@ -74587,8 +74587,8 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -75171,8 +75171,8 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -75330,8 +75330,8 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -78961,8 +78961,8 @@
           "admin-catalog"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -83339,8 +83339,8 @@
           "admin-collections"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -84100,8 +84100,8 @@
           "admin-catalog"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -84284,8 +84284,8 @@
           "admin-catalog"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -90315,8 +90315,8 @@
           "admin"
         ],
         "x-silo-class": "acting_admin",
-        "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP demo-restricted": true,
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -90651,7 +90651,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -93636,7 +93636,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -94047,7 +94047,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "non_retryable",
+        " PRAIRIEKEEP retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
     },
@@ -96029,7 +96029,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-retry-safety": "natural_idempotent",
+        " PRAIRIEKEEP retry-safety": "natural_idempotent",
         "x-silo-service-backed": true
       }
     },
@@ -112417,7 +112417,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-guarded": true,
+        " PRAIRIEKEEP guarded": true,
         "x-silo-retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
@@ -115614,7 +115614,7 @@
         ],
         "x-silo-class": "acting_admin",
         "x-silo-demo-restricted": true,
-        "x-silo-guarded": true,
+        " PRAIRIEKEEP guarded": true,
         "x-silo-retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
@@ -134159,7 +134159,7 @@
         "tags": [
           "catalog"
         ],
-        "x-silo-class": "profile_scoped",
+        " PRAIRIEKEEP class": "profile_scoped",
         "x-silo-service-backed": true
       }
     },
@@ -135071,8 +135071,8 @@
         "tags": [
           "catalog"
         ],
-        "x-silo-class": "profile_scoped",
-        "x-silo-conditional": true,
+        " PRAIRIEKEEP class": "profile_scoped",
+        " PRAIRIEKEEP conditional": true,
         "x-silo-service-backed": true
       }
     },
@@ -135267,7 +135267,7 @@
         "tags": [
           "catalog"
         ],
-        "x-silo-class": "profile_scoped",
+        " PRAIRIEKEEP class": "profile_scoped",
         "x-silo-service-backed": true
       }
     },
@@ -153802,7 +153802,7 @@
           "ebooks"
         ],
         "x-silo-class": "profile_scoped",
-        "x-silo-retry-safety": "domain_identity",
+        " PRAIRIEKEEP retry-safety": "domain_identity",
         "x-silo-service-backed": true
       }
     },
@@ -172228,7 +172228,7 @@
           "onboarding"
         ],
         "x-silo-class": "profile_scoped",
-        "x-silo-conditional": true,
+        " PRAIRIEKEEP conditional": true,
         "x-silo-service-backed": true
       }
     },
@@ -197366,7 +197366,7 @@
           "progress"
         ],
         "x-silo-class": "profile_scoped",
-        "x-silo-conditional": true,
+        " PRAIRIEKEEP conditional": true,
         "x-silo-service-backed": true
       }
     },

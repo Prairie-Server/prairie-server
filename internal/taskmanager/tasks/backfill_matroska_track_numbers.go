@@ -11,7 +11,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
-// matroskaTrackBackfillAdvisoryLock spells "SILOMKVT".
+// matroskaTrackBackfillAdvisoryLock spells "PRAIRIEMKVT".
 const matroskaTrackBackfillAdvisoryLock int64 = 0x53494C4F4D4B5654
 
 // MatroskaTrackBackfiller records Matroska TrackNumbers on subtitle tracks
@@ -21,7 +21,7 @@ type MatroskaTrackBackfiller interface {
 }
 
 // BackfillMatroskaTrackNumbersTask gives embedded MKV subtitle tracks scanned
-// before Silo read Matroska track numbers their container track ID, so native
+// before Prairie read Matroska track numbers their container track ID, so native
 // clients can render them from the stream they direct play. Scans record the
 // ID themselves; this task covers files no scan has reprobed since.
 //
@@ -48,7 +48,7 @@ func (t *BackfillMatroskaTrackNumbersTask) Name() string {
 	return "Record Matroska Subtitle Track Numbers"
 }
 func (t *BackfillMatroskaTrackNumbersTask) Description() string {
-	return "Reads the track list of MKV files with text subtitles scanned before Silo recorded subtitle track numbers, once per file, so apps can show embedded subtitles without server extraction."
+	return "Reads the track list of MKV files with text subtitles scanned before Prairie recorded subtitle track numbers, once per file, so apps can show embedded subtitles without server extraction."
 }
 func (t *BackfillMatroskaTrackNumbersTask) Category() taskmanager.TaskCategory {
 	return taskmanager.TaskCategoryLibrary

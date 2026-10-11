@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -17,7 +17,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
-// AccountResolver turns a provider's answer into a Silo account. It is the
+// AccountResolver turns a provider's answer into a Prairie account. It is the
 // host half of external sign-in shared by every auth plugin (OIDC, LDAP);
 // the order is fixed (docs/architecture/external-sign-in.md):
 //
@@ -176,7 +176,7 @@ func (r *AccountResolver) resolve(ctx context.Context, tx pgx.Tx, in ResolveInpu
 	// links explicitly. Any other holder of the email falls through to
 	// creation, which refuses with email_in_use.
 	//
-	// Silo never verified the account's email (registration and profile
+	// Prairie never verified the account's email (registration and profile
 	// edits store what was typed), so whoever set it may hold the account's
 	// credentials. Nobody re-authenticated as that account here, so every
 	// credential the provider did not vouch for ends with the link: login
@@ -396,7 +396,7 @@ func (r *AccountResolver) createAccount(ctx context.Context, tx pgx.Tx, in Resol
 		}
 		accountEmail := email
 		if accountEmail == "" {
-			// Silo accounts need a unique email. A provider that sends none
+			// Prairie accounts need a unique email. A provider that sends none
 			// gets a reserved, undeliverable placeholder.
 			accountEmail = fmt.Sprintf("%s@plugin-%d.invalid", username, in.InstallationID)
 		}
@@ -516,7 +516,7 @@ func truncateRunes(value string, limit int) string {
 
 // adminRoleLock serializes demotions so two concurrent sign-ins cannot each
 // demote one of the last two enabled admins.
-const adminRoleLock = "silo:auth:admin-role"
+const adminRoleLock = "prairie:auth:admin-role"
 
 // syncManagedRole applies the provider's managed role to user in tx. It
 // returns the updated account when the role changed (its login sessions are

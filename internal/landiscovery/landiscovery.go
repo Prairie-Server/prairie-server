@@ -1,6 +1,6 @@
 // Package landiscovery advertises the API server on the local network with
 // DNS-SD over multicast DNS (Bonjour), so a client with no saved address can
-// list the Silo servers on its LAN.
+// list the Prairie servers on its LAN.
 //
 // The advertisement is a hint, not a credential: it carries the deployment's
 // public server identity (see internal/serveridentity) so clients can group
@@ -27,7 +27,7 @@ import (
 )
 
 // ServiceType is the DNS-SD service type clients browse for.
-const ServiceType = "_silo._tcp"
+const ServiceType = "_prairie._tcp"
 
 // TXT record keys. TXTVersion changes only when an existing key changes
 // meaning; new keys are added without bumping it.
@@ -145,7 +145,7 @@ func advertise(ctx context.Context, opts Options) error {
 	}
 	r.activate(svc)
 	r.announce(svc, r.servedInterfaces())
-	slog.InfoContext(ctx, "advertising Silo on the local network",
+	slog.InfoContext(ctx, "advertising Prairie on the local network",
 		"service", ServiceType, "name", svc.instance, "host", svc.hostName(), "port", svc.port)
 
 	// RFC 6762 §8.3: announce at least twice, a second apart.
@@ -252,11 +252,11 @@ func instanceName(name string) string {
 	return name
 }
 
-// hostLabel returns "silo-" plus the first eight alphanumerics of the server
+// hostLabel returns "prairie-" plus the first eight alphanumerics of the server
 // ID: stable for the deployment and distinct between deployments on one LAN.
 func hostLabel(serverID string) string {
 	var b strings.Builder
-	b.WriteString("silo-")
+	b.WriteString("prairie-")
 	n := 0
 	for _, r := range strings.ToLower(serverID) {
 		if n == 8 {

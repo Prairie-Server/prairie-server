@@ -20,7 +20,7 @@ import (
 // connection, as when Postgres is down.
 func newOutageAuthHandler(t *testing.T) (*AuthHandler, *auth.JWTService) {
 	t.Helper()
-	pool, err := pgxpool.New(t.Context(), "postgres://silo@127.0.0.1:1/silo?sslmode=disable&connect_timeout=2")
+	pool, err := pgxpool.New(t.Context(), "postgres://prairie@127.0.0.1:1/prairie?sslmode=disable&connect_timeout=2")
 	if err != nil {
 		t.Fatalf("pgxpool.New: %v", err)
 	}

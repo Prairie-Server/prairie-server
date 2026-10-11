@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/prairie-server/prairie-server/internal/models"

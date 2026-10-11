@@ -32,7 +32,7 @@ type RecheckExternalIdentitiesTask struct {
 	lock      clusterLock
 }
 
-// recheckExternalIdentitiesAdvisoryLock spells "SILOIDRC".
+// recheckExternalIdentitiesAdvisoryLock spells "PRAIRIEIDRC".
 const recheckExternalIdentitiesAdvisoryLock int64 = 0x53494C4F49445243
 
 type recheckExternalIdentitiesResult struct {

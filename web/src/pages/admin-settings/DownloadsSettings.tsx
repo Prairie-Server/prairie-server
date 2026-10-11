@@ -175,7 +175,7 @@ export default function DownloadsSettings() {
             <PathSettingField
               label="Prepared file directory"
               defaultValue={derivedArtifactDir}
-              description="Leave blank for a silo-download-artifacts folder beside this server's transcode directory. Transcode nodes use download-artifacts inside their own transcode directory unless a node has its own directory."
+              description="Leave blank for a prairie-download-artifacts folder beside this server's transcode directory. Transcode nodes use download-artifacts inside their own transcode directory unless a node has its own directory."
               value={form.getValue("download.artifact_dir")}
               onChange={(v) => form.setValue("download.artifact_dir", v)}
               restartRequired={restartKeys.has("download.artifact_dir")}

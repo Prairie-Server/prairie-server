@@ -42,7 +42,7 @@ function stored(overrides: Partial<SectionOverrideRead>): SectionOverrideRead {
 
 function layoutFile(overrides: Partial<HomeLayoutFile>): HomeLayoutFile {
   return {
-    format: "silo-home-layout",
+    format: "prairie-home-layout",
     version: 1,
     exported_at: "2026-09-29T00:00:00.000Z",
     server_id: "server-a",
@@ -111,7 +111,7 @@ describe("buildHomeLayoutFile", () => {
     });
 
     expect(file).toEqual({
-      format: "silo-home-layout",
+      format: "prairie-home-layout",
       version: 1,
       exported_at: "2026-09-29T12:00:00.000Z",
       server_id: "server-a",
@@ -157,13 +157,13 @@ describe("parseHomeLayoutFile", () => {
     expect(parseHomeLayoutFile("{")).toEqual({ ok: false, error: "This isn't valid JSON." });
     expect(parseHomeLayoutFile('{"format":"other"}')).toEqual({
       ok: false,
-      error: "This isn't a Silo home layout export.",
+      error: "This isn't a Prairie home layout export.",
     });
-    expect(parseHomeLayoutFile('{"format":"silo-home-layout","version":2}')).toEqual({
+    expect(parseHomeLayoutFile('{"format":"prairie-home-layout","version":2}')).toEqual({
       ok: false,
-      error: "This export comes from a newer version of Silo.",
+      error: "This export comes from a newer version of Prairie.",
     });
-    expect(parseHomeLayoutFile('{"format":"silo-home-layout","version":1}')).toEqual({
+    expect(parseHomeLayoutFile('{"format":"prairie-home-layout","version":1}')).toEqual({
       ok: false,
       error: "This home layout export is incomplete or damaged.",
     });
@@ -176,7 +176,7 @@ describe("parseHomeLayoutFile", () => {
   it("keeps only the override members the write contract accepts", () => {
     const result = parseHomeLayoutFile(
       JSON.stringify({
-        format: "silo-home-layout",
+        format: "prairie-home-layout",
         version: 1,
         server_id: "server-a",
         libraries: [{ id: "1", name: "Movies", type: "movie" }],

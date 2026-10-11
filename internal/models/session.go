@@ -25,8 +25,8 @@ type AuthSession struct {
 	// refresh expiry after this instant instead of sliding.
 	ProviderSince *time.Time
 	// DeviceID and DevicePlatform are the device the session was opened from,
-	// as the client reported it in X-Silo-Device-Id and
-	// X-Silo-Device-Platform; empty when it sent none. Client-reported audit
+	// as the client reported it in X-Prairie-Device-Id and
+	// X-Prairie-Device-Platform; empty when it sent none. Client-reported audit
 	// data: never authorize with them.
 	DeviceID       string
 	DevicePlatform string

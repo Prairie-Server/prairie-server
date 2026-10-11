@@ -20,9 +20,9 @@ import (
 // collection that carries a query_definition. A cached row costs one statement,
 // the revision read that keys it.
 func TestLibraryCollectionRailsMatchTheCollectionPageDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	resetResolvedListCacheForTest()
 	t.Cleanup(resetResolvedListCacheForTest)

@@ -23,9 +23,9 @@ import (
 // session carrying that identity and provider_since, which refresh then
 // re-checks. Both the login approval and the remote-playback handoff do.
 func TestDeviceApprovalInheritsSessionProviderChainDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

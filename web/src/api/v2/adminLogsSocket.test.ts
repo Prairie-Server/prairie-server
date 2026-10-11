@@ -76,7 +76,7 @@ it("refuses a wrong protocol, a 401, and a stale authority without retrying", as
   const denied = vi.fn().mockResolvedValue(
     new Response(
       JSON.stringify({
-        type: "https://silo.dev/problems/authentication_required",
+        type: "https://prairie.dev/problems/authentication_required",
         title: "Authentication required",
         status: 401,
         detail: "synthetic",

@@ -255,7 +255,7 @@ func TestTitlesOrphansAfterUserDelete(t *testing.T) {
 // instead of waiting until the request times out.
 func TestTitlesPromotionCompletesOnOneConnectionPool(t *testing.T) {
 	f := newTitlesFixture(t)
-	cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+	cfg, err := pgxpool.ParseConfig(os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

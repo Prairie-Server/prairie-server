@@ -16,7 +16,7 @@ import { FILTER_SECTION_TYPES, isTraktConfig } from "@/lib/sectionTypes";
 type SectionOverrideRead = components["schemas"]["SectionOverride"];
 export type SectionOverrideWrite = components["schemas"]["SectionOverrideWrite"];
 
-export const HOME_LAYOUT_FORMAT = "silo-home-layout";
+export const HOME_LAYOUT_FORMAT = "prairie-home-layout";
 export const HOME_LAYOUT_VERSION = 1;
 /**
  * The largest export, in bytes. Export refuses to write a larger file and
@@ -155,10 +155,10 @@ export function parseHomeLayoutFile(text: string): HomeLayoutParseResult {
     return { ok: false, error: "This isn't valid JSON." };
   }
   if (!isRecord(data) || data.format !== HOME_LAYOUT_FORMAT) {
-    return { ok: false, error: "This isn't a Silo home layout export." };
+    return { ok: false, error: "This isn't a Prairie home layout export." };
   }
   if (typeof data.version === "number" && data.version > HOME_LAYOUT_VERSION) {
-    return { ok: false, error: "This export comes from a newer version of Silo." };
+    return { ok: false, error: "This export comes from a newer version of Prairie." };
   }
   if (
     data.version !== HOME_LAYOUT_VERSION ||

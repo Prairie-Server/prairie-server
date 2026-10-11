@@ -346,7 +346,7 @@ export default function AdminHomeRows() {
     {
       key: "restore",
       label: "Restore defaults…",
-      help: "Put back the rows Silo starts with on this page.",
+      help: "Put back the rows Prairie starts with on this page.",
       icon: RotateCcw,
       // The restore itself is an admin row write, so `pending` covers it.
       disabled: !canManageCurrentScope || snapshotLoading || adapter.pending,

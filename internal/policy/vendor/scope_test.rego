@@ -246,7 +246,7 @@ test_override_hidden_library_is_not_reported_as_profile_hidden if {
 			"account_library_ids": [1, 2, 3, 4],
 			"disabled_library_ids": [2, 3],
 		})
-		with data.silo_custom.scope.override as override_hides_three
+		with data.prairie_custom.scope.override as override_hides_three
 	got.allowed_library_ids == [1, 4]
 	got.hidden_library_ids == [2]
 }
@@ -256,7 +256,7 @@ test_restricting_override_narrows_profile_hidden_libraries if {
 		with input as object.union(base_input, {
 			"disabled_library_ids": [2, 3],
 		})
-		with data.silo_custom.scope.override as tightening_override
+		with data.prairie_custom.scope.override as tightening_override
 	got.allowed_library_ids == []
 	got.hidden_library_ids == [2]
 }
@@ -273,7 +273,7 @@ test_unrestricting_override_keeps_profile_hidden_libraries_it_allows if {
 			"account_library_ids": [1, 2, 3],
 			"disabled_library_ids": [2, 3],
 		})
-		with data.silo_custom.scope.override as override_lifts_restriction_hides_three
+		with data.prairie_custom.scope.override as override_lifts_restriction_hides_three
 	got.allowed_library_ids == [1]
 	got.hidden_library_ids == [2]
 }

@@ -31,7 +31,7 @@ const (
 	// ChangeOutcomeSuppressed: the debounce window had already claimed the
 	// same path, so no scan was requested.
 	ChangeOutcomeSuppressed ChangeOutcome = "suppressed"
-	// ChangeOutcomeUnresolved: the path did not map to a scannable Silo
+	// ChangeOutcomeUnresolved: the path did not map to a scannable Prairie
 	// library location; Reason says why.
 	ChangeOutcomeUnresolved ChangeOutcome = "unresolved"
 	// ChangeOutcomeIgnored: the change was deliberately not scanned (an empty

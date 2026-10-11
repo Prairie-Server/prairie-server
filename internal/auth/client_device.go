@@ -13,9 +13,9 @@ import (
 // The device headers a client sends to identify itself. They match the
 // headers the settings routes read (internal/api/handlers/settings.go).
 const (
-	ClientDeviceIDHeader       = "X-Silo-Device-Id"
-	ClientDeviceNameHeader     = "X-Silo-Device-Name"
-	ClientDevicePlatformHeader = "X-Silo-Device-Platform"
+	ClientDeviceIDHeader       = "X-Prairie-Device-Id"
+	ClientDeviceNameHeader     = "X-Prairie-Device-Name"
+	ClientDevicePlatformHeader = "X-Prairie-Device-Platform"
 )
 
 // The bounds the settings device headers are clamped to.
@@ -25,7 +25,7 @@ const (
 	maxClientDevicePlatformLen = 40
 )
 
-// clientDeviceIDShape is the identifier v2 accepts in X-Silo-Device-Id
+// clientDeviceIDShape is the identifier v2 accepts in X-Prairie-Device-Id
 // (internal/apiv2/device_header.go): a UUID or an opaque token of letters,
 // digits, dot, underscore, colon and hyphen.
 var clientDeviceIDShape = regexp.MustCompile(`^[A-Za-z0-9._:-]+$`)
@@ -55,7 +55,7 @@ func NewClientDevice(id, name, platform string) ClientDevice {
 	}
 }
 
-// ClientDeviceFromHeaders reads the X-Silo-Device-* headers of a request.
+// ClientDeviceFromHeaders reads the X-Prairie-Device-* headers of a request.
 func ClientDeviceFromHeaders(h http.Header) ClientDevice {
 	return NewClientDevice(h.Get(ClientDeviceIDHeader), h.Get(ClientDeviceNameHeader), h.Get(ClientDevicePlatformHeader))
 }
@@ -79,7 +79,7 @@ func clampClientDeviceValue(value string, maxLen int) string {
 type clientDeviceKey struct{}
 
 // WithClientDevice returns ctx carrying the device the request reported in
-// its X-Silo-Device-* headers. A login session opened under ctx records that
+// its X-Prairie-Device-* headers. A login session opened under ctx records that
 // device (see SessionRepository.Create). Sign-in transports call it; a
 // request without device headers leaves ctx unchanged.
 func WithClientDevice(ctx context.Context, h http.Header) context.Context {

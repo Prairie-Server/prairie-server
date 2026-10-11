@@ -345,7 +345,7 @@ func TestRenameContentIDsMergesLeftoverAvailability(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := pool.Exec(ctx, `SELECT silo_rename_content_ids($1, $2)`,
+	if _, err := pool.Exec(ctx, `SELECT prairie_rename_content_ids($1, $2)`,
 		[]string{fromSeries, fromEpisode, strayEpisode, fromMovie},
 		[]string{toSeries, toEpisode, strayTarget, toMovie}); err != nil {
 		t.Fatalf("rename with leftover availability: %v", err)

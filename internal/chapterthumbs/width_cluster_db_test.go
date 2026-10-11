@@ -154,9 +154,9 @@ func TestChapterExtractionStopsForUnavailableClusterLock(t *testing.T) {
 }
 
 func TestWidthBackfillSerializesReplicasPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
@@ -257,9 +257,9 @@ func TestWidthBackfillSerializesReplicasPostgres(t *testing.T) {
 
 func chapterReplicaTestPool(t *testing.T, maxConns int32) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

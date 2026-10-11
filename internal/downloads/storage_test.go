@@ -194,7 +194,7 @@ func TestFindUntracked(t *testing.T) {
 		// A dead partial beside a tracked file: deleting it would delete the
 		// whole artifact on the node, finished file included.
 		{Name: a + ".mp4.part", Kind: downloadstorage.KindPartial, Bytes: 4, ModTime: old},
-		// Not named like a prepared file: never Silo's to delete.
+		// Not named like a prepared file: never Prairie's to delete.
 		{Name: "Movie (2010).mp4", Kind: downloadstorage.KindComplete, Bytes: 70, ModTime: old},
 		{Name: "README", Kind: downloadstorage.KindOther, Bytes: 80, ModTime: old},
 		{Name: "12_remux_abc_34.mp4", Kind: downloadstorage.KindComplete, Bytes: 90, ModTime: old}, // a server file

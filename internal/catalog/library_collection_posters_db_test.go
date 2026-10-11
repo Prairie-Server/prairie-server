@@ -50,9 +50,9 @@ func (g *fakeCollageGenerator) sources(key string) []string {
 }
 
 func TestCollectionCollageReadsKeepActiveVariantsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -151,12 +151,12 @@ func TestCollectionCollageReadsKeepActiveVariantsDB(t *testing.T) {
 // TestCollectionCollagesFollowTheViewerDB covers #1618 end to end on the
 // database: each viewer's collage is built only from members that viewer can
 // access, the first read builds it in the background, and building one
-// collage deletes the collection's unused ones. Set SILO_TEST_DATABASE_URL to
+// collage deletes the collection's unused ones. Set PRAIRIE_TEST_DATABASE_URL to
 // a migrated database to run it.
 func TestCollectionCollagesFollowTheViewerDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -472,9 +472,9 @@ func waitForCollectionCollage(t *testing.T, repo *LibraryCollectionRepository, r
 // Deleting a collection cascades to its collages, and the delete trigger
 // queues their objects in the same transaction.
 func TestDeletingACollectionQueuesItsCollagesDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

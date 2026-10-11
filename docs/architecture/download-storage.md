@@ -107,7 +107,7 @@ written to for an hour is **untracked**. A partial or receipt file beside a trac
 finished file is not: a node deletes a whole artifact at once, finished file
 included. Any other file in the directory is never
 untracked, so a directory shared with other data, or with another location, cannot
-lose files Silo did not write; a node's check covers every node's rows, since nodes
+lose files Prairie did not write; a node's check covers every node's rows, since nodes
 may share a volume. Untracked files are counted, never deleted automatically; an
 administrator deletes them, and the server lists the directory again before doing
 so. Each call on a directory, a listing (the server's own or a node's) or a server
@@ -145,6 +145,6 @@ flag devices not seen in 14 days.
 
 ## Metrics
 
-- `silo_download_storage_freed_bytes_total{location,reason}`
-- `silo_download_storage_bytes{location,state}` (`in_use`, `cached`, `untracked`)
-- `silo_download_storage_sample_timestamp_seconds{location}`
+- `prairie_download_storage_freed_bytes_total{location,reason}`
+- `prairie_download_storage_bytes{location,state}` (`in_use`, `cached`, `untracked`)
+- `prairie_download_storage_sample_timestamp_seconds{location}`

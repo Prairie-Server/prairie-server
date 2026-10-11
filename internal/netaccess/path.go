@@ -20,7 +20,7 @@ type Path struct {
 	// request carried; 0 on the default path.
 	InstallationID int
 	// Peer is the overlay peer the provider vouched for with
-	// X-Silo-Ingress-Peer; the zero Addr when it sent none. It says where the
+	// X-Prairie-Ingress-Peer; the zero Addr when it sent none. It says where the
 	// request came from, never who may do what: a network identity sign-in
 	// asks the provider's plugin who the peer is.
 	Peer netip.Addr

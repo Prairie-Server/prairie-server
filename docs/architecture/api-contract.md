@@ -815,7 +815,7 @@ profile keep account scope. API keys, capability probes, profile selection,
 account and admin routes, and the session-bound stream and transcode routes are not gated.
 Download links that pass the access token as `?token=` cannot send the header, so on such an
 account they get the 400 too; v1 gains no profile query parameter. The gate reads only the
-profiles' stored limits. A custom scope policy (`silo_custom.scope`) that narrows one profile
+profiles' stored limits. A custom scope policy (`prairie_custom.scope`) that narrows one profile
 through `input.profile_id` applies only to requests that name that profile; for the household
 to require a profile, that profile also needs one of the stored limits above. The gated routes
 carry the `household_profile_gate` trait in the route inventory, and

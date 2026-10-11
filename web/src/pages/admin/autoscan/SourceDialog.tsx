@@ -85,13 +85,13 @@ import { hasUsableMapping, newMapping, seedMappings, usableMappings } from "./we
 /** Human wording for a delivery mode, used on the choice cards. */
 const DELIVERY_MODE_COPY: Record<AutoscanDeliveryMode, { title: string; description: string }> = {
   webhook: {
-    title: "The service tells Silo",
+    title: "The service tells Prairie",
     description:
       "Instant. Paste one URL into the service's webhook settings. No credentials stored here.",
   },
   poll: {
-    title: "Silo checks the service",
-    description: "Silo asks on a schedule. Works without changing anything upstream.",
+    title: "Prairie checks the service",
+    description: "Prairie asks on a schedule. Works without changing anything upstream.",
   },
 };
 
@@ -195,7 +195,7 @@ export function SourceDialog(props: SourceDialogProps) {
   const showDeliveryChoice = !isEdit && Boolean(selectedPlugin) && needsDeliveryChoice(descriptor);
   const showConnection = hasPlugin && needsConnectionStep(descriptor, deliveryMode);
   const connectionRequired = connectionIsMandatory(descriptor, deliveryMode);
-  // Poll interval only means something when Silo is the one asking.
+  // Poll interval only means something when Prairie is the one asking.
   const showInterval = hasPlugin && deliveryMode === "poll";
 
   // Only offer connections this source can actually talk to.
@@ -241,7 +241,7 @@ export function SourceDialog(props: SourceDialogProps) {
 
   const interval = parseIntervalInput(form.intervalStr);
   const intervalInvalid = showInterval && !interval.valid;
-  // Seeded webhook rows start with only the Silo side filled; until the
+  // Seeded webhook rows start with only the Prairie side filled; until the
   // operator touches them they are suggestions, not unfinished input.
   const checkIncomplete = isEdit || !isWebhook;
   const incomplete = checkIncomplete ? incompleteMappings(form.mappings) : [];
@@ -782,7 +782,7 @@ export function SourceDialog(props: SourceDialogProps) {
           <DialogDescription>
             {createdWebhookSource
               ? "The source is created and listening. Paste this into your download manager to finish."
-              : "Pick what you want Silo to watch. Each source only asks for what it actually needs."}
+              : "Pick what you want Prairie to watch. Each source only asks for what it actually needs."}
           </DialogDescription>
         </DialogHeader>
 
@@ -838,7 +838,7 @@ export function SourceDialog(props: SourceDialogProps) {
             <StepTrail steps={steps} />
 
             <div className="space-y-2">
-              <Label>What should Silo watch?</Label>
+              <Label>What should Prairie watch?</Label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {plugins.map((p) => {
                   const key = pluginKey(p.plugin_id, p.capability_id);
@@ -866,7 +866,7 @@ export function SourceDialog(props: SourceDialogProps) {
 
             {showDeliveryChoice && (
               <div className="space-y-2">
-                <Label>How should Silo hear about changes?</Label>
+                <Label>How should Prairie hear about changes?</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {descriptor.delivery_modes.map((mode) => {
                     const copy = DELIVERY_MODE_COPY[mode];

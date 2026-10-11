@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	sdkcapability "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
 	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 

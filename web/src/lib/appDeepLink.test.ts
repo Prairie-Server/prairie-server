@@ -70,21 +70,21 @@ describe("buildWatchPartyDeepLink", () => {
 });
 
 describe("buildDeviceDeepLink", () => {
-  it("emits the silo://device contract both apps register", () => {
-    expect(buildDeviceDeepLink("3f2a9d5e", "https://silo.example.net:8443", "4821-7730")).toBe(
-      "silo://device?server=3f2a9d5e&url=https%3A%2F%2Fsilo.example.net%3A8443&code=48217730",
+  it("emits the prairie://device contract both apps register", () => {
+    expect(buildDeviceDeepLink("3f2a9d5e", "https://prairie.example.net:8443", "4821-7730")).toBe(
+      "prairie://device?server=3f2a9d5e&url=https%3A%2F%2Fprairie.example.net%3A8443&code=48217730",
     );
   });
 
   it("leaves out an unknown server identity", () => {
     expect(buildDeviceDeepLink(undefined, "http://192.168.1.10:8090", "4821 7730")).toBe(
-      "silo://device?url=http%3A%2F%2F192.168.1.10%3A8090&code=48217730",
+      "prairie://device?url=http%3A%2F%2F192.168.1.10%3A8090&code=48217730",
     );
   });
 
   it("rejects unrepresentable origins and empty codes", () => {
-    expect(buildDeviceDeepLink("s", "ftp://silo.example.net", "48217730")).toBeNull();
-    expect(buildDeviceDeepLink("s", "https://user:pw@silo.example.net", "48217730")).toBeNull();
-    expect(buildDeviceDeepLink("s", "https://silo.example.net", "-")).toBeNull();
+    expect(buildDeviceDeepLink("s", "ftp://prairie.example.net", "48217730")).toBeNull();
+    expect(buildDeviceDeepLink("s", "https://user:pw@prairie.example.net", "48217730")).toBeNull();
+    expect(buildDeviceDeepLink("s", "https://prairie.example.net", "-")).toBeNull();
   });
 });

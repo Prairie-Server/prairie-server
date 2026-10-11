@@ -91,7 +91,7 @@ function typeName(text: string) {
 const problem412 = () =>
   new Response(
     JSON.stringify({
-      type: "https://silo.example/problems/precondition_failed",
+      type: "https://prairie.example/problems/precondition_failed",
       title: "Changed",
       status: 412,
       detail: "Reload",

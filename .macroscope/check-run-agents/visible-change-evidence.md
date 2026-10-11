@@ -17,7 +17,7 @@ maxBudgetPerRun: 0.50
 maxBudgetPerPR: 3.00
 ---
 
-Silo requires evidence in every pull request that changes what a user sees. Reviewers should be
+Prairie requires evidence in every pull request that changes what a user sees. Reviewers should be
 able to see the change without building the branch. Your job is to decide whether this PR changes
 what a user sees and, if it does, whether its Evidence section shows that change. You report; you
 do not judge whether the change is good.
@@ -48,7 +48,7 @@ path to the user is real but uncertain, say so and treat the change as visible.
 Find the `## Evidence` section of the PR body. For a visible change, it passes when it has:
 
 - before-and-after images, a recording, or before-and-after API response excerpts that show the
-  changed behavior, or a line starting with `Evidence: https://evidence.siloserver.org/`;
+  changed behavior, or a line starting with `Evidence: https://evidence.prairieserver.org/`;
 - evidence that matches the change: a UI change needs screenshots or a recording, not only API
   output; a change to which items appear or their order needs a before and an after of the same
   query, screen, or section;
@@ -58,7 +58,7 @@ Find the `## Evidence` section of the PR body. For a visible change, it passes w
 - a recording when the change is about motion, timing, focus movement, or a multi-step flow;
 - the surface and build or commit the captures came from.
 
-Evidence on `evidence.siloserver.org` is private, and you cannot open it. For a section that links
+Evidence on `evidence.prairieserver.org` is private, and you cannot open it. For a section that links
 a page there, count the link as evidence, do not ask for the surface or build in the body, and
 list what the page should show so the reviewer can check it, such as desktop and mobile web
 captures for a web change.

@@ -372,7 +372,7 @@ func watchDuplicatePOC(seen *bool) func(string) {
 func (a attemptRun) sheets(req Request, times []float64, inputStart float64, logHandlers ...func(string)) (Result, *AttemptError) {
 	var packetTimingPath string
 	if req.Window != nil {
-		dir, err := os.MkdirTemp("", "silo-sheets-*")
+		dir, err := os.MkdirTemp("", "prairie-sheets-*")
 		if err != nil {
 			return Result{}, &AttemptError{Decoder: a.decoder, Reason: ReasonOutput, Err: fmt.Errorf("create packet timing directory: %w", err)}
 		}

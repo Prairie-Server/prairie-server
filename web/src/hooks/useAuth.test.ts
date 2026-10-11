@@ -192,7 +192,7 @@ describe("initializeAuthSession when the account read fails", () => {
     [
       "a 503",
       new V2ProblemError("getCurrentUser", {
-        type: "https://siloserver.org/docs/api/v2/problems/dependency_unavailable",
+        type: "https://prairieserver.org/docs/api/v2/problems/dependency_unavailable",
         title: "Unavailable",
         status: 503,
         detail: "Try later.",

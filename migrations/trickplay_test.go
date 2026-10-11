@@ -15,9 +15,9 @@ import (
 // revision prefixes and nothing looser, and that a trickplay row's state and
 // manifest stay consistent.
 func TestTrickplayMigrationPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	conn, err := pgx.Connect(t.Context(), dsn)
 	if err != nil {

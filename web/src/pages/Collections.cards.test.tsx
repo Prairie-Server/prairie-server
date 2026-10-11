@@ -335,7 +335,7 @@ describe("Server collections", () => {
     const libraryOf = () =>
       new URL(
         within(server).getByRole("link", { name: oscarWinners.title }).getAttribute("href")!,
-        "http://silo.test",
+        "http://prairie.test",
       ).searchParams.get("library_id");
 
     await within(server).findByRole("group", { name: "Library" });

@@ -115,10 +115,10 @@ it("allocates above the latest sequence another administrator applied", async ()
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockImplementationOnce(async () =>
-      response(staleProblem, 409, { "X-Silo-Latest-Sequence": String(ahead) }),
+      response(staleProblem, 409, { "X-Prairie-Latest-Sequence": String(ahead) }),
     )
     .mockImplementationOnce(async () =>
-      response(staleProblem, 409, { "X-Silo-Latest-Sequence": String(ahead - 30 * 60 * 1000) }),
+      response(staleProblem, 409, { "X-Prairie-Latest-Sequence": String(ahead - 30 * 60 * 1000) }),
     );
   vi.stubGlobal("fetch", fetch);
   const refused = allocateAdminPlaybackCommand("s-skew");

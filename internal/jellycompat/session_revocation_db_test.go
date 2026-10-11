@@ -17,7 +17,7 @@ import (
 // TestRevokedCompatSessionStaysDeletedPostgres: a replica that still caches
 // a compat session after the revoking transaction deleted its row cannot
 // write the row back, neither by extending the session nor by storing
-// refreshed Silo tokens. Before the revocation both writes update the row.
+// refreshed Prairie tokens. Before the revocation both writes update the row.
 func TestRevokedCompatSessionStaysDeletedPostgres(t *testing.T) {
 	pool, suffix := jellyfin12CompatPool(t)
 	ctx := context.Background()

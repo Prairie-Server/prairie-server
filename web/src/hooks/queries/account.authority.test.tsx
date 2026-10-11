@@ -24,7 +24,7 @@ function json(body: unknown, status = 200) {
 function path(input: RequestInfo | URL) {
   return new URL(
     typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
-    "http://silo.test",
+    "http://prairie.test",
   ).pathname;
 }
 function wrap({ children }: { children: ReactNode }) {
@@ -121,7 +121,7 @@ it.each(["credentials", "ticket", "unlink"] as const)(
       release!(
         json(
           {
-            type: "https://siloserver.org/problems/invalid_token",
+            type: "https://prairieserver.org/problems/invalid_token",
             title: "Invalid token",
             status: 401,
           },

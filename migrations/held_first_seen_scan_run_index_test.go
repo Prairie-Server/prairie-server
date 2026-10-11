@@ -34,9 +34,9 @@ func TestHeldFirstSeenScanRunIndexRetryUsesConcurrentCleanup(t *testing.T) {
 // index whose first column is the referencing column turns each of those
 // lookups into a scan of the whole referencing table.
 func TestScanRunForeignKeysHaveLeadingIndexesDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	conn, err := pgx.Connect(ctx, dsn)

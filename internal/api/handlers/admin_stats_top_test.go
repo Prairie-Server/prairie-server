@@ -204,11 +204,11 @@ func TestAdminTopActivityProviderInvalidateClearsEveryVariant(t *testing.T) {
 }
 
 // Marking a series watched writes one history row per episode. Those rows, and
-// single-item marks from Silo or Jellyfin clients, are not plays (#1743).
+// single-item marks from Prairie or Jellyfin clients, are not plays (#1743).
 func TestAdminTopActivityCountsPlaybackNotMarks(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

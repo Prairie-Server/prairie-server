@@ -12,7 +12,7 @@ import (
 // Postgres is down. Nothing listens on port 1, so the dial is refused at once.
 func unreachableStorePool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	pool, err := pgxpool.New(t.Context(), "postgres://silo@127.0.0.1:1/silo?sslmode=disable&connect_timeout=2")
+	pool, err := pgxpool.New(t.Context(), "postgres://prairie@127.0.0.1:1/prairie?sslmode=disable&connect_timeout=2")
 	if err != nil {
 		t.Fatalf("pgxpool.New: %v", err)
 	}

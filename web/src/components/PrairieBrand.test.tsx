@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { BrandingContext, type BrandingContextValue } from "@/contexts/BrandingProvider";
 
-import { SiloBrand, type SiloBrandVariant } from "./SiloBrand";
+import { PrairieBrand, type PrairieBrandVariant } from "./PrairieBrand";
 
 const BRANDING_DEFAULTS: BrandingContextValue = {
-  serverName: "Silo",
+  serverName: "Prairie",
   loginSubtitle: "Sign in with an existing account.",
   accentColor: null,
   wordmarkUrl: null,
@@ -19,12 +19,12 @@ const BRANDING_DEFAULTS: BrandingContextValue = {
 };
 
 function renderBrandSrc(
-  variant: SiloBrandVariant,
+  variant: PrairieBrandVariant,
   branding: Partial<BrandingContextValue> = {},
 ): string | null {
   const markup = renderToStaticMarkup(
     <BrandingContext value={{ ...BRANDING_DEFAULTS, ...branding }}>
-      <SiloBrand variant={variant} />
+      <PrairieBrand variant={variant} />
     </BrandingContext>,
   );
   return new DOMParser()
@@ -33,7 +33,7 @@ function renderBrandSrc(
     ?.getAttribute("src") as string | null;
 }
 
-describe("SiloBrand", () => {
+describe("PrairieBrand", () => {
   it("uses the custom wordmark", () => {
     expect(renderBrandSrc("wordmark", { wordmarkUrl: "https://cdn/custom.png" })).toBe(
       "https://cdn/custom.png",

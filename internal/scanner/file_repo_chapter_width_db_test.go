@@ -15,9 +15,9 @@ import (
 // thumbnail was made at another width, unless that chapter is waiting out a
 // failure.
 func TestListMissingChapterThumbnailsFollowsTheWidth(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -109,9 +109,9 @@ func TestListMissingChapterThumbnailsFollowsTheWidth(t *testing.T) {
 // TestChapterWidthScanCanSkipHDRFiles leaves out HDR and Dolby Vision files
 // when asked, as the width backfill does while the HDR policy is disabled.
 func TestChapterWidthScanCanSkipHDRFiles(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

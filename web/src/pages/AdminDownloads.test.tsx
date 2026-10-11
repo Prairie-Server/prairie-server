@@ -154,7 +154,7 @@ describe("AdminDownloads storage tab", () => {
     expect(within(node).getByText(/38 GB untracked/)).toBeInTheDocument();
     expect(screen.getByText("node-gpu-1 is at 84% disk.")).toBeInTheDocument();
     const server = screen.getByRole("region", { name: "Server" });
-    expect(within(server).getByText(/On disk matches Silo's records/)).toBeInTheDocument();
+    expect(within(server).getByText(/On disk matches Prairie's records/)).toBeInTheDocument();
   });
 
   it("runs clean-up for one location", () => {
@@ -218,11 +218,11 @@ describe("AdminDownloads storage tab", () => {
     fireEvent.click(within(card).getByRole("button", { name: "Edit location" }));
     expect(screen.getByLabelText("Budget in GB")).toHaveValue("1.5");
     fireEvent.change(screen.getByLabelText("Prepared file directory"), {
-      target: { value: "/mnt/fast/silo" },
+      target: { value: "/mnt/fast/prairie" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(mocks.updateNode).toHaveBeenCalledWith(
-      { node: mocks.nodes[0], body: { download_artifact_dir_override: "/mnt/fast/silo" } },
+      { node: mocks.nodes[0], body: { download_artifact_dir_override: "/mnt/fast/prairie" } },
       expect.anything(),
     );
   });
@@ -233,7 +233,7 @@ describe("AdminDownloads storage tab", () => {
     const card = screen.getByRole("region", { name: "node-gpu-1" });
     fireEvent.click(within(card).getByRole("button", { name: "Edit location" }));
     expect(screen.getByText(/the directory in Settings → Downloads/).textContent).toContain(
-      "Leave blank to use /srv/silo/download-artifacts",
+      "Leave blank to use /srv/prairie/download-artifacts",
     );
   });
 
@@ -241,12 +241,12 @@ describe("AdminDownloads storage tab", () => {
     mocks.storage = makeStorage({
       locations: [
         makeStorageLocation(),
-        { ...scratchNode, dir: "/transcode/download-artifacts", pending_dir: "/mnt/fast/silo" },
+        { ...scratchNode, dir: "/transcode/download-artifacts", pending_dir: "/mnt/fast/prairie" },
       ],
     });
     renderAt();
     const card = screen.getByRole("region", { name: "node-gpu-1" });
-    expect(card.textContent).toContain("Moves to /mnt/fast/silo when node-gpu-1 restarts.");
+    expect(card.textContent).toContain("Moves to /mnt/fast/prairie when node-gpu-1 restarts.");
   });
 
   it("opens a location's files from its card", () => {

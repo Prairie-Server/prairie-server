@@ -125,7 +125,7 @@ export function syncFailureMessage(failure: SubtitleSyncFailure | undefined): st
     case "subtitle_changed":
       return "The subtitle changed while it was syncing. Try again.";
     case "no_audio":
-      return "This video has no audio Silo can read.";
+      return "This video has no audio Prairie can read.";
     case "unavailable":
       return "The server is busy. Try again in a few minutes.";
     default:

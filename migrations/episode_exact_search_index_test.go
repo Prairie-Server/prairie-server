@@ -21,9 +21,9 @@ import (
 // Run the concurrent migration through Goose in an isolated schema. The long
 // metadata fixture must fit every new key that replaces the predecessor key.
 func TestEpisodeExactSearchIndexMigrationPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {

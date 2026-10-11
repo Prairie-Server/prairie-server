@@ -2,7 +2,7 @@
 
 Status: Shipped in `prairie-server` (2026-08-17, #660); client adoption tracked per repo
 Date: 2026-08-16
-Repos affected: `prairie-server` (contract, migration, web), `silo-android`, `silo-apple`
+Repos affected: `prairie-server` (contract, migration, web), `prairie-android`, `prairie-apple`
 
 ## Summary
 

@@ -4,7 +4,7 @@ import type { OverlayDef } from "../types";
 
 // A rating badge carries its source's mark in the label ("IMDb 8.5", "RT
 // 93%"), the same plain-text mark title pages use, so a score is never shown
-// without its source. Silo draws no source artwork: the owners of these
+// without its source. Prairie draws no source artwork: the owners of these
 // scores restrict their logos.
 function ratingLabel(mark: string, value: number | null | undefined, max: 10 | 100): string | null {
   if (value == null) return null;

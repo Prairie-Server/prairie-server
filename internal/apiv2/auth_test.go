@@ -44,7 +44,7 @@ func TestLogin(t *testing.T) {
 	}
 	// The session the login opens records the device headers.
 	rec = do(t, newTestHandler(t, deps), http.MethodPost, "/api/v2/auth/login", `{"username":"laura","password":"pw"}`, map[string]string{
-		"User-Agent": "okhttp/4.12.0", "X-Silo-Device-Id": "android-7f3c9a", "X-Silo-Device-Name": "Google Pixel 8 Pro", "X-Silo-Device-Platform": "android",
+		"User-Agent": "okhttp/4.12.0", "X-Prairie-Device-Id": "android-7f3c9a", "X-Prairie-Device-Name": "Google Pixel 8 Pro", "X-Prairie-Device-Platform": "android",
 	})
 	if got := sessions.lastLoginDevice; rec.Code != 200 || got.ID != "android-7f3c9a" || got.Name != "Google Pixel 8 Pro" || got.Platform != "android" || sessions.lastLogin.DeviceName != "okhttp/4.12.0" {
 		t.Fatalf("%d device=%+v name=%q", rec.Code, got, sessions.lastLogin.DeviceName)

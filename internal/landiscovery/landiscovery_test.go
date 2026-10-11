@@ -23,11 +23,11 @@ func TestInstanceName(t *testing.T) {
 }
 
 func TestHostLabel(t *testing.T) {
-	if got := hostLabel("6F1C2A9B-0D4E-4F7A-9C3B-2E1D0A5B7C8D"); got != "silo-6f1c2a9b" {
+	if got := hostLabel("6F1C2A9B-0D4E-4F7A-9C3B-2E1D0A5B7C8D"); got != "prairie-6f1c2a9b" {
 		t.Fatalf("hostLabel = %q", got)
 	}
 	a, b := newHostLabel("6f1c2a9b-0d4e"), newHostLabel("6f1c2a9b-0d4e")
-	if !strings.HasPrefix(a, "silo-6f1c2a9b-") || a == b {
+	if !strings.HasPrefix(a, "prairie-6f1c2a9b-") || a == b {
 		t.Fatalf("process host labels %q, %q must share the deployment prefix and differ", a, b)
 	}
 }

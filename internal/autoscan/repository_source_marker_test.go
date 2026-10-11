@@ -11,14 +11,14 @@ import (
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
-// newRepositoryDBTest connects to SILO_TEST_DATABASE_URL and returns a
+// newRepositoryDBTest connects to PRAIRIE_TEST_DATABASE_URL and returns a
 // repository over it. It skips when the URL is unset or the database lacks
 // requiredTable, so an unmigrated local database skips instead of failing.
 func newRepositoryDBTest(t *testing.T, requiredTable string) (context.Context, *Repository) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -42,7 +42,7 @@ func newRepositoryDBTest(t *testing.T, requiredTable string) (context.Context, *
 	return ctx, NewRepository(pool, cipher)
 }
 
-// newSourceMarkerDBTest connects to SILO_TEST_DATABASE_URL (skipping when unset)
+// newSourceMarkerDBTest connects to PRAIRIE_TEST_DATABASE_URL (skipping when unset)
 // and returns a repository, two connections, and a poll source bound to the
 // first one with a stored marker.
 func newSourceMarkerDBTest(t *testing.T) (context.Context, *Repository, Source, Connection) {
@@ -60,7 +60,7 @@ func newSourceMarkerDBTest(t *testing.T) (context.Context, *Repository, Source, 
 
 	interval := 300
 	src, err := repo.CreateSource(ctx, Source{
-		PluginID:            "silo.autoscan.arr",
+		PluginID:            "prairie.autoscan.arr",
 		CapabilityID:        "arr",
 		ConnectionID:        &sonarr.ID,
 		Enabled:             true,
@@ -164,7 +164,7 @@ func TestUpdateSourceMarkerReset(t *testing.T) {
 func createMarkedSource(ctx context.Context, t *testing.T, repo *Repository, connectionID, marker string) Source {
 	t.Helper()
 	src, err := repo.CreateSource(ctx, Source{
-		PluginID:     "silo.autoscan.arr",
+		PluginID:     "prairie.autoscan.arr",
 		CapabilityID: "arr",
 		ConnectionID: &connectionID,
 		Enabled:      true,
@@ -433,7 +433,7 @@ func TestUpdateConnectionMarkerReset(t *testing.T) {
 			unrelated := createMarkedSource(ctx, t, repo, other.ID, "2026-10-04T18:00:00Z|9")
 			// A source whose first poll failed has a run time but no marker.
 			failedFirst, err := repo.CreateSource(ctx, Source{
-				PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: bound.ConnectionID,
+				PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: bound.ConnectionID,
 				Enabled: true, DeliveryMode: DeliveryModePoll,
 			})
 			if err != nil {

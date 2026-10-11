@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/grpc/codes"
@@ -28,7 +28,7 @@ func TestPGOAuthStoreFlowsDB(t *testing.T) {
 
 	// A flow keeps its binder hash and native fields.
 	state := "state-" + env.suffix
-	if err := store.Insert(ctx, OAuthSession{State: state, InstallID: "1", RedirectURI: "https://silo.test/cb", BinderHash: "hash",
+	if err := store.Insert(ctx, OAuthSession{State: state, InstallID: "1", RedirectURI: "https://prairie.test/cb", BinderHash: "hash",
 		Kind: OAuthFlowNative, CodeChallenge: nativeChallenge, AppState: "app", StartOrigin: "http://10.0.0.5:8080", ExpiresAt: time.Now().Add(time.Minute)}); err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +252,7 @@ func TestPGOAuthStoreFlowsDB(t *testing.T) {
 	// still answer its own client; past it, it goes.
 	lateFlow, abandonedFlow := "late-"+env.suffix, "abandoned-"+env.suffix
 	for state, expiresAt := range map[string]time.Time{lateFlow: time.Now().Add(-time.Minute), abandonedFlow: time.Now().Add(-OAuthExpiredFlowGrace - time.Minute)} {
-		if err := store.Insert(ctx, OAuthSession{State: state, InstallID: "1", RedirectURI: "https://silo.test/cb", BinderHash: "hash", Kind: OAuthFlowWeb, ExpiresAt: expiresAt}); err != nil {
+		if err := store.Insert(ctx, OAuthSession{State: state, InstallID: "1", RedirectURI: "https://prairie.test/cb", BinderHash: "hash", Kind: OAuthFlowWeb, ExpiresAt: expiresAt}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -369,7 +369,7 @@ func (rig *oauthDBRig) node() *OAuthHandler {
 	return NewOAuthHandler(OAuthHandlerDeps{
 		Store:       NewPGOAuthStore(rig.env.pool, []byte("synthetic-oauth-db-secret")),
 		StateSecret: []byte("synthetic-state-secret"),
-		HostBaseURL: "https://silo.test",
+		HostBaseURL: "https://prairie.test",
 		ResolveClient: func(ctx context.Context, id int) (OAuthClient, string, error) {
 			pp := svc.FindOAuthInstallation(id)
 			if pp == nil {
@@ -408,7 +408,7 @@ func (rig *oauthDBRig) run(t *testing.T, a, b *OAuthHandler, req OAuthStartReque
 	t.Helper()
 	req.InstallID, req.Prefix = rig.env.installationID, "/api/v2"
 	w := httptest.NewRecorder()
-	a.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/start", nil), req, "", 0)
+	a.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/start", nil), req, "", 0)
 	if w.Code != http.StatusFound {
 		t.Fatalf("start: %d %s (%s)", w.Code, w.Body.String(), w.Header().Get("Location"))
 	}
@@ -419,7 +419,7 @@ func (rig *oauthDBRig) run(t *testing.T, a, b *OAuthHandler, req OAuthStartReque
 	if cookie == nil {
 		t.Fatalf("start set no cookie; went to %s", w.Header().Get("Location"))
 	}
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
 	r.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 	w = httptest.NewRecorder()
 	b.ServeCallback(w, r, "/api/v2", rig.env.installationID)
@@ -434,7 +434,7 @@ func (rig *oauthDBRig) run(t *testing.T, a, b *OAuthHandler, req OAuthStartReque
 // started on node b, from a browser holding cookie (nil: another browser).
 func (rig *oauthDBRig) callback(t *testing.T, b *OAuthHandler, cookie *http.Cookie) *url.URL {
 	t.Helper()
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
 	if cookie != nil {
 		r.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 	}
@@ -466,7 +466,7 @@ func TestOAuthNativeFlowAcrossNodesDB(t *testing.T) {
 
 	loc := rig.run(t, nodeA, nodeB, OAuthStartRequest{Native: true, CodeChallenge: nativeChallenge, AppState: "app-state"})
 	q := loc.Query()
-	if !strings.HasPrefix(loc.String(), NativeAppRedirectURI+"?") || q.Get("state") != "app-state" || q.Get("server") != testServerID || q.Get("iss") != "https://silo.test" || q.Get("code") == "" {
+	if !strings.HasPrefix(loc.String(), NativeAppRedirectURI+"?") || q.Get("state") != "app-state" || q.Get("server") != testServerID || q.Get("iss") != "https://prairie.test" || q.Get("code") == "" {
 		t.Fatalf("app redirect = %s", loc)
 	}
 	if _, err := nodeC.Complete(ctx, q.Get("code"), "", ""); !errors.Is(err, ErrOAuthInvalidGrant) {
@@ -590,7 +590,7 @@ func TestOAuthWebFlowBrowserBindingDB(t *testing.T) {
 	installID := rig.env.installationID
 
 	w := httptest.NewRecorder()
-	nodeA.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/start", nil),
+	nodeA.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/start", nil),
 		OAuthStartRequest{InstallID: installID, Prefix: "/api/v2", Next: "/me"}, "", 0)
 	var binder *http.Cookie
 	for _, c := range w.Result().Cookies() {
@@ -599,12 +599,12 @@ func TestOAuthWebFlowBrowserBindingDB(t *testing.T) {
 	if w.Code != http.StatusFound || binder == nil {
 		t.Fatalf("start: %d %q", w.Code, w.Header().Get("Location"))
 	}
-	r := httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
+	r := httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/callback?code=c&state="+url.QueryEscape(rig.plugin.init.GetState()), nil)
 	r.AddCookie(&http.Cookie{Name: binder.Name, Value: binder.Value})
 	w = httptest.NewRecorder()
 	nodeB.ServeCallback(w, r, "/api/v2", installID)
 	loc, err := url.Parse(w.Header().Get("Location"))
-	if err != nil || w.Code != http.StatusFound || !strings.HasPrefix(loc.String(), "https://silo.test/login/oauth-complete?") {
+	if err != nil || w.Code != http.StatusFound || !strings.HasPrefix(loc.String(), "https://prairie.test/login/oauth-complete?") {
 		t.Fatalf("callback: %d %q", w.Code, w.Header().Get("Location"))
 	}
 	code, browser := loc.Query().Get("code"), ""
@@ -652,7 +652,7 @@ func TestOAuthNativeStartOriginAcrossNodesDB(t *testing.T) {
 	w := httptest.NewRecorder()
 	nodeA.ServeStart(w, httptest.NewRequest(http.MethodGet, "http://10.0.0.5:8080/api/v2/auth/oauth/x/native/start", nil), req, "", 0)
 	loc, err := url.Parse(w.Header().Get("Location"))
-	if err != nil || w.Code != http.StatusFound || loc.Host != "silo.test" || len(loc.Query()) != 1 || len(w.Result().Cookies()) != 0 {
+	if err != nil || w.Code != http.StatusFound || loc.Host != "prairie.test" || len(loc.Query()) != 1 || len(w.Result().Cookies()) != 0 {
 		t.Fatalf("LAN start: %d %q", w.Code, w.Header().Get("Location"))
 	}
 	flow := loc.Query().Get(OAuthNativeFlowParameter)
@@ -745,7 +745,7 @@ func TestOAuthLinkFlowDB(t *testing.T) {
 	if got, err := node.ProviderLogoutURL(ctx, alice.ID); err != nil || got != rig.plugin.endURL {
 		t.Fatalf("plugin answers a URL: %q %v", got, err)
 	}
-	if rig.plugin.endAsked.GetExternalSubject() != rig.plugin.subject || rig.plugin.endAsked.GetPostLogoutRedirectUri() != "https://silo.test/login" {
+	if rig.plugin.endAsked.GetExternalSubject() != rig.plugin.subject || rig.plugin.endAsked.GetPostLogoutRedirectUri() != "https://prairie.test/login" {
 		t.Fatalf("asked = %+v", rig.plugin.endAsked)
 	}
 	if got, _ := node.ProviderLogoutURL(ctx, bob.ID); got != "" {
@@ -799,7 +799,7 @@ func TestOAuthForcedLinkDB(t *testing.T) {
 	// The web GET start refuses a ticket outright.
 	ticket, _ = nodeA.IssueLinkTicket(ctx, mallory.ID, rig.env.installationID, "correct horse battery")
 	w := httptest.NewRecorder()
-	nodeA.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://silo.test/api/v2/auth/oauth/x/start", nil),
+	nodeA.ServeStart(w, httptest.NewRequest(http.MethodGet, "https://prairie.test/api/v2/auth/oauth/x/start", nil),
 		OAuthStartRequest{InstallID: rig.env.installationID, Prefix: "/api/v2", LinkTicket: ticket.Ticket}, "", 0)
 	if w.Code != http.StatusBadRequest || len(w.Result().Cookies()) != 0 {
 		t.Fatalf("web start with a ticket: %d", w.Code)

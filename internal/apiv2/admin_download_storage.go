@@ -44,7 +44,7 @@ type AdminDownloadStorageUsage struct {
 	PartialBytes  int64   `json:"partial_bytes" minimum:"0"`
 	OtherBytes    int64   `json:"other_bytes" minimum:"0" doc:"Receipts and other small files"`
 	FSUsedBytes   int64   `json:"fs_used_bytes" minimum:"0" doc:"Bytes used on the filesystem the directory is on, as df counts them"`
-	FSTotalBytes  int64   `json:"fs_total_bytes" minimum:"0" doc:"Capacity of that filesystem available to Silo; 0 when unknown"`
+	FSTotalBytes  int64   `json:"fs_total_bytes" minimum:"0" doc:"Capacity of that filesystem available to Prairie; 0 when unknown"`
 	FSType        string  `json:"fs_type,omitempty" doc:"ext4, xfs, tmpfs, overlay, nfs and so on; empty when unknown"`
 	SharesScratch bool    `json:"shares_scratch" doc:"The directory is on the same filesystem as the transcode scratch directory"`
 	Ephemeral     bool    `json:"ephemeral" doc:"Files here do not survive a restart (tmpfs) or a container recreation (the container's overlay layer)"`
@@ -65,7 +65,7 @@ type AdminDownloadStorageLocation struct {
 	DirSource         string                     `json:"dir_source" enum:"default,setting,override" doc:"Where the configured directory comes from. default: the built-in location. setting: download.artifact_dir. override: this node's own directory."`
 	PendingDir        string                     `json:"pending_dir,omitempty" doc:"A node's configured directory when it differs from the one it was last listed in. The node moves to it when it restarts; files are not moved."`
 	Usage             *AdminDownloadStorageUsage `json:"usage,omitempty" doc:"Latest measurement of the files on disk; absent until one is reported"`
-	InUseFiles        int                        `json:"in_use_files" minimum:"0" doc:"Files a download is waiting on or fetching, by Silo's records"`
+	InUseFiles        int                        `json:"in_use_files" minimum:"0" doc:"Files a download is waiting on or fetching, by Prairie's records"`
 	InUseBytes        int64                      `json:"in_use_bytes" minimum:"0"`
 	CachedFiles       int                        `json:"cached_files" minimum:"0" doc:"Files nothing is waiting on; deleted when their cache period ends"`
 	CachedBytes       int64                      `json:"cached_bytes" minimum:"0"`
@@ -370,7 +370,7 @@ func registerAdminDownloadStorage(reg *Registry) {
 		return out, nil
 	})
 
-	Register(reg, get("/storage", "getAdminDownloadStorage", "Read prepared-download storage at the server and every transcode node: what is on disk, what Silo's records say, budgets, and files nothing accounts for."), func(ctx context.Context, _ *struct{}) (*AdminDownloadStorageOutput, error) {
+	Register(reg, get("/storage", "getAdminDownloadStorage", "Read prepared-download storage at the server and every transcode node: what is on disk, what Prairie's records say, budgets, and files nothing accounts for."), func(ctx context.Context, _ *struct{}) (*AdminDownloadStorageOutput, error) {
 		svc, p := storage()
 		if p != nil {
 			return nil, p
@@ -475,7 +475,7 @@ func registerAdminDownloadStorage(reg *Registry) {
 		return out, nil
 	})
 
-	untracked := post("/storage/locations/{location}/untracked/delete", "deleteAdminDownloadStorageUntrackedFiles", "List one location's prepared-file directory now and delete the files no prepared-file record accounts for and that nothing has written to for an hour. Only files named like Silo's prepared files are considered.", RetrySafetyNaturalIdempotent)
+	untracked := post("/storage/locations/{location}/untracked/delete", "deleteAdminDownloadStorageUntrackedFiles", "List one location's prepared-file directory now and delete the files no prepared-file record accounts for and that nothing has written to for an hour. Only files named like Prairie's prepared files are considered.", RetrySafetyNaturalIdempotent)
 	untracked.Errors = []int{404, 503}
 	Register(reg, untracked, func(ctx context.Context, in *AdminDownloadStorageLocationInput) (*AdminDownloadStorageUntrackedOutput, error) {
 		svc, p := storage()
@@ -610,7 +610,7 @@ func registerAdminDownloadStorage(reg *Registry) {
 		return &AdminDownloadEntriesOutput{Body: Paginated(items, next)}, nil
 	})
 
-	Register(reg, post("/revoke", "revokeAdminDownloads", "Revoke device downloads. The Silo app deletes each copy the next time the device syncs and confirms by deleting the download. The server stops serving the file at once. A revoked episode is excluded from its series monitor; a preparation only revoked downloads waited on is canceled.", RetrySafetyNaturalIdempotent), func(ctx context.Context, in *AdminDownloadRevokeInput) (*AdminDownloadRevokeOutput, error) {
+	Register(reg, post("/revoke", "revokeAdminDownloads", "Revoke device downloads. The Prairie app deletes each copy the next time the device syncs and confirms by deleting the download. The server stops serving the file at once. A revoked episode is excluded from its series monitor; a preparation only revoked downloads waited on is canceled.", RetrySafetyNaturalIdempotent), func(ctx context.Context, in *AdminDownloadRevokeInput) (*AdminDownloadRevokeOutput, error) {
 		svc, p := devices()
 		if p != nil {
 			return nil, p

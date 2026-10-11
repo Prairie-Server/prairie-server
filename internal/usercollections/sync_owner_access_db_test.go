@@ -35,9 +35,9 @@ func (l staticTMDBList) GetList(context.Context, int, int) ([]catalog.TMDBCollec
 // libraries it hides from browsing), counts only those titles in its sync
 // summary, and follows the owner's access on the next sync.
 func TestImportFillsItsLimitWithTitlesItsOwnerCanAccessDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

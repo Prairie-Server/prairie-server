@@ -149,7 +149,7 @@ func TestAdminPluginInstallationsRead(t *testing.T) {
 func TestAdminPluginAuthBindingURLs(t *testing.T) {
 	at := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
 	installation := func(id int, capabilityID string, modes ...string) handlers.PluginInstallationView {
-		return handlers.PluginInstallationView{ID: id, PluginID: "org.example." + capabilityID, Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "silo",
+		return handlers.PluginInstallationView{ID: id, PluginID: "org.example." + capabilityID, Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "prairie",
 			Capabilities: []handlers.PluginCapabilityView{{Type: "auth_provider.v1", ID: capabilityID, AuthModes: modes}},
 			AuthBindings: []handlers.PluginAuthBindingView{{CapabilityID: capabilityID, Enabled: true, CreatedAt: at, UpdatedAt: at}}, CreatedAt: at, UpdatedAt: at}
 	}
@@ -167,7 +167,7 @@ func TestAdminPluginAuthBindingURLs(t *testing.T) {
 	}
 	items := read(deps)
 	oidc, ldap := items[0].AuthBindings[0], items[1].AuthBindings[0]
-	if oidc.CallbackURL != "https://silo.example.test/api/v2/auth/oauth/3/callback" || oidc.PostLogoutRedirectURL != "https://silo.example.test/login" {
+	if oidc.CallbackURL != "https://prairie.example.test/api/v2/auth/oauth/3/callback" || oidc.PostLogoutRedirectURL != "https://prairie.example.test/login" {
 		t.Fatalf("oidc binding = %+v", oidc)
 	}
 	if ldap.CallbackURL != "" || ldap.PostLogoutRedirectURL != "" {
@@ -184,9 +184,9 @@ func TestAdminPluginAuthBindingURLs(t *testing.T) {
 // any binding row (a fresh installation) and while its binding is off.
 func TestAdminPluginAuthCapabilitySignIn(t *testing.T) {
 	at := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
-	fresh := handlers.PluginInstallationView{ID: 3, PluginID: "org.example.oidc", Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "silo",
+	fresh := handlers.PluginInstallationView{ID: 3, PluginID: "org.example.oidc", Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "prairie",
 		Capabilities: []handlers.PluginCapabilityView{{Type: "auth_provider.v1", ID: "oidc", AuthModes: []string{"oauth2"}}, {Type: "metadata_provider.v1", ID: "meta"}}, CreatedAt: at, UpdatedAt: at}
-	disabledLDAP := handlers.PluginInstallationView{ID: 4, PluginID: "org.example.ldap", Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "silo",
+	disabledLDAP := handlers.PluginInstallationView{ID: 4, PluginID: "org.example.ldap", Version: "1.0.0", Enabled: true, Kind: plugins.KindPlugin, UpdatePolicy: "manual", SourceKind: "prairie",
 		Capabilities: []handlers.PluginCapabilityView{{Type: "auth_provider.v1", ID: "ldap", AuthModes: []string{"password"}}},
 		AuthBindings: []handlers.PluginAuthBindingView{{CapabilityID: "ldap", CreatedAt: at, UpdatedAt: at}}, CreatedAt: at, UpdatedAt: at}
 	deps := pilotDeps(nil, nil)
@@ -197,8 +197,8 @@ func TestAdminPluginAuthCapabilitySignIn(t *testing.T) {
 		t.Fatal(rec.Code, rec.Body.String())
 	}
 	oidc, meta, ldap := body.Items[0].Capabilities[0], body.Items[0].Capabilities[1], body.Items[1].Capabilities[0]
-	if oidc.SignInMode != "oauth" || oidc.CallbackURL == nil || *oidc.CallbackURL != "https://silo.example.test/api/v2/auth/oauth/3/callback" ||
-		oidc.PostLogoutRedirectURL == nil || *oidc.PostLogoutRedirectURL != "https://silo.example.test/login" {
+	if oidc.SignInMode != "oauth" || oidc.CallbackURL == nil || *oidc.CallbackURL != "https://prairie.example.test/api/v2/auth/oauth/3/callback" ||
+		oidc.PostLogoutRedirectURL == nil || *oidc.PostLogoutRedirectURL != "https://prairie.example.test/login" {
 		t.Fatalf("fresh oidc capability = %+v", oidc)
 	}
 	if ldap.SignInMode != "credentials" || ldap.CallbackURL != nil || ldap.PostLogoutRedirectURL != nil {

@@ -12,7 +12,7 @@ const IngressTokenHeader = "X-Prairie-Ingress-Token"
 // IngressPeerHeader carries the overlay address of the peer a network access
 // provider proxied the request for. It counts only next to a valid ingress
 // token.
-const IngressPeerHeader = "X-Silo-Ingress-Peer"
+const IngressPeerHeader = "X-Prairie-Ingress-Peer"
 
 // Middleware validates and strips the ingress headers on every request. A
 // valid token records the provider's access path on the request context,

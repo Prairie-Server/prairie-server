@@ -2,7 +2,7 @@
 
 A device without a keyboard (a TV) signs in by showing a code that a person
 approves somewhere they are already signed in: the web page `/activate`, or a
-Silo phone app. The device never handles a password. The state machine lives in
+Prairie phone app. The device never handles a password. The state machine lives in
 `internal/auth/device_login.go`; the operations are in
 `internal/apiv2/device_login.go` and, frozen, in `internal/api/handlers/auth_device.go`.
 The operation contract is in [auth-api.md](../auth-api.md#device-sign-in).
@@ -110,7 +110,7 @@ limiting is enabled.
 
 ## Multi-deployment rules
 
-Every Silo server is independent; there is no Silo-run service between them.
+Every Prairie server is independent; there is no Prairie-run service between them.
 
 - A code means nothing without the server that issued it (see Codes).
 - The link on the TV and in the QR is always the issuing server's own; there
@@ -123,8 +123,8 @@ Every Silo server is independent; there is no Silo-run service between them.
   collision or a wrong-server lookup is visible before anyone approves.
 - Links into the phone apps carry `server_id` so the app can find the saved
   server by identity rather than by URL. The web approval page (`/activate`)
-  offers "Open in the Silo app" on phones while signed out, linking to
-  `silo://device?server=<server_id>&url=<origin>&code=<code>`: `server` is
+  offers "Open in the Prairie app" on phones while signed out, linking to
+  `prairie://device?server=<server_id>&url=<origin>&code=<code>`: `server` is
   `getDeviceLogin`'s `server_id` (left out when absent), `url` the page's
   origin, for adding the server when it isn't saved, and `code` the user code
   without its separator. The app matches `server` against its saved servers

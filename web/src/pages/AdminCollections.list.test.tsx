@@ -138,7 +138,7 @@ function problem(status: number, type: string) {
     const { V2ProblemError } =
       await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request");
     throw new V2ProblemError("op", {
-      type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+      type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
       title: type,
       status,
     } as never);

@@ -124,7 +124,7 @@ func TestSubscriptionMutationQuality(t *testing.T) {
 	deps := pilotDeps(nil, nil)
 	deps.DownloadSubscriptionMutations = svc
 	h := newTestHandler(t, deps)
-	device := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Silo-Device-Id", "device-one")
+	device := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Prairie-Device-Id", "device-one")
 	path := Prefix + "/downloads/subscriptions"
 	rec := do(t, h, "POST", path, `{"series_id":"series","mode":"future","delete_watched":false,"max_storage_bytes":0,"quality":"10mbps"}`, device)
 	// The synthetic row predates monitor quality, so it reads as original.

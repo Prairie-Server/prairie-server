@@ -141,9 +141,9 @@ func TestRetryAfterSecondsRoundsUp(t *testing.T) {
 
 func testAttemptRedisClient(t *testing.T) *redis.Client {
 	t.Helper()
-	raw := os.Getenv("SILO_TEST_REDIS_URL")
+	raw := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if raw == "" {
-		t.Skip("SILO_TEST_REDIS_URL required for the Redis attempt limiter test")
+		t.Skip("PRAIRIE_TEST_REDIS_URL required for the Redis attempt limiter test")
 	}
 	opts, err := redis.ParseURL(raw)
 	if err != nil {

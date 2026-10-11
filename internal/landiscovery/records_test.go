@@ -11,7 +11,7 @@ import (
 )
 
 var testService = service{
-	instance: "Living Room (Den)", host: "silo-6f1c2a9b-abcdef", serverID: "6f1c2a9b-0d4e",
+	instance: "Living Room (Den)", host: "prairie-6f1c2a9b-abcdef", serverID: "6f1c2a9b-0d4e",
 	port: 8080, ipv4: true, ipv6: true,
 }
 
@@ -85,7 +85,7 @@ func TestInstanceNamesSurviveTheWire(t *testing.T) {
 	// Spaces, parentheses, dots and UTF-8 must stay one label and compare
 	// equal after a round trip, or the responder would ignore questions about
 	// its own name.
-	for _, name := range []string{"Living Room (Den)", "Silo v1.0", "Wohnzimmer – Ö", `quote"back\slash`} {
+	for _, name := range []string{"Living Room (Den)", "Prairie v1.0", "Wohnzimmer – Ö", `quote"back\slash`} {
 		svc := testService
 		svc.instance = name
 		q := roundTrip(t, query(svc.instanceName(), dns.TypeSRV))
@@ -164,7 +164,7 @@ func TestSimultaneousProbeTiebreak(t *testing.T) {
 	// Two replicas of one deployment probe the same instance name with
 	// different host labels; exactly one must yield.
 	a, b := testService, testService
-	a.host, b.host = "silo-6f1c2a9b-aaaaaa", "silo-6f1c2a9b-bbbbbb"
+	a.host, b.host = "prairie-6f1c2a9b-aaaaaa", "prairie-6f1c2a9b-bbbbbb"
 	aLoses := a.losesTiebreak(roundTrip(t, b.probe(testIPs)))
 	bLoses := b.losesTiebreak(roundTrip(t, a.probe(testIPs)))
 	if aLoses == bLoses {

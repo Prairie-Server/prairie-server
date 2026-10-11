@@ -41,7 +41,7 @@ vi.mock("@/hooks/usePostSignInNavigation", () => ({
   usePostSignInNavigation: () => vi.fn(async () => undefined),
 }));
 vi.mock("@/hooks/useServerBranding", () => ({
-  useServerBranding: () => ({ serverName: "Silo", loginSubtitle: "Sign in" }),
+  useServerBranding: () => ({ serverName: "Prairie", loginSubtitle: "Sign in" }),
 }));
 vi.mock("@/hooks/useDocumentTitle", () => ({ useDocumentTitle: vi.fn() }));
 vi.mock("@/components/auth/AuthBackground", () => ({ AuthBackground: () => null }));
@@ -50,8 +50,8 @@ const START = {
   device_code: "dev-1",
   user_code: "4821-7730",
   match_code: "warm pony",
-  verification_uri: "https://silo.example.test/activate",
-  verification_uri_complete: "https://silo.example.test/activate?code=48217730",
+  verification_uri: "https://prairie.example.test/activate",
+  verification_uri_complete: "https://prairie.example.test/activate?code=48217730",
   expires_in: 900,
   interval: 5,
 };
@@ -60,7 +60,7 @@ let pollAnswer: Record<string, unknown>;
 
 beforeEach(() => {
   window.sessionStorage.clear();
-  auth.providers = [{ id: "local", mode: "credentials", display_name: "Silo", default: true }];
+  auth.providers = [{ id: "local", mode: "credentials", display_name: "Prairie", default: true }];
   auth.sessionRestoreUnavailable = false;
   auth.sessionRestoreProviderUnavailable = false;
   auth.retrySessionRestore.mockReset();

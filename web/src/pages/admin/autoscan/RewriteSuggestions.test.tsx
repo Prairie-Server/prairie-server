@@ -92,7 +92,7 @@ it("does not refresh or replay the explicit provider read after 401", async () =
     Promise.resolve(
       response(
         {
-          type: "https://silo.example/problems/authentication_required",
+          type: "https://prairie.example/problems/authentication_required",
           title: "Authentication required",
           status: 401,
         },

@@ -456,7 +456,7 @@ function RevokeDialog({
             Revoke {subject} on {device?.device_name || "this device"}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            The Silo app on {device?.profile_name ? `${device.profile_name}'s ` : "the "}
+            The Prairie app on {device?.profile_name ? `${device.profile_name}'s ` : "the "}
             {device?.device_name || "device"} deletes {count === 1 ? "it" : "them"} the next time it
             connects.
             {device?.stale

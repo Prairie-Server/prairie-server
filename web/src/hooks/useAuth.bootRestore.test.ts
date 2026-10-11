@@ -31,7 +31,7 @@ function problem(status: number, body: unknown): Response {
 }
 
 const dependencyUnavailable = {
-  type: "https://siloserver.org/docs/api/v2/problems/dependency_unavailable",
+  type: "https://prairieserver.org/docs/api/v2/problems/dependency_unavailable",
   title: "Unavailable",
   status: 503,
   detail: "Try later.",

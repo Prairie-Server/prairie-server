@@ -222,7 +222,7 @@ it.each([
   [
     503,
     "dependency_unavailable",
-    "Silo couldn't read the Silo maintained catalog. Try again in a moment.",
+    "Prairie couldn't read the Prairie maintained catalog. Try again in a moment.",
   ],
 ] as const)(
   "shows the server's reason when an install fails with %i",

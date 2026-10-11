@@ -29,8 +29,8 @@ const (
 
 // adminTopActivityWatchSourceFilter keeps only history written by playback on
 // this server, so the leaderboards count what people actually played here.
-// Playback from Silo and Jellyfin clients both writes `playback` rows.
-// Marking something watched is not a play: `manual` rows (Silo clients) and
+// Playback from Prairie and Jellyfin clients both writes `playback` rows.
+// Marking something watched is not a play: `manual` rows (Prairie clients) and
 // `jellycompat` rows (Jellyfin clients) are all marks, and marking a series
 // writes one row per episode. This is an allowlist rather than a denylist of
 // known providers because plugin watch providers store their own arbitrary

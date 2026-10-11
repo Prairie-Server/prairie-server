@@ -26,11 +26,11 @@ it("does not refresh or replay a regeneration after 401", async () => {
       calls.push(decodeURIComponent(new URL(String(input), "http://localhost").pathname));
       return new Response(
         JSON.stringify({
-          type: "https://siloserver.org/docs/api/v2/problems/invalid_token",
+          type: "https://prairieserver.org/docs/api/v2/problems/invalid_token",
           title: "Invalid token",
           status: 401,
           detail: "Expired",
-          instance: "urn:silo:request:test",
+          instance: "urn:prairie:request:test",
         }),
         { status: 401, headers: { "Content-Type": "application/problem+json" } },
       );

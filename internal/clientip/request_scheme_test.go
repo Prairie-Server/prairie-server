@@ -90,8 +90,8 @@ func TestRequestHostTrustBoundary(t *testing.T) {
 		values     []string
 		want       string
 	}{
-		{"trusted", "127.0.0.1:80", []string{"silo.example.com"}, "silo.example.com"},
-		{"trusted with port", "127.0.0.1:80", []string{" silo.example.com:8443 "}, "silo.example.com:8443"},
+		{"trusted", "127.0.0.1:80", []string{"prairie.example.com"}, "prairie.example.com"},
+		{"trusted with port", "127.0.0.1:80", []string{" prairie.example.com:8443 "}, "prairie.example.com:8443"},
 		{"untrusted", "192.0.2.1:80", []string{"hostile.example"}, "example.test:8080"},
 		{"no header", "127.0.0.1:80", nil, "example.test:8080"},
 		{"repeated", "127.0.0.1:80", []string{"a.example", "b.example"}, "example.test:8080"},

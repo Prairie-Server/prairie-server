@@ -56,7 +56,7 @@ func deviceHeaderProblem(detail string) *Problem {
 		WithErrors(ProblemError{Location: locationDeviceHeader, Code: codeInvalid, Detail: detail})
 }
 
-// withClientDevice attaches the request's X-Silo-Device-* headers for the
+// withClientDevice attaches the request's X-Prairie-Device-* headers for the
 // login session a sign-in operation opens (auth.WithClientDevice). The id has
 // already passed rejectMalformedDeviceHeader.
 func withClientDevice(ctx context.Context) context.Context {

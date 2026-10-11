@@ -3989,7 +3989,7 @@ describe("VideoPlayer lost connection", () => {
       onPlanFailure,
       connectionStatus: "lost",
       connectionErrorTitle: "Connection lost",
-      connectionError: "Silo lost its connection to the server and couldn't reconnect.",
+      connectionError: "Prairie lost its connection to the server and couldn't reconnect.",
     });
     const video = container.querySelector("video");
     if (!video) throw new Error("expected video element");

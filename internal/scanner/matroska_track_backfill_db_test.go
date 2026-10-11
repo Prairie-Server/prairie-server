@@ -57,9 +57,9 @@ func readBackfilledSubtitleTracks(t *testing.T, ctx context.Context, pool *pgxpo
 // probe, sets nothing but container_track_id, and leaves every other row as it
 // found it. A row whose tracks do not decode must not end the pass.
 func TestMatroskaTrackBackfillRecordsTrackNumbers(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -167,9 +167,9 @@ func backfillCandidateIDs(t *testing.T, ctx context.Context, b *MatroskaTrackBac
 // the row changes. Storage that cannot open a file, and a file that differs
 // from its row until a scan rewrites it, are not recorded.
 func TestMatroskaTrackBackfillReadsEachFileOnce(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

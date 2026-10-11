@@ -346,7 +346,7 @@ type CapabilityInfo struct {
 	// into the bulk enrichment pass. See extractBulkLookupLimit.
 	BulkLookupLimit int
 	// RatingSources are the rating sources of its own the capability declares
-	// (rating_sources), beyond Silo's built-in ones. See extractRatingSources.
+	// (rating_sources), beyond Prairie's built-in ones. See extractRatingSources.
 	RatingSources []models.RatingSourceDefinition
 }
 
@@ -592,7 +592,7 @@ const maxRatingSourceNameRunes = 24
 const maxRatingSourceLabelRunes = 60
 
 // extractRatingSources parses a capability's rating_sources: the ratings it
-// reports under ratings.sources beyond Silo's own IMDb and TMDB. Each entry is
+// reports under ratings.sources beyond Prairie's own IMDb and TMDB. Each entry is
 // {"id", "name", "label", "scale", "percent"}:
 //
 //	"rating_sources": [{"id": "kinopoisk", "name": "Kinopoisk", "scale": 10}]

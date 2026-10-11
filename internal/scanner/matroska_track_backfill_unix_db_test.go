@@ -19,9 +19,9 @@ import (
 // few timeouts in a row instead of waiting out every remaining file. FIFOs
 // with no writer block on open the way files on a hung mount do.
 func TestMatroskaTrackBackfillStopsOnStalledStorage(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -64,9 +64,9 @@ func TestMatroskaTrackBackfillStopsOnStalledStorage(t *testing.T) {
 // check, but its stuck reads still fill the read slots, and the pass ends
 // there instead of accumulating more.
 func TestMatroskaTrackBackfillStopsOnIntermittentStalls(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

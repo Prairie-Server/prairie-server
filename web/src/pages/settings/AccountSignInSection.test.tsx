@@ -25,7 +25,7 @@ vi.mock("@/lib/externalSignIn", async (original) => ({
 }));
 vi.mock("sonner", () => ({ toast: { success: toastSuccess } }));
 
-const LOCAL = { id: "local", mode: "credentials", display_name: "Silo account", default: true };
+const LOCAL = { id: "local", mode: "credentials", display_name: "Prairie account", default: true };
 const OIDC = {
   id: "plugin:5:oidc",
   installation_id: "5",
@@ -68,7 +68,7 @@ const calls: Array<{ op: string; options?: unknown }> = [];
 
 function problem(type: string, status: number, location?: string) {
   return new V2ProblemError("op", {
-    type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+    type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
     title: type,
     status,
     detail: `raw ${type}`,
@@ -183,14 +183,14 @@ it("explains the server's refusal to remove the last sign-in method", async () =
   const dialog = await screen.findByRole("alertdialog");
   fireEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }));
   expect((await within(dialog).findByRole("alert")).textContent).toBe(
-    "Company SSO is the only way to sign in to your account, so it can't be disconnected. Ask an admin to set a Silo password for you first.",
+    "Company SSO is the only way to sign in to your account, so it can't be disconnected. Ask an admin to set a Prairie password for you first.",
   );
 });
 
 async function openOAuthConnect() {
   mount();
   fireEvent.click(await screen.findByRole("button", { name: "Connect Company SSO" }));
-  fireEvent.change(screen.getByLabelText("Silo password"), { target: { value: "local pw" } });
+  fireEvent.change(screen.getByLabelText("Prairie password"), { target: { value: "local pw" } });
   fireEvent.click(screen.getByRole("button", { name: "Continue to Company SSO" }));
 }
 
@@ -215,12 +215,12 @@ it.each([
   [
     "POST /api/v2/account/identities/link-ticket",
     problem("validation_failed", 422, "body.password"),
-    "That isn't your current Silo password.",
+    "That isn't your current Prairie password.",
   ],
   [
     "POST /api/v2/account/identities/link-ticket",
     problem("local_password_required", 409),
-    "Your account has no Silo password to confirm this with. Ask an admin to connect the provider for you.",
+    "Your account has no Prairie password to confirm this with. Ask an admin to connect the provider for you.",
   ],
   [
     "POST /api/v2/account/identities/link-start",
@@ -243,7 +243,7 @@ async function submitDirectoryConnect() {
   auth.providers = [LOCAL, LDAP];
   mount();
   fireEvent.click(await screen.findByRole("button", { name: "Connect Directory" }));
-  fireEvent.change(screen.getByLabelText("Silo password"), { target: { value: "local pw" } });
+  fireEvent.change(screen.getByLabelText("Prairie password"), { target: { value: "local pw" } });
   fireEvent.change(screen.getByLabelText("Directory username"), { target: { value: "alice" } });
   fireEvent.change(screen.getByLabelText("Directory password"), { target: { value: "dir pw" } });
   fireEvent.click(screen.getByRole("button", { name: "Connect" }));
@@ -268,7 +268,7 @@ it("connects a directory with its username and password", async () => {
 });
 
 it.each([
-  [problem("validation_failed", 422, "body.password"), "That isn't your current Silo password."],
+  [problem("validation_failed", 422, "body.password"), "That isn't your current Prairie password."],
   [
     problem("validation_failed", 422, "body.directory_password"),
     "Directory didn't accept that username and password.",
@@ -289,7 +289,7 @@ it.each([
   [problem("already_linked", 409), "Your account is already connected to this sign-in provider."],
   [
     problem("local_password_required", 409),
-    "Your account has no Silo password to confirm this with. Ask an admin to connect the provider for you.",
+    "Your account has no Prairie password to confirm this with. Ask an admin to connect the provider for you.",
   ],
 ])("explains a refused directory connect (%#)", async (failure, text) => {
   failures["POST /api/v2/account/identities/link-credentials"] = failure;
@@ -302,13 +302,13 @@ async function submitNetworkConnect() {
   mount();
   fireEvent.click(await screen.findByRole("button", { name: "Connect Tailscale" }));
   expect(
-    screen.getByText(/Confirm your Silo password to connect Alice Example's Tailscale account/),
+    screen.getByText(/Confirm your Prairie password to connect Alice Example's Tailscale account/),
   ).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("Silo password"), { target: { value: "local pw" } });
+  fireEvent.change(screen.getByLabelText("Prairie password"), { target: { value: "local pw" } });
   fireEvent.click(screen.getByRole("button", { name: "Connect" }));
 }
 
-it("connects the network identity of this device with the Silo password only", async () => {
+it("connects the network identity of this device with the Prairie password only", async () => {
   await submitNetworkConnect();
   await screen.findByText("Connected Tailscale. Sign in with it from now on.");
   expect(opCalls("POST /api/v2/account/identities/link-network")[0]?.options).toEqual({
@@ -324,7 +324,7 @@ it.each([
     problem("network_identity_required", 403),
     "Open this server at its Tailscale address to connect Tailscale.",
   ],
-  [problem("validation_failed", 422, "body.password"), "That isn't your current Silo password."],
+  [problem("validation_failed", 422, "body.password"), "That isn't your current Prairie password."],
 ])("explains a refused network connect (%#)", async (failure, text) => {
   failures["POST /api/v2/account/identities/link-network"] = failure;
   await submitNetworkConnect();

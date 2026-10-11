@@ -37,7 +37,7 @@ export function tmdbRating(value: number | null | undefined): DisplayRating | nu
 
 /**
  * The one rating a card-sized summary (the home hero, Watch Tonight) shows:
- * IMDb, or TMDB when there is no IMDb score. Every Silo client follows the
+ * IMDb, or TMDB when there is no IMDb score. Every Prairie client follows the
  * same rule.
  */
 export function primaryCardRating(item: {

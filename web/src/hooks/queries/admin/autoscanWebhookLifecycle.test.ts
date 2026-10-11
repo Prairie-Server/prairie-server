@@ -102,7 +102,7 @@ it.each(["401", "network"])(`create never replays %s under global retry3`, async
           Promise.resolve(
             new Response(
               JSON.stringify({
-                type: "https://silo.dev/problems/authentication_required",
+                type: "https://prairie.dev/problems/authentication_required",
                 title: "Unauthorized",
                 status: 401,
               }),

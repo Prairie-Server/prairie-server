@@ -14,5 +14,5 @@
       "message": "The discovery document names a different issuer"
     }
   ],
-  "callback_url": "https://silo.example.test/api/v2/auth/oauth/3/callback"
+  "callback_url": "https://prairie.example.test/api/v2/auth/oauth/3/callback"
 }

@@ -217,7 +217,7 @@ func TestPollOnceLegacyPathsClaimEachReportedPath(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{"arr": {e01, e02}}, nextMarker: "m1"}
@@ -381,9 +381,9 @@ func TestRedisSuppressorWithoutRedisAlwaysScans(t *testing.T) {
 }
 
 func TestRedisSuppressorClaimsByObservedState(t *testing.T) {
-	endpoint := os.Getenv("SILO_TEST_REDIS_URL")
+	endpoint := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if endpoint == "" {
-		t.Skip("SILO_TEST_REDIS_URL required for the Redis suppressor integration test")
+		t.Skip("PRAIRIE_TEST_REDIS_URL required for the Redis suppressor integration test")
 	}
 	opts, err := redis.ParseURL(endpoint)
 	if err != nil {

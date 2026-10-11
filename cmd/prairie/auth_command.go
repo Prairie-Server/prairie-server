@@ -18,10 +18,10 @@ import (
 const (
 	authLocalLoginCommand = "local-login"
 	authEnableAction      = "enable"
-	authCommandUsage      = "usage: silo auth " + authLocalLoginCommand + " " + authEnableAction + " [-user <name or email> [-temporary-password]] [-env .env]"
+	authCommandUsage      = "usage: prairie auth " + authLocalLoginCommand + " " + authEnableAction + " [-user <name or email> [-temporary-password]] [-env .env]"
 )
 
-// authCommand is one parsed `silo auth` invocation.
+// authCommand is one parsed `prairie auth` invocation.
 type authCommand struct {
 	envFile string
 	// user names one account to recover; empty recovers the server switch.
@@ -32,13 +32,13 @@ type authCommand struct {
 
 // runAuthCommand recovers local password sign-in from the server's command
 // line, for a server whose external sign-in provider is down or removed.
-// Like `silo owner set` it needs shell access to a node and the DATABASE_URL
+// Like `prairie owner set` it needs shell access to a node and the DATABASE_URL
 // the server uses, so it has no API route. Every node reads the policy from
 // the database at each sign-in, so it applies at once.
 //
-//   - `silo auth local-login enable` turns the auth.local_password_login
+//   - `prairie auth local-login enable` turns the auth.local_password_login
 //     setting back on.
-//   - `silo auth local-login enable -user <name>` turns one account's local
+//   - `prairie auth local-login enable -user <name>` turns one account's local
 //     password sign-in back on (linking an account to a provider turns it
 //     off, the Owner's too); with -temporary-password the account also gets
 //     a random temporary password, printed once, which it must replace at
@@ -103,7 +103,7 @@ func enableAccountLocalLogin(ctx context.Context, users *auth.UserRepository, cm
 		}
 	}
 	if !serverAllows && !user.BreakGlass {
-		_, err := fmt.Fprintln(out, "Local password sign-in is off on this server, and this account is not a break-glass admin. Run `silo auth local-login enable` too.")
+		_, err := fmt.Fprintln(out, "Local password sign-in is off on this server, and this account is not a break-glass admin. Run `prairie auth local-login enable` too.")
 		return err
 	}
 	return nil

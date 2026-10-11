@@ -53,11 +53,11 @@ describe("useStartShuffle", () => {
   it("says when nothing in the scope can play", async () => {
     mocks.createShuffle.mockRejectedValue(
       new V2ProblemError("createShuffle", {
-        type: "https://siloserver.org/docs/api/v2/problems/conflict",
+        type: "https://prairieserver.org/docs/api/v2/problems/conflict",
         title: "Conflict",
         status: 409,
         detail: "Nothing here can be played.",
-        instance: "urn:silo:request:1",
+        instance: "urn:prairie:request:1",
       }),
     );
     const { result } = renderHook(() => useStartShuffle(), { wrapper });

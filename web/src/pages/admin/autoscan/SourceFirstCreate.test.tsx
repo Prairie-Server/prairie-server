@@ -22,7 +22,7 @@ const webhookURL = "/api/v2/autoscan/webhooks/first-synthetic";
 
 const created = {
   id: "source-first",
-  plugin_id: "silo.autoscan.arr-webhook",
+  plugin_id: "prairie.autoscan.arr-webhook",
   capability_id: "arr-webhook",
   connection_id: null,
   enabled: true,
@@ -95,10 +95,10 @@ function stubAPI({ failSourceReadsAfterCreate = false } = {}) {
         return json({
           items: [
             {
-              plugin_id: "silo.autoscan.arr-webhook",
+              plugin_id: "prairie.autoscan.arr-webhook",
               capability_id: "arr-webhook",
               display_name: "Sonarr/Radarr Webhook",
-              description: "Sonarr or Radarr posts to Silo the moment an import finishes.",
+              description: "Sonarr or Radarr posts to Prairie the moment an import finishes.",
               descriptor: {
                 delivery_modes: ["webhook"],
                 connection: "none",
@@ -134,7 +134,7 @@ async function addFirstWebhookSource() {
   const remote = screen.getByRole("textbox", { name: "Sonarr/Radarr root folder" });
   await user.clear(remote);
   await user.type(remote, "/data/media/tv");
-  const local = screen.getByRole("textbox", { name: "Path Silo uses" });
+  const local = screen.getByRole("textbox", { name: "Path Prairie uses" });
   await user.clear(local);
   await user.type(local, "/mnt/media/tv");
   await user.click(screen.getByRole("button", { name: "Create and continue" }));

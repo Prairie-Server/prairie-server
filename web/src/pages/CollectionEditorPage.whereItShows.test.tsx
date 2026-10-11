@@ -53,7 +53,7 @@ function problem(status: number, type: string) {
     const { V2ProblemError } =
       await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request");
     throw new V2ProblemError("op", {
-      type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+      type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
       title: type,
       status,
     } as never);
@@ -185,7 +185,7 @@ function showPage(entry: string | { pathname: string; search: string; state: unk
 const EDITOR = "/admin/collections/c1/edit?libraryId=1";
 const rowsGroup = () => screen.findByRole("group", { name: "Rows that show it" });
 const location = () => screen.getByRole("status", { name: "Location" }).textContent ?? "";
-const homeRowsParams = () => new URL(location(), "https://silo.test").searchParams;
+const homeRowsParams = () => new URL(location(), "https://prairie.test").searchParams;
 
 async function openAddAsRow(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("button", { name: /Add as a row/ }));

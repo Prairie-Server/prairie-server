@@ -11,7 +11,7 @@ vote-weighted rating.
 
 Metadata providers report TMDB's score and vote count as the `tmdb` rating
 source, which the server stores in `media_item_rating_sources`. The TMDB
-plugin sends it from silo.tmdb 1.2.25; MDBList sends it too. A trigger on that
+plugin sends it from prairie.tmdb 1.2.25; MDBList sends it too. A trigger on that
 table (`trg_media_item_rating_sources_tmdb_votes`) copies the row's count and
 average (score / 10) onto `media_items.tmdb_vote_count` and
 `tmdb_vote_average` in the same statement as every insert, update or delete of

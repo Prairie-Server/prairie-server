@@ -334,7 +334,7 @@ not count.
 
 When a proxy node serves the media, this server does not see the media
 requests. Instead the node records delivery in Redis
-(`silo:playback-delivery:{session_id}`) as media bytes reach the client: only
+(`prairie:playback-delivery:{session_id}`) as media bytes reach the client: only
 a playlist, segment, or progressive response with a 2xx status that actually
 sends bytes counts, and a long progressive response keeps counting while it
 flows. The node writes at most once every 20 seconds per session, and a record

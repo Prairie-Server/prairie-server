@@ -234,16 +234,16 @@ func TestPlaybackV2ProblemMapping(t *testing.T) {
 	}
 }
 
-// The start forwards the declared X-Silo-Device-* headers, which the service
+// The start forwards the declared X-Prairie-Device-* headers, which the service
 // records in the profile's device registry; the playback device X-Device-ID
 // names is unaffected.
 func TestPlaybackV2StartForwardsDeclaredDevice(t *testing.T) {
 	deps, _ := catalogDeps(t)
 	fake := &fakePlaybackService{}
 	deps.Playback = fake
-	headers := with(viewerHeaders(), "X-Silo-Device-Id", "phone-1")
-	headers = with(headers, "X-Silo-Device-Name", "Pocket")
-	headers = with(headers, "X-Silo-Device-Platform", "iOS")
+	headers := with(viewerHeaders(), "X-Prairie-Device-Id", "phone-1")
+	headers = with(headers, "X-Prairie-Device-Name", "Pocket")
+	headers = with(headers, "X-Prairie-Device-Platform", "iOS")
 	response := do(t, newTestHandler(t, deps), http.MethodPost, Prefix+"/playback/start", playbackJSON(t, playbackStartFixture(t)), headers)
 	if response.Code != 201 {
 		t.Fatalf("start: %d %s", response.Code, response.Body.String())

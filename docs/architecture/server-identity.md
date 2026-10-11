@@ -6,8 +6,8 @@ access provider exposes ([network-access.md](network-access.md)). Clients used
 to derive a server's identity from its URL, so two addresses looked like two
 servers, and companion pairing handed the TV the phone's address whether or
 not the TV could reach it. Two `/api/v2` operations fix that. Tracking issue:
-Prairie-Server/prairie-server#1268; client work: Prairie-Server/silo-apple#341 and
-Prairie-Server/silo-android#352.
+Prairie-Server/prairie-server#1268; client work: Prairie-Server/prairie-apple#341 and
+Prairie-Server/prairie-android#352.
 
 Finding a server a client does not know yet (LAN advertisement, overlay
 short names) is [server-discovery.md](server-discovery.md); it hands clients

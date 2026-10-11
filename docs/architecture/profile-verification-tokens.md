@@ -21,7 +21,7 @@ profile's PIN, and on no other write. A database trigger does it whenever
 `pin_hash` changes, so every writer advances it exactly once, including code
 that does not know the column (an older node, manual SQL); the profile stores
 do not bump it themselves. Postgres has `user_profiles_pin_revision`. The
-per-user SQLite store, which `cmd/silo` uses instead of Postgres when
+per-user SQLite store, which `cmd/prairie` uses instead of Postgres when
 `userdb.backend` is `sqlite`, has `profiles_pin_revision`; schema version 30
 adds its column, starting at 0, when a user's file is next opened. So:
 

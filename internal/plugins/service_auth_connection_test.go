@@ -5,12 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestAuthConnectionRejectsDuplicateStagedKeys(t *testing.T) {
-	pluginManifest := connectionTestManifest(t, "silo.auth.oidc", "0.1.0")
+	pluginManifest := connectionTestManifest(t, "prairie.auth.oidc", "0.1.0")
 	pluginManifest.Capabilities = []*pluginv1.CapabilityDescriptor{{
 		Type: "auth_provider.v1", Id: "oidc", AuthModes: []string{"oauth2"},
 		Metadata: &structpb.Struct{Fields: map[string]*structpb.Value{"connection_test": structpb.NewBoolValue(true)}},

@@ -18,20 +18,20 @@ import (
 
 func deliveryRedisTestClient(t *testing.T) *redis.Client {
 	t.Helper()
-	url := os.Getenv("SILO_TEST_REDIS_URL")
+	url := os.Getenv("PRAIRIE_TEST_REDIS_URL")
 	if url == "" {
-		t.Skip("SILO_TEST_REDIS_URL required for the mounted delivery record tests")
+		t.Skip("PRAIRIE_TEST_REDIS_URL required for the mounted delivery record tests")
 	}
 	options, err := redis.ParseURL(url)
 	if err != nil {
-		t.Fatalf("parse SILO_TEST_REDIS_URL: %v", err)
+		t.Fatalf("parse PRAIRIE_TEST_REDIS_URL: %v", err)
 	}
 	client := redis.NewClient(options)
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 	if err := client.Ping(ctx).Err(); err != nil {
 		_ = client.Close()
-		t.Fatalf("SILO_TEST_REDIS_URL does not answer: %v", err)
+		t.Fatalf("PRAIRIE_TEST_REDIS_URL does not answer: %v", err)
 	}
 	t.Cleanup(func() { _ = client.Close() })
 	return client

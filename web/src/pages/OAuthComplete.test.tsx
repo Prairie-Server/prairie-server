@@ -86,7 +86,7 @@ it("redeems the code once and goes on to where the sign-in started", async () =>
 it("sends a refused code back to the login page, which does not restart the provider", async () => {
   request.mockRejectedValue(
     new V2ProblemError("completeOAuthLogin", {
-      type: "https://siloserver.org/docs/api/v2/problems/invalid_grant",
+      type: "https://prairieserver.org/docs/api/v2/problems/invalid_grant",
       title: "Invalid grant",
       status: 400,
       detail: "raw",
@@ -102,7 +102,7 @@ it("reports a failure after the code was redeemed as a failed sign-in", async ()
   request.mockImplementation(async (operation: string) => {
     if (operation === "POST /api/v2/auth/oauth/complete") return COMPLETION;
     throw new V2ProblemError("getAccount", {
-      type: "https://siloserver.org/docs/api/v2/problems/internal_error",
+      type: "https://prairieserver.org/docs/api/v2/problems/internal_error",
       title: "Internal error",
       status: 500,
     } as never);

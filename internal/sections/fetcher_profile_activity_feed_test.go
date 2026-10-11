@@ -19,9 +19,9 @@ import (
 // config the caller chooses, so it resolves only to a profile on the caller's
 // account: pinning another account's profile lists nothing.
 func TestProfileActivityFeedPinnedProfileStaysOnCallersAccountDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

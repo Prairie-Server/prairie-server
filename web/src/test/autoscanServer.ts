@@ -78,10 +78,10 @@ export function stubAutoscanServer(state: AutoscanServerState) {
 }
 
 export const ARR_WEBHOOK_PLUGIN: AutoscanAvailableSource = {
-  plugin_id: "silo.autoscan.arr-webhook",
+  plugin_id: "prairie.autoscan.arr-webhook",
   capability_id: "arr-webhook",
   display_name: "Sonarr/Radarr Webhook",
-  description: "Sonarr or Radarr posts to Silo the moment an import finishes.",
+  description: "Sonarr or Radarr posts to Prairie the moment an import finishes.",
   descriptor: {
     delivery_modes: ["webhook"],
     connection: "none",
@@ -110,10 +110,10 @@ export const ARR_WEBHOOK_PLUGIN: AutoscanAvailableSource = {
 };
 
 export const ARR_POLL_PLUGIN: AutoscanAvailableSource = {
-  plugin_id: "silo.autoscan.arr",
+  plugin_id: "prairie.autoscan.arr",
   capability_id: "arr",
   display_name: "Sonarr / Radarr",
-  description: "Triggers Silo rescans from Sonarr/Radarr import and rename history.",
+  description: "Triggers Prairie rescans from Sonarr/Radarr import and rename history.",
   descriptor: {
     delivery_modes: ["poll"],
     connection: "optional",
@@ -147,7 +147,7 @@ export function withDescriptor(
 export function pollSource(overrides: Partial<AutoscanSource> = {}): AutoscanSource {
   return {
     id: "poll-a",
-    plugin_id: "silo.autoscan.arr",
+    plugin_id: "prairie.autoscan.arr",
     capability_id: "arr",
     connection_id: "conn-sonarr",
     enabled: true,
@@ -166,7 +166,7 @@ export function pollSource(overrides: Partial<AutoscanSource> = {}): AutoscanSou
 export function webhookSource(overrides: Partial<AutoscanSource> = {}): AutoscanSource {
   return {
     id: "hook-a",
-    plugin_id: "silo.autoscan.arr-webhook",
+    plugin_id: "prairie.autoscan.arr-webhook",
     capability_id: "arr-webhook",
     connection_id: null,
     enabled: true,

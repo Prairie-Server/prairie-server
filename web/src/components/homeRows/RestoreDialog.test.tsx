@@ -41,9 +41,9 @@ describe("RestoreDialog", () => {
   it("says what happens to Home, its collection rows and the library pages", () => {
     render(<Harness collectionRowTitles={["Studio Ghibli", "90s Crowd-Pleasers"]} />);
     const dialog = screen.getByRole("dialog", { name: "Restore Home to the default rows?" });
-    expect(dialog).toHaveAccessibleDescription("Home goes back to the rows Silo starts with.");
+    expect(dialog).toHaveAccessibleDescription("Home goes back to the rows Prairie starts with.");
     expect(bullets()).toEqual([
-      "The 9 rows on Home are replaced by Silo's default rows.",
+      "The 9 rows on Home are replaced by Prairie's default rows.",
       "Rows that show collections, like Studio Ghibli and 90s Crowd-Pleasers, are removed. The collections themselves stay in Collections.",
       "Library pages (Movies, TV Shows) don't change.",
     ]);
@@ -61,9 +61,9 @@ describe("RestoreDialog", () => {
     );
     expect(
       screen.getByRole("dialog", { name: "Restore the Movies page to the default rows?" }),
-    ).toHaveAccessibleDescription("The Movies page goes back to the rows Silo starts with.");
+    ).toHaveAccessibleDescription("The Movies page goes back to the rows Prairie starts with.");
     expect(bullets()).toEqual([
-      "The 1 row on the Movies page is replaced by Silo's default rows.",
+      "The 1 row on the Movies page is replaced by Prairie's default rows.",
       "Home and the other library pages (TV Shows) don't change.",
     ]);
     expect(
@@ -81,14 +81,14 @@ describe("RestoreDialog", () => {
       />,
     );
     expect(bullets()).toEqual([
-      "The 9 rows on the Movies page are replaced by Silo's default rows.",
+      "The 9 rows on the Movies page are replaced by Prairie's default rows.",
       "Studio Ghibli shows a collection and is removed. The collection itself stays in Collections.",
       "Home doesn't change.",
     ]);
     unmount();
     render(<Harness otherLibraryLabels={[]} collectionRowTitles={["A", "B", "C", "D", "E"]} />);
     expect(bullets()).toEqual([
-      "The 9 rows on Home are replaced by Silo's default rows.",
+      "The 9 rows on Home are replaced by Prairie's default rows.",
       "Rows that show collections, like A, B, C and 2 more, are removed. The collections themselves stay in Collections.",
     ]);
   });

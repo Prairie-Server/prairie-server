@@ -1,13 +1,13 @@
--- Set-based replacement for silo_rename_content_id (20260614120000).
+-- Set-based replacement for prairie_rename_content_id (20260614120000).
 --
 -- Re-anchoring a provider-anchored series moves the series and every season
--- and episode whose content_id embeds the old anchor. silo_rename_content_id
+-- and episode whose content_id embeds the old anchor. prairie_rename_content_id
 -- moves one value per call and walks every soft-reference column each time,
 -- so a long-running series would cost one catalog walk per episode.
--- silo_rename_content_ids(from[], to[]) moves all pairs with one UPDATE per
+-- prairie_rename_content_ids(from[], to[]) moves all pairs with one UPDATE per
 -- column, and carries the availability merge from 20260625172243. FK children
 -- follow via ON UPDATE CASCADE (20260614120000, 20260925011258).
--- silo_rename_content_id becomes a wrapper around it, so there is one rename
+-- prairie_rename_content_id becomes a wrapper around it, so there is one rename
 -- body to maintain.
 --
 -- The caller guarantees that every target id is free in the catalog
@@ -19,7 +19,7 @@
 
 -- +goose Up
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION silo_rename_content_ids(p_from text[], p_to text[])
+CREATE OR REPLACE FUNCTION prairie_rename_content_ids(p_from text[], p_to text[])
 RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -33,7 +33,7 @@ BEGIN
         RETURN;
     END IF;
     IF cardinality(p_from) <> cardinality(p_to) THEN
-        RAISE EXCEPTION 'silo_rename_content_ids: % sources but % targets',
+        RAISE EXCEPTION 'prairie_rename_content_ids: % sources but % targets',
             cardinality(p_from), cardinality(p_to);
     END IF;
 
@@ -240,7 +240,7 @@ $$;
 -- +goose StatementEnd
 
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION silo_rename_content_id(p_from text, p_to text)
+CREATE OR REPLACE FUNCTION prairie_rename_content_id(p_from text, p_to text)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -248,17 +248,17 @@ BEGIN
     IF p_from IS NULL OR p_to IS NULL OR p_from = p_to THEN
         RETURN;
     END IF;
-    PERFORM silo_rename_content_ids(ARRAY[p_from], ARRAY[p_to]);
+    PERFORM prairie_rename_content_ids(ARRAY[p_from], ARRAY[p_to]);
 END;
 $$;
 -- +goose StatementEnd
 
 -- +goose Down
--- Restore silo_rename_content_id's own body from
+-- Restore prairie_rename_content_id's own body from
 -- 20260625172243_dedupe_episode_availability_during_reid.sql before dropping
 -- the function it now wraps.
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION silo_rename_content_id(p_from text, p_to text)
+CREATE OR REPLACE FUNCTION prairie_rename_content_id(p_from text, p_to text)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -382,4 +382,4 @@ END;
 $$;
 -- +goose StatementEnd
 
-DROP FUNCTION IF EXISTS silo_rename_content_ids(text[], text[]);
+DROP FUNCTION IF EXISTS prairie_rename_content_ids(text[], text[]);

@@ -128,7 +128,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_media_items_stored_search_overview
 -- No current query reads the predecessor expression indexes, and each one
 -- recomputes its document on every title or overview write. A pre-upgrade
 -- binary still issuing expression queries returns the same results without
--- them, only slower; Silo does not support mixed-version fleets.
+-- them, only slower; Prairie does not support mixed-version fleets.
 DROP INDEX CONCURRENTLY IF EXISTS public.idx_media_items_search_title_fields;
 DROP INDEX CONCURRENTLY IF EXISTS public.idx_media_items_search_overview;
 

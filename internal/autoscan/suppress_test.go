@@ -33,7 +33,7 @@ func (r *keyRecorder) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.
 	return next
 }
 
-func TestSuppressorKeysAreUnderTheSiloPrefix(t *testing.T) {
+func TestSuppressorKeysAreUnderThePrairiePrefix(t *testing.T) {
 	client := redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"})
 	t.Cleanup(func() { _ = client.Close() })
 	recorder := &keyRecorder{}
@@ -49,7 +49,7 @@ func TestSuppressorKeysAreUnderTheSiloPrefix(t *testing.T) {
 		t.Fatalf("Release: %v", err)
 	}
 
-	want := "silo:autoscan:scanned:" + key
+	want := "prairie:autoscan:scanned:" + key
 	if len(recorder.keys) != 2 || recorder.keys[0] != want || recorder.keys[1] != want {
 		t.Fatalf("keys = %q, want the claim and release scripts on %q", recorder.keys, want)
 	}

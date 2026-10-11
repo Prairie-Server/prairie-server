@@ -146,7 +146,7 @@ export default function StorageTab({
               {formatStorageBytes(totals.untracked)}
             </span>
           }
-          detail="not in Silo's records"
+          detail="not in Prairie's records"
         />
         <StatTile
           label="Freed, 30 days"
@@ -201,7 +201,7 @@ export default function StorageTab({
         title={untrackedTarget ? `Delete untracked files on ${untrackedTarget.name}?` : ""}
         description={
           untrackedTarget
-            ? `${formatStorageBytes(untrackedTarget.untracked_bytes)} in ${untrackedTarget.untracked_files} ${untrackedTarget.untracked_files === 1 ? "file" : "files"} at the last check. Silo lists the directory again first and only deletes files no prepared-file record accounts for and that nothing has written to for an hour.`
+            ? `${formatStorageBytes(untrackedTarget.untracked_bytes)} in ${untrackedTarget.untracked_files} ${untrackedTarget.untracked_files === 1 ? "file" : "files"} at the last check. Prairie lists the directory again first and only deletes files no prepared-file record accounts for and that nothing has written to for an hour.`
             : ""
         }
         confirmLabel="Delete untracked files"
@@ -410,7 +410,7 @@ function LocationCard({
         ) : null}
         {location.untracked_bytes > 0 ? (
           <p className="text-warning">
-            Silo's records show {formatStorageBytes(indexed)} ·{" "}
+            Prairie's records show {formatStorageBytes(indexed)} ·{" "}
             {formatStorageBytes(location.untracked_bytes)} untracked ·{" "}
             <button
               type="button"
@@ -422,12 +422,12 @@ function LocationCard({
           </p>
         ) : drift !== 0 ? (
           <p className="text-warning">
-            Silo's records show {formatStorageBytes(indexed)}; the directory holds{" "}
+            Prairie's records show {formatStorageBytes(indexed)}; the directory holds{" "}
             {formatStorageBytes(usage?.bytes)}.
           </p>
         ) : usage ? (
           <p className="text-muted-foreground">
-            On disk matches Silo's records{measured ? ` · measured ${measured}` : ""}
+            On disk matches Prairie's records{measured ? ` · measured ${measured}` : ""}
           </p>
         ) : null}
         {location.storage_full ? (

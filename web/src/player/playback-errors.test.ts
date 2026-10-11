@@ -215,10 +215,10 @@ describe("describePlaybackTransportError", () => {
     const error = new PlayerFetchError(502, "Bad Gateway");
 
     expect(describePlaybackTransportError(error)?.message).toBe(
-      "Silo could not start playback right now. Please try again.",
+      "Prairie could not start playback right now. Please try again.",
     );
     expect(describePlaybackTransportError(error, "update")?.message).toBe(
-      "Silo could not update playback right now. Please try again.",
+      "Prairie could not update playback right now. Please try again.",
     );
   });
 

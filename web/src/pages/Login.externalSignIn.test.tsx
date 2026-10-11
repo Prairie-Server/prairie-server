@@ -42,12 +42,12 @@ vi.mock("@/hooks/usePostSignInNavigation", () => ({
   usePostSignInNavigation: () => vi.fn(async () => undefined),
 }));
 vi.mock("@/hooks/useServerBranding", () => ({
-  useServerBranding: () => ({ serverName: "Silo", loginSubtitle: "Sign in" }),
+  useServerBranding: () => ({ serverName: "Prairie", loginSubtitle: "Sign in" }),
 }));
 vi.mock("@/hooks/useDocumentTitle", () => ({ useDocumentTitle: vi.fn() }));
 vi.mock("@/components/auth/AuthBackground", () => ({ AuthBackground: () => null }));
 
-const LOCAL = { id: "local", mode: "credentials", display_name: "Silo account", default: true };
+const LOCAL = { id: "local", mode: "credentials", display_name: "Prairie account", default: true };
 const LDAP = {
   id: "plugin:6:ldap",
   installation_id: "6",
@@ -237,13 +237,13 @@ it.each([
     [LDAP, OIDC],
     "The sign-in provider can't be reached right now. Try again later.",
   ],
-  // A disabled Silo account (v1's user_disabled).
+  // A disabled Prairie account (v1's user_disabled).
   ["permission_denied", 403, [LOCAL], "This account is disabled."],
 ])("explains the %s password sign-in refusal", async (type, status, providers, text) => {
   auth.providers = providers;
   auth.login.mockRejectedValue(
     new V2ProblemError("login", {
-      type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+      type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
       title: type,
       status,
       detail: "raw detail",
@@ -262,7 +262,7 @@ it("stays on the password form after a refusal on /login?local=1", async () => {
   auth.providers = [OIDC];
   auth.login.mockRejectedValue(
     new V2ProblemError("login", {
-      type: "https://siloserver.org/docs/api/v2/problems/local_login_disabled",
+      type: "https://prairieserver.org/docs/api/v2/problems/local_login_disabled",
       title: "Local password sign-in disabled",
       status: 403,
       detail: "raw detail",

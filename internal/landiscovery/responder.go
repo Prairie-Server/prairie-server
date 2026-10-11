@@ -612,7 +612,7 @@ func (r *responder) goodbye(svc service) {
 	r.sendAll(func(ips []net.IP) *dns.Msg { return svc.announcement(ips, 0) })
 }
 
-// newHostLabel returns "silo-<first 8 of the server ID>-<random>": the ID
+// newHostLabel returns "prairie-<first 8 of the server ID>-<random>": the ID
 // part tells deployments apart, the random part tells apart the API
 // processes of one deployment, which each answer for their own addresses.
 func newHostLabel(serverID string) string {

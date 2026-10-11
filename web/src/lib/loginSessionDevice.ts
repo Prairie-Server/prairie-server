@@ -34,7 +34,7 @@ function platformKind(platform: string): DeviceKind {
 
 /**
  * The label and icon kind for a login session. A client that named itself
- * (X-Silo-Device-Name with X-Silo-Device-Platform, or a device-code sign-in)
+ * (X-Prairie-Device-Name with X-Prairie-Device-Platform, or a device-code sign-in)
  * keeps its name; a User-Agent is summarized as "<browser> on <platform>".
  */
 export function loginSessionDevice(session: { device_name: string; device_platform?: string }): {
@@ -51,8 +51,8 @@ export function loginSessionDevice(session: { device_name: string; device_platfo
   }
   if (!raw) return { name: "Unknown device", kind: "unknown" };
   const platform = platformLabel(raw);
-  const app = /\bSilo\b/i.test(raw)
-    ? "Silo app"
+  const app = /\bPrairie\b/i.test(raw)
+    ? "Prairie app"
     : /Edg(?:e|A|iOS)?\//.test(raw)
       ? "Edge"
       : /(?:Firefox|FxiOS)\//.test(raw)

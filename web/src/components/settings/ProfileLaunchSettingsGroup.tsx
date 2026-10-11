@@ -15,7 +15,7 @@ const CHOICES: ReadonlyArray<{ value: ProfileLaunchMode; label: string }> = [
 
 /**
  * Whether this browser reopens the last profile or asks who is watching when
- * Silo is opened in a new tab or window. Stored in the browser only.
+ * Prairie is opened in a new tab or window. Stored in the browser only.
  */
 export function ProfileLaunchSettingsGroup() {
   const [mode, setMode] = useState<ProfileLaunchMode>(getProfileLaunchMode);

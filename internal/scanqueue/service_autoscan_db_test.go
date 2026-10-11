@@ -14,7 +14,7 @@ func TestEnqueueAutoscanScansReportsRunPerTarget(t *testing.T) {
 	var eventID int64
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO autoscan_events (plugin_id, capability_id, started_at, completed_at, status)
-		VALUES ('silo.autoscan.test', 'enqueue-outcomes', now(), now(), 'success')
+		VALUES ('prairie.autoscan.test', 'enqueue-outcomes', now(), now(), 'success')
 		RETURNING id`).Scan(&eventID); err != nil {
 		t.Fatalf("seed autoscan event: %v", err)
 	}

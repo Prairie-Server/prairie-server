@@ -59,7 +59,7 @@ const STAMP = "2026-09-01T00:00:00.000Z";
 function oidcInstallation(overrides: Partial<PluginInstallation> = {}): PluginInstallation {
   return {
     id: 5,
-    plugin_id: "silo.auth.oidc",
+    plugin_id: "prairie.auth.oidc",
     version: "0.1.0",
     install_path: "/plugins/oidc",
     enabled: true,
@@ -71,8 +71,8 @@ function oidcInstallation(overrides: Partial<PluginInstallation> = {}): PluginIn
         display_name: "Single sign-on",
         metadata: { connection_test: true },
         sign_in_mode: "oauth",
-        callback_url: "https://silo.example.test/api/v2/auth/oauth/5/callback",
-        post_logout_redirect_url: "https://silo.example.test/login",
+        callback_url: "https://prairie.example.test/api/v2/auth/oauth/5/callback",
+        post_logout_redirect_url: "https://prairie.example.test/login",
       },
     ],
     presentation: { display_name: "OpenID Connect Sign-in" },
@@ -94,7 +94,7 @@ function oidcInstallation(overrides: Partial<PluginInstallation> = {}): PluginIn
     global_configs: [
       {
         key: "connection",
-        value: { issuer_url: "https://id.example.test/realms/silo", provider_logout: false },
+        value: { issuer_url: "https://id.example.test/realms/prairie", provider_logout: false },
         configured_secrets: ["client_secret"],
       },
     ],
@@ -108,15 +108,15 @@ function oidcInstallation(overrides: Partial<PluginInstallation> = {}): PluginIn
         display_order: 3,
         auto_provision: true,
         default_login: false,
-        callback_url: "https://silo.example.test/api/v2/auth/oauth/5/callback",
-        post_logout_redirect_url: "https://silo.example.test/login",
+        callback_url: "https://prairie.example.test/api/v2/auth/oauth/5/callback",
+        post_logout_redirect_url: "https://prairie.example.test/login",
         created_at: STAMP,
         updated_at: STAMP,
       },
     ],
     task_bindings: [],
     update_policy: "manual",
-    source_kind: "silo",
+    source_kind: "prairie",
     updates_paused: false,
     ...overrides,
   } as unknown as PluginInstallation;
@@ -126,7 +126,7 @@ function ldapInstallation(overrides: Partial<PluginInstallation> = {}): PluginIn
   return {
     ...oidcInstallation(),
     id: 6,
-    plugin_id: "silo.auth.ldap",
+    plugin_id: "prairie.auth.ldap",
     capabilities: [
       {
         type: "auth_provider.v1",
@@ -185,7 +185,7 @@ const calls: Array<{ op: string; options?: { body?: unknown; path?: unknown } }>
 
 function problem(type: string, status: number, detail = `raw ${type}`) {
   return new V2ProblemError("op", {
-    type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+    type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
     title: type,
     status,
     detail,
@@ -201,7 +201,7 @@ beforeEach(() => {
     "auth.email_auto_match": "false",
     "auth.provider_recheck_interval": "12h",
     "auth.provider_recheck_outage_policy": "fail_open",
-    "server.public_url": "https://silo.example.test",
+    "server.public_url": "https://prairie.example.test",
   };
   state.dirty = new Set();
   state.setValue.mockReset();
@@ -227,7 +227,7 @@ beforeEach(() => {
   held = {};
   testResult = {
     ok: false,
-    callback_url: "https://silo.example.test/api/v2/auth/oauth/6/callback",
+    callback_url: "https://prairie.example.test/api/v2/auth/oauth/6/callback",
     steps: [
       { id: "discovery", label: "Discovery document reachable", ok: true, message: "Loaded" },
       { id: "client", label: "Client credentials accepted", ok: false, message: "invalid_client" },
@@ -365,10 +365,10 @@ describe("SignInSettings provider choice", () => {
     const oidc = providerPanel("OpenID Connect");
     expect(within(oidc).getByTestId("sign-in-provider-state")).toHaveTextContent("On");
     expect(within(oidc).getByLabelText("Redirect URI")).toHaveValue(
-      "https://silo.example.test/api/v2/auth/oauth/5/callback",
+      "https://prairie.example.test/api/v2/auth/oauth/5/callback",
     );
     expect(within(oidc).getByLabelText("Post-logout redirect URI")).toHaveValue(
-      "https://silo.example.test/login",
+      "https://prairie.example.test/login",
     );
     expect(screen.getByText(/To switch, turn off OpenID Connect first/)).toBeInTheDocument();
   });
@@ -462,9 +462,9 @@ describe("SignInSettings provider choice", () => {
     mount();
     const oidc = providerPanel("OpenID Connect");
     expect(within(oidc).getByLabelText("Redirect URI")).toHaveValue(
-      "https://silo.example.test/api/v2/auth/oauth/5/callback",
+      "https://prairie.example.test/api/v2/auth/oauth/5/callback",
     );
-    expect(within(oidc).queryByText("silo.auth.oidc")).toBeNull();
+    expect(within(oidc).queryByText("prairie.auth.oidc")).toBeNull();
   });
 });
 
@@ -480,8 +480,8 @@ describe("SignInSettings turning a provider on and off", () => {
             display_order: 3,
             auto_provision: false,
             default_login: false,
-            callback_url: "https://silo.example.test/api/v2/auth/oauth/5/callback",
-            post_logout_redirect_url: "https://silo.example.test/login",
+            callback_url: "https://prairie.example.test/api/v2/auth/oauth/5/callback",
+            post_logout_redirect_url: "https://prairie.example.test/login",
             created_at: STAMP,
             updated_at: STAMP,
           },
@@ -557,7 +557,7 @@ describe("SignInSettings turning a provider on and off", () => {
     expect(
       await screen.findByText(/Password sign-in is off too, so only break-glass admins/),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Only Silo passwords sign in now/)).toBeNull();
+    expect(screen.queryByText(/Only Prairie passwords sign in now/)).toBeNull();
   });
 
   it("keeps Turn on off until required fields are saved", async () => {
@@ -724,7 +724,7 @@ describe("SignInSettings saving provider changes", () => {
     finish();
     await waitFor(() => expect(screen.getByRole("button", { name: "Save" })).toBeEnabled());
     expect(within(oidc).getByRole("button", { name: "Turn off" })).toBeEnabled();
-    expect(issuer).toHaveValue("https://id.example.test/realms/silo/ab");
+    expect(issuer).toHaveValue("https://id.example.test/realms/prairie/ab");
     expect(screen.getByText("1 unsaved change")).toBeInTheDocument();
   });
 
@@ -772,7 +772,7 @@ describe("SignInSettings saving provider changes", () => {
     const issuer = within(oidc).getByLabelText("Issuer URL");
     await user.type(issuer, "/extra");
     await user.click(screen.getByRole("button", { name: "Discard" }));
-    expect(issuer).toHaveValue("https://id.example.test/realms/silo");
+    expect(issuer).toHaveValue("https://id.example.test/realms/prairie");
     expect(state.discard).toHaveBeenCalled();
     expect(screen.queryByText(/unsaved change/)).toBeNull();
   });
@@ -879,7 +879,7 @@ describe("SignInSettings connection test", () => {
     // An older server answers the test with a callback URL for any provider.
     testResult = {
       ok: true,
-      callback_url: "https://silo.example.test/api/v2/auth/oauth/6/callback",
+      callback_url: "https://prairie.example.test/api/v2/auth/oauth/6/callback",
       steps: [],
     };
     mount();
@@ -1005,7 +1005,7 @@ describe("SignInSettings password sign-in", () => {
     mount();
     await user.click(screen.getByRole("button", { name: "Locked out?" }));
     expect(screen.getByText("/login?local=1")).toBeInTheDocument();
-    expect(screen.getByText("silo auth local-login enable")).toBeInTheDocument();
+    expect(screen.getByText("prairie auth local-login enable")).toBeInTheDocument();
   });
 });
 
@@ -1013,7 +1013,7 @@ describe("SignInSettings accounts and sessions", () => {
   it("warns about account takeover and stages email matching", async () => {
     const user = userEvent.setup();
     mount();
-    expect(screen.getByText(/takes over the Silo account/)).toBeInTheDocument();
+    expect(screen.getByText(/takes over the Prairie account/)).toBeInTheDocument();
     await user.click(screen.getByRole("switch", { name: "Match existing accounts by email" }));
     expect(state.setValue).toHaveBeenCalledWith("auth.email_auto_match", "true");
   });

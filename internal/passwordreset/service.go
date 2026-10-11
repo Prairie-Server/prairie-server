@@ -107,7 +107,7 @@ type Service struct {
 
 // NewService wires the reset link service. publicURL is the link-base
 // fallback when server.public_url is unset; may be empty. brand styles the
-// email; nil sends Silo's default branding.
+// email; nil sends Prairie's default branding.
 func NewService(
 	repo *Repository,
 	users userDirectory,

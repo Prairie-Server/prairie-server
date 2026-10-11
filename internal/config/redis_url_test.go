@@ -28,7 +28,7 @@ func TestParseRedisURLSingleServer(t *testing.T) {
 
 func TestParseRedisURLSentinel(t *testing.T) {
 	raw := "redis://watcher:sentinel-secret@sentinel-1:26379/2?master_name=mymaster" +
-		"&addr=sentinel-2:26379&addr=sentinel-3:26379&username=silo&password=redis-secret"
+		"&addr=sentinel-2:26379&addr=sentinel-3:26379&username=prairie&password=redis-secret"
 	options, failover, err := ParseRedisURL(raw)
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +46,7 @@ func TestParseRedisURLSentinel(t *testing.T) {
 	if failover.SentinelUsername != "watcher" || failover.SentinelPassword != "sentinel-secret" {
 		t.Fatal("URL user info did not become the Sentinel credentials")
 	}
-	if failover.Username != "silo" || failover.Password != "redis-secret" {
+	if failover.Username != "prairie" || failover.Password != "redis-secret" {
 		t.Fatal("username and password parameters did not become the Redis server credentials")
 	}
 	// go-redis leaves this at zero, and its Sentinel dialer then dials a
@@ -138,17 +138,17 @@ func TestParseRedisURLErrorsDoNotQuotePasswords(t *testing.T) {
 	for _, raw := range []string{
 		// net/url rejects these two and quotes the whole URL in its error.
 		"redis://watcher:sentinel%zzsecret@sentinel-1:26379?master_name=mymaster&password=redis-secret",
-		"redis://silo:redis-secret/x@redis.example:6379",
+		"redis://prairie:redis-secret/x@redis.example:6379",
 		"redis://watcher:sentinel-secret@sentinel-1:26379?master_name=mymaster&password=redis-secret&route_randomly=true",
 		"redis://watcher:sentinel-secret@sentinel-1:26379?master_name=mymaster&password=redis-secret;x",
 		"redis://watcher:sentinel-secret@sentinel-1?master_name=mymaster&password=redis-secret",
 		"redis://watcher:sentinel-secret@sentinel-1:26379?master_name=&password=redis-secret",
-		"redis://silo:redis-secret@redis.example:6379?unknown=1",
+		"redis://prairie:redis-secret@redis.example:6379?unknown=1",
 		// A reserved character that is not percent-encoded splits a password,
 		// and go-redis quotes the part it cannot place.
 		"redis://redis.example:6379?password=redis&secret",
-		"redis://silo:/secret@redis.example:6379",
-		"redis://silo:?secret@redis.example:6379",
+		"redis://prairie:/secret@redis.example:6379",
+		"redis://prairie:?secret@redis.example:6379",
 		"redis://sentinel-1:26379?master_name=mymaster&password=redis&secret",
 		"redis://sentinel-1:26379/secret?master_name=mymaster",
 		"redis://sentinel-1:26379?master_name=mymaster&addr=secret",
@@ -185,7 +185,7 @@ func TestParseRedisURLErrorsStillSayWhatIsWrong(t *testing.T) {
 		{"redis://redis.example:6379?unknown=1", "unexpected option", true},
 		{"redis://redis.example:6379/first", "invalid database number", true},
 		{"redis://redis.example:6379/1/2", "invalid URL path", true},
-		{"redis://silo:pass/word@redis.example:6379", "the URL is malformed", true},
+		{"redis://prairie:pass/word@redis.example:6379", "the URL is malformed", true},
 		{"redis://sentinel-1:26379?master_name=mymaster&password=p;ss", "cannot be read", true},
 	} {
 		_, _, err := ParseRedisURL(tc.raw)

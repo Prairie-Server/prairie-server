@@ -162,7 +162,7 @@ function showPersonalEdit() {
 
 function collectionProblem(status: number) {
   return new V2ProblemError("getPersonalCollection", {
-    type: `https://silo.example/problems/${status === 404 ? "not_found" : "internal_error"}`,
+    type: `https://prairie.example/problems/${status === 404 ? "not_found" : "internal_error"}`,
     title: status === 404 ? "Not Found" : "Internal Server Error",
     status,
     detail: status === 404 ? "Collection not found." : "Collections are unavailable.",

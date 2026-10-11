@@ -29,11 +29,11 @@ func pollOneSource(t *testing.T, src Source, changes []Change, q Queuer, suppres
 }
 
 func arrSource(rewrites ...PathRewrite) Source {
-	return Source{ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", Enabled: true, PathRewrites: rewrites}
+	return Source{ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", Enabled: true, PathRewrites: rewrites}
 }
 
 func TestChangeLogRecordsUnmappedPathAndReason(t *testing.T) {
-	// The radarr root /movies has no rewrite to a Silo library, so the path
+	// The radarr root /movies has no rewrite to a Prairie library, so the path
 	// arrives unchanged and matches no library folder.
 	event := pollOneSource(t, arrSource(PathRewrite{From: "/data/tv", To: "/mnt/media/tv"}),
 		[]Change{{SourcePath: "/movies/Film (2024)/Film.mkv", Scope: ChangeScopeAuto}},

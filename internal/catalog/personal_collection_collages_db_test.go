@@ -32,11 +32,11 @@ func (o fixedOwnerAccess) OwnerFilter(context.Context, int, string) (AccessFilte
 // those the owner can see too), a read never composes but builds a missing
 // collage in the background, Refresh builds ahead of the next read, and a
 // deleted collection hands its collages to the artwork collector. Set
-// SILO_TEST_DATABASE_URL to a migrated database to run it.
+// PRAIRIE_TEST_DATABASE_URL to a migrated database to run it.
 func TestPersonalCollectionCollagesFollowTheViewerDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -337,12 +337,12 @@ func (*statementCountTracer) TraceQueryEnd(context.Context, *pgx.Conn, pgx.Trace
 // with one statement however many smart collections are listed, and never
 // runs their queries. Their sources are read in the background, when a
 // collection has no collage for the viewer yet or its collage is older than
-// SmartRefreshInterval. Set SILO_TEST_DATABASE_URL to a migrated database to
+// SmartRefreshInterval. Set PRAIRIE_TEST_DATABASE_URL to a migrated database to
 // run it.
 func TestPersonalCollectionCollageListReadsSkipSmartQueriesDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	config, err := pgxpool.ParseConfig(dsn)

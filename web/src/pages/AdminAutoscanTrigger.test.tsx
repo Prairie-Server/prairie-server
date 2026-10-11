@@ -133,7 +133,7 @@ it("says a poll is already running when the server refuses a second start", asyn
   fireEvent.click(await screen.findByRole("button", { name: "Run now" }));
   await waitFor(() => expect(f.commands).toHaveLength(1));
   await f.reject(409, {
-    type: "https://siloserver.org/docs/api/v2/problems/conflict",
+    type: "https://prairieserver.org/docs/api/v2/problems/conflict",
     title: "Conflict",
     detail: "Task is already running on this process",
   });
@@ -152,7 +152,7 @@ it("keeps the uncertain message for any other refusal", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Run now" }));
   await waitFor(() => expect(f.commands).toHaveLength(1));
   await f.reject(503, {
-    type: "https://siloserver.org/docs/api/v2/problems/service_unavailable",
+    type: "https://prairieserver.org/docs/api/v2/problems/service_unavailable",
     title: "Service Unavailable",
     detail: "admin tasks unavailable",
   });

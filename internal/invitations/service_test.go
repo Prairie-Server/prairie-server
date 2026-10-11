@@ -353,7 +353,7 @@ func TestAcceptCreatesUserWithEmailAsUsername(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	token := strings.TrimPrefix(sent.ClaimURL, "https://silo.example.com/invite/")
+	token := strings.TrimPrefix(sent.ClaimURL, "https://prairie.example.com/invite/")
 
 	pair, user, err := svc.Accept(context.Background(), token, "", "hunter2hunter2", "test-device", "127.0.0.1")
 	if err != nil {
@@ -395,7 +395,7 @@ func TestAcceptRefusedWhileLocalLoginIsOff(t *testing.T) {
 		t.Fatalf("Send: %v", err)
 	}
 	sessions.localLoginOff = true
-	token := strings.TrimPrefix(sent.ClaimURL, "https://silo.example.com/invite/")
+	token := strings.TrimPrefix(sent.ClaimURL, "https://prairie.example.com/invite/")
 	if _, _, err := svc.Accept(context.Background(), token, "", "hunter2hunter2", "d", ""); !errors.Is(err, auth.ErrLocalLoginDisabled) {
 		t.Fatalf("accept = %v, want ErrLocalLoginDisabled", err)
 	}
@@ -597,7 +597,7 @@ func TestResendEmailedInvitationAsLinkKeepsAddressWithoutEmail(t *testing.T) {
 	if err != nil || len(sender.sent) != 1 {
 		t.Fatalf("Send: err=%v sends=%d", err, len(sender.sent))
 	}
-	oldToken := strings.TrimPrefix(first.ClaimURL, "https://silo.example.com/invite/")
+	oldToken := strings.TrimPrefix(first.ClaimURL, "https://prairie.example.com/invite/")
 
 	again, err := svc.Resend(t.Context(), first.Invitation.ID, 1, DeliveryLink)
 	if err != nil {
@@ -612,7 +612,7 @@ func TestResendEmailedInvitationAsLinkKeepsAddressWithoutEmail(t *testing.T) {
 	if _, err := svc.Lookup(t.Context(), oldToken); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("emailed link after replacement: err = %v, want ErrNotFound", err)
 	}
-	newToken := strings.TrimPrefix(again.ClaimURL, "https://silo.example.com/invite/")
+	newToken := strings.TrimPrefix(again.ClaimURL, "https://prairie.example.com/invite/")
 	if view, err := svc.Lookup(t.Context(), newToken); err != nil || view.EmailRequired || view.Email != testInvitee {
 		t.Fatalf("replacement lookup = %+v err=%v, want bound to %s", view, err, testInvitee)
 	}

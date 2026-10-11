@@ -15,7 +15,7 @@ import { SETTING_DEFINITIONS, type SettingKey } from "@/lib/settingsContract";
 
 /**
  * The Preferences tab's "levels": the places a setting can be stored for an
- * account, in the order Silo resolves them. A profile's settings apply on
+ * account, in the order Prairie resolves them. A profile's settings apply on
  * every device; a device, client family, library, or series under it can
  * replace them for that profile. Each level is exactly one storage identity,
  * so every edit, add, or removal on a level addresses one row.

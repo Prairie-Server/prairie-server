@@ -20,7 +20,7 @@ import (
 func TestFindTasteProfileCandidatesWithGenresAboveEfSearchMaximumDB(t *testing.T) {
 	newEngineTestPool(t) // skips without a migrated database
 	ctx := t.Context()
-	cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+	cfg, err := pgxpool.ParseConfig(os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

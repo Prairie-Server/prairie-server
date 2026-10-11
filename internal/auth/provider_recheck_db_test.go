@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/grpc/codes"
@@ -1936,7 +1936,7 @@ func TestProviderRecheckPluginLoadFailureDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	identity := env.identityState(t)
-	lockKey := fmt.Sprintf("silo:auth-identity:%d:%s", identity.InstallationID, identity.ExternalSubject)
+	lockKey := fmt.Sprintf("prairie:auth-identity:%d:%s", identity.InstallationID, identity.ExternalSubject)
 	var loads atomic.Int32
 	var lockHeld atomic.Bool
 	env.recheck.source = funcCheckerSource(func(ctx context.Context, _ int) (AccountChecker, error) {

@@ -63,7 +63,7 @@ Changes apply in read order per provider key, including when the read first intr
 the drop. A tombstone removes only its key; a surviving drop under another key keeps the
 series dropped. When several keys remain, the later drop time wins.
 A tombstone whose key names neither changes nothing: that is usually the provider
-echoing an undrop whose agreement Silo already forgot. Local imports are compare-and-set on the row the run read, so a
+echoing an undrop whose agreement Prairie already forgot. Local imports are compare-and-set on the row the run read, so a
 concurrent dismissal or undo wins.
 
 Provider reads can lag or omit Silo's writes. Trakt serves its GET responses from a cache
@@ -98,7 +98,7 @@ undrop a show that is watched.
   its cursor saved under `plugin.remote.dropped`. `complete_snapshot` means the rows are
   the account's full dropped set; otherwise the read is incremental and reports undrops
   as `removed` tombstones. `listed_at` is the drop time; without it an imported drop is
-  stamped with the sync time. A complete snapshot with a row Silo cannot read (no
+  stamped with the sync time. A complete snapshot with a row Prairie cannot read (no
   identity, or media that is not a series) counts as incomplete, because that row may be
   a show that is still dropped. Drops and undrops are `MARK_DROPPED` and
   `UNMARK_DROPPED` events for `SERIES` media. Both are convergent, so the event ID

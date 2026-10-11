@@ -13,7 +13,7 @@ import (
 // generator, so setting it must not race with refreshes. Run with -race.
 func TestPersonalCollectionCollagesGeneratorArrivesWhileRefreshing(t *testing.T) {
 	// The pool never connects: refreshes wait out RefreshDelay first.
-	pool, err := pgxpool.New(t.Context(), "postgres://silo@127.0.0.1:1/none")
+	pool, err := pgxpool.New(t.Context(), "postgres://prairie@127.0.0.1:1/none")
 	if err != nil {
 		t.Fatal(err)
 	}

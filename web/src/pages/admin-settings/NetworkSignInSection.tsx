@@ -23,10 +23,10 @@ import { FieldGroup } from "./FieldGroup";
 import { SettingFieldRow } from "./SettingField";
 
 const GRANT_EXAMPLE = `"grants": [
-  {"src": ["group:family-admins"], "dst": ["tag:silo"],
-   "app": {"siloserver.org/cap/silo": [{"role": "admin"}]}},
-  {"src": ["autogroup:member", "autogroup:shared"], "dst": ["tag:silo"],
-   "app": {"siloserver.org/cap/silo": [{"role": "user"}]}}
+  {"src": ["group:family-admins"], "dst": ["tag:prairie"],
+   "app": {"prairieserver.org/cap/prairie": [{"role": "admin"}]}},
+  {"src": ["autogroup:member", "autogroup:shared"], "dst": ["tag:prairie"],
+   "app": {"prairieserver.org/cap/prairie": [{"role": "user"}]}}
 ]`;
 
 /**
@@ -35,7 +35,7 @@ const GRANT_EXAMPLE = `"grants": [
  * be on beside the server's OIDC or LDAP provider. Turning it on or off and
  * account creation apply at once, like the provider slot's switch. Who may
  * sign in, and with which role, is the tailnet policy's (the plugin's "Who
- * can sign in" setting and siloserver.org/cap/silo grants); see
+ * can sign in" setting and prairieserver.org/cap/prairie grants); see
  * docs/architecture/external-sign-in.md#network-identity.
  */
 export function NetworkSignInSection({
@@ -121,7 +121,7 @@ function NetworkSignInRow({ installation }: { installation: PluginInstallation }
             write(
               { auto_provision: checked },
               checked
-                ? `New ${label} users get a Silo account at first sign-in.`
+                ? `New ${label} users get a Prairie account at first sign-in.`
                 : `Only accounts already connected to ${label} can sign in.`,
             )
           }
@@ -132,15 +132,15 @@ function NetworkSignInRow({ installation }: { installation: PluginInstallation }
           Anyone whose device can reach this server over {label} can sign in, including people you
           share the server with; tagged devices can&apos;t. To limit it, set the plugin&apos;s
           &ldquo;Who can sign in&rdquo; to people granted{" "}
-          <code className="font-mono">siloserver.org/cap/silo</code>. {label} sign-in never matches
+          <code className="font-mono">prairieserver.org/cap/prairie</code>. {label} sign-in never matches
           an existing account by email: its owner connects {label} from their own Sign-in settings.
         </p>
         <p>
           Roles come from grants in your tailnet policy: a{" "}
-          <code className="font-mono">siloserver.org/cap/silo</code> grant with{" "}
-          <code className="font-mono">{`{"role":"admin"}`}</code> makes someone a Silo admin, and{" "}
+          <code className="font-mono">prairieserver.org/cap/prairie</code> grant with{" "}
+          <code className="font-mono">{`{"role":"admin"}`}</code> makes someone a Prairie admin, and{" "}
           <code className="font-mono">{`{"role":"user"}`}</code> a regular user. Anyone who can edit
-          the tailnet policy can make themselves a Silo admin. Without a grant, a person&apos;s role
+          the tailnet policy can make themselves a Prairie admin. Without a grant, a person&apos;s role
           is left as it is, so removing someone&apos;s admin grant doesn&apos;t demote them: grant
           them <code className="font-mono">{`{"role":"user"}`}</code> instead. Policy changes apply
           at the next sign-in or access re-check. An account that also signs in through your main

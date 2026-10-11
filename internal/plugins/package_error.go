@@ -69,15 +69,15 @@ func fetchPackageResource(ctx context.Context, client *http.Client, rawURL, subj
 			return nil, fmt.Errorf("fetch %q: %w", rawURL, ctx.Err())
 		}
 		return nil, transientPackageError(fmt.Errorf("fetch %q: %w", rawURL, err),
-			"Silo couldn't reach the host for %s. Check that this server can reach it, then try again.", subject)
+			"Prairie couldn't reach the host for %s. Check that this server can reach it, then try again.", subject)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		statusErr := fmt.Errorf("fetch %q: unexpected status %d", rawURL, resp.StatusCode)
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
-			return nil, transientPackageError(statusErr, "Silo couldn't download %s: its host answered HTTP %d. Try again in a moment.", subject, resp.StatusCode)
+			return nil, transientPackageError(statusErr, "Prairie couldn't download %s: its host answered HTTP %d. Try again in a moment.", subject, resp.StatusCode)
 		}
-		return nil, packageError(statusErr, "Silo couldn't download %s: its host answered HTTP %d.", subject, resp.StatusCode)
+		return nil, packageError(statusErr, "Prairie couldn't download %s: its host answered HTTP %d.", subject, resp.StatusCode)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -90,10 +90,10 @@ func fetchPackageResource(ctx context.Context, client *http.Client, rawURL, subj
 }
 
 func unsupportedAPIVersionError(version, supported string) error {
-	return packageError(fmt.Errorf("plugin silo_api_version %q is not supported", version),
-		"This plugin needs Silo plugin API %q, and this server supports %q.", version, supported)
+	return packageError(fmt.Errorf("plugin prairie_api_version %q is not supported", version),
+		"This plugin needs Prairie plugin API %q, and this server supports %q.", version, supported)
 }
 
 func invalidPackageAddressError(err error, subject string) error {
-	return packageError(err, "Silo can't download %s: its address isn't a valid http or https link.", subject)
+	return packageError(err, "Prairie can't download %s: its address isn't a valid http or https link.", subject)
 }

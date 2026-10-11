@@ -41,7 +41,7 @@ const (
 	sweepBatchSize = 5000
 )
 
-// sweepAdvisoryLock serializes the sweep across servers ("SILOBGCS"). Two
+// sweepAdvisoryLock serializes the sweep across servers ("PRAIRIEBGCS"). Two
 // sweeps at once would only list twice, since queuing is idempotent.
 const sweepAdvisoryLock int64 = 0x53494C4F42474353
 

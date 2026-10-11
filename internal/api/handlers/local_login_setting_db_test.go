@@ -17,9 +17,9 @@ import (
 )
 
 func TestLocalLoginSettingUsesMutationConnectionDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

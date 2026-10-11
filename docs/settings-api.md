@@ -588,18 +588,18 @@ including ignored, skipped or unmatched events. Malformed payloads return 400,
 unknown secrets 404, and internal failures a safe 500 problem. Known-connection
 rejections retain delivery logs. This synchronous operation is non-retryable.
 Missing required fields or trailing data after the JSON document count as malformed;
-a well-formed notification of a type Silo does not use is ignored.
+a well-formed notification of a type Prairie does not use is ignored.
 
 Watch-state rules, shared by the v2 and bridge receivers:
 
-- An event changes only the Silo profile explicitly mapped to its external user.
+- An event changes only the Prairie profile explicitly mapped to its external user.
   An unmapped user's event is skipped and is not replayed after mapping.
 - Plex: `media.scrobble` marks the item watched; `media.pause` and `media.stop`
   record the event's `viewOffset`. The server's item metadata supplies identity
   and runtime only, because its view state belongs to the connection token's
-  owner. Plex events carry no timestamp, so Silo uses the receipt time, and a
+  owner. Plex events carry no timestamp, so Prairie uses the receipt time, and a
   resent `media.pause` or `media.stop` counts as a new event that rewrites its
-  position. After a scrobble, including one that newer Silo progress kept from
+  position. After a scrobble, including one that newer Prairie progress kept from
   applying, further events for the same user and item (a repeated scrobble, a
   stop in the credits) are ignored until a `media.play` starts a new playback. A
   `media.play` needs no metadata lookup or catalog match. Plex sends no webhook
@@ -612,7 +612,7 @@ Watch-state rules, shared by the v2 and bridge receivers:
   dropped, and an event with the same timestamp applies only if it completes the
   item or advances the position by at least five seconds. A replayed delivery
   with its original timestamp (Jellyfin, Emby) therefore has no further effect,
-  and a replayed completion cannot undo a later unplayed mark. Silo progress for
+  and a replayed completion cannot undo a later unplayed mark. Prairie progress for
   the profile at least as recent as the event, compared in whole seconds, also
   wins, including over an unplayed mark, unless it is the write of the last
   event applied for that external user and item, recognized by its time and
@@ -748,7 +748,7 @@ channel without a server change.
 The `/api/v2` playback operations also declare `X-Client-Name`,
 `X-Client-Version`, `X-Client-Build`, and `X-Client-Channel`. A request with a
 non-blank `X-Client-Name` takes its whole identity from that set; a request
-without one takes it from the `X-Silo-Client*` set above when `X-Silo-Client` is
+without one takes it from the `X-Prairie-Client*` set above when `X-Prairie-Client` is
 non-blank. The two sets are never mixed field by field.
 
 Protocol-v3 `POST /playback/start` accepts `client_playback_context.app_version`,
@@ -942,8 +942,8 @@ family-scoped winner.
 
 The device registry lists each device a profile uses, with its name, platform
 and `last_seen_at`. `GET /api/v2/devices` and the administrator device reads
-list it. The server registers the device named by `X-Silo-Device-Id`, with the
-optional `X-Silo-Device-Name` and `X-Silo-Device-Platform`, for the acting
+list it. The server registers the device named by `X-Prairie-Device-Id`, with the
+optional `X-Prairie-Device-Name` and `X-Prairie-Device-Platform`, for the acting
 profile when the device:
 
 - resolves effective values (`GET` or `POST` of the effective route, v1 or v2);
@@ -1108,7 +1108,7 @@ the configured interval even if an operating system supplies its own default
 without dispatching those handlers; there is no portable API to configure that
 UI, and such controls are not guaranteed to honor these preferences.
 
-Native adoption is tracked in [Apple #267](https://github.com/prairie-server/silo-apple/issues/267)
-and [Android #300](https://github.com/prairie-server/silo-android/issues/300).
+Native adoption is tracked in [Apple #267](https://github.com/prairie-server/prairie-apple/issues/267)
+and [Android #300](https://github.com/prairie-server/prairie-android/issues/300).
 Jellyfin clients keep their own seek controls; this does not extend the
 Jellyfin protocol.

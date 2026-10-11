@@ -285,7 +285,7 @@ describe("admin section captured snapshots", () => {
     await setup();
     await chooseMoreAction("Restore defaults…");
     const dialog = await screen.findByRole("dialog", { name: "Restore Home to the default rows?" });
-    expect(dialog).toHaveTextContent("The 2 rows on Home are replaced by Silo's default rows.");
+    expect(dialog).toHaveTextContent("The 2 rows on Home are replaced by Prairie's default rows.");
     expect(dialog).toHaveTextContent(
       "Studio Ghibli shows a collection and is removed. The collection itself stays in Collections.",
     );
@@ -307,7 +307,7 @@ describe("admin section captured snapshots", () => {
     revision = 2;
     await chooseMoreAction("Restore defaults…");
     const dialog = await screen.findByRole("dialog", { name: "Restore Home to the default rows?" });
-    expect(dialog).toHaveTextContent("The 3 rows on Home are replaced by Silo's default rows.");
+    expect(dialog).toHaveTextContent("The 3 rows on Home are replaced by Prairie's default rows.");
     expect(dialog).toHaveTextContent(
       "Studio Ghibli shows a collection and is removed. The collection itself stays in Collections.",
     );

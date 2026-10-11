@@ -17,9 +17,9 @@ import (
 // Pool connections run with JIT off unless something configured jit: here the
 // URL, its options, or the database. The test role needs CREATEDB.
 func TestNewPoolDisablesJITUnlessConfiguredPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	base, err := url.Parse(dsn)
@@ -63,7 +63,7 @@ func TestNewPoolDisablesJITUnlessConfiguredPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer admin.Close()
-	name := fmt.Sprintf("silo_jit_%d", time.Now().UnixNano())
+	name := fmt.Sprintf("prairie_jit_%d", time.Now().UnixNano())
 	quoted := pgx.Identifier{name}.Sanitize()
 	if _, err := admin.Exec(ctx, "CREATE DATABASE "+quoted); err != nil {
 		t.Fatal(err)

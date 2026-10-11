@@ -145,7 +145,7 @@ export function RewriteSuggestions({
 
           {preview.unmatched.length > 0 && (
             <CollapsibleList
-              title={`No Silo match (${preview.unmatched.length})`}
+              title={`No Prairie match (${preview.unmatched.length})`}
               items={preview.unmatched}
             />
           )}

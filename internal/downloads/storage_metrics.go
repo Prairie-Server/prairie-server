@@ -13,16 +13,16 @@ const labelLocation = "location"
 // grows with the node count only.
 var (
 	storageFreedBytes = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "silo_download_storage_freed_bytes_total",
+		Name: "prairie_download_storage_freed_bytes_total",
 		Help: "Prepared download bytes this process deleted, by location and reason; sum across instances.",
 	}, []string{labelLocation, "reason"})
 	storageBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "silo_download_storage_bytes",
-		Help: "Prepared download bytes by location: in_use and cached from Silo's records, on_disk and untracked from the files. Set by the replica that last ran storage maintenance; read with max and check silo_download_storage_sample_timestamp_seconds.",
+		Name: "prairie_download_storage_bytes",
+		Help: "Prepared download bytes by location: in_use and cached from Prairie's records, on_disk and untracked from the files. Set by the replica that last ran storage maintenance; read with max and check prairie_download_storage_sample_timestamp_seconds.",
 	}, []string{labelLocation, "state"})
 	storageSampleAt = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "silo_download_storage_sample_timestamp_seconds",
-		Help: "When this process last set silo_download_storage_bytes for a location.",
+		Name: "prairie_download_storage_sample_timestamp_seconds",
+		Help: "When this process last set prairie_download_storage_bytes for a location.",
 	}, []string{labelLocation})
 )
 

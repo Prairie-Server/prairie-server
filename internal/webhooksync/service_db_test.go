@@ -56,13 +56,13 @@ func (p recorderProvider) ForUser(context.Context, int) (userstore.UserStore, er
 
 func (recorderProvider) Close() error { return nil }
 
-// A delayed Jellyfin mark-unplayed must not erase Silo progress that is newer
+// A delayed Jellyfin mark-unplayed must not erase Prairie progress that is newer
 // than the event; one newer than the progress still applies. Progress is read
 // from the user store, which may be SQLite rather than Postgres.
 func TestProcessWebhookMarkUnplayedRespectsNewerLocalProgressDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -92,7 +92,7 @@ func TestProcessWebhookMarkUnplayedRespectsNewerLocalProgressDB(t *testing.T) {
 		{`INSERT INTO user_profiles(id,user_id,name) VALUES($1,$2,'Viewer')`, []any{profileID, userID}},
 		{`INSERT INTO media_items(content_id,type,title,status,tmdb_id) VALUES($1,'movie','Movie','matched',$2)`, []any{mediaItemID, tmdbID}},
 		{`INSERT INTO webhook_sync_connections(id,user_id,provider,webhook_secret) VALUES($1,$2,'jellyfin',$3)`, []any{connectionID, userID, suffix}},
-		{`INSERT INTO webhook_sync_profile_mappings(connection_id,external_user_id,external_user_name,silo_profile_id) VALUES($1,'jf-user','Viewer',$2)`, []any{connectionID, profileID}},
+		{`INSERT INTO webhook_sync_profile_mappings(connection_id,external_user_id,external_user_name,prairie_profile_id) VALUES($1,'jf-user','Viewer',$2)`, []any{connectionID, profileID}},
 	} {
 		if _, err := pool.Exec(ctx, stmt.sql, stmt.args...); err != nil {
 			t.Fatalf("%s: %v", stmt.sql, err)
@@ -133,13 +133,13 @@ func TestProcessWebhookMarkUnplayedRespectsNewerLocalProgressDB(t *testing.T) {
 	}
 }
 
-// A Plex scrobble that newer Silo progress keeps from applying still ends its
+// A Plex scrobble that newer Prairie progress keeps from applying still ends its
 // playback: a later stop in the same playback is ignored rather than writing
 // a resume point.
 func TestProcessWebhookPlexSkippedScrobbleEndsPlaybackDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -189,7 +189,7 @@ func TestProcessWebhookPlexSkippedScrobbleEndsPlaybackDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Silo progress an hour ahead outranks the scrobble's receipt time.
+	// Prairie progress an hour ahead outranks the scrobble's receipt time.
 	store := &removeRecorder{progressUpdatedAt: time.Now().Add(time.Hour)}
 	svc := NewService(repo, historyimport.NewRepository(pool, cipher), recorderProvider{store: store})
 	svc.SetLocalNetworkAccess(historyimport.NewLocalNetworkAccess(staticSettings{historyimport.SettingAllowPrivateDestinations: "true"}, nil))
@@ -215,7 +215,7 @@ func TestProcessWebhookPlexSkippedScrobbleEndsPlaybackDB(t *testing.T) {
 	if result := deliver(`{"event":"media.scrobble","Account":{"id":5,"title":"Kid"},"Metadata":{"ratingKey":"42","type":"movie"}}`); result.Outcome != OutcomeSkipped {
 		t.Fatalf("scrobble: outcome %q (%s), want skipped", result.Outcome, result.Summary)
 	}
-	// The Silo progress is now older than any further event.
+	// The Prairie progress is now older than any further event.
 	store.progressUpdatedAt = time.Now().Add(-time.Hour)
 	if result := deliver(`{"event":"media.stop","Account":{"id":5,"title":"Kid"},"Metadata":{"ratingKey":"42","type":"movie","viewOffset":590000}}`); result.Outcome != OutcomeSkipped || len(store.positions) != 0 {
 		t.Fatalf("stop after the skipped scrobble: outcome %q (%s), writes %v; want skipped with nothing written", result.Outcome, result.Summary, store.positions)

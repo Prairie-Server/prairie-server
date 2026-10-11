@@ -21,7 +21,7 @@ function TypeMark({ mediaType }: { mediaType?: string | null }) {
 
 /**
  * What a poster, cover or still shows when the title has no artwork: a faint
- * Silo-colour glow with a small mark for the item type. The Apple and Android
+ * Prairie-colour glow with a small mark for the item type. The Apple and Android
  * clients draw the same thing, so keep `.default-artwork` (app.css) and the
  * type mapping in step with them. Decoration only: the card names the title.
  * Fills its positioned parent.

@@ -1,8 +1,8 @@
 # External sign-in
 
-People can sign in with an account that lives outside Silo: an OIDC identity
+People can sign in with an account that lives outside Prairie: an OIDC identity
 provider or an LDAP directory. An `auth_provider.v1` plugin talks to the
-provider and returns typed facts about the person; the host owns Silo accounts,
+provider and returns typed facts about the person; the host owns Prairie accounts,
 identities, roles, sessions and the local-password policy. The host side lives
 in `internal/auth` (`account_resolution.go`, `identity_*.go`,
 `local_login_policy.go`, `provider_registry.go`, `provider_recheck.go`,
@@ -58,7 +58,7 @@ node create one account:
    installation. An email the provider asserts never hands it an admin: when
    an admin, the Owner or a break-glass account holds the email, creation
    below refuses with `email_in_use`, and an administrator links the account
-   explicitly. Silo does not verify account emails (registration, invitations
+   explicitly. Prairie does not verify account emails (registration, invitations
    and profile edits store what was typed), so the account matched is whichever
    one registered or set that address first, and its holder may not be the
    person signing in. The link therefore ends every credential the provider
@@ -114,7 +114,7 @@ and the last enabled admin are never demoted; the skip is logged.
   `LocalProvider.Authenticate`, so it covers v1, v2, Jellyfin and
   Audiobookshelf compatibility.
 - The server Owner is break-glass by default: first-run setup and every
-  ownership move (transfer or `silo owner set`) set the flag on the new Owner,
+  ownership move (transfer or `prairie owner set`) set the flag on the new Owner,
   and a migration set it on the existing one. The previous Owner keeps its own
   flag. The Owner may clear it on its own account, subject to the
   last-usable-account rule below. An Owner whose local password sign-in was
@@ -133,8 +133,8 @@ and the last enabled admin are never demoted; the skip is logged.
   last such account, are refused with `break_glass_required`. Both sides take
   the server-settings advisory lock, so they cannot pass each other's check.
 - Recovery from a shell with the server's `DATABASE_URL`:
-  `silo auth local-login enable` turns the switch back on;
-  `silo auth local-login enable -user <name or email>` turns one account's
+  `prairie auth local-login enable` turns the switch back on;
+  `prairie auth local-login enable -user <name or email>` turns one account's
   local password sign-in back on (linking turns it off, the Owner's too, so a
   provider outage or removing its plugin would otherwise lock the account
   out), and `-temporary-password` also gives it a random temporary password,
@@ -207,7 +207,7 @@ routed to their provider there.
   announcement (or has no event bus) stops offering a binding an
   administrator turned off within that minute. Announcements that arrive
   while a rebuild is pending collapse into one. Auth binding writes answer
-  `X-Silo-Restart-Required: false`.
+  `X-Prairie-Restart-Required: false`.
 
 ## Sign-in settings page
 
@@ -287,7 +287,7 @@ step.
 - **Switch account.** A sign-in start may carry `prompt=select_account`,
   which the host passes to the plugin's `InitAuthorize` as the OIDC `prompt`
   so the provider lets the person choose another provider account. The web
-  "Not you? Switch account" path signs out of Silo only and then starts with
+  "Not you? Switch account" path signs out of Prairie only and then starts with
   it. Any other `prompt` value is refused with 400; linking flows always ask
   for `prompt=login`.
 - **Registration URLs.** The administrator registers the callback,
@@ -327,7 +327,7 @@ A code proves its client before reuse or expiry is looked at, so a code that
 reaches the wrong client cannot even trigger the reuse revocation. A native
 code needs the app's `code_verifier` (Native apps). A web code is bound to the
 browser the callback answered: the callback sets the completion cookie
-`silo_oauth_complete` (256 random bits; HttpOnly, SameSite=Lax, Secure on an
+`prairie_oauth_complete` (256 random bits; HttpOnly, SameSite=Lax, Secure on an
 https public URL, two minutes) on the complete path of each API version, the
 code stores its SHA-256, and a redemption without the matching cookie is
 refused with `invalid_grant` and leaves the code redeemable. Without it, an
@@ -380,7 +380,7 @@ only sees the server's https callback.
      the public one, where the flow's binding cookie could not reach the
      callback; that refusal leaves the start in place for the public origin.
 3. The callback finishes the sign-in and redirects to the fixed app URI
-   `org.siloserver.silo:/auth/callback` (RFC 8252 private-use scheme; the
+   `org.prairieserver.prairie:/auth/callback` (RFC 8252 private-use scheme; the
    client never supplies a redirect) with `code`, `state`, `server` (the
    server's `server_id`) and `iss`, or `error` on failure. `iss` is the
    flow's start origin. Every app redirect of a sign-in or linking flow
@@ -487,7 +487,7 @@ flow: the same `identity_linked_elsewhere` and `already_linked` refusals, the
 provider's managed role, local password sign-in turned off unless the account
 is break-glass, and the `identity_linked` audit event. The plugin's denials
 keep their sign-in meaning, except that a disabled directory account is
-`account_disabled`, distinct from a disabled Silo account. The call spends
+`account_disabled`, distinct from a disabled Prairie account. The call spends
 the login rate-limit budget. `getExternalSignInCapabilities` reports it as
 `credentials_linking`. An administrator can also link any identity by its
 subject (`createAdminUserIdentity`), and email auto-match links on sign-in.
@@ -502,7 +502,7 @@ no password and no browser, which is what makes a TV sign in with one button.
 The host side is `internal/auth/network_sign_in.go`; the plugin contract is
 the SDK's `NetworkIdentityAuth`.
 
-- **Where the peer comes from.** The plugin stamps `X-Silo-Ingress-Peer`
+- **Where the peer comes from.** The plugin stamps `X-Prairie-Ingress-Peer`
   (the overlay peer's IP) next to its ingress token. `netaccess.Middleware`
   strips the header from every request and records the peer on the access
   path only when the token is valid, so a LAN or public client cannot name
@@ -513,7 +513,7 @@ the SDK's `NetworkIdentityAuth`.
   request is `network_identity_required`. The plugin answers like
   `Authenticate`: a stable subject for the person (Tailscale: control host
   and user ID), names, and `managed_role` when the overlay's policy sets the
-  Silo role, or a denial (an unknown or tagged device, one its policy leaves
+  Prairie role, or a denial (an unknown or tagged device, one its policy leaves
   out).
 - **Sign-in** (`signInWithNetworkIdentity`,
   `POST /auth/network/{id}/sign-in`) runs the answer through the account
@@ -585,7 +585,7 @@ the SDK's `NetworkIdentityAuth`.
   auto-match: whoever uses a device is its owner, which proves nothing about
   an email address.
 - **Trust.** Anyone who controls a device signed in to the overlay as a
-  person can sign in to Silo as that person, with that person's role, within
+  person can sign in to Prairie as that person, with that person's role, within
   what the overlay's policy allows them, and can link that person's identity
   to their own account. Everyone using a shared TV signs in as whoever signed
   that TV in to the overlay; profiles separate viewers. The same holds for
@@ -594,7 +594,7 @@ the SDK's `NetworkIdentityAuth`.
   overlay makes everyone behind it that device's owner. The Tailscale plugin
   names no peer for a request carrying forwarding headers, but a plain TCP
   forwarder adds none, so relays must be tagged devices, which never sign in.
-  Subjects are scoped to the control plane, not the tailnet: moving the Silo
+  Subjects are scoped to the control plane, not the tailnet: moving the Prairie
   node to another tailnet gives everyone new user IDs, so re-checks of the
   old identities answer not found.
 
@@ -603,7 +603,7 @@ the SDK's `NetworkIdentityAuth`.
 
 ### Provider logout
 
-The Silo logout never waits long for the provider: the server bounds the
+The Prairie logout never waits long for the provider: the server bounds the
 plugin lookup at 2 seconds (answering empty past it), and the web client
 bounds its wait for the answer before it sends `logout`. `getProviderLogout`
 answers empty for an API key or an impersonation session, so an
@@ -622,7 +622,7 @@ that keeps the ID token there can add `id_token_hint`.
 ## Provider re-check
 
 Refresh slides a login session's expiry, so without a re-check a person the
-provider removed would keep Silo access for as long as a device keeps
+provider removed would keep Prairie access for as long as a device keeps
 refreshing. The host therefore asks the provider again.
 
 - **Which sessions.** `auth_sessions.identity_id` names the identity a

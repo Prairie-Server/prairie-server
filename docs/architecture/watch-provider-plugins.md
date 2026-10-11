@@ -2,8 +2,8 @@
 
 Every watch provider is a `watch_sync_provider.v1` plugin. Trakt, Simkl, and
 MDBList used to be compiled into the server. They now ship as first-party
-plugins (`silo.watchprovider.trakt`, `silo.watchprovider.simkl`,
-`silo.watchprovider.mdblist`) from the Silo plugin repository. The host side of
+plugins (`prairie.watchprovider.trakt`, `prairie.watchprovider.simkl`,
+`prairie.watchprovider.mdblist`) from the Prairie plugin repository. The host side of
 the contract lives in `internal/watchsync/plugin_provider*.go`, and the
 first-party rules described here live in `internal/watchsync/first_party.go`.
 
@@ -25,14 +25,14 @@ export record, rating and dropped-show agreement, and history source those
 built-ins wrote stays valid, and nothing is re-encrypted or renamed. Three rules
 protect this:
 
-- **Only a Silo-managed repository can claim a legacy key.** A plugin gets one
+- **Only a Prairie-managed repository can claim a legacy key.** A plugin gets one
   only when its installation came from a repository whose `source_kind` is
-  `silo`. Plugin IDs are not reserved, so a third-party plugin that reuses
-  `silo.watchprovider.trakt` gets a per-installation key. It never receives
+  `prairie`. Plugin IDs are not reserved, so a third-party plugin that reuses
+  `prairie.watchprovider.trakt` gets a per-installation key. It never receives
   the tokens of existing Trakt connections. Replacing an installation records
   the new package's repository, and none for an upload, so a package from
-  elsewhere installed over a Silo one loses the key too.
-- **One installation holds a legacy key.** If two Silo-managed installations of
+  elsewhere installed over a Prairie one loses the key too.
+- **One installation holds a legacy key.** If two Prairie-managed installations of
   the same plugin exist, for example after two API nodes auto-installed it at
   once, the older one registers and the other is skipped with a warning.
 - **The plugins must reproduce the built-ins' data formats.** They return the
@@ -99,7 +99,7 @@ a secret field that holds a JSON object or array.
 
 ## Upgrade path
 
-Plugin auto-update installs a first-party plugin from the Silo repository when
+Plugin auto-update installs a first-party plugin from the Prairie repository when
 its key still has connections and the migration has not completed. It does so
 at startup and on every later update check, so a catalog that was unreachable at
 boot is retried. The migration completes when the plugin first registers under

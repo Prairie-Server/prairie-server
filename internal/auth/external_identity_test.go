@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -72,7 +72,7 @@ func TestExternalIdentityDenials(t *testing.T) {
 			t.Errorf("%v: err = %v, want %v", tc.denial, err, tc.want)
 		}
 	}
-	// Sign-in treats a provider-disabled account like a disabled Silo one.
+	// Sign-in treats a provider-disabled account like a disabled Prairie one.
 	if !errors.Is(ErrProviderAccountDisabled, ErrUserDisabled) {
 		t.Error("ErrProviderAccountDisabled is not an ErrUserDisabled")
 	}

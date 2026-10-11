@@ -114,7 +114,7 @@ type Service struct {
 // NewService wires the invitation service. publicURL is the server's
 // externally reachable origin, used as the link-base fallback when
 // server.public_url is unset; may be empty. brand styles the email; nil sends
-// Silo's default branding.
+// Prairie's default branding.
 func NewService(
 	repo *Repository,
 	users userDirectory,

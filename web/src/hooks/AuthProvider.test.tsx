@@ -151,13 +151,13 @@ function AccountProbe() {
 }
 
 function SignOutProbe() {
-  const { user, loading, completeLogin, logout, logoutOfSiloOnly } = useAuth();
+  const { user, loading, completeLogin, logout, logoutOfPrairieOnly } = useAuth();
   return (
     <div>
       <div data-testid="signed-in-user">{loading ? "loading" : (user?.username ?? "none")}</div>
       <button onClick={() => completeLogin(makeSession(1, "laura"))}>Sign in as laura</button>
       <button onClick={logout}>Sign out</button>
-      <button onClick={logoutOfSiloOnly}>Switch account</button>
+      <button onClick={logoutOfPrairieOnly}>Switch account</button>
     </div>
   );
 }

@@ -13,9 +13,9 @@ import (
 )
 
 func TestChapterLockSessionsRespectPoolBudgetDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	for _, maxConns := range []int32{1, 2, 8, 32} {
 		t.Run(strconv.Itoa(int(maxConns)), func(t *testing.T) {
@@ -44,7 +44,7 @@ func TestChapterLockSessionsRespectPoolBudgetDB(t *testing.T) {
 				}
 				t.Cleanup(release)
 				releases = append(releases, release)
-				names = append(names, "silo-chapter-thumbnails:"+strconv.Itoa(baseID+i))
+				names = append(names, "prairie-chapter-thumbnails:"+strconv.Itoa(baseID+i))
 			}
 			// Waiting admission shares capacity across repositories without opening
 			// another session. Cancellation releases each waiting worker.
@@ -103,9 +103,9 @@ func TestChapterLockSessionsRespectPoolBudgetDB(t *testing.T) {
 }
 
 func TestChapterLockFailedConnectReleasesBudgetDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -131,9 +131,9 @@ func TestChapterLockFailedConnectReleasesBudgetDB(t *testing.T) {
 }
 
 func TestChapterLockSessionsSerializeDistinctPoolsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
@@ -174,9 +174,9 @@ func TestChapterLockSessionsSerializeDistinctPoolsDB(t *testing.T) {
 }
 
 func TestChapterLockReusesHealthySessionsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
@@ -233,7 +233,7 @@ func TestChapterLockReusesHealthySessionsDB(t *testing.T) {
 		if err := pool.QueryRow(ctx, `SELECT pg_backend_pid(), current_setting('application_name')`).Scan(&pid, &name); err != nil {
 			t.Fatal(err)
 		}
-		if pid != firstPID || name == "silo-chapter-thumbnails:"+strconv.Itoa(fileID) {
+		if pid != firstPID || name == "prairie-chapter-thumbnails:"+strconv.Itoa(fileID) {
 			t.Fatalf("released connection: PID=%d name=%q, want original PID and application name", pid, name)
 		}
 	}

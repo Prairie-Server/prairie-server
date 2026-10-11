@@ -123,7 +123,7 @@ export function useHomeLayoutExport(): HomeLayoutExport {
         );
         return;
       }
-      downloadJson(`silo-home-layout-${exportedAt.toISOString().slice(0, 10)}.json`, blob);
+      downloadJson(`prairie-home-layout-${exportedAt.toISOString().slice(0, 10)}.json`, blob);
       toast.success("Home layout exported");
     } catch (error) {
       toast.error(`Failed to export the home layout: ${layoutProblemMessage(error)}`);

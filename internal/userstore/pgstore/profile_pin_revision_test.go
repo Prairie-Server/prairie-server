@@ -11,7 +11,7 @@ import (
 
 // TestPostgresProfilePINRevision runs the profile PIN revision conformance test
 // against the Postgres backend; the SQLite backend runs the same suite in
-// internal/userdb. Skips unless SILO_TEST_DATABASE_URL is set.
+// internal/userdb. Skips unless PRAIRIE_TEST_DATABASE_URL is set.
 func TestPostgresProfilePINRevision(t *testing.T) {
 	storetest.RunProfilePINRevision(t, func(t *testing.T) userstore.UserStore {
 		pool, userID := newConstraintTestUser(t)

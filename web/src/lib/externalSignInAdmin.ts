@@ -14,7 +14,7 @@ const PROBLEM_TEXT: Record<string, string> = {
     "Another sign-in provider is already on. A server has one sign-in provider at a time, plus one network sign-in such as Tailscale: turn the other one off first.",
   break_glass_required: BREAK_GLASS_REQUIRED_TEXT,
   identity_linked_elsewhere:
-    "That provider account is already connected to another Silo account. Unlink it there first.",
+    "That provider account is already connected to another Prairie account. Unlink it there first.",
   last_sign_in_method: "This would leave the account with no way to sign in.",
 };
 
@@ -166,7 +166,7 @@ export function identityCheckStatusText(status: string): string {
     case "unsupported":
       return "The provider can't re-check this account: sessions end at a fixed age, and its API keys and Audiobookshelf sessions are removed once the person hasn't signed in with the provider for that long";
     case "unavailable":
-      return "The provider couldn't be reached; Silo asks again at the next refresh";
+      return "The provider couldn't be reached; Prairie asks again at the next refresh";
     case "none":
       return "Not checked yet";
     default:

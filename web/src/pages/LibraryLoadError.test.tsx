@@ -121,7 +121,7 @@ function callsTo(key: string) {
 
 function invalidFilter() {
   return new V2ProblemError("queryCatalogItems", {
-    type: "https://siloserver.org/docs/api/v2/problems/validation_failed",
+    type: "https://prairieserver.org/docs/api/v2/problems/validation_failed",
     title: "Validation failed",
     status: 422,
     detail: "The filter is not valid.",

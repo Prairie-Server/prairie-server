@@ -8,7 +8,7 @@ import (
 )
 
 // ExternalTiming is the timing correction of a sidecar subtitle, a subtitle
-// file next to the media that Silo never writes. It belongs to the sidecar's
+// file next to the media that Prairie never writes. It belongs to the sidecar's
 // bytes: a sidecar edited or replaced on disk no longer matches it, while a
 // renamed one still does.
 type ExternalTiming struct {

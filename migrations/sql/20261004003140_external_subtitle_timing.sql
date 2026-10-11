@@ -1,6 +1,6 @@
 -- +goose Up
 -- The timing correction of a sidecar subtitle: a subtitle file next to the
--- media, which Silo never writes. A correction belongs to the sidecar's bytes,
+-- media, which Prairie never writes. A correction belongs to the sidecar's bytes,
 -- so an edited or replaced sidecar loses it and a renamed one keeps it.
 -- Delivery maps each original time t to t * timing_scale + timing_offset_ms.
 CREATE TABLE external_subtitle_timings (

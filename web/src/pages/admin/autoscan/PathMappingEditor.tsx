@@ -13,7 +13,7 @@ const COPY = {
     description: (
       <>
         Sonarr/Radarr report the path of the <em>imported library file</em> — their root folder, not
-        the download client&apos;s working directory. If that root differs from the path Silo sees,
+        the download client&apos;s working directory. If that root differs from the path Prairie sees,
         map it here. Same path on both sides? Enter it twice.
       </>
     ),
@@ -26,7 +26,7 @@ const COPY = {
     heading: "Match paths",
     description: (
       <>
-        Only needed when this source reports paths that differ from the ones Silo sees, for example
+        Only needed when this source reports paths that differ from the ones Prairie sees, for example
         when Sonarr runs in another container. Leave empty when both sides match.
       </>
     ),
@@ -39,7 +39,7 @@ const COPY = {
 
 /**
  * Path rewrite rows for any source: the path the provider reports (`from`) and
- * the Silo path it corresponds to (`to`). A webhook source has no connection to
+ * the Prairie path it corresponds to (`to`). A webhook source has no connection to
  * read root folders from, so its rows are seeded from library paths and the
  * operator supplies the provider side.
  */
@@ -134,7 +134,7 @@ export function PathMappingEditor({
                       htmlFor={`${idPrefix}-to-${index}`}
                       className="text-muted-foreground text-xs"
                     >
-                      Path Silo uses
+                      Path Prairie uses
                     </Label>
                     <Input
                       id={`${idPrefix}-to-${index}`}

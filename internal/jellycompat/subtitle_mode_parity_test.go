@@ -35,7 +35,7 @@ func TestCompatSubtitleModeMappingRoundTrips(t *testing.T) {
 }
 
 // Cases follow Jellyfin 12.1 MediaStreamSelector.GetDefaultSubtitleStreamIndex,
-// except that Silo prefers embedded tracks over external ones.
+// except that Prairie prefers embedded tracks over external ones.
 func TestCompatDefaultSubtitleStreamIndexMatchesJellyfin(t *testing.T) {
 	english := compatSubtitleCandidate{Index: 2, Language: "eng"}
 	englishForced := compatSubtitleCandidate{Index: 3, Language: "eng", Forced: true}

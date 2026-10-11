@@ -15,13 +15,13 @@ func TestApplyBootstrapOverridesTakesRedisFromTheEnvironment(t *testing.T) {
 		Listen:      ":8080",
 		JFListen:    ":8096",
 		Mode:        "integrated",
-		DatabaseURL: "postgres://db.example.invalid/silo",
+		DatabaseURL: "postgres://db.example.invalid/prairie",
 	})
 	if cfg.Redis != saved {
 		t.Errorf("without REDIS_URL Redis = %+v, want the saved %+v", cfg.Redis, saved)
 	}
 	if cfg.Server.Listen != ":8080" || cfg.JellyfinCompat.Listen != ":8096" ||
-		cfg.Server.Mode != "integrated" || cfg.Database.URL != "postgres://db.example.invalid/silo" {
+		cfg.Server.Mode != "integrated" || cfg.Database.URL != "postgres://db.example.invalid/prairie" {
 		t.Errorf("listen = %q, Jellyfin listen = %q, mode = %q, database URL = %q; want the environment's values",
 			cfg.Server.Listen, cfg.JellyfinCompat.Listen, cfg.Server.Mode, cfg.Database.URL)
 	}
@@ -47,7 +47,7 @@ func TestAddRedisBootstrapSettings(t *testing.T) {
 	for redisURL, wantDB := range map[string]string{
 		"redis://env.example.invalid:6379/1":                        "1",
 		"redis://env.example.invalid:6379":                          "0",
-		"redis://sentinel.example.invalid:26379/2?master_name=silo": "2",
+		"redis://sentinel.example.invalid:26379/2?master_name=prairie": "2",
 		// A bare address reaches the event bus only, which stays on database 0.
 		"env.example.invalid:6379": "0",
 	} {

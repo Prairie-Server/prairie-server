@@ -98,7 +98,7 @@ func (r *FileRepository) chapterStateWriter(ctx context.Context, fileID int) cha
 func (r *FileRepository) TryLockChapterThumbnails(ctx context.Context, fileID int) (context.Context, func(), bool, error) {
 	// Hash a namespaced decimal ID to retain all bigint ID bits without
 	// sharing the key space of other per-file jobs.
-	digest := sha256.Sum256([]byte("silo-chapter-thumbnails:" + strconv.Itoa(fileID)))
+	digest := sha256.Sum256([]byte("prairie-chapter-thumbnails:" + strconv.Itoa(fileID)))
 	key := int64(binary.BigEndian.Uint64(digest[:8]))
 	// Keep the request with its worker while the session budget is saturated.
 	// Fresh files may not have chapters yet, so a width scan cannot retry them.
@@ -166,7 +166,7 @@ func (r *FileRepository) TryLockChapterThumbnails(ctx context.Context, fileID in
 	})
 	var applicationName string
 	if err := conn.QueryRow(connectCtx, `SELECT set_config('application_name', $2, false), pg_try_advisory_lock($1)`,
-		key, "silo-chapter-thumbnails:"+strconv.Itoa(fileID)).Scan(&applicationName, &acquired); err != nil {
+		key, "prairie-chapter-thumbnails:"+strconv.Itoa(fileID)).Scan(&applicationName, &acquired); err != nil {
 		// A failed result read cannot prove whether PostgreSQL took the lock.
 		// Discard its session rather than returning a possibly locked one.
 		acquireFailed = true

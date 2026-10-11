@@ -79,7 +79,7 @@ export function oauthLinkFailureText(reason: string | null | undefined): string 
 /**
  * The web start of an OAuth sign-in (startOAuthLogin). It is a link, not a
  * form post: the page's CSP has form-action 'self', which browsers apply to
- * the redirect to the provider, so a posted form never leaves Silo.
+ * the redirect to the provider, so a posted form never leaves Prairie.
  * selectAccount asks the provider to let the person choose another provider
  * account, for a "Switch account" sign-in.
  */
@@ -102,8 +102,8 @@ export function leaveForProvider(url: string): void {
 // Set when someone signs out in this tab, so the login page does not send
 // them straight back to a provider that still has its own session open;
 // that would sign them in again at once. Cleared by the next sign-in.
-const SIGNED_OUT_KEY = "silo.auth.signedOut";
-const SESSION_END_KEY = "silo.auth.sessionEnd";
+const SIGNED_OUT_KEY = "prairie.auth.signedOut";
+const SESSION_END_KEY = "prairie.auth.sessionEnd";
 
 // Why the last session ended, for the sign-in page's notice. Only a
 // deliberate sign-out also blocks the provider redirect: a session that

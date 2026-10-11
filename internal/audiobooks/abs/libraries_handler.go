@@ -730,7 +730,7 @@ func (h *Handler) resolveLibrary(w http.ResponseWriter, r *http.Request) (Audiob
 // prairie MediaItem → ABS LibraryItem translation
 // ---------------------------------------------------------------------------
 
-// siloItemToLibraryItem converts a prairie MediaItem (type='audiobook') into the
+// prairieItemToLibraryItem converts a prairie MediaItem (type='audiobook') into the
 // ABS LibraryItem wire shape for browse-list responses (no audio tracks; only
 // metadata + duration summary). File-level tracks are populated only on the
 // item-detail handler (handleItem).
@@ -788,7 +788,7 @@ func siloItemToLibraryItem(item *models.MediaItem, lib AudiobookLibrary, baseURL
 	}
 }
 
-// siloItemToMetadata extracts the ABS Metadata block from a prairie MediaItem.
+// prairieItemToMetadata extracts the ABS Metadata block from a prairie MediaItem.
 // Authors and narrators are sourced from item.People; series from the
 // audiobook_series table hydrated onto the MediaItem; publisher from Studios.
 //
@@ -897,7 +897,7 @@ func audiobookDurationSeconds(item *models.MediaItem) float64 {
 	return float64(item.Runtime) * 60
 }
 
-// siloItemToLibraryItemDetail converts a prairie MediaItem + its media files into
+// prairieItemToLibraryItemDetail converts a prairie MediaItem + its media files into
 // a full ABS LibraryItem with audio track details populated. Called by
 // handleItem (single-item GET).
 func siloItemToLibraryItemDetail(item *models.MediaItem, files []*models.MediaFile, lib AudiobookLibrary, baseURL string) LibraryItem {
@@ -950,7 +950,7 @@ func siloItemToLibraryItemDetail(item *models.MediaItem, files []*models.MediaFi
 	return base
 }
 
-// siloFilesToAudioTracks converts prairie MediaFile rows into ABS AudioTrack
+// prairieFilesToAudioTracks converts prairie MediaFile rows into ABS AudioTrack
 // entries for the item-detail response. token may be empty (item-detail
 // doesn't embed auth tokens; the ABS client initiates playback via /play).
 func siloFilesToAudioTracks(contentID string, files []*models.MediaFile, baseURL, token string) []AudioTrack {

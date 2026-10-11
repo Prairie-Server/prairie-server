@@ -128,7 +128,7 @@ func reconcileService(drops *fakeSeriesDrops, nextUp *fakeNextUp, matcherRepo *m
 	}
 }
 
-// surfaceAll makes every series Silo knows show up in Next Up.
+// surfaceAll makes every series Prairie knows show up in Next Up.
 func surfaceAll(drops *fakeSeriesDrops) *fakeNextUp {
 	surfaced := make(map[string]bool)
 	for _, seriesID := range drops.seriesOf {
@@ -143,10 +143,10 @@ func TestReconcileContinueWatchingDropsUnfinishedShowsTheRowLeavesOut(t *testing
 	played := time.Date(2026, 10, 1, 21, 0, 0, 0, time.UTC)
 	drops := &fakeSeriesDrops{seriesOf: map[string]string{
 		"hidden-1": "s-hidden", "listed-1": "s-listed", "copy-1": "s-copy-4k",
-		"finished-1": "s-finished", "silo-ahead-1": "s-silo-ahead",
+		"finished-1": "s-finished", "prairie-ahead-1": "s-prairie-ahead",
 	}}
 	nextUp := surfaceAll(drops)
-	// The listed show is in Silo twice; the run imported the 4K copy, and
+	// The listed show is in Prairie twice; the run imported the 4K copy, and
 	// Emby listed its other copy, recognized by TMDB ID.
 	matcherRepo := &matcherRepoStub{mediaByExternal: map[string][]mediaLookupRow{
 		"series:tmdb_id:154385": {{ContentID: "s-copy"}, {ContentID: "s-copy-4k"}},
@@ -157,7 +157,7 @@ func TestReconcileContinueWatchingDropsUnfinishedShowsTheRowLeavesOut(t *testing
 		SourceSeriesIDs: map[string]bool{"src-listed": true, "src-copy": true},
 		Series:          []Record{{ExternalID: "src-copy", Kind: KindSeries, TMDBID: "154385"}},
 		IncludesNextUp:  true,
-		// Finished at Emby: the finished show, and the show Silo has a newer
+		// Finished at Emby: the finished show, and the show Prairie has a newer
 		// season of.
 		UnfinishedSourceSeries: map[string]bool{"src-hidden": true, "src-listed": true, "src-copy-4k": true},
 	}
@@ -166,7 +166,7 @@ func TestReconcileContinueWatchingDropsUnfinishedShowsTheRowLeavesOut(t *testing
 		{itemID: "listed-1", sourceSeriesID: "src-listed", at: played},
 		{itemID: "copy-1", sourceSeriesID: "src-copy-4k", at: played},
 		{itemID: "finished-1", sourceSeriesID: "src-finished", at: played},
-		{itemID: "silo-ahead-1", sourceSeriesID: "src-silo-ahead", at: played},
+		{itemID: "prairie-ahead-1", sourceSeriesID: "src-prairie-ahead", at: played},
 	}
 
 	dropped, err := service.reconcileContinueWatching(context.Background(), 7, "profile-1", row, episodes)
@@ -242,9 +242,9 @@ func TestReconcileContinueWatchingStopsAtAnUnidentifiedListedShow(t *testing.T) 
 	}
 }
 
-// A listed show Silo doesn't have, recognizable by its provider IDs, hides
+// A listed show Prairie doesn't have, recognizable by its provider IDs, hides
 // nothing and doesn't stop the pass.
-func TestReconcileContinueWatchingIgnoresListedShowsSiloLacks(t *testing.T) {
+func TestReconcileContinueWatchingIgnoresListedShowsPrairieLacks(t *testing.T) {
 	t.Parallel()
 
 	played := time.Date(2026, 10, 1, 21, 0, 0, 0, time.UTC)
@@ -401,7 +401,7 @@ func TestReconcileContinueWatchingResolvesEpisodesInOneBatch(t *testing.T) {
 	}
 }
 
-// One source series can span several Silo series; listing it lists them all.
+// One source series can span several Prairie series; listing it lists them all.
 func TestReconcileContinueWatchingListsEverySeriesOfASourceShow(t *testing.T) {
 	t.Parallel()
 
@@ -443,7 +443,7 @@ func TestReconcileContinueWatchingKeepsTheProfilesOwnChoices(t *testing.T) {
 			// already undid a newer drop, which stands.
 			"s-undone": {SeriesID: "s-undone", DroppedAt: after, Active: false},
 		},
-		// Watched in Silo after the source's last play.
+		// Watched in Prairie after the source's last play.
 		activity: map[string]time.Time{"s-watched-here": after, "s-ended": imported},
 	}
 	service := reconcileService(drops, surfaceAll(drops), nil)
@@ -466,7 +466,7 @@ func TestReconcileContinueWatchingKeepsTheProfilesOwnChoices(t *testing.T) {
 	}
 }
 
-// An undated import is stamped at the epoch, so any dated Silo activity
+// An undated import is stamped at the epoch, so any dated Prairie activity
 // keeps the show; without any, the drop is still dated at the run.
 func TestReconcileContinueWatchingDatesDropsOfUndatedImportsAtTheRun(t *testing.T) {
 	t.Parallel()

@@ -1,7 +1,7 @@
 name: Discord Commit Feed (reusable)
 
 # Posts a summary of the pushed commits to the caller's post in the Discord
-# commit-feed forum channel. prairie-server, silo-apple, and silo-android each call
+# commit-feed forum channel. prairie-server, prairie-apple, and prairie-android each call
 # this from their own discord-commits.yml, so every repository gets its own post.
 
 on:

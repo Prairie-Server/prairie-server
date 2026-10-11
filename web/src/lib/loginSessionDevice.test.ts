@@ -9,8 +9,8 @@ describe("loginSessionDevice", () => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36",
       }),
     ).toEqual({ name: "Chrome on Windows", kind: "desktop" });
-    expect(loginSessionDevice({ device_name: "Silo/1.0 (tvOS)" })).toEqual({
-      name: "Silo app on Apple TV",
+    expect(loginSessionDevice({ device_name: "Prairie/1.0 (tvOS)" })).toEqual({
+      name: "Prairie app on Apple TV",
       kind: "tv",
     });
   });

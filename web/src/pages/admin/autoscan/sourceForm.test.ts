@@ -81,7 +81,7 @@ describe("editedSourceBody", () => {
 
   it("still migrates a row holding legacy CephFS keys on its first save", () => {
     const source = pollSource({
-      plugin_id: "silo.autoscan.cephfs",
+      plugin_id: "prairie.autoscan.cephfs",
       capability_id: "cephfs",
       source_config: { tv_nested_paths: "/b" },
     });
@@ -128,7 +128,7 @@ describe("draft helpers", () => {
 
   it("folds legacy CephFS keys into their replacement only for that plugin", () => {
     const ceph = pollSource({
-      plugin_id: "silo.autoscan.cephfs",
+      plugin_id: "prairie.autoscan.cephfs",
       capability_id: "cephfs",
       source_config: { tv_nested_paths: "/b\n/a", tv_flat_paths: "/a" },
     });

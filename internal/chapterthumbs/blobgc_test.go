@@ -39,9 +39,9 @@ func TestImagesGroup(t *testing.T) {
 // TestBlobNamespaceLiveDB checks that a prefix is live exactly while its
 // media file's row exists.
 func TestBlobNamespaceLiveDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(t.Context(), dsn)
 	if err != nil {
@@ -87,9 +87,9 @@ func TestBlobNamespaceLiveDB(t *testing.T) {
 // image no chapter references goes, and a key taken off the queue before a
 // write is never deleted.
 func TestReplacedImagesAreCollectedDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(t.Context(), dsn)
 	if err != nil {

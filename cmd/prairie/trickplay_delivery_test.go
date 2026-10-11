@@ -23,11 +23,11 @@ func TestTrickplayDeliveryBypassesLaggingExternalEndpoint(t *testing.T) {
 			const key = "trickplay/42/123/0.123.jpg"
 			data := []byte{0xff, 0xd8, 0xff, 0xd9}
 			storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == http.MethodHead && r.URL.Path == "/silo" {
+				if r.Method == http.MethodHead && r.URL.Path == "/prairie" {
 					w.WriteHeader(http.StatusOK)
 					return
 				}
-				if r.Method != http.MethodGet || r.URL.Path != "/silo/"+key {
+				if r.Method != http.MethodGet || r.URL.Path != "/prairie/"+key {
 					http.NotFound(w, r)
 					return
 				}
@@ -48,7 +48,7 @@ func TestTrickplayDeliveryBypassesLaggingExternalEndpoint(t *testing.T) {
 			} else {
 				cfg.Artwork.StorageBackend = "s3"
 				s3Cfg := s3client.BucketConfig{
-					Endpoint: storage.URL, Bucket: "silo", Region: "us-east-1",
+					Endpoint: storage.URL, Bucket: "prairie", Region: "us-east-1",
 					AccessKey: "fixture", SecretKey: "fixture", PathStyle: true,
 				}
 				if delivery != "s3" {
@@ -94,7 +94,7 @@ func TestTrickplayDeliveryBypassesLaggingExternalEndpoint(t *testing.T) {
 			}
 			readURL := resolved.URL
 			if delivery == "s3" {
-				if !strings.HasPrefix(readURL, storage.URL+"/silo/") || u.Query().Get("X-Amz-Signature") == "" {
+				if !strings.HasPrefix(readURL, storage.URL+"/prairie/") || u.Query().Get("X-Amz-Signature") == "" {
 					t.Fatal("standard S3 delivery lost its direct presigned route")
 				}
 			} else {

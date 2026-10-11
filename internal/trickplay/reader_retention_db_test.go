@@ -75,7 +75,7 @@ func TestReaderWithholdsRevisionDisplacedWhileSigningDB(t *testing.T) {
 
 func TestRetiredTrickplayOutlivesIssuedURLsDB(t *testing.T) {
 	const metadataLifetime = 72 * time.Hour
-	cfg := s3client.BucketConfig{Endpoint: "https://s3.example.test", Region: "us-east-1", Bucket: "silo", AccessKey: "k", SecretKey: "s", PathStyle: true}
+	cfg := s3client.BucketConfig{Endpoint: "https://s3.example.test", Region: "us-east-1", Bucket: "prairie", AccessKey: "k", SecretKey: "s", PathStyle: true}
 	tokenCfg := cfg
 	tokenCfg.PublicEndpoint, tokenCfg.URLAuth = "https://cdn.example.test", s3client.URLAuthCloudflareToken
 	tokenCfg.TokenSecret, tokenCfg.TokenTTL = "secret", int((96 * time.Hour).Seconds())

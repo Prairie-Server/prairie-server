@@ -372,15 +372,15 @@ function ChangeOutcomeBadge({ outcome }: { outcome: AutoscanEventChange["outcome
 // fall back to the server's detail text so a new reason still reads sensibly.
 const CHANGE_REASON_TEXT: Record<string, string> = {
   no_library_match:
-    "No Silo library folder contains this path. Add a path mapping for this source or check the library folders.",
+    "No Prairie library folder contains this path. Add a path mapping for this source or check the library folders.",
   subtree_outside_library: "This path is not below a library root.",
   path_outside_library: "This path is outside the matched library.",
   path_ambiguous: "This path matches more than one library.",
   library_disabled: "The matching library is disabled.",
   library_root_offline: "The library's storage root is not available.",
   unsupported_extension: "This file type is not supported for the library.",
-  path_permission_denied: "Silo is not allowed to read this path.",
-  path_not_inspectable: "Silo could not inspect this path.",
+  path_permission_denied: "Prairie is not allowed to read this path.",
+  path_not_inspectable: "Prairie could not inspect this path.",
   path_not_file_or_dir: "This path is not a file or directory.",
   path_required: "The source sent an empty path.",
   resolves_to_library: "The file change resolved to a whole library, so it was not scanned.",

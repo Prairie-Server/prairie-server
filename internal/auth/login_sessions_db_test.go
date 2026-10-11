@@ -20,9 +20,9 @@ import (
 // TestLoginSessionActivityAndAdminRevocationDB needs a migrated throwaway DB.
 // It checks persistence and live authentication, rather than a mocked revoke.
 func TestLoginSessionActivityAndAdminRevocationDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	poolConfig, err := pgxpool.ParseConfig(dsn)

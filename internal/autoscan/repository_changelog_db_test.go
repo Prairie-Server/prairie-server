@@ -10,14 +10,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// newChangeLogDBTest connects to SILO_TEST_DATABASE_URL (skipping when unset
+// newChangeLogDBTest connects to PRAIRIE_TEST_DATABASE_URL (skipping when unset
 // or when the change-log migration has not been applied) and seeds a poll
 // source and a media folder for linked scan runs.
 func newChangeLogDBTest(t *testing.T) (context.Context, *pgxpool.Pool, *Repository, Source, int) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -39,7 +39,7 @@ func newChangeLogDBTest(t *testing.T) (context.Context, *pgxpool.Pool, *Reposito
 	}
 
 	repo := NewRepository(pool, nil)
-	src, err := repo.CreateSource(ctx, Source{PluginID: "silo.autoscan.test", CapabilityID: "changelog", Enabled: true})
+	src, err := repo.CreateSource(ctx, Source{PluginID: "prairie.autoscan.test", CapabilityID: "changelog", Enabled: true})
 	if err != nil {
 		t.Fatalf("create source: %v", err)
 	}

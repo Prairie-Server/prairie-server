@@ -4,12 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func seedTestService(t *testing.T, existing []*RuntimeConfig) (*Service, *fakeServiceConfigStore) {
 	t.Helper()
-	manifest := testPluginManifest(t, "silo.watchprovider.simkl", "0.1.0")
+	manifest := testPluginManifest(t, "prairie.watchprovider.simkl", "0.1.0")
 	manifest.GlobalConfigSchema = []*pluginv1.ConfigSchema{{
 		Key:        "app",
 		Title:      "Simkl app",
@@ -75,12 +75,12 @@ func TestSeedGlobalConfigRejectsAnEmptySavedEntry(t *testing.T) {
 	}
 }
 
-func TestInstalledFromSiloRepositoryWithoutRepository(t *testing.T) {
+func TestInstalledFromPrairieRepositoryWithoutRepository(t *testing.T) {
 	service := &Service{}
 	for _, installation := range []*Installation{nil, {ID: 1}} {
-		managed, err := service.InstalledFromSiloRepository(t.Context(), installation)
+		managed, err := service.InstalledFromPrairieRepository(t.Context(), installation)
 		if err != nil || managed {
-			t.Fatalf("InstalledFromSiloRepository(%v) = %t, %v; want false", installation, managed, err)
+			t.Fatalf("InstalledFromPrairieRepository(%v) = %t, %v; want false", installation, managed, err)
 		}
 	}
 }

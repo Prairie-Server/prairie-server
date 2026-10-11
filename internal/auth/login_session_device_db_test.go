@@ -13,7 +13,7 @@ import (
 )
 
 // TestLoginSessionRecordsReportedDeviceDB: a password login records the
-// device the request reported in its X-Silo-Device-* headers; without them it
+// device the request reported in its X-Prairie-Device-* headers; without them it
 // keeps today's User-Agent name and no id or platform. A malformed id is
 // dropped without failing the login, and oversized values are clamped.
 func TestLoginSessionRecordsReportedDeviceDB(t *testing.T) {

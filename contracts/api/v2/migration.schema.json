@@ -14,7 +14,7 @@
       "$comment": "The trees the consumer call sites were extracted from. Sibling repos are pinned to the origin/main commit SHA used for extraction so a site can be re-resolved against that exact tree; web and server sites are in this repository at the same commit as the ledger.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["silo-apple", "silo-android", "prairie-server"],
+      "required": ["prairie-apple", "prairie-android", "prairie-server"],
       "properties": {
         "silo-apple": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
         "silo-android": { "type": "string", "pattern": "^[0-9a-f]{40}$" },

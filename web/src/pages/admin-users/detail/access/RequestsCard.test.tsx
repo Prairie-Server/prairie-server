@@ -161,7 +161,7 @@ const conflict = () =>
   new V2ProblemError(
     "updateAdminRequestUserLimit",
     {
-      type: "https://silo.test/problems/precondition_failed",
+      type: "https://prairie.test/problems/precondition_failed",
       title: "Changed",
       status: 412,
       detail: "The account's request limit changed; reload before saving.",

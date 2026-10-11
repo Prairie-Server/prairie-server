@@ -31,7 +31,7 @@ function createServer(profiles: ReturnType<typeof v2Profile>[]) {
   const operations: string[] = [];
   const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    const url = new URL(raw, "http://silo.test");
+    const url = new URL(raw, "http://prairie.test");
     const operation = `${(init?.method ?? "GET").toUpperCase()} ${url.pathname}`;
     operations.push(operation);
     const json = (body: unknown) =>
@@ -240,7 +240,7 @@ describe("AuthProvider profile at launch", () => {
     const tabA = saveTab();
 
     // Tab B opened before the switch to "ask" shares the remembered profile.
-    enterTab({ "silo-profile-scope": "shared" });
+    enterTab({ "prairie-profile-scope": "shared" });
     rememberParentProfile();
     const b = launch();
     await restored();

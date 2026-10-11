@@ -13,8 +13,8 @@ import {
 } from "./sourceDisplay";
 
 const pluginDisplayNames = new Map([
-  ["silo.autoscan.arr:arr", "Sonarr / Radarr"],
-  ["silo.autoscan.arr-webhook:arr-webhook", "Sonarr/Radarr Webhook"],
+  ["prairie.autoscan.arr:arr", "Sonarr / Radarr"],
+  ["prairie.autoscan.arr-webhook:arr-webhook", "Sonarr/Radarr Webhook"],
 ]);
 const connectionNames = new Map([["conn-sonarr", "Sonarr 4K"]]);
 

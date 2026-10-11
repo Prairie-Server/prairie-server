@@ -22,7 +22,7 @@ func TestSignInWithNetworkIdentity(t *testing.T) {
 	h := newTestHandler(t, networkSignInDeps(sessions))
 	path := Prefix + "/auth/network/5/sign-in"
 
-	rec := do(t, h, http.MethodPost, path, `{}`, map[string]string{"User-Agent": "Silo/1.0 (tvOS)"})
+	rec := do(t, h, http.MethodPost, path, `{}`, map[string]string{"User-Agent": "Prairie/1.0 (tvOS)"})
 	var pair TokenPair
 	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &pair) != nil || pair.AccessToken != "acc" || pair.User.Username != "laura" {
 		t.Fatal(rec.Code, rec.Body.String())
@@ -30,7 +30,7 @@ func TestSignInWithNetworkIdentity(t *testing.T) {
 	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
 		t.Fatalf("Cache-Control = %q, want no-store", got)
 	}
-	if sessions.lastNetwork.InstallationID != 5 || sessions.lastNetwork.DeviceName != "Silo/1.0 (tvOS)" {
+	if sessions.lastNetwork.InstallationID != 5 || sessions.lastNetwork.DeviceName != "Prairie/1.0 (tvOS)" {
 		t.Fatalf("input = %+v", sessions.lastNetwork)
 	}
 

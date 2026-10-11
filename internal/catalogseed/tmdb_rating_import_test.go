@@ -32,7 +32,7 @@ func (tx *recordingTx) ran(prefix string) bool {
 func TestImportTMDBRatingSourcesClearsOnlyWhenTheBundleCarriesThem(t *testing.T) {
 	votes := int64(1200)
 	items := []ItemRecord{
-		{ContentID: "with-source", TMDBRating: &RatingSourceRecord{Score: 81, Votes: &votes, Provider: "silo.tmdb"}},
+		{ContentID: "with-source", TMDBRating: &RatingSourceRecord{Score: 81, Votes: &votes, Provider: "prairie.tmdb"}},
 		{ContentID: "without-source"},
 	}
 	changed := map[string]bool{"with-source": true, "without-source": true}

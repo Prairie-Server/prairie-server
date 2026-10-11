@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -61,7 +61,7 @@ func TestNetworkSignInDB(t *testing.T) {
 	}}
 	svc := networkSignInService(t, env, plugin, true)
 	signIn := func(peer string) (*TokenPair, error) {
-		return svc.NetworkSignIn(overlayContext(ctx, env.installationID, peer), NetworkSignInInput{InstallationID: env.installationID, DeviceName: "Silo/1.0 (tvOS)", IP: peer})
+		return svc.NetworkSignIn(overlayContext(ctx, env.installationID, peer), NetworkSignInInput{InstallationID: env.installationID, DeviceName: "Prairie/1.0 (tvOS)", IP: peer})
 	}
 
 	pair, err := signIn("100.64.0.7")
@@ -74,7 +74,7 @@ func TestNetworkSignInDB(t *testing.T) {
 	identity := env.identityRow(t, env.identity("friend").Subject)
 	var sessions int
 	if err := env.pool.QueryRow(ctx, `SELECT count(*) FROM auth_sessions WHERE user_id = $1 AND identity_id = $2
-		AND provider_since IS NOT NULL AND device_name = 'Silo/1.0 (tvOS)'`, pair.User.ID, identity.ID).Scan(&sessions); err != nil {
+		AND provider_since IS NOT NULL AND device_name = 'Prairie/1.0 (tvOS)'`, pair.User.ID, identity.ID).Scan(&sessions); err != nil {
 		t.Fatal(err)
 	}
 	if sessions != 1 {

@@ -99,7 +99,7 @@ type AccountIdentityCollectionOutput struct {
 // AdminUserIdentity is one account identity as an administrator sees it.
 type AdminUserIdentity struct {
 	AccountIdentity
-	ExternalSubject string `json:"external_subject" doc:"The provider's exact subject (OIDC issuer|sub, LDAP unique id)" example:"https://id.example.test/realms/silo|8f14e45f"`
+	ExternalSubject string `json:"external_subject" doc:"The provider's exact subject (OIDC issuer|sub, LDAP unique id)" example:"https://id.example.test/realms/prairie|8f14e45f"`
 	Issuer          string `json:"issuer" doc:"Who asserted the subject, as the provider last said; may be empty" example:"https://id.example.test"`
 	LastCheckStatus string `json:"last_check_status" enum:"none,active,not_found,disabled,not_permitted,unsupported,unavailable" doc:"That answer: active; not_found, disabled or not_permitted (the account's sessions were revoked); unsupported (the provider cannot re-check this identity, so its sessions end an absolute age after sign-in, and the account's API keys and Audiobookshelf sessions are revoked once the person has not signed in through the provider for that long); unavailable (the provider could not be reached; retried at the next refresh or scheduled pass); none before the first" example:"active"`
 }
@@ -146,7 +146,7 @@ type AdminUserIdentityCreateInput struct {
 	RawBody []byte
 	Body    struct {
 		InstallationID  ID     `json:"installation_id" doc:"Auth plugin installation with a sign-in binding" example:"3"`
-		ExternalSubject string `json:"external_subject" minLength:"1" maxLength:"1024" doc:"The provider's exact subject: OIDC issuer|sub (Entra tenant|object id), or the LDAP unique id attribute value" example:"https://id.example.test/realms/silo|8f14e45f"`
+		ExternalSubject string `json:"external_subject" minLength:"1" maxLength:"1024" doc:"The provider's exact subject: OIDC issuer|sub (Entra tenant|object id), or the LDAP unique id attribute value" example:"https://id.example.test/realms/prairie|8f14e45f"`
 		Username        string `json:"username,omitempty" maxLength:"255" doc:"Username at the provider, shown until the first sign-in refreshes it"`
 		Email           string `json:"email,omitempty" maxLength:"320" doc:"Email at the provider, shown until the first sign-in refreshes it"`
 		DisplayName     string `json:"display_name,omitempty" maxLength:"255" doc:"Name at the provider, shown until the first sign-in refreshes it"`
@@ -207,7 +207,7 @@ type AuthConnectionTestResult struct {
 	Steps []AuthConnectionTestStep `json:"steps" doc:"Checks in the order they ran"`
 	// CallbackURL is the redirect URI an OAuth provider must have
 	// registered for this installation.
-	CallbackURL string `json:"callback_url" doc:"Redirect URI to register at an OAuth (OIDC) provider for this installation, on the public URL; empty when no public URL is configured. Password (LDAP) providers do not use it" example:"https://silo.example.test/api/v2/auth/oauth/3/callback"`
+	CallbackURL string `json:"callback_url" doc:"Redirect URI to register at an OAuth (OIDC) provider for this installation, on the public URL; empty when no public URL is configured. Password (LDAP) providers do not use it" example:"https://prairie.example.test/api/v2/auth/oauth/3/callback"`
 }
 
 // AuthConnectionTestOutput is the testAdminPluginAuthBinding response.
@@ -298,7 +298,7 @@ func linkingRefusalProblem(err error, provider string) *Problem {
 		return NewProblem(TypeIdentityLinkedElsewhere, "This "+provider+" account is already connected to another account.")
 	case errors.Is(err, auth.ErrProviderAccountDisabled):
 		// Before ErrUserDisabled, which it wraps: the provider's account,
-		// not the Silo account, is disabled.
+		// not the Prairie account, is disabled.
 		return NewProblem(TypeAccountDisabled, "The "+provider+" account is disabled, locked or expired.")
 	case errors.Is(err, auth.ErrUserDisabled):
 		return NewProblem(TypePermissionDenied, "The account is disabled.")
@@ -402,7 +402,7 @@ func registerExternalSignIn(reg *Registry) {
 
 	credentials := humaOp(http.MethodPost, Prefix+"/account/identities/link-credentials", "linkAccountIdentityWithCredentials", "account",
 		"Link a directory (LDAP) identity to the caller's account with the directory username and password.")
-	credentials.Description = "The account re-enters its local password; the credentials plugin then checks the directory username and password, and the identity it answers for is linked to this account with the same rules as other linking: linking turns local password sign-in off unless the account is break-glass, and is audited. Answers 201 with the linked identity as listAccountIdentities shows it. Refusals, by problem type: 422 validation_failed at body.password (wrong local password) or at body.directory_password (the directory refused the credentials); 409 local_password_required (the account has no local password sign-in); 403 not_permitted (the directory's group rules); 403 account_disabled (the directory account is disabled, locked or expired); 403 password_expired (the directory password expired); 403 permission_denied (the Silo account is disabled, or the caller is an API key or impersonation session); 409 identity_linked_elsewhere; 409 already_linked (this account already has an identity at the installation); 404 not_found (not an enabled credentials provider, an OAuth one included); 503 provider_unavailable. Spends the login rate-limit budget. getExternalSignInCapabilities reports credentials_linking."
+	credentials.Description = "The account re-enters its local password; the credentials plugin then checks the directory username and password, and the identity it answers for is linked to this account with the same rules as other linking: linking turns local password sign-in off unless the account is break-glass, and is audited. Answers 201 with the linked identity as listAccountIdentities shows it. Refusals, by problem type: 422 validation_failed at body.password (wrong local password) or at body.directory_password (the directory refused the credentials); 409 local_password_required (the account has no local password sign-in); 403 not_permitted (the directory's group rules); 403 account_disabled (the directory account is disabled, locked or expired); 403 password_expired (the directory password expired); 403 permission_denied (the Prairie account is disabled, or the caller is an API key or impersonation session); 409 identity_linked_elsewhere; 409 already_linked (this account already has an identity at the installation); 404 not_found (not an enabled credentials provider, an OAuth one included); 503 provider_unavailable. Spends the login rate-limit budget. getExternalSignInCapabilities reports credentials_linking."
 	credentials.DefaultStatus = http.StatusCreated
 	credentials.Errors = []int{http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusServiceUnavailable}
 	Register(reg, Operation{Operation: credentials, Class: ClassAuthenticated, ServiceBacked: true, RetrySafety: RetrySafetyNonRetryable, RateLimitBucket: loginDomain},
@@ -438,7 +438,7 @@ func registerExternalSignIn(reg *Registry) {
 
 	network := humaOp(http.MethodPost, Prefix+"/account/identities/link-network", "linkAccountIdentityWithNetwork", "account",
 		"Link the network identity of this device (such as its Tailscale login) to the caller's account.")
-	network.Description = "Only a request that arrived through the network identity provider's own network address can link: the provider's plugin says who owns the device that sent it, and that identity is linked to this account after the account re-enters its local password, with the same rules as other linking except one: the account keeps its local password sign-in (audited). While the provider refuses the person at a re-check, that password is refused with not_permitted too, except for a break-glass account; an unavailable or unsupported answer keeps the refusal, which ends when the provider vouches for the person again or the network provider is turned off. listAuthProviders lists the provider, with the device owner's name, only to such a request. Answers 201 with the linked identity as listAccountIdentities shows it. Refusals, by problem type: 403 network_identity_required (the request did not come through that provider's network); 422 validation_failed at body.password (wrong local password); 409 local_password_required; 403 not_permitted (the provider refuses this device, for example a tagged device or one its policy leaves out); 403 permission_denied (the Silo account is disabled, or the caller is an API key or impersonation session); 409 identity_linked_elsewhere; 409 already_linked; 404 not_found (not an enabled network identity provider); 503 provider_unavailable. Spends the login rate-limit budget. getExternalSignInCapabilities reports network_sign_in."
+	network.Description = "Only a request that arrived through the network identity provider's own network address can link: the provider's plugin says who owns the device that sent it, and that identity is linked to this account after the account re-enters its local password, with the same rules as other linking except one: the account keeps its local password sign-in (audited). While the provider refuses the person at a re-check, that password is refused with not_permitted too, except for a break-glass account; an unavailable or unsupported answer keeps the refusal, which ends when the provider vouches for the person again or the network provider is turned off. listAuthProviders lists the provider, with the device owner's name, only to such a request. Answers 201 with the linked identity as listAccountIdentities shows it. Refusals, by problem type: 403 network_identity_required (the request did not come through that provider's network); 422 validation_failed at body.password (wrong local password); 409 local_password_required; 403 not_permitted (the provider refuses this device, for example a tagged device or one its policy leaves out); 403 permission_denied (the Prairie account is disabled, or the caller is an API key or impersonation session); 409 identity_linked_elsewhere; 409 already_linked; 404 not_found (not an enabled network identity provider); 503 provider_unavailable. Spends the login rate-limit budget. getExternalSignInCapabilities reports network_sign_in."
 	network.DefaultStatus = http.StatusCreated
 	network.Errors = []int{http.StatusForbidden, http.StatusNotFound, http.StatusConflict, http.StatusServiceUnavailable}
 	Register(reg, Operation{Operation: network, Class: ClassAuthenticated, ServiceBacked: true, RetrySafety: RetrySafetyNonRetryable, RateLimitBucket: loginDomain},

@@ -14,9 +14,9 @@ import (
 // ListNewest must return exactly the head of the full UniqueTargets ordering,
 // whether a bounded window answers or it falls back to the full query.
 func TestRecentTVListNewestMatchesFullQuery(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -124,9 +124,9 @@ func TestRecentTVListNewestMatchesFullQuery(t *testing.T) {
 // grouped from the show's full history: here X1 arrives before the cutoff and
 // X2 after it, and together they are one series card.
 func TestRecentTVListNewestGroupsEventsAcrossCutoff(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

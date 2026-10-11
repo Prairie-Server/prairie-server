@@ -56,8 +56,8 @@ const IDENTITY = {
   username: "alice",
   email: "alice@idp.example.test",
   display_name: "Alice Example",
-  external_subject: "https://id.example.test/realms/silo|8f14e45f",
-  issuer: "https://id.example.test/realms/silo",
+  external_subject: "https://id.example.test/realms/prairie|8f14e45f",
+  issuer: "https://id.example.test/realms/prairie",
   linked_at: "2026-09-01T10:00:00.000Z",
   last_sign_in_at: "2026-09-20T10:00:00.000Z",
   last_checked_at: "2026-09-29T10:00:00.000Z",
@@ -66,7 +66,7 @@ const IDENTITY = {
 
 const OIDC = {
   id: 5,
-  plugin_id: "silo.auth.oidc",
+  plugin_id: "prairie.auth.oidc",
   enabled: true,
   capabilities: [{ type: "auth_provider.v1", id: "oidc", display_name: "Single sign-on" }],
   presentation: { display_name: "OpenID Connect Sign-in" },
@@ -74,7 +74,7 @@ const OIDC = {
 } as unknown as PluginInstallation;
 const LDAP = {
   id: 6,
-  plugin_id: "silo.auth.ldap",
+  plugin_id: "prairie.auth.ldap",
   enabled: true,
   capabilities: [{ type: "auth_provider.v1", id: "ldap", display_name: "LDAP" }],
   presentation: { display_name: "LDAP Sign-in" },
@@ -82,7 +82,7 @@ const LDAP = {
 } as unknown as PluginInstallation;
 const TAILSCALE = {
   id: 7,
-  plugin_id: "silo.network.tailscale",
+  plugin_id: "prairie.network.tailscale",
   enabled: true,
   capabilities: [
     {
@@ -104,7 +104,7 @@ const calls: Array<{ op: string; options?: { body?: unknown; path?: unknown } }>
 
 function problem(type: string, status: number, detail = `raw ${type}`) {
   return new V2ProblemError("op", {
-    type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+    type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
     title: type,
     status,
     detail,
@@ -197,7 +197,7 @@ describe("AdminUserSignIn identities", () => {
     const row = within(list).getByRole("listitem");
     expect(screen.queryByRole("switch", { name: "Break-glass account" })).toBeNull();
     expect(row).toHaveTextContent("Company SSO · alice · alice@idp.example.test");
-    expect(row).toHaveTextContent("Subject: https://id.example.test/realms/silo|8f14e45f");
+    expect(row).toHaveTextContent("Subject: https://id.example.test/realms/prairie|8f14e45f");
     expect(row).toHaveTextContent("Last provider check: Active at the provider");
     expect(opCalls("GET /api/v2/admin/users/{id}/identities")[0]?.options?.path).toEqual({
       id: "7",
@@ -305,7 +305,7 @@ describe("AdminUserSignIn linking by subject", () => {
     mount({ ...USER, password_login: true });
     await user.click(await screen.findByRole("button", { name: "Connect identity" }));
     const dialog = await screen.findByRole("dialog", { name: "Connect a sign-in identity" });
-    expect(dialog).toHaveTextContent("It keeps its Silo password too.");
+    expect(dialog).toHaveTextContent("It keeps its Prairie password too.");
     expect(dialog).not.toHaveTextContent("Connecting turns off password sign-in");
   });
 
@@ -316,7 +316,7 @@ describe("AdminUserSignIn linking by subject", () => {
     mount({ ...USER, password_login: false });
     await user.click(await screen.findByRole("button", { name: "Connect identity" }));
     const dialog = await screen.findByRole("dialog", { name: "Connect a sign-in identity" });
-    expect(dialog).not.toHaveTextContent("Silo password");
+    expect(dialog).not.toHaveTextContent("Prairie password");
     expect(dialog).not.toHaveTextContent("turns off password sign-in");
   });
 
@@ -332,7 +332,7 @@ describe("AdminUserSignIn linking by subject", () => {
     );
     const subject = within(dialog).getByLabelText("Subject");
     expect(subject).toHaveFocus();
-    await user.type(subject, "  https://id.example.test/realms/silo|abc  ");
+    await user.type(subject, "  https://id.example.test/realms/prairie|abc  ");
     await user.type(within(dialog).getByLabelText("Username"), "alice");
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
     await waitFor(() =>
@@ -340,7 +340,7 @@ describe("AdminUserSignIn linking by subject", () => {
     );
     expect(opCalls("POST /api/v2/admin/users/{id}/identities")[0]?.options?.body).toEqual({
       installation_id: "5",
-      external_subject: "https://id.example.test/realms/silo|abc",
+      external_subject: "https://id.example.test/realms/prairie|abc",
       username: "alice",
     });
     expect(
@@ -362,7 +362,7 @@ describe("AdminUserSignIn linking by subject", () => {
   });
 
   it.each([
-    ["identity_linked_elsewhere", 409, "already connected to another Silo account"],
+    ["identity_linked_elsewhere", 409, "already connected to another Prairie account"],
     ["conflict", 409, "alice is already connected to this provider"],
     ["permission_denied", 403, "Only the server owner can change another admin's sign-in."],
     ["validation_failed", 422, "raw validation_failed"],
@@ -395,7 +395,7 @@ describe("AdminUserSignIn linking by subject", () => {
     mount({ ...USER, role: "admin", break_glass: true, password_login: true });
     await user.click(await screen.findByRole("button", { name: "Connect identity" }));
     expect(await screen.findByRole("dialog")).toHaveTextContent(
-      "As a break-glass account it keeps its Silo password.",
+      "As a break-glass account it keeps its Prairie password.",
     );
   });
 });
@@ -404,7 +404,7 @@ describe("AdminUserSignIn password and break-glass", () => {
   it("sets a temporary password on an account without password sign-in", async () => {
     const user = userEvent.setup();
     mount();
-    expect(screen.getByText("Off: alice can't sign in with a Silo password.")).toBeInTheDocument();
+    expect(screen.getByText("Off: alice can't sign in with a Prairie password.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Set a password" }));
     const dialog = await screen.findByRole("dialog", { name: "Set a password" });
     const input = within(dialog).getByLabelText("New password");
@@ -448,7 +448,7 @@ describe("AdminUserSignIn password and break-glass", () => {
     const detail = "The password must be at most 72 bytes.";
     state.updateAdminUser.mockRejectedValueOnce(
       new V2ProblemError("op", {
-        type: "https://siloserver.org/docs/api/v2/problems/validation_failed",
+        type: "https://prairieserver.org/docs/api/v2/problems/validation_failed",
         title: "Validation failed",
         status: 422,
         detail: "The request is not valid.",

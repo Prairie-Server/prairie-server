@@ -16,22 +16,22 @@ import (
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 )
 
-// Email branding follows the web sidebar (web/src/components/SiloBrand.tsx):
-// the header shows the server's uploaded wordmark, else Silo's own, with the
+// Email branding follows the web sidebar (web/src/components/PrairieBrand.tsx):
+// the header shows the server's uploaded wordmark, else Prairie's own, with the
 // server name as alt text; the accent color, when set, colors the primary
 // action. The logo travels inside the message as an inline PNG rather than a
 // link: many clients block remote images, the recipient may not be able to
 // reach the server, and uploaded logos are stored as WebP, which Outlook does
 // not render.
 
-// defaultWordmarkPNG is a copy of web/public/silo-wordmark-sidebar.png; keep
-// the two in step when the Silo wordmark changes.
+// defaultWordmarkPNG is a copy of web/public/prairie-wordmark-sidebar.png; keep
+// the two in step when the Prairie wordmark changes.
 //
-//go:embed assets/silo-wordmark.png
+//go:embed assets/prairie-wordmark.png
 var defaultWordmarkPNG []byte
 
 const (
-	logoContentID = "silo-logo"
+	logoContentID = "prairie-logo"
 	// The header logo fits within this box, in CSS pixels. Custom logos are
 	// encoded at up to twice the size so they stay sharp on dense screens.
 	logoMaxWidth  = 240
@@ -41,7 +41,7 @@ const (
 var defaultLogo = mustDefaultLogo()
 
 // Brand is the branding one email renders with. The zero value renders as
-// Silo's default branding.
+// Prairie's default branding.
 type Brand struct {
 	// Name is the server name, shown as the logo's alt text.
 	Name string
@@ -56,7 +56,7 @@ type brandLogo struct {
 	width, height int
 }
 
-// DefaultBrand is Silo's own branding.
+// DefaultBrand is Prairie's own branding.
 func DefaultBrand() Brand {
 	return Brand{Name: branding.DefaultServerName, logo: defaultLogo}
 }
@@ -117,7 +117,7 @@ func NewBrandLoader(source BrandSource) *BrandLoader {
 }
 
 // Load reads the current branding. It never fails: an unreadable or
-// unconvertible custom logo is logged and replaced by the Silo wordmark, so
+// unconvertible custom logo is logged and replaced by the Prairie wordmark, so
 // branding problems cannot stop an email from going out.
 func (l *BrandLoader) Load(ctx context.Context) Brand {
 	if l == nil || l.source == nil {
@@ -144,12 +144,12 @@ func (l *BrandLoader) customLogo(ctx context.Context, ref string) brandLogo {
 
 	data, _, storedRef, err := l.source.GetAsset(ctx, branding.KindWordmark)
 	if err != nil {
-		slog.WarnContext(ctx, "email: custom wordmark unavailable; using the Silo wordmark", "ref", ref, "error", err)
+		slog.WarnContext(ctx, "email: custom wordmark unavailable; using the Prairie wordmark", "ref", ref, "error", err)
 		return brandLogo{}
 	}
 	png, width, height, err := imageutil.EncodePNGWithin(data, 2*logoMaxWidth, 2*logoMaxHeight)
 	if err != nil {
-		slog.WarnContext(ctx, "email: custom wordmark could not be converted; using the Silo wordmark", "ref", storedRef, "error", err)
+		slog.WarnContext(ctx, "email: custom wordmark could not be converted; using the Prairie wordmark", "ref", storedRef, "error", err)
 		return brandLogo{}
 	}
 	logo := brandLogo{png: png}
@@ -164,7 +164,7 @@ func (l *BrandLoader) customLogo(ctx context.Context, ref string) brandLogo {
 func mustDefaultLogo() brandLogo {
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(defaultWordmarkPNG))
 	if err != nil {
-		panic("mail: embedded Silo wordmark is not a valid PNG: " + err.Error())
+		panic("mail: embedded Prairie wordmark is not a valid PNG: " + err.Error())
 	}
 	logo := brandLogo{png: defaultWordmarkPNG}
 	logo.width, logo.height = logoDisplaySize(cfg.Width, cfg.Height)

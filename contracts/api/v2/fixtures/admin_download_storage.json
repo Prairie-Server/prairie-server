@@ -6,7 +6,7 @@
       "name": "Server",
       "enabled": true,
       "online": true,
-      "dir": "/srv/silo/download-artifacts",
+      "dir": "/srv/prairie/download-artifacts",
       "dir_source": "setting",
       "usage": {
         "measured_at": "2026-10-08T09:30:00.000Z",

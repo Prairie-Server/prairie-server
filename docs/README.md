@@ -2,7 +2,7 @@
 
 **Running Silo?** Guides for installing, configuring, and troubleshooting a
 server are in the [user manual](https://siloserver.org/docs). Its source is
-[Prairie-Server/siloserver.org](https://github.com/prairie-server/siloserver.org);
+[Prairie-Server/prairieserver.org](https://github.com/prairie-server/prairieserver.org);
 send documentation fixes there.
 
 This folder is for people and coding agents changing the server:

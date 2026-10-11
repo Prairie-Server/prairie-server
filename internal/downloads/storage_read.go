@@ -38,7 +38,7 @@ type StorageLocationView struct {
 	PendingDir string
 	// Usage is the latest measurement, nil until one has been reported.
 	Usage *downloadstorage.Usage
-	// Bytes and files Silo's records hold here: in use (a download is waiting
+	// Bytes and files Prairie's records hold here: in use (a download is waiting
 	// on or fetching the file) and cached (nothing is).
 	InUseFiles  int
 	InUseBytes  int64
@@ -63,7 +63,7 @@ type StorageLocationView struct {
 	ReplicasDisagree bool
 }
 
-// IndexedBytes is what Silo's records say the location holds.
+// IndexedBytes is what Prairie's records say the location holds.
 func (v StorageLocationView) IndexedBytes() int64 { return v.InUseBytes + v.CachedBytes }
 
 // StorageOverview is the server-wide storage summary.

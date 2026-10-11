@@ -226,7 +226,7 @@ func TestSiloIgnoreSkipsMatchedFilesAndDirs(t *testing.T) {
 	writeTestFile(t, filepath.Join(root, "Sub", "notes.txt"), "test")
 	writeTestFile(t, filepath.Join(root, "Sub", "clip.mkv"), "test")
 	writeTestFile(t, filepath.Join(root, "Sub", "nested", "Episode 01.mkv"), "test")
-	writeTestFile(t, filepath.Join(root, ".siloignore"), "# comments and blanks are ignored\n\n  sample.mkv  \n\tExtras\n*.txt\n")
+	writeTestFile(t, filepath.Join(root, ".prairieignore"), "# comments and blanks are ignored\n\n  sample.mkv  \n\tExtras\n*.txt\n")
 
 	files := collectTestFilePaths(t, root, "series")
 	assertFilePaths(t, files, root, []string{"Movie.mkv", "Sub/clip.mkv", "Sub/nested/Episode 01.mkv"})

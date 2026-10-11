@@ -129,7 +129,7 @@ describe("AdminLayout page title", () => {
   it("names the Sections page in the tab and the phone header", () => {
     renderAdmin("/admin/sections");
 
-    expect(document.title).toBe("Admin Sections · Silo");
+    expect(document.title).toBe("Admin Sections · Prairie");
     expect(screen.getByText("Sections")).toBeInTheDocument();
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
   });

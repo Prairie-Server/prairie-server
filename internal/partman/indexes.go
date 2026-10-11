@@ -31,7 +31,7 @@ func (m *Manager) ensureIndex(ctx context.Context, name string) error {
 		return err
 	}
 	defer conn.Release()
-	lock := "silo:partition-index:public:" + name
+	lock := "prairie:partition-index:public:" + name
 	defer func() {
 		cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()

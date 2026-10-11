@@ -14,9 +14,9 @@ import (
 // sync history, and that an unknown hash or size, or any other update, keeps
 // them.
 func TestSubtitleTimingFileReplacePostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	conn, err := pgx.Connect(t.Context(), dsn)
 	if err != nil {

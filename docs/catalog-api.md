@@ -335,7 +335,7 @@ changes what an existing `library_id` request returns.
 ## Device-scoped playback answers
 
 `getCatalogItem` and `listCatalogItemVersions` accept the optional
-`X-Silo-Device-Id` header, as `getWatchState` does. The effective playback
+`X-Prairie-Device-Id` header, as `getWatchState` does. The effective playback
 fields (`effective_audio_track_index`, `effective_audio_language`, and the item's
 `effective_subtitle_*` fields) resolve the acting profile's preferences for that
 device, so a device-scoped override wins over the profile value. Without the
@@ -878,7 +878,7 @@ and the sources the sending plugin declared, and drops any other name, a score
 outside 0-100, and a vote count that is not a whole, non-negative number while
 keeping its score.
 
-Silo itself names only IMDb and TMDB. Every other rating comes from a metadata
+Prairie itself names only IMDb and TMDB. Every other rating comes from a metadata
 provider that declares it. The built-in NFO provider declares `rt_critic` and
 `rt_audience`, the Rotten Tomatoes scores it reads from local `.nfo` files. A
 plugin declares its ratings in its capability's manifest metadata, at the top
@@ -910,7 +910,7 @@ An entry that breaks a rule is dropped on its own, a repeated `id` keeps the
 first, and a capability keeps at most eight. When two enabled plugins declare
 the same `id`, the first by installation order names and scales it. A declared
 source is stored like the others and is shown only after an administrator adds
-its `id` to `catalog.extra_rating_sources`; title pages list it after Silo's
+its `id` to `catalog.extra_rating_sources`; title pages list it after Prairie's
 own sources. `GET /api/v2/admin/rating-sources` lists every source an
 administrator can show, with the plugin that declared it;
 `GET /api/v2/admin/rating-sources/capabilities` reports

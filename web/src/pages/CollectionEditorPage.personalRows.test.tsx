@@ -206,7 +206,7 @@ function showPage(entry: string | { pathname: string; state: unknown }) {
 const EDITOR = "/collections/c1/edit";
 const settingsReads = () => v2Recorder.callsOf("GET /api/v2/profile/sections/settings");
 const location = () => screen.getByRole("status", { name: "Location" }).textContent ?? "";
-const homeScreenParams = () => new URL(location(), "https://silo.test").searchParams;
+const homeScreenParams = () => new URL(location(), "https://prairie.test").searchParams;
 
 async function rowsGroup() {
   await screen.findByRole("textbox", { name: "Name" });

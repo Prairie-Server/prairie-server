@@ -42,12 +42,12 @@ vi.mock("@/hooks/usePostSignInNavigation", () => ({
   usePostSignInNavigation: () => navigate,
 }));
 vi.mock("@/hooks/useServerBranding", () => ({
-  useServerBranding: () => ({ serverName: "Silo", loginSubtitle: "Sign in" }),
+  useServerBranding: () => ({ serverName: "Prairie", loginSubtitle: "Sign in" }),
 }));
 vi.mock("@/hooks/useDocumentTitle", () => ({ useDocumentTitle: vi.fn() }));
 vi.mock("@/components/auth/AuthBackground", () => ({ AuthBackground: () => null }));
 
-const LOCAL = { id: "local", mode: "credentials", display_name: "Silo account", default: true };
+const LOCAL = { id: "local", mode: "credentials", display_name: "Prairie account", default: true };
 const OIDC = {
   id: "plugin:5:oidc",
   installation_id: "5",
@@ -152,7 +152,7 @@ it.each([
   request.mockImplementation(async (operation: string) => {
     if (operation === "POST /api/v2/auth/network/{id}/sign-in") {
       throw new V2ProblemError("signInWithNetworkIdentity", {
-        type: `https://siloserver.org/docs/api/v2/problems/${problemType}`,
+        type: `https://prairieserver.org/docs/api/v2/problems/${problemType}`,
         title: "Refused",
         status: problemType === "email_in_use" ? 409 : 403,
       } as never);

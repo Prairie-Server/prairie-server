@@ -21,9 +21,9 @@ import (
 // sequence counts attempts, and sequences are not rolled back with the
 // aborted transaction.
 func TestFolderMembershipReconciliationRetriesDeadlockDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	withFastDeadlockRetry(t, 5)
 	ctx := context.Background()

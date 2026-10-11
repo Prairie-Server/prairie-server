@@ -63,7 +63,7 @@ func TestBuildAddsDeclaredSourcesAnAdministratorTurnedOn(t *testing.T) {
 	}
 }
 
-// Silo names only IMDb and TMDB. A source the administrator turned on still
+// Prairie names only IMDb and TMDB. A source the administrator turned on still
 // shows nothing unless an enabled plugin declares it, Rotten Tomatoes included.
 func TestBuildShowsNothingAPluginDoesNotDeclare(t *testing.T) {
 	item := Item{IMDB: ptr(8.5), RTCritic: ptr(93), Sources: map[string]float64{"kinopoisk": 72}}
@@ -255,7 +255,7 @@ func TestPolicyReadsDeclaredSources(t *testing.T) {
 		ids = append(ids, s.Source)
 	}
 	if want := []string{"imdb", "tmdb", "kinopoisk"}; !reflect.DeepEqual(ids, want) {
-		t.Fatalf("sources = %q, want %q: Silo lists only IMDb, TMDB and what plugins declare", ids, want)
+		t.Fatalf("sources = %q, want %q: Prairie lists only IMDb, TMDB and what plugins declare", ids, want)
 	}
 	last := sources[len(sources)-1]
 	if last.Provider != "MDBList" || last.AlwaysShown {

@@ -53,9 +53,9 @@ func (p playableTargetPlan) work() (joinComparisons, progressLookupLoops float64
 // Ensure completed membership remains a unique-key lookup instead of comparing
 // every requested episode with every materialized profile progress row.
 func TestPlayableTargetResolverStaleCompletedProgressPlan(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

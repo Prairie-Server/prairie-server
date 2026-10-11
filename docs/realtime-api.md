@@ -397,8 +397,8 @@ close behavior. Older v2 clients that ignore the frame can still reconnect and
 displace the winner; upgrading those clients is a release prerequisite.
 
 Native adoption is tracked in
-[Apple #344](https://github.com/prairie-server/silo-apple/issues/344) and
-[Android #355](https://github.com/prairie-server/silo-android/issues/355). Before either
+[Apple #344](https://github.com/prairie-server/prairie-apple/issues/344) and
+[Android #355](https://github.com/prairie-server/prairie-android/issues/355). Before either
 native surface ships, it must handle this terminal frame, preserve HTTP vote
 membership when common suggestion rows arrive, and verify takeover with the web
 client, explicit rejoin, credential renewal and transient network recovery.

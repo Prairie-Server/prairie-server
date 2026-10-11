@@ -15,9 +15,9 @@ import (
 // rolled back. Only files whose chapters record a thumbnail are queued, a
 // day out, and the queue refuses prefixes outside the derived namespaces.
 func TestBlobGCQueueTriggerPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	conn, err := pgx.Connect(t.Context(), dsn)
 	if err != nil {

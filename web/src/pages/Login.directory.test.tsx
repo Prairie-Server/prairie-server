@@ -29,7 +29,7 @@ vi.mock("@/hooks/usePostSignInNavigation", () => ({
   usePostSignInNavigation: () => vi.fn(async () => undefined),
 }));
 vi.mock("@/hooks/useServerBranding", () => ({
-  useServerBranding: () => ({ serverName: "Silo", loginSubtitle: "Sign in" }),
+  useServerBranding: () => ({ serverName: "Prairie", loginSubtitle: "Sign in" }),
 }));
 vi.mock("@/hooks/useDocumentTitle", () => ({ useDocumentTitle: vi.fn() }));
 vi.mock("@/components/auth/AuthBackground", () => ({ AuthBackground: () => null }));

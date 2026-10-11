@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

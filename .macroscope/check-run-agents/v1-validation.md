@@ -25,7 +25,7 @@ results this PR could invalidate or unblock, before it merges. You report; you n
 
 - **Task issues** carry the label `Validation`, are titled `<Feature> — <Surface>` (Server, Web,
   Web admin, iOS, tvOS, Android, Android TV, or a plugin), and live in the repository that owns the
-  surface: `Prairie-Server/prairie-server`, `Prairie-Server/silo-apple`, `Prairie-Server/silo-android`, or a
+  surface: `Prairie-Server/prairie-server`, `Prairie-Server/prairie-apple`, `Prairie-Server/prairie-android`, or a
   plugin repository. Each has a `## Cases` checklist (`C1`, `C2`, …) and a `## Results` table with
   one row per case and one column per surface or form factor. Cells read like
   `Passed — human validation`, `Failed / blocked by #1294`, `Pending …`, or `Not run`, and name

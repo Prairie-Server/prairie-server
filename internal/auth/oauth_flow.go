@@ -22,7 +22,7 @@ import (
 // NativeAppRedirectURI is the only redirect a native flow ends on: a
 // reverse-DNS private-use scheme (RFC 8252 section 7.1) the iOS, iPadOS,
 // macOS and Android apps claim. The client never supplies it.
-const NativeAppRedirectURI = "org.siloserver.silo:/auth/callback"
+const NativeAppRedirectURI = "org.prairieserver.prairie:/auth/callback"
 
 // PKCEMethodS256 is the only code challenge method a native flow accepts.
 const PKCEMethodS256 = "S256"
@@ -30,13 +30,13 @@ const PKCEMethodS256 = "S256"
 // oauthBinderCookiePrefix names the browser-binding cookies. Each flow has
 // its own cookie, keyed by its state, so two sign-ins started in two tabs
 // do not overwrite each other's binding.
-const oauthBinderCookiePrefix = "silo_oauth_"
+const oauthBinderCookiePrefix = "prairie_oauth_"
 
 // OAuthCompletionCookieName names the cookie that binds a web completion
 // code to the browser the callback answered. The callback sets it on the
 // complete paths of both API versions; a later web sign-in finishing in the
 // same browser replaces it.
-const OAuthCompletionCookieName = "silo_oauth_complete"
+const OAuthCompletionCookieName = "prairie_oauth_complete"
 
 // oauthCompletionCookieMaxAge is the completion cookie's lifetime: the
 // code's plus a minute of clock skew.

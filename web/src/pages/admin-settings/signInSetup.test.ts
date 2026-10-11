@@ -7,7 +7,7 @@ import { missingSignInSetup, signInSetupLayout } from "./signInSetup";
 function installation(overrides: Partial<PluginInstallation>): PluginInstallation {
   return {
     id: 1,
-    plugin_id: "silo.auth.ldap",
+    plugin_id: "prairie.auth.ldap",
     capabilities: [
       {
         type: "auth_provider.v1",

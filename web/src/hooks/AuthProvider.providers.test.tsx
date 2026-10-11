@@ -30,7 +30,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 function ProviderProbe() {
-  const { providers, setupLoading, logoutOfSiloOnly } = useAuth();
+  const { providers, setupLoading, logoutOfPrairieOnly } = useAuth();
   const binding = useUpdateSignInBinding();
   return (
     <div>
@@ -54,7 +54,7 @@ function ProviderProbe() {
         Enable OIDC
       </button>
       <p data-testid="saved">{String(binding.isSuccess)}</p>
-      <button onClick={logoutOfSiloOnly}>Sign out</button>
+      <button onClick={logoutOfPrairieOnly}>Sign out</button>
     </div>
   );
 }
@@ -64,7 +64,7 @@ it("refreshes discovery after a live provider save and again after signing out",
   setAccessToken(null);
   setRefreshToken(null);
   let discovery = {
-    items: [{ id: "local", mode: "credentials", display_name: "Silo account", default: true }],
+    items: [{ id: "local", mode: "credentials", display_name: "Prairie account", default: true }],
     password_login: true,
   };
   let reads = 0;
@@ -104,7 +104,7 @@ it("refreshes discovery after a live provider save and again after signing out",
   await waitFor(() => expect(screen.getByTestId("providers").textContent).toBe("plugin:5:oidc"));
   expect(reads).toBeGreaterThan(1);
   discovery = {
-    items: [{ id: "local", mode: "credentials", display_name: "Silo account", default: true }],
+    items: [{ id: "local", mode: "credentials", display_name: "Prairie account", default: true }],
     password_login: true,
   };
   await act(async () => screen.getByRole("button", { name: "Sign out" }).click());

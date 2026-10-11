@@ -18,9 +18,9 @@ import (
 // holding a lock on the table, it must wait without blocking anyone else, then
 // rebuild the invalid index and build missing ones, leaving valid ones alone.
 func TestInvalidIndexRebuildKeepsTablesAvailablePostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	config, err := pgx.ParseConfig(dsn)

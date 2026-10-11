@@ -158,7 +158,7 @@ describe("personal lists on the v2 contract", () => {
       client.setQueryData(otherKey, { content_id: "movie:other", user_rating: ++otherRating });
       return new Response(
         JSON.stringify({
-          type: "https://siloserver.org/problems/validation_failed",
+          type: "https://prairieserver.org/problems/validation_failed",
           title: "Validation failed",
           status: 422,
           detail: "Rating refused",

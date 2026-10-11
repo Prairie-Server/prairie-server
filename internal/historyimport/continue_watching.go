@@ -12,7 +12,7 @@ import (
 
 // SeriesDropStore is the dropped-series store the Continue Watching pass
 // writes through. notifications.DroppedSeriesTracker satisfies it, so an
-// imported drop recomputes interest like a drop made in Silo.
+// imported drop recomputes interest like a drop made in Prairie.
 type SeriesDropStore interface {
 	EpisodeSeriesIDs(ctx context.Context, episodeIDs []string) (map[string]string, error)
 	ListDropped(ctx context.Context, userID int, profileID string, seriesIDs []string) ([]catalog.DroppedSeries, error)
@@ -59,7 +59,7 @@ func newImportedEpisode(itemID string, record Record) importedEpisode {
 	}
 }
 
-// importedShow is what a run imported of one Silo series.
+// importedShow is what a run imported of one Prairie series.
 type importedShow struct {
 	// lastPlay is the newest imported stamp of its episodes.
 	lastPlay time.Time
@@ -73,24 +73,24 @@ type importedShow struct {
 // reconcileContinueWatching drops each show the run put in the profile's
 // Continue Watching or Next Up that the source's own row leaves out. Emby
 // hides per show, both a show paused mid-episode and one between episodes,
-// and keeps it hidden until one of its episodes is played again; a Silo drop
+// and keeps it hidden until one of its episodes is played again; a Prairie drop
 // behaves the same way. It returns how many shows it dropped.
 //
 // A show missing from the row is only taken as hidden when the source gives
 // evidence the row would otherwise list it: an episode in progress, or, when
 // the row lists shows between episodes at all, the source counting the show
 // as unfinished. A show the user finished at the source is left alone, even
-// when Silo has episodes the source lacks.
+// when Prairie has episodes the source lacks.
 //
 // The drop is dated at the run, so it ends at the first playback after the
-// import, in Silo or at the source on a later run. A show whose last play at
-// the source is stamped after this server's clock waits for a later import. Shows with Silo activity
+// import, in Prairie or at the source on a later run. A show whose last play at
+// the source is stamped after this server's clock waits for a later import. Shows with Prairie activity
 // newer than their last imported play are left alone, as are the profile's
 // own drops, so re-running an import changes nothing.
 //
 // A show counts as listed when any of its copies at the source is in the
 // row: by the source series of the episodes the run imported, or by the
-// listed series' provider IDs, which mark every Silo series that has them.
+// listed series' provider IDs, which mark every Prairie series that has them.
 func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, profileID string, row ContinueWatchingRow, episodes []importedEpisode) (int, error) {
 	if s.seriesDrops == nil || s.nextUp == nil {
 		slog.InfoContext(ctx, "history import: continue watching pass skipped: stores not configured", "component", "historyimport")
@@ -98,7 +98,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 	}
 	// One summary line says where the pass stopped and why: how many shows
 	// the run imported, how many the source's row lists, how many of the
-	// rest the source shows as unfinished and Silo would surface, and how
+	// rest the source shows as unfinished and Prairie would surface, and how
 	// many of those were dropped or kept.
 	var stats struct {
 		shows, listed, settled, surfaced, keptNewer, keptDropped, keptFuture, undone, dropped int
@@ -118,7 +118,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 	}
 
 	// Resolve every episode, in batches: one source series can span several
-	// Silo series, as when a show is split into seasons differently.
+	// Prairie series, as when a show is split into seasons differently.
 	itemIDs := make([]string, 0, len(episodes))
 	seen := make(map[string]bool, len(episodes))
 	for _, episode := range episodes {
@@ -185,8 +185,8 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 	}
 	// A listed show the run imported nothing of and that has no provider ID
 	// might be a copy of any imported show; with it in the row nothing can be
-	// called missing. One with provider IDs that match no Silo series is a
-	// show Silo lacks, which hides nothing.
+	// called missing. One with provider IDs that match no Prairie series is a
+	// show Prairie lacks, which hides nothing.
 	for sourceSeriesID := range row.SourceSeriesIDs {
 		if len(bySource[sourceSeriesID]) == 0 && !withProviderIDs[sourceSeriesID] {
 			stats.unidentified = true
@@ -196,7 +196,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 		return 0, nil
 	}
 
-	// Only shows Silo would surface are dropped: a show Silo would not list
+	// Only shows Prairie would surface are dropped: a show Prairie would not list
 	// is not in its Continue Watching either way.
 	candidates := make([]string, 0)
 	for seriesID, show := range shows {
@@ -224,7 +224,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 	}
 	slices.Sort(candidates)
 
-	// The drop time is taken before activity is read. Playback in Silo
+	// The drop time is taken before activity is read. Playback in Prairie
 	// stamps its progress with this server's clock when it saves, so playback
 	// the read misses is newer than the drop and ends it.
 	now := s.clock()
@@ -254,7 +254,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 			continue
 		}
 		// Playback newer than anything imported means the user is watching
-		// the show in Silo, whatever the source's row says.
+		// the show in Prairie, whatever the source's row says.
 		if latest, ok := activity[seriesID]; ok && latest.After(lastPlay) {
 			stats.keptNewer++
 			continue
@@ -305,7 +305,7 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 	return dropped, nil
 }
 
-// seriesIDsByProviderIDs returns every Silo series with the first of
+// seriesIDsByProviderIDs returns every Prairie series with the first of
 // series' provider IDs that matches any, in the matcher's order (TVDB, then
 // TMDB, then IMDb, or TMDB first when PreferTMDB is set). Unlike
 // Matcher.Match it keeps every series with that ID, so a show held in two

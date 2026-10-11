@@ -18,7 +18,7 @@ export function useAdminRatingSourceCapabilities() {
 
 /**
  * The external rating sources an administrator can show on title pages:
- * Silo's own and those the enabled metadata plugins declare.
+ * Prairie's own and those the enabled metadata plugins declare.
  */
 export function useAdminRatingSources(enabled = true) {
   return useQuery({

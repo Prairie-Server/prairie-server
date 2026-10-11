@@ -525,12 +525,12 @@ func (m *ArtifactManager) NodeStorageFull(nodeID int) bool {
 	return m.storageFull[nodeID]
 }
 
-// Names Silo gives prepared files. The server writes
+// Names Prairie gives prepared files. The server writes
 // <media file>_<format>_<hash prefix>_<id>.mp4 (artifactOutputPath; a legacy
 // hash need not be hex), and encodes there write <name>.part first. A node
 // writes <id>-<uuid>.mp4 (the remote attempt id) with .part and receipt files
 // beside it. Only a name of its location's shape can be untracked: anything
-// else in the directory is not a file Silo wrote, so Silo never deletes it,
+// else in the directory is not a file Prairie wrote, so Prairie never deletes it,
 // however the directory was configured.
 var (
 	serverArtifactFileName = regexp.MustCompile(`^[0-9]+_(remux|transcode)_[^/]{0,16}_[0-9]+\.mp4(\.part)?$`)

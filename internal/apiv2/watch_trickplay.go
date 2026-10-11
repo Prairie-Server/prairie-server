@@ -16,7 +16,7 @@ type TrickplayService interface {
 
 // WatchTrickplayInput names the file whose seek-bar previews to read.
 type WatchTrickplayInput struct {
-	DeviceID string `header:"X-Silo-Device-Id" maxLength:"128" doc:"The stable device identifier used to resolve playback preferences" example:"tv-1"`
+	DeviceID string `header:"X-Prairie-Device-Id" maxLength:"128" doc:"The stable device identifier used to resolve playback preferences" example:"tv-1"`
 	ID       ID     `path:"id" doc:"A movie or episode" example:"movie:heat-1995"`
 	FileID   ID     `query:"file_id" required:"true" doc:"The file being played, one of the item's versions" example:"42"`
 }

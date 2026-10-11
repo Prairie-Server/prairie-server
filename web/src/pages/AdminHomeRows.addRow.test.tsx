@@ -176,7 +176,7 @@ beforeEach(() => {
       if (failNextPatch) {
         failNextPatch = false;
         throw new V2ProblemError("updateAdminSection", {
-          type: "https://siloserver.org/docs/api/v2/problems/precondition_failed",
+          type: "https://prairieserver.org/docs/api/v2/problems/precondition_failed",
           title: "precondition_failed",
           status: 412,
           detail: "Changed elsewhere",

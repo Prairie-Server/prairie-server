@@ -56,8 +56,8 @@ function intervalOptions(current: string) {
 
 /**
  * Settings → Sign-in: the server's one external sign-in provider (OIDC or
- * LDAP) as guided setup, whether Silo passwords still sign in, how first
- * sign-ins match accounts, and how often Silo asks the provider again. Every
+ * LDAP) as guided setup, whether Prairie passwords still sign in, how first
+ * sign-ins match accounts, and how often Prairie asks the provider again. Every
  * edit, the provider's configuration included, saves through the save bar;
  * only turning a provider on or off applies at once. The rules are in
  * docs/architecture/external-sign-in.md.
@@ -157,7 +157,7 @@ export default function SignInSettings() {
       <div className="flex-1 space-y-5">
         {capabilities.isError || (caps && !supported) ? (
           <p className="text-muted-foreground text-sm" role="status">
-            External sign-in isn't available on this server, so only Silo passwords sign in.
+            External sign-in isn't available on this server, so only Prairie passwords sign in.
           </p>
         ) : null}
 
@@ -182,7 +182,7 @@ export default function SignInSettings() {
 
         <NetworkSignInSection installations={installations.data} />
 
-        <FieldGroup label="Silo passwords" dirty={form.isDirty(LOCAL_LOGIN_KEY)}>
+        <FieldGroup label="Prairie passwords" dirty={form.isDirty(LOCAL_LOGIN_KEY)}>
           <SettingField
             label="Allow password sign-in"
             settingKey={LOCAL_LOGIN_KEY}
@@ -222,7 +222,7 @@ export default function SignInSettings() {
             <p className="settings-field-note text-muted-foreground py-2 text-xs leading-relaxed">
               <code className="font-mono">/login?local=1</code> shows the password form for
               break-glass admins, and{" "}
-              <code className="font-mono">silo auth local-login enable</code> run on the server
+              <code className="font-mono">prairie auth local-login enable</code> run on the server
               turns password sign-in back on.
             </p>
           </AdvancedSection>
@@ -238,12 +238,12 @@ export default function SignInSettings() {
             settingKey={EMAIL_MATCH_KEY}
             dirty={form.isDirty(EMAIL_MATCH_KEY)}
             type="toggle"
-            description="A first sign-in connects to the regular Silo account with the same email, when the provider says the email is verified. Admin, owner and break-glass accounts are never matched."
+            description="A first sign-in connects to the regular Prairie account with the same email, when the provider says the email is verified. Admin, owner and break-glass accounts are never matched."
             value={emailMatchOn ? "true" : "false"}
             onChange={(value) => form.setValue(EMAIL_MATCH_KEY, value)}
             status={
               <SettingFieldStatus tone={emailMatchOn ? "warn" : "muted"}>
-                Whoever controls that email at the provider takes over the Silo account. Silo
+                Whoever controls that email at the provider takes over the Prairie account. Prairie
                 doesn't verify account emails, so the account matched is whichever one registered or
                 set the address first; matching signs it out everywhere and deletes its API keys.
                 Turn this on only if the provider verifies every email and people can't change their
@@ -256,7 +256,7 @@ export default function SignInSettings() {
             settingKey={RECHECK_INTERVAL_KEY}
             dirty={form.isDirty(RECHECK_INTERVAL_KEY)}
             type="select"
-            description="Silo asks the provider again whether each person may still sign in, so someone removed there is signed out of Silo at the next check."
+            description="Prairie asks the provider again whether each person may still sign in, so someone removed there is signed out of Prairie at the next check."
             value={form.getValue(RECHECK_INTERVAL_KEY) || "12h"}
             onChange={(value) => form.setValue(RECHECK_INTERVAL_KEY, value)}
             options={intervalOptions(form.getValue(RECHECK_INTERVAL_KEY))}
@@ -269,7 +269,7 @@ export default function SignInSettings() {
             description={
               form.getValue(OUTAGE_POLICY_KEY) === "fail_closed"
                 ? "A session due for a check can't renew until the provider answers, so apps stop working during an outage and carry on once it's over."
-                : "Sessions keep renewing and Silo asks again at the next renewal, so an outage doesn't sign anyone out."
+                : "Sessions keep renewing and Prairie asks again at the next renewal, so an outage doesn't sign anyone out."
             }
             value={form.getValue(OUTAGE_POLICY_KEY) || "fail_open"}
             onChange={(value) => form.setValue(OUTAGE_POLICY_KEY, value)}

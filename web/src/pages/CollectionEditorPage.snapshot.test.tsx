@@ -109,7 +109,7 @@ describe("the editor page keeps the collection it opened", () => {
 
     v2Recorder.answer("GET /api/v2/admin/collections/{id}", () => {
       throw new V2ProblemError("getAdminCollection", {
-        type: "https://silo.example/problems/not_found",
+        type: "https://prairie.example/problems/not_found",
         title: "Not Found",
         status: 404,
         detail: "Collection not found.",

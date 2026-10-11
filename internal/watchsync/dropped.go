@@ -396,7 +396,7 @@ func (s *Service) resolveRemoteDropped(ctx context.Context, conn Connection, ite
 		if change.row.Removed {
 			switch candidates := byKey[key]; len(candidates) {
 			case 0:
-				// An echo of an undrop whose agreement Silo already forgot
+				// An echo of an undrop whose agreement Prairie already forgot
 				// names nothing and is not worth a warning.
 				continue
 			case 1:

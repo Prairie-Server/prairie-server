@@ -12,7 +12,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
-// DownloadServer serves an original media file under Silo's download rules:
+// DownloadServer serves an original media file under Prairie's download rules:
 // the server's Allow downloads setting, the account's download permission,
 // the policy engine, library and quality access, and the download bandwidth
 // limits. *downloads.Service satisfies it through the native direct-download

@@ -451,8 +451,8 @@ func TestAFailedHalfRollsBackAnIdempotentMirroredWrite(t *testing.T) {
 
 	// The same mutation id must now apply for real rather than replay.
 	rec = send(handlerOverStore(t, store))
-	if rec.Code != http.StatusOK || rec.Header().Get("X-Silo-Idempotent-Replay") != "" {
-		t.Fatalf("retry = %d replay %q: %s", rec.Code, rec.Header().Get("X-Silo-Idempotent-Replay"), rec.Body.String())
+	if rec.Code != http.StatusOK || rec.Header().Get("X-Prairie-Idempotent-Replay") != "" {
+		t.Fatalf("retry = %d replay %q: %s", rec.Code, rec.Header().Get("X-Prairie-Idempotent-Replay"), rec.Body.String())
 	}
 	requireStored(t, store, profileIdentity(settingskeys.PlaybackAutoSkipIntro), `true`)
 	receipt, err = store.GetSettingMutation(t.Context(), "mut-partial")

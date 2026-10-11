@@ -20,9 +20,9 @@ import (
 // made, and writes fall into the default partition. Each zone gets its own
 // database because 028 runs once; the test role needs CREATEDB.
 func TestLogPartitionsMatchPartmanOnNonUTCServer(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	admin, err := pgxpool.New(ctx, dsn)
@@ -35,7 +35,7 @@ func TestLogPartitionsMatchPartmanOnNonUTCServer(t *testing.T) {
 	// overlap 028's, a positive one can leave a gap before it.
 	for _, zone := range []string{"America/New_York", "Asia/Tokyo"} {
 		t.Run(zone, func(t *testing.T) {
-			name := fmt.Sprintf("silo_log_partition_tz_%d", time.Now().UnixNano())
+			name := fmt.Sprintf("prairie_log_partition_tz_%d", time.Now().UnixNano())
 			if _, err := admin.Exec(ctx, "CREATE DATABASE "+pgx.Identifier{name}.Sanitize()); err != nil {
 				t.Fatal(err)
 			}

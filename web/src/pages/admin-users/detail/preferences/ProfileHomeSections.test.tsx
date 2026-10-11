@@ -185,11 +185,11 @@ describe("ProfileHomeSections", () => {
     mocks.saveMutate.mockImplementation((_body, options: { onError: (e: unknown) => void }) =>
       options.onError(
         new V2ProblemError("replaceAdminUserProfileSectionOverrides", {
-          type: "https://silo.dev/problems/validation_failed",
+          type: "https://prairie.dev/problems/validation_failed",
           title: "Validation failed",
           status: 400,
           detail: "The request did not pass validation; see errors.",
-          instance: "urn:silo:request:1",
+          instance: "urn:prairie:request:1",
           errors: [
             {
               location: "body.overrides",

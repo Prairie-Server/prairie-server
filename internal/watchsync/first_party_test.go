@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func TestPluginProviderKey(t *testing.T) {
@@ -14,18 +14,18 @@ func TestPluginProviderKey(t *testing.T) {
 		name         string
 		pluginID     string
 		capabilityID string
-		siloManaged  bool
+		prairieManaged  bool
 		want         string
 	}{
-		{name: "first-party Trakt keeps the built-in key", pluginID: "silo.watchprovider.trakt", capabilityID: "trakt", siloManaged: true, want: "trakt"},
-		{name: "first-party Simkl keeps the built-in key", pluginID: "silo.watchprovider.simkl", capabilityID: "simkl", siloManaged: true, want: "simkl"},
-		{name: "first-party MDBList keeps the built-in key", pluginID: "silo.watchprovider.mdblist", capabilityID: "mdblist", siloManaged: true, want: "mdblist"},
-		{name: "first-party ID from another repository", pluginID: "silo.watchprovider.trakt", capabilityID: "trakt", want: "plugin:3:trakt"},
-		{name: "unknown capability of a first-party plugin", pluginID: "silo.watchprovider.trakt", capabilityID: "other", siloManaged: true, want: "plugin:3:other"},
-		{name: "third-party plugin", pluginID: "silo.watchprovider.floppy", capabilityID: "floppy", siloManaged: true, want: "plugin:3:floppy"},
+		{name: "first-party Trakt keeps the built-in key", pluginID: "prairie.watchprovider.trakt", capabilityID: "trakt", prairieManaged: true, want: "trakt"},
+		{name: "first-party Simkl keeps the built-in key", pluginID: "prairie.watchprovider.simkl", capabilityID: "simkl", prairieManaged: true, want: "simkl"},
+		{name: "first-party MDBList keeps the built-in key", pluginID: "prairie.watchprovider.mdblist", capabilityID: "mdblist", prairieManaged: true, want: "mdblist"},
+		{name: "first-party ID from another repository", pluginID: "prairie.watchprovider.trakt", capabilityID: "trakt", want: "plugin:3:trakt"},
+		{name: "unknown capability of a first-party plugin", pluginID: "prairie.watchprovider.trakt", capabilityID: "other", prairieManaged: true, want: "plugin:3:other"},
+		{name: "third-party plugin", pluginID: "prairie.watchprovider.floppy", capabilityID: "floppy", prairieManaged: true, want: "plugin:3:floppy"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := PluginProviderKey(3, tc.pluginID, tc.capabilityID, tc.siloManaged); got != tc.want {
+			if got := PluginProviderKey(3, tc.pluginID, tc.capabilityID, tc.prairieManaged); got != tc.want {
 				t.Fatalf("PluginProviderKey() = %q, want %q", got, tc.want)
 			}
 		})
@@ -60,7 +60,7 @@ func TestFirstPartyPluginsToInstallUntilMigrated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"silo.watchprovider.mdblist", "silo.watchprovider.trakt"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"prairie.watchprovider.mdblist", "prairie.watchprovider.trakt"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins to install = %v, want %v", got, want)
 	}
 
@@ -76,7 +76,7 @@ func TestFirstPartyPluginsToInstallUntilMigrated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"silo.watchprovider.mdblist"}; !reflect.DeepEqual(got, want) {
+	if want := []string{"prairie.watchprovider.mdblist"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins to install after Trakt migrated = %v, want %v", got, want)
 	}
 }

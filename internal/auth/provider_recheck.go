@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -88,7 +88,7 @@ type AccountCheckerSource interface {
 // login session came from (docs/architecture/external-sign-in.md, "Provider
 // re-check"). A refresh asks the provider again once the identity's last
 // answer is older than auth.provider_recheck_interval, so an account the
-// provider removed, disabled or no longer admits loses its Silo sessions
+// provider removed, disabled or no longer admits loses its Prairie sessions
 // even though refresh keeps sliding them.
 //
 // At most one CheckAccount runs per (installation, subject) across all
@@ -350,7 +350,7 @@ func (r *ProviderRecheck) recheckConn(ctx context.Context, identity *LinkedIdent
 	if err != nil {
 		return err
 	}
-	lockKey := fmt.Sprintf("silo:auth-identity:%d:%s", identity.InstallationID, identity.ExternalSubject)
+	lockKey := fmt.Sprintf("prairie:auth-identity:%d:%s", identity.InstallationID, identity.ExternalSubject)
 	locked := false
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), min(r.writeWait, 5*time.Second))

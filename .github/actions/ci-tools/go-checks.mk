@@ -22,7 +22,7 @@ contracts:
 # Go's test cache cannot see files a test's child process reads, so these
 # packages always rerun; the grep fails when a new test starts go, git, or node
 # outside them or the packages whose subprocess inputs are immutable.
-UNCACHED := cmd/silo internal/jellycompat internal/pluginhost internal/plugins
+UNCACHED := cmd/prairie internal/jellycompat internal/pluginhost internal/plugins
 IMMUTABLE := internal/contractledger internal/contractspec internal/debugserver
 tests:
 	GOFLAGS="$${TEST_GOFLAGS}" $(MAKE) -f Makefile test-go

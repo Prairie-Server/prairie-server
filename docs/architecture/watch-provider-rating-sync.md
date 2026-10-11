@@ -127,7 +127,7 @@ row's kind is unknown, and the run records a warning.
 
 A provider that records a rated title as watched implements `RatingExportWatchGate`.
 A plugin declares the rule by listing the media types in `rating_export_requires_watched`;
-the Simkl plugin lists `MOVIE`. Silo then sends a new rating of that kind only once the
+the Simkl plugin lists `MOVIE`. Prairie then sends a new rating of that kind only once the
 profile has a completed play of the title; until then the rating stays pending and each
 run records a warning. A title the provider already holds a rating for is not held back,
 and neither are removals. The check looks for a completed play of the rated item itself.

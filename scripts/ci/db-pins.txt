@@ -1,6 +1,6 @@
 # DB-backed pins. CI runs them against a freshly migrated Postgres; locally,
 # `make test-db-pins` runs them against the database named by
-# SILO_TEST_DATABASE_URL.
+# PRAIRIE_TEST_DATABASE_URL.
 #
 # One test per line: the package directory, then the top-level test name.
 # Each test asserts how many statements, rows or resolver calls an operation

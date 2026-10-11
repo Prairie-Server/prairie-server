@@ -104,8 +104,8 @@ URLs in the plan are projected into the `/api/v2` namespace; the signed `st`
 query they carry is unchanged.
 
 A start that returns a playable decision registers the device the client
-declares in `X-Silo-Device-Id` (with the optional `X-Silo-Device-Name` and
-`X-Silo-Device-Platform`) for the acting profile and refreshes its
+declares in `X-Prairie-Device-Id` (with the optional `X-Prairie-Device-Name` and
+`X-Prairie-Device-Platform`) for the acting profile and refreshes its
 `last_seen_at`, as described in the
 [device registry](settings-api.md#device-registry). The v1 start route reads the
 same headers. A refused start, or one that returns a terminal decision,

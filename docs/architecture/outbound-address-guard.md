@@ -94,7 +94,7 @@ it. See [Notifications](notifications.md#trust-model-and-ssrf-guard).
 
 ## Artwork downloads
 
-Artwork Silo downloads on its own (metadata refresh, image-cache jobs, person
+Artwork Prairie downloads on its own (metadata refresh, image-cache jobs, person
 images) comes from Public addresses only (`imagecache`). An image an admin
 applies through `POST /api/v2/admin/items/{id}/images/apply` (and its v1
 counterpart) is trusted with the local network, like the import sources an

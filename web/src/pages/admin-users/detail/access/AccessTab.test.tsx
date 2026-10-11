@@ -249,7 +249,7 @@ function row(scope: HTMLElement, label: string): string {
 
 const conflict = () =>
   new V2ProblemError("updateAdminUser", {
-    type: "https://silo.example/problems/precondition_failed",
+    type: "https://prairie.example/problems/precondition_failed",
     title: "Changed",
     status: 412,
     detail: "The user changed",

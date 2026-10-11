@@ -32,7 +32,7 @@ export function webhookProviderName(
   return providerName(source.source_config?.[WEBHOOK_PROVIDER_KEY]);
 }
 
-const BUILTIN_ARR_WEBHOOK_PLUGIN_ID = "silo.autoscan.arr-webhook";
+const BUILTIN_ARR_WEBHOOK_PLUGIN_ID = "prairie.autoscan.arr-webhook";
 
 /** An arr webhook with no provider chosen, which infers it from each payload. */
 function detectsArrProvider(source: AutoscanSource): boolean {

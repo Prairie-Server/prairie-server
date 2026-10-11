@@ -14,9 +14,9 @@ import (
 // PostgreSQL inlines it: a body PostgreSQL cannot inline plans a query for
 // every token of every title write.
 func TestSearchNumberTokenInlinesPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	connect := func(conforming string) *pgx.Conn {
 		t.Helper()

@@ -283,5 +283,5 @@ it("explains how the last sync ended", () => {
     },
   });
   openMenu(sync, 3);
-  expect(screen.getByText("This video has no audio Silo can read.")).toBeInTheDocument();
+  expect(screen.getByText("This video has no audio Prairie can read.")).toBeInTheDocument();
 });

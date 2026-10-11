@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-// Silo's own rating sources are IMDb and TMDB, the two its title pages always
+// Prairie's own rating sources are IMDb and TMDB, the two its title pages always
 // show. Every other source is declared by a metadata plugin (see
 // metadata.extractRatingSources), which names it and sets its scale.
 const (
@@ -20,7 +20,7 @@ const (
 // RatingSourceDefinition says how clients show one rating source.
 type RatingSourceDefinition struct {
 	Source string
-	// Name is the plain-text mark clients show next to the score. Silo shows
+	// Name is the plain-text mark clients show next to the score. Prairie shows
 	// no third-party logos except TMDB's, whose terms allow it.
 	Name string
 	// Label names the source in full where there is room, such as the
@@ -34,19 +34,19 @@ type RatingSourceDefinition struct {
 	Percent bool
 }
 
-// ratingSourceDefinitions are Silo's own sources, in the order title pages
+// ratingSourceDefinitions are Prairie's own sources, in the order title pages
 // list them, before any source a plugin declares.
 var ratingSourceDefinitions = []RatingSourceDefinition{
 	{Source: RatingSourceIMDB, Name: "IMDb", Label: "IMDb", Scale: 10},
 	{Source: RatingSourceTMDB, Name: "TMDB", Label: "TMDB", Scale: 10},
 }
 
-// RatingSourceDefinitions returns Silo's own sources in display order.
+// RatingSourceDefinitions returns Prairie's own sources in display order.
 func RatingSourceDefinitions() []RatingSourceDefinition {
 	return append([]RatingSourceDefinition(nil), ratingSourceDefinitions...)
 }
 
-// ratingSourceIDPattern is the shape of every rating source name, Silo's own
+// ratingSourceIDPattern is the shape of every rating source name, Prairie's own
 // and those metadata plugins declare.
 var ratingSourceIDPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,31}$`)
 
@@ -55,7 +55,7 @@ func ValidRatingSourceID(id string) bool {
 	return ratingSourceIDPattern.MatchString(id)
 }
 
-// IsBuiltinRatingSource reports whether id is one of Silo's own sources, which
+// IsBuiltinRatingSource reports whether id is one of Prairie's own sources, which
 // a plugin may report but not redefine.
 func IsBuiltinRatingSource(id string) bool {
 	_, ok := ratingSourceRanks[id]
@@ -63,7 +63,7 @@ func IsBuiltinRatingSource(id string) bool {
 }
 
 // RatingSourceAlwaysShown reports whether clients show a source whatever the
-// administrator chose: Silo's own, IMDb and TMDB. A plugin's source shows only
+// administrator chose: Prairie's own, IMDb and TMDB. A plugin's source shows only
 // once an administrator turns it on.
 func RatingSourceAlwaysShown(source string) bool {
 	return source == RatingSourceIMDB || source == RatingSourceTMDB
@@ -77,7 +77,7 @@ var ratingSourceRanks = func() map[string]int {
 	return ranks
 }()
 
-// RatingSourceRank orders sources for display: Silo's own first, then every
+// RatingSourceRank orders sources for display: Prairie's own first, then every
 // other source.
 func RatingSourceRank(source string) int {
 	if rank, ok := ratingSourceRanks[source]; ok {

@@ -208,7 +208,7 @@ it.each([
         async () =>
           new Response(
             JSON.stringify({
-              type: `https://siloserver.org/docs/api/v2/problems/${status === 404 ? "not_found" : "dependency_unavailable"}`,
+              type: `https://prairieserver.org/docs/api/v2/problems/${status === 404 ? "not_found" : "dependency_unavailable"}`,
               title: status === 404 ? "Not found" : "Service unavailable",
               status,
               detail: "Seek previews are unavailable.",
@@ -370,7 +370,7 @@ it("keeps sheet recovery inside the manifest Retry-After delay", async () => {
     async () =>
       new Response(
         JSON.stringify({
-          type: "https://siloserver.org/problems/rate_limited",
+          type: "https://prairieserver.org/problems/rate_limited",
           title: "Rate limited",
           status: 429,
           detail: "Try later",

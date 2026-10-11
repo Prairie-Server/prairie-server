@@ -20,9 +20,9 @@ import (
 // Turning local password sign-in off needs a break-glass admin, through the
 // batch and the single-key settings writes alike.
 func TestLocalLoginSettingRequiresBreakGlassDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(t.Context(), dsn)
 	if err != nil {
@@ -82,9 +82,9 @@ func TestLocalLoginSettingRequiresBreakGlassDB(t *testing.T) {
 // demoted, disabled or deleted. An administrator's password write turns the
 // account's local password sign-in back on.
 func TestV1AdminUserChangesKeepBreakGlassDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

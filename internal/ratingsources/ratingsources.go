@@ -1,11 +1,11 @@
-// Package ratingsources decides which external ratings Silo shows and builds
+// Package ratingsources decides which external ratings Prairie shows and builds
 // the list every client renders, so a title page reads the same on the web,
 // Apple, and Android.
 //
-// Silo's own sources, IMDb and TMDB, are always shown. Every other source is
+// Prairie's own sources, IMDb and TMDB, are always shown. Every other source is
 // one a metadata plugin declares, and is shown only after an administrator
 // turns it on under config.CatalogExtraRatingSourcesSettingKey: the owners of
-// those scores restrict how others may display them, so Silo leaves the choice
+// those scores restrict how others may display them, so Prairie leaves the choice
 // to the administrator and ships no list of its own.
 package ratingsources
 
@@ -32,7 +32,7 @@ type Selection struct {
 }
 
 // WithDeclared returns the selection with the given plugin-declared source
-// definitions, which Build lists after Silo's own sources when shown.
+// definitions, which Build lists after Prairie's own sources when shown.
 func (s Selection) WithDeclared(declared []models.RatingSourceDefinition) Selection {
 	s.declared = declared
 	s.declaredID = make(map[string]struct{}, len(declared))
@@ -51,7 +51,7 @@ func NewSelection(extra ...string) Selection {
 	return sel
 }
 
-// Shows reports whether clients show ratings from source: always for Silo's
+// Shows reports whether clients show ratings from source: always for Prairie's
 // own, and otherwise only for a source an enabled plugin declares and the
 // administrator turned on.
 func (s Selection) Shows(source string) bool {
@@ -212,11 +212,11 @@ type Source struct {
 	// AlwaysShown is true for IMDb and TMDB, which no setting hides.
 	AlwaysShown bool
 	// Provider names the metadata providers that declare the source; empty for
-	// Silo's own sources.
+	// Prairie's own sources.
 	Provider string
 }
 
-// Sources lists Silo's own rating sources and those the enabled metadata
+// Sources lists Prairie's own rating sources and those the enabled metadata
 // plugins declare, read fresh, in display order.
 func (p *Policy) Sources(ctx context.Context) ([]Source, error) {
 	var out []Source
@@ -268,7 +268,7 @@ const MaxTitleRatings = 3
 // IMDb, TMDB, and Rotten Tomatoes come from the rating columns, which are also
 // what poster badges, browse sorting, and filters read, so every surface shows
 // the same number. A per-source row fills in only when its column is empty.
-// Plugin-declared sources follow Silo's own, in the order they were declared;
+// Plugin-declared sources follow Prairie's own, in the order they were declared;
 // Rotten Tomatoes shows only when a plugin declares rt_critic or rt_audience.
 // Values outside a source's scale are dropped rather than shown.
 func Build(item Item, sel Selection) []Rating {

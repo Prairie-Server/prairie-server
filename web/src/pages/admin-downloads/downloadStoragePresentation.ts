@@ -47,7 +47,7 @@ const SEGMENT_LABELS: Record<MeterSegmentKind, string> = {
 /**
  * Splits a location's filesystem into prepared files (in use, cached,
  * untracked), everything else on the disk, and free space. Prepared bytes come
- * from Silo's records, scaled down to what was measured on disk when the
+ * from Prairie's records, scaled down to what was measured on disk when the
  * records claim more than the files hold (a file already deleted, say), so the
  * bar never shows more prepared bytes than exist.
  */
@@ -56,7 +56,7 @@ function directoryBytes(usage: NonNullable<AdminDownloadStorageLocation["usage"]
   return usage.bytes + usage.partial_bytes + usage.other_bytes;
 }
 
-/** Bytes Silo's records say the location's prepared files hold. */
+/** Bytes Prairie's records say the location's prepared files hold. */
 export function preparedBytes(location: AdminDownloadStorageLocation): number {
   return location.in_use_bytes + location.cached_bytes;
 }
@@ -170,7 +170,7 @@ export function storageWarnings(storage: AdminDownloadStorage): StorageWarning[]
         id: `untracked:${location.key}`,
         tone: "info",
         title: `${formatStorageBytes(location.untracked_bytes)} of untracked files on ${location.name}.`,
-        body: "Silo has no record of these files, so clean-up never removes them.",
+        body: "Prairie has no record of these files, so clean-up never removes them.",
         location: location.key,
         action: "review_untracked",
       });

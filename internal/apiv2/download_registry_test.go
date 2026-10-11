@@ -155,7 +155,7 @@ func TestDownloadRegistryListsPreparationProgress(t *testing.T) {
 	deps := pilotDeps(nil, nil)
 	deps.Downloads = service
 	h := newTestHandler(t, deps)
-	device := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Silo-Device-Id", "device-one")
+	device := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Prairie-Device-Id", "device-one")
 	rec := do(t, h, "GET", Prefix+"/downloads", "", device)
 	if rec.Code != 200 {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())

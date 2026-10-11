@@ -21,7 +21,7 @@ func TestOAuthNativeCapabilityFollowsPublicURL(t *testing.T) {
 		url, want string
 	}{
 		{"", `"native":false`},
-		{"https://silo.example.test", `"native":true`},
+		{"https://prairie.example.test", `"native":true`},
 		{"", `"native":false`},
 	} {
 		svc.SetHostBaseURL(tc.url)
@@ -50,7 +50,7 @@ func TestOAuthLinkResolverProblemClassification(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			store := auth.NewInMemoryOAuthStore()
 			svc := auth.NewOAuthHandler(auth.OAuthHandlerDeps{
-				Store: store, Users: oauthLinkUsers{}, HostBaseURL: "https://silo.example.test",
+				Store: store, Users: oauthLinkUsers{}, HostBaseURL: "https://prairie.example.test",
 				ResolveClient: func(context.Context, int) (auth.OAuthClient, string, error) {
 					return nil, "", tc.err
 				},
@@ -65,7 +65,7 @@ func TestOAuthLinkResolverProblemClassification(t *testing.T) {
 			}); err != nil {
 				t.Fatal(err)
 			}
-			requireProblem(t, do(t, h, http.MethodPost, "https://silo.example.test"+Prefix+"/account/identities/link-start",
+			requireProblem(t, do(t, h, http.MethodPost, "https://prairie.example.test"+Prefix+"/account/identities/link-start",
 				`{"link_ticket":"resolver-ticket","next":"/settings/account"}`, bearer(memberToken)), tc.want)
 		})
 	}

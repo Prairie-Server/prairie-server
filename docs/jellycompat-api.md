@@ -100,7 +100,7 @@ original language, and the series' remembered track), falling back to the
 file's default track. `DefaultSubtitleStreamIndex` follows Jellyfin 12.1's
 `MediaStreamSelector` for the effective subtitle mode and language, judged
 against the starting audio track, with one change: Jellyfin sorts external files
-first, while Silo ranks them by Jellyfin's remaining rules and uses the source
+first, while Prairie ranks them by Jellyfin's remaining rules and uses the source
 only to break ties, preferring embedded tracks over external and downloaded
 files. A file's default-flagged track therefore beats an external file in
 `Default` mode, and an external file is still chosen when nothing embedded is
@@ -455,7 +455,7 @@ fresh on every request; full session payloads use the normal per-session cache.
 
 A play ends at the first Stopped report carrying its per-play identifier or
 `DELETE /Videos/ActiveEncodings`; for ID-less players and clients that never
-stop, idle cleanup ends it. Silo then records the play the way it records native
+stop, idle cleanup ends it. Prairie then records the play the way it records native
 playback: a watch-history row with source `playback` once the position passes the
 minimum resume threshold, completed past the watched threshold, and an admin
 playback-history row. Each play is recorded once across retried stops, API

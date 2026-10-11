@@ -65,7 +65,7 @@ vi.mock("@/player/components/WatchPage", () => ({
 
 function notFound() {
   return new V2ProblemError("getWatchDetail", {
-    type: "https://siloserver.org/docs/api/v2/problems/not_found",
+    type: "https://prairieserver.org/docs/api/v2/problems/not_found",
     title: "Not Found",
     status: 404,
     detail: "media item not found",

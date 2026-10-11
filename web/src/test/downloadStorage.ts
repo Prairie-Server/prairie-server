@@ -14,7 +14,7 @@ export function makeStorageLocation(
     name: "Server",
     enabled: true,
     online: true,
-    dir: "/srv/silo/download-artifacts",
+    dir: "/srv/prairie/download-artifacts",
     dir_source: "setting",
     usage: {
       measured_at: new Date().toISOString(),

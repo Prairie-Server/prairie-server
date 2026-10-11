@@ -34,10 +34,10 @@ function listTitles(titles: string[]): string {
 }
 
 function rowsLine(rowCount: number, name: string): string {
-  if (rowCount === 0) return `${capitalize(name)} gets Silo's default rows.`;
+  if (rowCount === 0) return `${capitalize(name)} gets Prairie's default rows.`;
   return rowCount === 1
-    ? `The 1 row on ${name} is replaced by Silo's default rows.`
-    : `The ${rowCount} rows on ${name} are replaced by Silo's default rows.`;
+    ? `The 1 row on ${name} is replaced by Prairie's default rows.`
+    : `The ${rowCount} rows on ${name} are replaced by Prairie's default rows.`;
 }
 
 function collectionLine(titles: string[]): string | null {
@@ -57,7 +57,7 @@ function otherPagesLine(page: PageRef, otherLibraryLabels: string[]): string | n
 }
 
 /**
- * Confirms putting back Silo's default rows on one page. It says what goes,
+ * Confirms putting back Prairie's default rows on one page. It says what goes,
  * that collections stay, which pages are untouched, and what the optional
  * reset of every profile clears. The page version was read when it opened; a
  * 412 keeps the dialog and asks for an explicit reload.
@@ -112,7 +112,7 @@ export function RestoreDialog({
         <DialogHeader>
           <DialogTitle>Restore {name} to the default rows?</DialogTitle>
           <DialogDescription>
-            {capitalize(name)} goes back to the rows Silo starts with.
+            {capitalize(name)} goes back to the rows Prairie starts with.
           </DialogDescription>
         </DialogHeader>
         <ul

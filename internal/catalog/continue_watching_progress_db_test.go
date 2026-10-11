@@ -16,9 +16,9 @@ import (
 // superseded by nothing, and letting it pull the cutoff back made every
 // Continue Watching load read the profile's whole recent completed history.
 func TestSupersededCutoffIgnoresInProgressMoviesPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

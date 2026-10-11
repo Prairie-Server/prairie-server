@@ -11,7 +11,7 @@
       "linked_at": "2026-01-02T03:04:05.000Z",
       "last_sign_in_at": "2026-01-03T04:05:06.000Z",
       "last_checked_at": "2026-01-03T16:07:08.000Z",
-      "external_subject": "https://id.example.test/realms/silo|8f14e45f",
+      "external_subject": "https://id.example.test/realms/prairie|8f14e45f",
       "issuer": "https://id.example.test",
       "last_check_status": "active"
     }

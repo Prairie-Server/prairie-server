@@ -146,7 +146,7 @@ function IdentityRow({
 }
 
 /**
- * What linking does to the account's Silo password, as the dialog says it:
+ * What linking does to the account's Prairie password, as the dialog says it:
  * break-glass accounts and network sign-ins (such as Tailscale) keep it, and
  * other providers turn it off. Nothing is said about a password the account
  * doesn't have.
@@ -155,9 +155,9 @@ function connectPasswordNote(
   user: AdminUser,
   installation: PluginInstallation | undefined,
 ): string {
-  if (user.break_glass) return " As a break-glass account it keeps its Silo password.";
+  if (user.break_glass) return " As a break-glass account it keeps its Prairie password.";
   if (installation && isNetworkSignIn(installation)) {
-    return user.password_login ? " It keeps its Silo password too." : "";
+    return user.password_login ? " It keeps its Prairie password too." : "";
   }
   return " Connecting turns off password sign-in for this account.";
 }
@@ -216,7 +216,7 @@ function LinkIdentityDialog({
         userId: user.id,
         body: {
           installation_id: selected,
-          // The exact subject: Silo never normalizes it, so only outer
+          // The exact subject: Prairie never normalizes it, so only outer
           // whitespace from a paste is dropped.
           external_subject: subject.trim(),
           ...(username.trim() ? { username: username.trim() } : {}),
@@ -307,9 +307,9 @@ function LinkIdentityDialog({
               placeholder="https://id.example.com|8f14e45f"
             />
             <p id={subjectHintId} className="text-muted-foreground text-xs">
-              The provider's exact ID for the person, as Silo stores it. OpenID Connect: the issuer
+              The provider's exact ID for the person, as Prairie stores it. OpenID Connect: the issuer
               and subject joined by | (Entra ID: tenant ID and object ID). LDAP: the directory's
-              unique ID, such as entryUUID or objectGUID. Silo never matches on a name or email.
+              unique ID, such as entryUUID or objectGUID. Prairie never matches on a name or email.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -359,7 +359,7 @@ function LinkIdentityDialog({
 }
 
 /**
- * An account's Sign-in tab: whether it signs in with a Silo password (and a
+ * An account's Sign-in tab: whether it signs in with a Prairie password (and a
  * way to set one when it can't), the break-glass flag for admins, and the
  * sign-in provider identities linked to it.
  */
@@ -402,7 +402,7 @@ export function AdminUserSignIn({
   const isAdmin = user.role === "admin";
   const breakGlass = user.break_glass;
   // auth.local_password_login: while it is off only break-glass accounts sign
-  // in with a Silo password, whatever the account's own setting says.
+  // in with a Prairie password, whatever the account's own setting says.
   const serverPasswordLoginOn = useAdminSettingValue("auth.local_password_login").data !== "false";
   const passwordWaitsForServer = user.password_login && !serverPasswordLoginOn && !breakGlass;
 
@@ -466,10 +466,10 @@ export function AdminUserSignIn({
         <Panel title="Password sign-in">
           <p className="text-sm">
             {!user.password_login
-              ? `Off: ${user.username} can't sign in with a Silo password.`
+              ? `Off: ${user.username} can't sign in with a Prairie password.`
               : passwordWaitsForServer
-                ? `On for this account, but password sign-in is off for the server, so ${user.username} can't sign in with a Silo password until it's back on.`
-                : `On: ${user.username} can sign in with a Silo password.`}
+                ? `On for this account, but password sign-in is off for the server, so ${user.username} can't sign in with a Prairie password until it's back on.`
+                : `On: ${user.username} can sign in with a Prairie password.`}
           </p>
           {passwordWaitsForServer ? (
             <p className="text-muted-foreground text-xs">

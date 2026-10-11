@@ -52,7 +52,7 @@ const (
 	metaPermission      = "silo.permission"
 	metaDemoRestricted  = "silo.demo_restricted"
 	metaProfileOptional = "silo.profile_optional"
-	metaHouseholdGate   = "silo.household_profile_gate"
+	metaHouseholdGate   = "prairie.household_profile_gate"
 	metaMaxBodyBytes    = "silo.max_body_bytes"
 	metaRateLimitBucket = "silo.rate_limit_bucket"
 	metaGuarded         = "silo.guarded"

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	deliveryKeyPrefix = "silo:playback-delivery:"
+	deliveryKeyPrefix = "prairie:playback-delivery:"
 
 	// DeliveryWindow is how long one recorded media delivery stays readable.
 	// The API reads it on every sweep, so it only has to outlast the gap

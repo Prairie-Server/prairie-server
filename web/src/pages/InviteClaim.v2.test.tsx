@@ -24,7 +24,7 @@ const linkInvitation = { ...invitation, email: "", email_required: true, note: "
 function emailProblem(type: string, status: number, errors?: unknown[]) {
   return new Response(
     JSON.stringify({
-      type: `https://siloserver.org/docs/api/v2/problems/${type}`,
+      type: `https://prairieserver.org/docs/api/v2/problems/${type}`,
       title: type,
       status,
       errors,
@@ -140,7 +140,7 @@ it("explains a refusal because password sign-in is off instead of offering recov
   submit = async () =>
     new Response(
       JSON.stringify({
-        type: "https://siloserver.org/docs/api/v2/problems/local_login_disabled",
+        type: "https://prairieserver.org/docs/api/v2/problems/local_login_disabled",
         title: "Local password sign-in is turned off",
         status: 403,
       }),
@@ -265,12 +265,12 @@ it("keeps a link invitation in the browser on Android", async () => {
   try {
     mount();
     await screen.findByLabelText("Password", { exact: true });
-    expect(screen.getByRole("link", { name: /Open in the Silo app/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open in the Prairie app/ })).toBeInTheDocument();
     cleanup();
     lookup = async () => json(linkInvitation);
     mount();
     expect(await screen.findByLabelText("Email")).not.toBeDisabled();
-    expect(screen.queryByRole("link", { name: /Open in the Silo app/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Open in the Prairie app/ })).toBeNull();
   } finally {
     agent.mockRestore();
   }

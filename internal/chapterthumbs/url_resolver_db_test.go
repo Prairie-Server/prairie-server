@@ -44,9 +44,9 @@ func (*chapterURLTracer) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQuer
 
 func chapterURLTestPool(t *testing.T, tracer *chapterURLTracer) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
@@ -109,7 +109,7 @@ func (r chapterTestURLs) ResolveURLs(_ context.Context, keys []string) map[strin
 
 func TestRetiredChapterImagesOutliveIssuedURLsDB(t *testing.T) {
 	const lifetime = 72 * time.Hour
-	cfg := s3client.BucketConfig{Endpoint: "https://s3.example.test", Region: "us-east-1", Bucket: "silo", AccessKey: "k", SecretKey: "s", PathStyle: true}
+	cfg := s3client.BucketConfig{Endpoint: "https://s3.example.test", Region: "us-east-1", Bucket: "prairie", AccessKey: "k", SecretKey: "s", PathStyle: true}
 	tokenCfg := cfg
 	tokenCfg.PublicEndpoint, tokenCfg.URLAuth = "https://cdn.example.test", s3client.URLAuthCloudflareToken
 	tokenCfg.TokenSecret, tokenCfg.TokenTTL = "secret", int((96 * time.Hour).Seconds())

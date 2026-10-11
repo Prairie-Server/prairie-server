@@ -10,7 +10,7 @@ func TestParseAuthCommand(t *testing.T) {
 		ok   bool
 	}{
 		{"enable", []string{"local-login", "enable"}, authCommand{envFile: ".env"}, true},
-		{"env file", []string{"local-login", "enable", "-env", "/etc/silo.env"}, authCommand{envFile: "/etc/silo.env"}, true},
+		{"env file", []string{"local-login", "enable", "-env", "/etc/prairie.env"}, authCommand{envFile: "/etc/prairie.env"}, true},
 		{"one account", []string{"local-login", "enable", "-user", "alice"}, authCommand{envFile: ".env", user: "alice"}, true},
 		{"one account with a temporary password", []string{"local-login", "enable", "-user", "alice@example.test", "-temporary-password"},
 			authCommand{envFile: ".env", user: "alice@example.test", temporaryPassword: true}, true},

@@ -16,7 +16,7 @@ export default function UnreadableFileBadge({ className = "" }: { className?: st
   return (
     <span
       className={`text-destructive inline-flex items-center gap-1 font-medium ${className}`}
-      title="Silo couldn't read this file. It appears to be empty or damaged."
+      title="Prairie couldn't read this file. It appears to be empty or damaged."
     >
       <TriangleAlert className="size-3 shrink-0" aria-hidden="true" />
       Damaged file

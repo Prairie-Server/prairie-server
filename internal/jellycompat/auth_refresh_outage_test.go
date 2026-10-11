@@ -16,12 +16,12 @@ import (
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
-// A compat session whose Silo tokens are due for refresh while the session
+// A compat session whose Prairie tokens are due for refresh while the session
 // store is unreachable must survive: the request is a retryable 503 and the
 // session stays in the store. A refresh token the server refuses still ends
 // the compat session.
 func TestRequireSession_StoreOutageKeepsTheSession(t *testing.T) {
-	pool, err := pgxpool.New(t.Context(), "postgres://silo@127.0.0.1:1/silo?sslmode=disable&connect_timeout=2")
+	pool, err := pgxpool.New(t.Context(), "postgres://prairie@127.0.0.1:1/prairie?sslmode=disable&connect_timeout=2")
 	if err != nil {
 		t.Fatalf("pgxpool.New: %v", err)
 	}

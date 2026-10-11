@@ -60,7 +60,7 @@ const LEGACY_CONFIG_KEY_ALIASES: Record<string, string> = {
  * would silently rename an unrelated plugin's identically-named key on the
  * first full-state save, losing its configuration.
  */
-const CEPHFS_PLUGIN_ID = "silo.autoscan.cephfs";
+const CEPHFS_PLUGIN_ID = "prairie.autoscan.cephfs";
 const CEPHFS_CAPABILITY_ID = "cephfs";
 
 function ownsLegacyAliases(source: AutoscanSource): boolean {

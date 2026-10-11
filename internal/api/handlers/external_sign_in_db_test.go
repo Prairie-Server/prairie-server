@@ -40,9 +40,9 @@ func (noLoginProviders) ListProviders() []auth.LoginProviderInfo { return nil }
 // another admin's sign-in, a scoped API key never changes an admin's, and an
 // admin may link and unlink a plain user's identity.
 func TestExternalSignInAdminIdentityGuardsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -203,9 +203,9 @@ func TestExternalSignInAdminIdentityRechecksAccountsDB(t *testing.T) {
 			{"actor disabled", false, false, models.UpdateUserInput{Enabled: new(false)}, "permission_denied"},
 		} {
 			t.Run(action+"/"+tc.name, func(t *testing.T) {
-				dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+				dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 				if dsn == "" {
-					t.Skip("SILO_TEST_DATABASE_URL is not set")
+					t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 				}
 				ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 				defer cancel()

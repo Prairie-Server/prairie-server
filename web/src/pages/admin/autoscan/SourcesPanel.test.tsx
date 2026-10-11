@@ -208,10 +208,10 @@ describe("Sources list", () => {
         method === "PUT"
           ? new Response(
               JSON.stringify({
-                type: "https://siloserver.org/docs/api/v2/problems/validation_failed",
+                type: "https://prairieserver.org/docs/api/v2/problems/validation_failed",
                 title: "Validation failed",
                 status: 422,
-                instance: "urn:silo:request:000000000000000000000001",
+                instance: "urn:prairie:request:000000000000000000000001",
                 ...fixture.problem,
               }),
               { status: 422, headers: { "Content-Type": "application/problem+json" } },
@@ -545,7 +545,7 @@ describe("Edit source dialog", () => {
     await user.click(within(dialog).getByRole("tab", { name: "Match paths" }));
     await user.click(within(dialog).getByRole("button", { name: "Add a mapping" }));
     const froms = within(dialog).getAllByRole("textbox", { name: "Path the source reports" });
-    const tos = within(dialog).getAllByRole("textbox", { name: "Path Silo uses" });
+    const tos = within(dialog).getAllByRole("textbox", { name: "Path Prairie uses" });
     await user.type(froms[1]!, "/data/movies");
     await user.type(tos[1]!, "/mnt/media/movies");
 
@@ -922,7 +922,7 @@ describe("Add source dialog", () => {
       "/data/tv",
     );
     await user.type(
-      within(dialog).getByRole("textbox", { name: "Path Silo uses" }),
+      within(dialog).getByRole("textbox", { name: "Path Prairie uses" }),
       "/mnt/media/tv",
     );
     await user.type(
@@ -937,7 +937,7 @@ describe("Add source dialog", () => {
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]!.method).toBe("POST");
     expect(writes[0]!.body).toMatchObject({
-      plugin_id: "silo.autoscan.arr",
+      plugin_id: "prairie.autoscan.arr",
       capability_id: "arr",
       // Everything a polling source needs is collected here, so it starts on.
       enabled: true,
@@ -1029,34 +1029,34 @@ describe("Add source dialog", () => {
     await user.click(screen.getByRole("button", { name: "Add source" }));
     const dialog = await screen.findByRole("dialog", { name: "Add scan source" });
     await user.click(within(dialog).getByRole("button", { name: /^Sonarr\/Radarr Webhook/ }));
-    const silo = () =>
+    const prairie = () =>
       within(dialog)
-        .getAllByRole("textbox", { name: "Path Silo uses" })
+        .getAllByRole("textbox", { name: "Path Prairie uses" })
         .map((input) => (input as HTMLInputElement).value);
-    expect(silo()).toEqual(["/mnt/media"]);
+    expect(prairie()).toEqual(["/mnt/media"]);
 
     const chooseProvider = async (name: string) => {
       await user.click(within(dialog).getByRole("combobox", { name: "Sent by" }));
       await user.click(await screen.findByRole("option", { name }));
     };
     await chooseProvider("Sonarr");
-    expect(silo()).toEqual(["/mnt/media/tv"]);
+    expect(prairie()).toEqual(["/mnt/media/tv"]);
     await chooseProvider("Radarr");
-    expect(silo()).toEqual(["/mnt/media/movies"]);
+    expect(prairie()).toEqual(["/mnt/media/movies"]);
 
     await user.type(
       within(dialog).getByRole("textbox", { name: "Sonarr/Radarr root folder" }),
       "/movies",
     );
     await chooseProvider("Sonarr");
-    expect(silo()).toEqual(["/mnt/media/movies"]);
+    expect(prairie()).toEqual(["/mnt/media/movies"]);
   });
 
   it("marks a step done only once it is answered", async () => {
     const changeLog = withDescriptor(
       {
         ...ARR_POLL_PLUGIN,
-        plugin_id: "silo.autoscan.changelog",
+        plugin_id: "prairie.autoscan.changelog",
         capability_id: "changelog",
         display_name: "Change log file",
       },

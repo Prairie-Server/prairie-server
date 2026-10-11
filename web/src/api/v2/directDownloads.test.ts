@@ -119,7 +119,7 @@ describe("direct download navigation", () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
       new Response(
         JSON.stringify({
-          type: "https://siloserver.org/problems/not-found",
+          type: "https://prairieserver.org/problems/not-found",
           title: "Not Found",
           status: 404,
           detail: "File not found.",

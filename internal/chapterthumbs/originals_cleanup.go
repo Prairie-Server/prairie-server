@@ -36,7 +36,7 @@ const (
 // originalsCleanupAdvisoryLock serializes the cleanup across nodes, whose task
 // schedulers all fire it. The holder reads, advances and writes the shared
 // checkpoint, so two nodes never interleave their passes.
-const originalsCleanupAdvisoryLock int64 = 0x53494C4F43485452 // "SILOCHTR"
+const originalsCleanupAdvisoryLock int64 = 0x53494C4F43485452 // "PRAIRIECHTR"
 
 // OriginalsStore is the storage surface the cleanup needs.
 type OriginalsStore interface {

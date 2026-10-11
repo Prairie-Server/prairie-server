@@ -14,7 +14,7 @@ const librariesByID = new Map<number, Library>([[7, { id: 7, name: "TV Shows" } 
 const baseEvent: AutoscanEvent = {
   id: 1,
   source_id: null,
-  plugin_id: "silo.autoscan.arr",
+  plugin_id: "prairie.autoscan.arr",
   capability_id: "radarr",
   started_at: "2026-09-01T00:00:00.000Z",
   completed_at: "2026-09-01T00:00:01.000Z",
@@ -57,7 +57,7 @@ it("shows the unmapped path and why it did not resolve", () => {
           ...baseEvent,
           status: "unresolved",
           changes_returned: 1,
-          error_message: "returned 1 path(s) but none matched a Silo library folder",
+          error_message: "returned 1 path(s) but none matched a Prairie library folder",
           changes: [
             {
               source_path: "/movies/Film (2024)/Film.mkv",
@@ -77,7 +77,7 @@ it("shows the unmapped path and why it did not resolve", () => {
   const table = within(desktopTable());
   expect(table.getByText("1 path · 0 linked")).toBeTruthy();
   expect(table.getByText("/movies/Film (2024)/Film.mkv")).toBeTruthy();
-  expect(table.getByText(/No Silo library folder contains this path/)).toBeTruthy();
+  expect(table.getByText(/No Prairie library folder contains this path/)).toBeTruthy();
   expect(table.queryByText(/Rewritten to/)).toBeNull();
 });
 

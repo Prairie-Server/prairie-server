@@ -198,7 +198,7 @@ type redisAttempts struct {
 	client *redis.Client
 }
 
-func redisAttemptKey(key string) string { return "silo:attempts:" + key }
+func redisAttemptKey(key string) string { return "prairie:attempts:" + key }
 
 func (r redisAttempts) reserve(ctx context.Context, key string, p AttemptPolicy) (bool, time.Duration, error) {
 	res, err := attemptScript.Run(ctx, r.client, []string{redisAttemptKey(key)}, p.MaxAttempts, p.Window.Milliseconds()).Int64Slice()

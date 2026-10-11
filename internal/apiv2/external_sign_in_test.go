@@ -34,7 +34,7 @@ func fixtureIdentity() handlers.ExternalIdentityView {
 	checked := time.Date(2026, 1, 3, 16, 7, 8, 0, time.UTC)
 	return handlers.ExternalIdentityView{
 		ID: 4, InstallationID: 3, ProviderID: "plugin:3:oidc", ProviderName: "Company SSO",
-		ExternalSubject: "https://id.example.test/realms/silo|8f14e45f", Issuer: "https://id.example.test",
+		ExternalSubject: "https://id.example.test/realms/prairie|8f14e45f", Issuer: "https://id.example.test",
 		Username: "alice", Email: "alice@example.test", DisplayName: "Alice Example",
 		LinkedAt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC), LastSignInAt: &signedIn,
 		LastCheckedAt: &checked, LastCheckStatus: "active",
@@ -211,21 +211,21 @@ func TestAdminUserIdentities(t *testing.T) {
 	h := newTestHandler(t, externalSignInDeps(f))
 	base := Prefix + "/admin/users/1/identities"
 	rec := do(t, h, http.MethodGet, base, "", actingRequestAdmin)
-	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"external_subject":"https://id.example.test/realms/silo|8f14e45f"`) {
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"external_subject":"https://id.example.test/realms/prairie|8f14e45f"`) {
 		t.Fatal(rec.Code, rec.Body.String())
 	}
 	requireProblem(t, do(t, h, http.MethodGet, base, "", with(bearer(memberToken), "X-Profile-Id", "p-owner")), TypePermissionDenied)
 	requireProblem(t, do(t, h, http.MethodGet, Prefix+"/admin/users/9/identities", "", actingRequestAdmin), TypeNotFound)
 
-	rec = do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/silo|new","username":"alice"}`, actingRequestAdmin)
+	rec = do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/prairie|new","username":"alice"}`, actingRequestAdmin)
 	if rec.Code != http.StatusCreated || rec.Header().Get("Location") != base || !strings.Contains(rec.Body.String(), `"last_sign_in_at":null`) {
 		t.Fatal(rec.Code, rec.Header(), rec.Body.String())
 	}
 	if len(f.linked) != 1 || f.linked[0].InstallationID != 3 || f.linked[0].Username != "alice" {
 		t.Fatalf("linked = %+v", f.linked)
 	}
-	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/silo|taken"}`, actingRequestAdmin), TypeIdentityLinkedElsewhere)
-	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/silo|already"}`, actingRequestAdmin), TypeAlreadyLinked)
+	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/prairie|taken"}`, actingRequestAdmin), TypeIdentityLinkedElsewhere)
+	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":"https://id.example.test/realms/prairie|already"}`, actingRequestAdmin), TypeAlreadyLinked)
 	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"0","external_subject":"x"}`, actingRequestAdmin), TypeValidationFailed)
 	requireProblem(t, do(t, h, http.MethodPost, base, `{"installation_id":"3","external_subject":""}`, actingRequestAdmin), TypeValidationFailed)
 
@@ -245,7 +245,7 @@ func TestAdminPluginAuthBindingTest(t *testing.T) {
 		t.Fatal(rec.Code, rec.Body.String())
 	}
 	// The admin copies the callback URL to register at the provider.
-	if body.CallbackURL != "https://silo.example.test/api/v2/auth/oauth/3/callback" {
+	if body.CallbackURL != "https://prairie.example.test/api/v2/auth/oauth/3/callback" {
 		t.Fatalf("callback_url = %q", body.CallbackURL)
 	}
 	if len(f.staged) != 1 || f.staged[0].Key != "oidc" || f.staged[0].Value["issuer"] != "https://id.example.test" {

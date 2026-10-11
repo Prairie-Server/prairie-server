@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// The provider keys of Silo's former built-in providers.
+// The provider keys of Prairie's former built-in providers.
 const (
 	traktProviderKey   = "trakt"
 	simklProviderKey   = "simkl"
@@ -20,24 +20,24 @@ type firstPartyPlugin struct {
 	CapabilityID string
 }
 
-// firstPartyProviderKeys maps the first-party plugins that replaced Silo's
+// firstPartyProviderKeys maps the first-party plugins that replaced Prairie's
 // former built-in providers to the provider keys those built-ins used.
 // Connections, their encrypted tokens (whose AAD includes the key), history
 // export records, and imported watch history are all stored under these keys,
 // so registering the plugins under them carries every existing link over.
 var firstPartyProviderKeys = map[firstPartyPlugin]string{
-	{PluginID: "silo.watchprovider." + traktProviderKey, CapabilityID: traktProviderKey}:     traktProviderKey,
-	{PluginID: "silo.watchprovider." + simklProviderKey, CapabilityID: simklProviderKey}:     simklProviderKey,
-	{PluginID: "silo.watchprovider." + mdblistProviderKey, CapabilityID: mdblistProviderKey}: mdblistProviderKey,
+	{PluginID: "prairie.watchprovider." + traktProviderKey, CapabilityID: traktProviderKey}:     traktProviderKey,
+	{PluginID: "prairie.watchprovider." + simklProviderKey, CapabilityID: simklProviderKey}:     simklProviderKey,
+	{PluginID: "prairie.watchprovider." + mdblistProviderKey, CapabilityID: mdblistProviderKey}: mdblistProviderKey,
 }
 
 // PluginProviderKey returns the registry key for a watch-sync plugin
-// capability. A first-party plugin installed from a Silo-managed repository
+// capability. A first-party plugin installed from a Prairie-managed repository
 // keeps its former built-in key. Every other plugin is keyed by installation,
 // which a plugin can never claim for itself: a third-party plugin that reuses
 // a first-party plugin ID must not receive the tokens of existing connections.
-func PluginProviderKey(installationID int, pluginID, capabilityID string, siloManaged bool) string {
-	if siloManaged {
+func PluginProviderKey(installationID int, pluginID, capabilityID string, prairieManaged bool) string {
+	if prairieManaged {
 		if key, ok := firstPartyProviderKeys[firstPartyPlugin{PluginID: pluginID, CapabilityID: capabilityID}]; ok {
 			return key
 		}
@@ -180,7 +180,7 @@ func MarkFirstPartyMigrated(ctx context.Context, store FirstPartyMigrationStore,
 
 // AppClientID returns the provider app client ID that the plugin serving
 // providerKey is configured with, read from its "app" global config. Other
-// Silo features that call the same provider with a profile's token (Trakt
+// Prairie features that call the same provider with a profile's token (Trakt
 // collections) must send the client ID the token was issued to. It is empty
 // when no plugin serves the key or the plugin has none configured.
 func (s *Service) AppClientID(ctx context.Context, providerKey string) (string, error) {

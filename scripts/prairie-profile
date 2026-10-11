@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Capture one process through its local profiling listener. Node ships in the
-// Silo image; no additional runtime package or network dependency is required.
+// Prairie image; no additional runtime package or network dependency is required.
 "use strict";
 
 const fs = require("node:fs");
@@ -12,7 +12,7 @@ function options(argv) {
   const args = { url: "http://127.0.0.1:6060", profile: "heap", "max-bytes": "134217728" };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--help") {
-      console.log("Usage: scripts/silo-profile --output FILE [--url http://127.0.0.1:6060] [--profile cpu|heap|allocs|goroutine|threadcreate|block|mutex|trace] [--seconds N] [--gc 1] [--max-bytes N]");
+      console.log("Usage: scripts/prairie-profile --output FILE [--url http://127.0.0.1:6060] [--profile cpu|heap|allocs|goroutine|threadcreate|block|mutex|trace] [--seconds N] [--gc 1] [--max-bytes N]");
       process.exit(0);
     }
     const key = argv[i].slice(2);
@@ -80,7 +80,7 @@ async function capture(args) {
       process.on("SIGTERM", interrupted);
       request = http.get(args.url, { agent: false, headers: { "Host": args.url.hostname + ":" + (args.url.port || "80") } }, response => {
         metadata.http_status = response.statusCode;
-        metadata.headers = Object.fromEntries(Object.entries(response.headers).filter(([key]) => key.startsWith("x-silo-")));
+        metadata.headers = Object.fromEntries(Object.entries(response.headers).filter(([key]) => key.startsWith("x-prairie-")));
         if (response.statusCode !== 200) { stop(Error("profiling returned HTTP " + response.statusCode)); return; }
         if (response.headers["content-type"] !== "application/octet-stream") { stop(Error("response is not a binary profile")); return; }
         response.on("data", chunk => {
@@ -131,6 +131,6 @@ async function capture(args) {
 }
 
 Promise.resolve().then(() => capture(options(process.argv.slice(2)))).catch(error => {
-  console.error("silo-profile: " + error.message);
+  console.error("prairie-profile: " + error.message);
   process.exitCode = 1;
 });

@@ -72,13 +72,13 @@ type WatchlistTitleListInput struct {
 // WatchlistTitleInput names one title by its TMDB identity.
 type WatchlistTitleInput struct {
 	MediaType string `path:"media_type" enum:"movie,series" doc:"The media type" example:"movie"`
-	TMDBID    int    `path:"tmdb_id" minimum:"1" doc:"TMDB identifier (external, not a Silo ID). A title's former TMDB ID still names it" example:"949"`
+	TMDBID    int    `path:"tmdb_id" minimum:"1" doc:"TMDB identifier (external, not a Prairie ID). A title's former TMDB ID still names it" example:"949"`
 }
 
 // WatchlistTitle is one watchlist entry for a title the library doesn't have.
 type WatchlistTitle struct {
 	MediaType     string            `json:"media_type" doc:"movie or series" example:"movie"`
-	TMDBID        int               `json:"tmdb_id" doc:"The title's current TMDB identifier (external, not a Silo ID)" example:"949"`
+	TMDBID        int               `json:"tmdb_id" doc:"The title's current TMDB identifier (external, not a Prairie ID)" example:"949"`
 	Title         string            `json:"title" example:"Heat"`
 	Year          int               `json:"year,omitempty" example:"1995"`
 	ReleaseDate   string            `json:"release_date,omitempty" doc:"Calendar date, YYYY-MM-DD: the release date of a movie, the first air date of a series" example:"1995-12-15"`
@@ -104,7 +104,7 @@ type WatchlistTitleCollectionOutput struct {
 // WatchlistTitleEntry is where addWatchlistTitle put a title.
 type WatchlistTitleEntry struct {
 	MediaType string            `json:"media_type" doc:"movie or series" example:"movie"`
-	TMDBID    int               `json:"tmdb_id" doc:"The title's current TMDB identifier (external, not a Silo ID)" example:"949"`
+	TMDBID    int               `json:"tmdb_id" doc:"The title's current TMDB identifier (external, not a Prairie ID)" example:"949"`
 	AddedAt   Instant           `json:"added_at" doc:"When the title joined the watchlist; adding it again keeps the first time" example:"2026-01-02T03:04:05.000Z"`
 	ItemID    ID                `json:"item_id,omitempty" doc:"The catalog item, when the library has the title and the entry went to the library watchlist" example:"movie:heat-1995"`
 	Request   RequestMediaState `json:"request" doc:"The title's request state after the add, including why a watchlist request was refused"`

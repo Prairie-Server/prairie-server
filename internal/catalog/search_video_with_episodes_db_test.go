@@ -18,9 +18,9 @@ import (
 // but no audiobooks, on the relevance, sorted, and rule-filtered paths, while
 // video keeps its meaning and a browse without q lists only movies and series.
 func TestResolveVideoWithEpisodesSearch(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := t.Context()
 	pool, err := pgxpool.New(ctx, dsn)

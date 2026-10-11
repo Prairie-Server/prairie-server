@@ -455,7 +455,7 @@ The bundled viewer subtitle search dialogs and track selector have no stored-sub
 Sync aligns a subtitle to its file's audio and stores a timing correction that
 every delivery path applies; the subtitle's bytes never change. It works on
 stored subtitles and on subtitle files next to the media (sidecars), which
-Silo never writes. See [subtitle sync](architecture/subtitle-sync.md) for the
+Prairie never writes. See [subtitle sync](architecture/subtitle-sync.md) for the
 algorithm and job model. Anyone with access to the file may sync a subtitle or
 set its timing; demo mode refuses both.
 

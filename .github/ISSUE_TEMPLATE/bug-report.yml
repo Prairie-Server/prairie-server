@@ -8,7 +8,7 @@ body:
       value: |
         Report behavior you reproduced on a real deployment. Include raw logs rather than AI summaries, and keep observations separate from suspected root cause. Redact credentials, tokens, personal data, and private media details, and mark each redaction.
 
-        [Reporting a problem](https://siloserver.org/docs/report-a-problem) explains where to find versions and logs. Using Claude Code or Codex? The [Prairie troubleshooting skill](https://github.com/Prairie-Server/prairie-troubleshooting-skill) diagnoses your server and drafts this report, then has independent reviewers check it before you post. Problems only in the Apple or Android apps belong in [silo-apple](https://github.com/prairie-server/silo-apple/issues/new/choose) or [silo-android](https://github.com/prairie-server/silo-android/issues/new/choose).
+        [Reporting a problem](https://prairieserver.org/docs/report-a-problem) explains where to find versions and logs. Using Claude Code or Codex? The [Prairie troubleshooting skill](https://github.com/Prairie-Server/prairie-troubleshooting-skill) diagnoses your server and drafts this report, then has independent reviewers check it before you post. Problems only in the Apple or Android apps belong in [prairie-apple](https://github.com/prairie-server/prairie-apple/issues/new/choose) or [prairie-android](https://github.com/prairie-server/prairie-android/issues/new/choose).
 
         Fabricated or AI-hallucinated reports are an immediate block. Read [CONTRIBUTING.md](https://github.com/Prairie-Server/prairie-server/blob/main/CONTRIBUTING.md) and the [AI-assisted contribution policy](https://github.com/Prairie-Server/prairie-server/blob/main/docs/ai-contributions.md) first.
   - type: textarea

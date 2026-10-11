@@ -16,7 +16,7 @@ import (
 // Unicode way, right to left, that punctuation lands on the wrong side.
 //
 // A file reads as LTR-authored when its right-to-left lines carry those
-// signals and almost none of the logical-order ones. silo-apple applies the
+// signals and almost none of the logical-order ones. prairie-apple applies the
 // same rule to text tracks embedded in the media file.
 const (
 	// leftToRightMark (U+200E), as a line's first strong character, sets the

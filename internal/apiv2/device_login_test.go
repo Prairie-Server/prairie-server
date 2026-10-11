@@ -56,7 +56,7 @@ func TestStartDeviceLogin(t *testing.T) {
 	if rec.Code != 201 || rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
-	want := `{"device_code":"dev-1","user_code":"4821-7730","match_code":"warm pony","verification_uri":"https://silo.example.test/activate","verification_uri_complete":"https://silo.example.test/activate?code=48217730","expires_at":"2026-01-02T03:19:05.678Z","expires_in":900,"interval":5,"device_name":"Living room TV","device_platform":"tvos","client_purpose":"device_login","temporary":false}` + "\n"
+	want := `{"device_code":"dev-1","user_code":"4821-7730","match_code":"warm pony","verification_uri":"https://prairie.example.test/activate","verification_uri_complete":"https://prairie.example.test/activate?code=48217730","expires_at":"2026-01-02T03:19:05.678Z","expires_in":900,"interval":5,"device_name":"Living room TV","device_platform":"tvos","client_purpose":"device_login","temporary":false}` + "\n"
 	if rec.Body.String() != want {
 		t.Fatalf("body = %s", rec.Body.String())
 	}
@@ -72,9 +72,9 @@ func TestStartDeviceLogin(t *testing.T) {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
 	// A public URL with a path keeps it.
-	publicURL = "https://Example.test/silo/"
+	publicURL = "https://Example.test/prairie/"
 	rec = do(t, public, http.MethodPost, "/api/v2/auth/device/start", `{}`, nil)
-	if rec.Code != 201 || !contains(rec.Body.String(), `"verification_uri":"https://example.test/silo/activate"`) {
+	if rec.Code != 201 || !contains(rec.Body.String(), `"verification_uri":"https://example.test/prairie/activate"`) {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
 	}
 	// An unusable public URL falls back to the device's origin.
@@ -175,7 +175,7 @@ func TestGetDeviceLogin(t *testing.T) {
 	if rec.Code != 200 {
 		t.Fatal(rec.Body.String())
 	}
-	want := `{"status":"pending","user_code":"4821-7730","match_code":"warm pony","device_name":"Living room TV","device_platform":"tvos","ip_address_hint":"192.168.1.x","expires_at":"2026-01-02T03:14:05.678Z","requested_at":"2026-01-02T03:04:05.678Z","client_purpose":"device_login","temporary":false,"server_name":"Silo"}` + "\n"
+	want := `{"status":"pending","user_code":"4821-7730","match_code":"warm pony","device_name":"Living room TV","device_platform":"tvos","ip_address_hint":"192.168.1.x","expires_at":"2026-01-02T03:14:05.678Z","requested_at":"2026-01-02T03:04:05.678Z","client_purpose":"device_login","temporary":false,"server_name":"Prairie"}` + "\n"
 	if rec.Body.String() != want {
 		t.Fatalf("body = %s", rec.Body.String())
 	}

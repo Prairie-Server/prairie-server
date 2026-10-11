@@ -9,7 +9,7 @@ const auth = vi.hoisted(() => ({
   user: null as null | { username: string },
   isImpersonating: false,
   logout: vi.fn(),
-  logoutOfSiloOnly: vi.fn(),
+  logoutOfPrairieOnly: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ ...auth, loading: false, setupLoading: false }),
@@ -42,11 +42,11 @@ const decisions: Array<{ op: string; body: unknown }> = [];
 
 function notFound() {
   return new V2ProblemError("getDeviceLogin", {
-    type: "https://siloserver.org/docs/api/v2/problems/not_found",
+    type: "https://prairieserver.org/docs/api/v2/problems/not_found",
     title: "Not found",
     status: 404,
     detail: "Device login request not found",
-    instance: "urn:silo:request:1",
+    instance: "urn:prairie:request:1",
   } as never);
 }
 
@@ -78,7 +78,7 @@ beforeEach(() => {
   auth.user = { username: "laura" };
   auth.isImpersonating = false;
   auth.logout.mockReset();
-  auth.logoutOfSiloOnly.mockReset();
+  auth.logoutOfPrairieOnly.mockReset();
   decisions.length = 0;
   lookups = [pending];
   vi.mocked(v2).mockImplementation(((op: string, options?: { body?: unknown }) => {
@@ -257,21 +257,21 @@ it("asks a signed-out approver to sign in and keeps the code", async () => {
   lookups = [{ ...pending, server_id: "3f2a9d5e-6b1c" }];
   mount("/activate?code=48217730");
   const link = await screen.findByRole("link", { name: "Sign in to approve" });
-  expect(screen.queryByRole("link", { name: "Open in the Silo app" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open in the Prairie app" })).toBeNull();
   expect(link.getAttribute("href")).toBe("/login?redirect=%2Factivate%3Fcode%3D48217730");
   expect(screen.queryByRole("button", { name: "Sign in TV" })).toBeNull();
 });
 
-it("offers a phone the Silo app for a signed-out approval", async () => {
+it("offers a phone the Prairie app for a signed-out approval", async () => {
   auth.user = null;
   lookups = [{ ...pending, server_id: "3f2a9d5e-6b1c" }];
   vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
   );
   mount("/activate?code=48217730");
-  const app = await screen.findByRole("link", { name: "Open in the Silo app" });
+  const app = await screen.findByRole("link", { name: "Open in the Prairie app" });
   expect(app.getAttribute("href")).toBe(
-    `silo://device?server=3f2a9d5e-6b1c&url=${encodeURIComponent(window.location.origin)}&code=48217730`,
+    `prairie://device?server=3f2a9d5e-6b1c&url=${encodeURIComponent(window.location.origin)}&code=48217730`,
   );
   expect(screen.getByRole("link", { name: "Sign in to approve" })).toBeTruthy();
 });
@@ -289,7 +289,7 @@ it("explains the server refusing an impersonation session instead of offering a 
     if (op === "GET /api/v2/auth/device") return Promise.resolve(pending);
     return Promise.reject(
       new V2ProblemError("approveDeviceLogin", {
-        type: "https://siloserver.org/docs/api/v2/problems/permission_denied",
+        type: "https://prairieserver.org/docs/api/v2/problems/permission_denied",
         title: "Permission denied",
         status: 403,
         detail: "Approving or denying a device needs a signed-in session.",
@@ -307,9 +307,9 @@ it("explains the server refusing an impersonation session instead of offering a 
 it("switches account without losing the code or ending the provider's session", async () => {
   mount("/activate?code=48217730");
   fireEvent.click(await screen.findByRole("button", { name: "Not you? Switch account" }));
-  // Silo sign-out only: the provider's own logout would sign the person out
+  // Prairie sign-out only: the provider's own logout would sign the person out
   // of everything else that uses it.
-  expect(auth.logoutOfSiloOnly).toHaveBeenCalled();
+  expect(auth.logoutOfPrairieOnly).toHaveBeenCalled();
   expect(auth.logout).not.toHaveBeenCalled();
   await waitFor(() =>
     expect(screen.getByTestId("where").textContent).toBe(

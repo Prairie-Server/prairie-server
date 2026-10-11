@@ -11,9 +11,9 @@ import (
 // TestReplacedChapterImagesMigrationPostgres checks that the deletion queue
 // accepts one chapter thumbnail's key and nothing looser.
 func TestReplacedChapterImagesMigrationPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	conn, err := pgx.Connect(t.Context(), dsn)
 	if err != nil {
