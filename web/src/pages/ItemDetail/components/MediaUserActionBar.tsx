@@ -18,6 +18,7 @@ type UserActionProps =
   | "onToggleWatchlist"
   | "inWatchlist"
   | "rating"
+  | "communityRating"
   | "onRatingChange"
   | "links";
 
@@ -76,6 +77,7 @@ export default function MediaUserActionBar({ item, ...props }: MediaUserActionBa
       onToggleWatchlist={handleToggleWatchlist}
       inWatchlist={inWatchlist}
       rating={item.user_rating ?? null}
+      communityRating={item.community_rating ?? null}
       onRatingChange={handleRatingChange}
     />
   );

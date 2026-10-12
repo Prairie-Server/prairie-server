@@ -21680,6 +21680,29 @@
         ],
         "type": "object"
       },
+      "CatalogCommunityRating": {
+        "additionalProperties": false,
+        "properties": {
+          "average": {
+            "description": "Mean star rating, rounded to one decimal",
+            "format": "double",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "number"
+          },
+          "count": {
+            "description": "Number of ratings behind the average",
+            "format": "int64",
+            "minimum": 3,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "average",
+          "count"
+        ],
+        "type": "object"
+      },
       "CatalogEffectiveSort": {
         "additionalProperties": false,
         "properties": {
@@ -22222,6 +22245,10 @@
           "clearart_url": {
             "description": "Presigned, short-lived. Transparent cut-out art. Movies and series only",
             "type": "string"
+          },
+          "community_rating": {
+            "$ref": "#/components/schemas/CatalogCommunityRating",
+            "description": "Mean of every profile's 1-5 star rating for this item. Absent when fewer than 3 ratings exist, so a small server does not reveal individual ratings."
           },
           "content_id": {
             "description": "Deterministic catalog identifier",

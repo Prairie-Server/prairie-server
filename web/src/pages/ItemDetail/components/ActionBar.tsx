@@ -44,7 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { FileVersion, PlaybackVariant } from "@/api/types";
+import type { CommunityRating, FileVersion, PlaybackVariant } from "@/api/types";
 import type { RedetectMarkersKind, RefreshItemMetadataMode } from "@/hooks/queries/items";
 import type {
   PlayerSubtitleTrackSignature,
@@ -79,6 +79,26 @@ function visibleOverflowItems(menu: HTMLElement | null): HTMLButtonElement[] {
     ),
   ).filter(
     (item) => item.getClientRects().length > 0 && getComputedStyle(item).visibility === "visible",
+  );
+}
+
+function CommunityRatingLabel({
+  rating,
+  className = "",
+}: {
+  rating: CommunityRating;
+  className?: string;
+}) {
+  const average = rating.average.toFixed(1);
+  const noun = rating.count === 1 ? "rating" : "ratings";
+  return (
+    <span
+      className={`text-muted-foreground text-sm whitespace-nowrap ${className}`}
+      title={`Community rating: ${average} out of 5 from ${rating.count} ${noun}`}
+    >
+      <span aria-hidden="true">★ </span>
+      {average} · {rating.count} {noun}
+    </span>
   );
 }
 
@@ -229,6 +249,8 @@ export interface ActionBarProps {
   /** Shuffles this series' or season's episodes. */
   onShuffle?: () => void;
   rating?: number | null;
+  /** Aggregate rating across profiles; hidden when absent. */
+  communityRating?: CommunityRating | null;
   onRatingChange?: (rating: number | null) => void;
   qualityPreference?: string | null;
   audioSelectionMode?: "auto" | "explicit";
@@ -292,6 +314,7 @@ export default function ActionBar({
   onRequestSeasons,
   onShuffle,
   rating,
+  communityRating,
   onRatingChange,
   audioSelectionMode = "auto",
   explicitAudioTrackIndex = null,
@@ -733,8 +756,9 @@ export default function ActionBar({
         )}
 
         {onRatingChange && (
-          <div className="detail-secondary-action">
+          <div className="detail-secondary-action flex items-center gap-2">
             <StarRating value={rating ?? null} onChange={onRatingChange} size={18} />
+            {communityRating && <CommunityRatingLabel rating={communityRating} />}
           </div>
         )}
 
@@ -791,6 +815,9 @@ export default function ActionBar({
                         size={18}
                         verticalArrows={false}
                       />
+                      {communityRating && (
+                        <CommunityRatingLabel rating={communityRating} className="mt-2 block" />
+                      )}
                     </div>
                   )}
                 </div>

@@ -3,6 +3,12 @@ import type { SchemaOption } from "@/components/admin/plugins/schemaFormUtils";
 import type { components as V2Components } from "@/api/v2/schema";
 
 // Auth
+/** Aggregate star rating across all profiles, rounded to one decimal. */
+export interface CommunityRating {
+  average: number;
+  count: number;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -1223,6 +1229,8 @@ export interface ItemDetail {
   user_data?: ItemUserData;
   user_state?: MediaItemUserState;
   user_rating?: number | null;
+  /** Mean of every profile's 1-5 star rating; absent below 3 ratings. */
+  community_rating?: CommunityRating | null;
 
   // Root folder paths for series items (admin-only).
   folder_paths?: string[];
