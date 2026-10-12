@@ -300,7 +300,7 @@ func TestProviderRecheckRefusedAccountRevokesSessionsDB(t *testing.T) {
 			env.checker.respond = answer(tc.status, "")
 			providerSession, refresh := env.session(t, true)
 			localSession, _ := env.session(t, false)
-			key, err := NewAPIKeyRepository(env.pool).Create(t.Context(), env.user.ID, "recheck", nil)
+			key, err := NewAPIKeyRepository(env.pool, nil).Create(t.Context(), env.user.ID, "recheck", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -318,7 +318,7 @@ func TestProviderRecheckRefusedAccountRevokesSessionsDB(t *testing.T) {
 				t.Fatalf("revocation hook = %v", env.revoked)
 			}
 			// API keys act without a session to re-check, so they go too.
-			if _, err := NewAPIKeyRepository(env.pool).GetByKey(t.Context(), key.Key); err == nil {
+			if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(t.Context(), key.Key); err == nil {
 				t.Fatal("the refused account kept its API key")
 			}
 			if got := env.identityState(t).LastCheckStatus; got != tc.want {
@@ -1152,7 +1152,7 @@ func TestProviderRecheckRolledBackRevocationStoresNothingDB(t *testing.T) {
 		}, nil
 	}
 	sessionID, refresh := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(t.Context(), env.user.ID, "rollback", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(t.Context(), env.user.ID, "rollback", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1186,7 +1186,7 @@ func TestProviderRecheckRolledBackRevocationStoresNothingDB(t *testing.T) {
 	if env.sessionRow(t, sessionID).RevokedAt != nil || len(env.revoked) != 0 {
 		t.Fatalf("session revoked = %v, hook = %v", env.sessionRow(t, sessionID).RevokedAt, env.revoked)
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(t.Context(), key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(t.Context(), key.Key); err != nil {
 		t.Fatalf("API key: %v", err)
 	}
 	if got := env.pendingRefusal(t); got != CheckStatusNotFound {
@@ -1206,7 +1206,7 @@ func TestProviderRecheckRolledBackRevocationStoresNothingDB(t *testing.T) {
 	if got := env.pendingRefusal(t); got != "" {
 		t.Fatalf("pending refusal after the revocation = %q, want cleared", got)
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(t.Context(), key.Key); err == nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(t.Context(), key.Key); err == nil {
 		t.Fatal("the refused account kept its API key")
 	}
 }
@@ -1576,7 +1576,7 @@ func TestProviderRecheckLostAnswerDB(t *testing.T) {
 		t.Run(lose, func(t *testing.T) {
 			env := newRecheckEnv(t, "lost"+lose, "rt-1")
 			sessionID, refresh := env.session(t, true)
-			key, err := NewAPIKeyRepository(env.pool).Create(t.Context(), env.user.ID, "lost", nil)
+			key, err := NewAPIKeyRepository(env.pool, nil).Create(t.Context(), env.user.ID, "lost", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1637,7 +1637,7 @@ func TestProviderRecheckLostAnswerDB(t *testing.T) {
 			if env.sessionRow(t, sessionID).RevokedAt != nil || len(env.revoked) != 0 {
 				t.Fatal("a refusal after a lost answer revoked the sessions")
 			}
-			if _, err := NewAPIKeyRepository(env.pool).GetByKey(t.Context(), key.Key); err != nil {
+			if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(t.Context(), key.Key); err != nil {
 				t.Fatalf("a refusal after a lost answer deleted the API key: %v", err)
 			}
 
@@ -1704,7 +1704,7 @@ func TestProviderRecheckRolledBackRefusalWithDroppedTokenDB(t *testing.T) {
 		}, nil
 	}
 	sessionID, refresh := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(t.Context(), env.user.ID, "dropped-token", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(t.Context(), env.user.ID, "dropped-token", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1751,7 +1751,7 @@ func TestProviderRecheckRolledBackRefusalWithDroppedTokenDB(t *testing.T) {
 	if env.sessionRow(t, sessionID).RevokedAt == nil {
 		t.Fatal("the pending refusal did not revoke the session")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(t.Context(), key.Key); err == nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(t.Context(), key.Key); err == nil {
 		t.Fatal("the refused account kept its API key")
 	}
 	identity := env.identityState(t)
@@ -1866,7 +1866,7 @@ func TestProviderRecheckUnansweredChecksKeepOutcomeUnknownDB(t *testing.T) {
 			env := newRecheckEnv(t, "unanswered"+between, "rt-1")
 			ctx := t.Context()
 			sessionID, refresh := env.session(t, true)
-			key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "unanswered", nil)
+			key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "unanswered", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1914,7 +1914,7 @@ func TestProviderRecheckUnansweredChecksKeepOutcomeUnknownDB(t *testing.T) {
 			if env.sessionRow(t, sessionID).RevokedAt != nil || len(env.revoked) != 0 {
 				t.Fatal("a refusal after a lost answer revoked the sessions")
 			}
-			if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+			if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 				t.Fatalf("a refusal after a lost answer deleted the API key: %v", err)
 			}
 		})
@@ -1932,7 +1932,7 @@ func TestProviderRecheckPluginLoadFailureDB(t *testing.T) {
 	if _, err := env.pool.Exec(ctx, `UPDATE plugin_auth_bindings SET enabled = true WHERE plugin_installation_id = $1`, env.installationID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "loadfail", nil); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "loadfail", nil); err != nil {
 		t.Fatal(err)
 	}
 	identity := env.identityState(t)
@@ -1992,7 +1992,7 @@ func TestProviderRecheckLostAnswerWithoutStateCountsDB(t *testing.T) {
 	env := newRecheckEnv(t, "lost-nostate", "")
 	ctx := t.Context()
 	sessionID, refresh := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "lost-nostate", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "lost-nostate", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2016,7 +2016,7 @@ func TestProviderRecheckLostAnswerWithoutStateCountsDB(t *testing.T) {
 	if env.sessionRow(t, sessionID).RevokedAt == nil {
 		t.Fatal("the refused account kept its login session")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err == nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err == nil {
 		t.Fatal("the refused account kept its API key")
 	}
 }
@@ -2036,7 +2036,7 @@ func TestProviderRecheckBreakGlassRefusalKeepsLocalCredentialsDB(t *testing.T) {
 	providerSession, refresh := env.session(t, true)
 	localSession, _ := env.session(t, false)
 	jellyfin := insertJellyfinSession(t, env.pool, env.user.ID)
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "breakglass", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "breakglass", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2056,7 +2056,7 @@ func TestProviderRecheckBreakGlassRefusalKeepsLocalCredentialsDB(t *testing.T) {
 	if env.sessionRow(t, localSession).RevokedAt != nil {
 		t.Fatal("the refusal revoked the break-glass account's local session")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 		t.Fatalf("the refusal deleted the break-glass account's API key: %v", err)
 	}
 }
@@ -2233,7 +2233,7 @@ func TestProviderRecheckIgnoresAnswerForUnlinkedIdentityDB(t *testing.T) {
 	if _, err := env.pool.Exec(ctx, `UPDATE plugin_auth_bindings SET enabled = true WHERE plugin_installation_id = $1`, env.installationID); err != nil {
 		t.Fatal(err)
 	}
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "unlinked", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "unlinked", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2251,7 +2251,7 @@ func TestProviderRecheckIgnoresAnswerForUnlinkedIdentityDB(t *testing.T) {
 	if env.checker.callCount() != 1 {
 		t.Fatalf("calls = %d, want 1", env.checker.callCount())
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 		t.Fatalf("the unlinked account lost its API key: %v", err)
 	}
 	if env.sessionRow(t, localSession).RevokedAt != nil {

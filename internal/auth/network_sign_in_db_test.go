@@ -214,7 +214,7 @@ func TestNetworkRefusalBlocksLocalPasswordDB(t *testing.T) {
 	if row := env.sessionRow(t, session.ID); row.IdentityID != nil {
 		t.Fatalf("linking moved the local session under the network identity %d", *row.IdentityID)
 	}
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, owner.ID, "network-password", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, owner.ID, "network-password", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestNetworkRefusalBlocksLocalPasswordDB(t *testing.T) {
 	if env.sessionRow(t, session.ID).RevokedAt == nil {
 		t.Fatal("the password session survived the network provider's refusal")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err == nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err == nil {
 		t.Fatal("the API key survived the network provider's refusal")
 	}
 	if err := signIn(owner); !errors.Is(err, ErrNotPermitted) {
@@ -410,7 +410,7 @@ func TestNetworkIdentityDefersToPrimaryProviderDB(t *testing.T) {
 
 	// A refusal ends the network session only.
 	primarySession, _ := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "both-providers", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "both-providers", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -425,7 +425,7 @@ func TestNetworkIdentityDefersToPrimaryProviderDB(t *testing.T) {
 	if env.sessionRow(t, primarySession).RevokedAt != nil {
 		t.Fatal("the network refusal revoked the primary provider's session")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 		t.Fatalf("the network refusal deleted the account's API key: %v", err)
 	}
 
@@ -439,7 +439,7 @@ func TestNetworkIdentityDefersToPrimaryProviderDB(t *testing.T) {
 	if counts, err := env.recheck.RecheckIdleIdentities(ctx); err != nil || counts[CheckStatusUnsupported] != 1 {
 		t.Fatalf("scheduled pass = %v, %v; want the network identity answered unsupported", counts, err)
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 		t.Fatalf("a network provider that cannot re-check deleted the account's API key: %v", err)
 	}
 

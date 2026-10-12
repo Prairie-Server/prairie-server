@@ -924,7 +924,7 @@ func TestExternalSignInEmailAutoMatchRevokesCredentialsDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys := NewAPIKeyRepository(env.pool)
+	keys := NewAPIKeyRepository(env.pool, nil)
 	key, err := keys.Create(ctx, invited.ID, "email-match", nil)
 	if err != nil {
 		t.Fatal(err)

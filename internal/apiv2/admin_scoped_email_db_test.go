@@ -118,7 +118,7 @@ func TestScopedAdminKeyCannotRedirectRecoveryDB(t *testing.T) {
 						t.Fatal(err)
 					}
 				}
-				keys := auth.NewAPIKeyRepository(pool)
+				keys := auth.NewAPIKeyRepository(pool, nil)
 				key, err := keys.Create(ctx, admin.ID, "account integration", []string{auth.ScopeAdminUsers})
 				if err != nil {
 					t.Fatal(err)

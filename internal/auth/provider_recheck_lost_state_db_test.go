@@ -18,7 +18,7 @@ func TestProviderRecheckRepeatedUncertainRefusalKeepsStateDB(t *testing.T) {
 			env := newRecheckEnv(t, "lost_repeated", "spent-token")
 			ctx := t.Context()
 			sessionID, refresh := env.session(t, true)
-			key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "uncertain", nil)
+			key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "uncertain", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -42,7 +42,7 @@ func TestProviderRecheckRepeatedUncertainRefusalKeepsStateDB(t *testing.T) {
 				if env.sessionRow(t, sessionID).RevokedAt != nil {
 					t.Fatal("uncertain refusal revoked a login session")
 				}
-				if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+				if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 					t.Fatalf("uncertain refusal deleted an API key: %v", err)
 				}
 			}

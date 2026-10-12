@@ -1,6 +1,7 @@
 package watchsync
 
 import (
+	"os"
 	"testing"
 	"time"
 

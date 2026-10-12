@@ -119,7 +119,7 @@ func TestProviderRecheckIgnoresAnswerAfterUnlinkDB(t *testing.T) {
 	env := newRecheckEnv(t, "unlink_during_check", "")
 	ctx := t.Context()
 	sessionID, refresh := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "keep-after-unlink", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "keep-after-unlink", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestProviderRecheckIgnoresAnswerAfterUnlinkDB(t *testing.T) {
 	if row.IdentityID != nil || row.RevokedAt != nil {
 		t.Fatalf("unlinked session = %+v", row)
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err != nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err != nil {
 		t.Fatalf("stale provider answer removed the API key: %v", err)
 	}
 	if _, err := identityByID(ctx, env.pool, env.identityID); !errors.Is(err, ErrIdentityNotFound) {
@@ -176,7 +176,7 @@ func TestProviderRecheckKeepsRefusalOnUserLockFailureDB(t *testing.T) {
 	ctx := t.Context()
 	env.recheck.writeWait = 100 * time.Millisecond
 	sessionID, refresh := env.session(t, true)
-	key, err := NewAPIKeyRepository(env.pool).Create(ctx, env.user.ID, "pending-refusal", nil)
+	key, err := NewAPIKeyRepository(env.pool, nil).Create(ctx, env.user.ID, "pending-refusal", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +215,7 @@ func TestProviderRecheckKeepsRefusalOnUserLockFailureDB(t *testing.T) {
 	if env.checker.callCount() != 1 || env.sessionRow(t, sessionID).RevokedAt == nil {
 		t.Fatal("the pending refusal did not end the session without another provider call")
 	}
-	if _, err := NewAPIKeyRepository(env.pool).GetByKey(ctx, key.Key); err == nil {
+	if _, err := NewAPIKeyRepository(env.pool, nil).GetByKey(ctx, key.Key); err == nil {
 		t.Fatal("the refused account kept its API key")
 	}
 }
