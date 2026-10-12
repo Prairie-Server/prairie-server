@@ -83,3 +83,26 @@ completion or start a replacement report based on that `404`.
 Apple and Android upload transports and the web diagnostics-status consumer must
 adopt the v2 discovery and ingress together before migration ratification. The
 Jellyfin compatibility surface has no corresponding diagnostics upload contract.
+
+## Client diagnostic events
+
+`POST /api/v2/diagnostics/client-events` (`reportClientDiagnosticEvents`) is a
+separate, lightweight channel for short client breadcrumbs, such as a TV
+player's state transitions. It is not part of the consent-gated report upload
+above: nothing is stored, and each event is written to the server log only.
+
+- Profile-scoped: an account token plus `X-Profile-Id`. Send
+  `X-Prairie-Device-Id` (at most 128 characters) and the usual
+  `X-Prairie-Client*` headers; all are logged with each event.
+- Body `{events: [{event, occurred_at?, playback_session_id?}]}`, 1 to 20
+  events, at most 8 KiB. `event` is 1 to 64 characters of letters, digits and
+  `_ . : -`; `playback_session_id` uses the same characters, at most 128.
+  `occurred_at` is RFC 3339; absent means the receive time.
+- `202 {accepted, outcome: "accepted"}`. Invalid bodies are `422`, oversized
+  ones `413`.
+- At most 30 batches a minute per account; beyond that `429` with
+  `Retry-After: 60`. The operation is non-retryable: clients drop a batch on
+  `429` or a lost reply instead of resending it.
+- Each event is one `slog` record with `component=client_diagnostics`,
+  `event`, `occurred_at`, `playback_session_id`, `user_id`, `profile_id`,
+  `device_id`, `client`, `client_version` and `client_build`.

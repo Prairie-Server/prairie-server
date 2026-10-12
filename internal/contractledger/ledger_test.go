@@ -1127,6 +1127,7 @@ func TestRetrySafetyMismatchesFire(t *testing.T) {
 // mutation that is not listed here, the same rule guardedWithoutLegacyRow
 // applies to concurrency.
 var mutationWithoutLegacyRow = map[string]string{
+	"reportClientDiagnosticEvents":             "V2-only client diagnostic breadcrumbs: each batch is only written to the server log, never stored, and is never replayed; it replaces a v1 query-string beacon that was not a mutation route.",
 	"drainAdminNode":                           "V2-only transcode node drain (v1 is frozen): it sets the node's drain request, so a replay converges on the same request and placement state.",
 	"resumeAdminNode":                          "V2-only lift of a transcode node drain request (v1 is frozen): it clears the request, so a replay converges on the same state.",
 	"startAdminChatGPTLogin":                   "V2-only administrator ChatGPT sign-in: each request supersedes the pending attempt and creates fresh PKCE, state and nonce values, so an uncertain result must not be replayed automatically.",

@@ -2590,6 +2590,9 @@ func newChiRouter(deps Dependencies) chi.Router {
 		v2deps.AdminSubtitleBytes = adminSubtitleHandler
 		v2deps.AdminSubtitleDelete = adminSubtitleHandler
 	}
+	if liveTVHandler != nil {
+		v2deps.LiveTV = liveTVHandler
+	}
 	if playbackHandler != nil {
 		v2deps.Playback = playbackHandler
 		if sessionRepo != nil && userRepo != nil {

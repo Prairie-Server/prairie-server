@@ -30378,11 +30378,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/livetv/channels",
+        "operation_id": "listLiveTVChannels"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -30429,13 +30429,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "PATCH",
+        "path": "/api/v2/admin/livetv/channels/{channel_id}",
+        "operation_id": "updateAdminLiveTVChannel"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30480,13 +30481,15 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/livetv/channels/{channel_id}/sessions",
+        "operation_id": "startLiveTVSession"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "non_retryable",
+      "retry_safety_note": "Each start claims a tuner and mints a new session; a replay after a lost reply would claim a second tuner. Clients start a fresh session instead, and stale sessions are reclaimed after 90 s."
     },
     {
       "listener": "api",
@@ -30531,11 +30534,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/livetv/guide",
+        "operation_id": "getLiveTVGuide"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -30582,11 +30585,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/admin/livetv/guide-sources",
+        "operation_id": "listAdminLiveTVGuideSources"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -30633,13 +30636,15 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/guide-sources",
+        "operation_id": "createAdminLiveTVGuideSource"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "non_retryable",
+      "retry_safety_note": "Each create inserts a new guide source with a server id; a replay after a lost reply would add a duplicate source, so the administrator re-lists instead."
     },
     {
       "listener": "api",
@@ -30684,13 +30689,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/schedules-direct/lineups",
+        "operation_id": "lookupAdminLiveTVSchedulesDirectLineups"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30735,13 +30741,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/xml-sync/lineups",
+        "operation_id": "lookupAdminLiveTVXMLSyncLineups"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30786,13 +30793,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "DELETE",
+        "path": "/api/v2/admin/livetv/guide-sources/{source_id}",
+        "operation_id": "deleteAdminLiveTVGuideSource"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30837,13 +30845,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "PATCH",
+        "path": "/api/v2/admin/livetv/guide-sources/{source_id}",
+        "operation_id": "updateAdminLiveTVGuideSource"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30888,13 +30897,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/guide-sources/{source_id}/sync",
+        "operation_id": "syncAdminLiveTVGuideSource"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -30990,11 +31000,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/livetv/programs/{program_id}",
+        "operation_id": "getLiveTVProgram"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -31041,11 +31051,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/livetv/recordings",
+        "operation_id": "listLiveTVRecordings"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -31092,13 +31102,15 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/livetv/recordings",
+        "operation_id": "scheduleLiveTVRecording"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "non_retryable",
+      "retry_safety_note": "Each schedule inserts a new recording with a server id; a replay after a lost reply would record twice, so clients re-list recordings instead."
     },
     {
       "listener": "api",
@@ -31143,13 +31155,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "DELETE",
+        "path": "/api/v2/livetv/recordings/{recording_id}",
+        "operation_id": "cancelLiveTVRecording"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31194,11 +31207,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/livetv/series-rules",
+        "operation_id": "listLiveTVSeriesRules"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -31245,13 +31258,15 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/livetv/series-rules",
+        "operation_id": "createLiveTVSeriesRule"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "non_retryable",
+      "retry_safety_note": "Each create inserts a new rule with a server id; a replay after a lost reply would add a duplicate rule, so clients re-list rules instead."
     },
     {
       "listener": "api",
@@ -31296,13 +31311,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "DELETE",
+        "path": "/api/v2/livetv/series-rules/{rule_id}",
+        "operation_id": "deleteLiveTVSeriesRule"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31347,13 +31363,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "DELETE",
+        "path": "/api/v2/livetv/sessions/{session_id}",
+        "operation_id": "stopLiveTVSession"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31398,13 +31415,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/livetv/sessions/{session_id}/heartbeat",
+        "operation_id": "heartbeatLiveTVSession"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31551,11 +31569,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/admin/livetv/tuners",
+        "operation_id": "listAdminLiveTVTuners"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
@@ -31602,13 +31620,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/tuners",
+        "operation_id": "addAdminLiveTVTuner"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "unique_constraint"
     },
     {
       "listener": "api",
@@ -31653,13 +31672,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/tuners/discover",
+        "operation_id": "discoverAdminLiveTVTuners"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31704,13 +31724,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "DELETE",
+        "path": "/api/v2/admin/livetv/tuners/{tuner_id}",
+        "operation_id": "deleteAdminLiveTVTuner"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -31755,13 +31776,14 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "POST",
+        "path": "/api/v2/admin/livetv/tuners/{tuner_id}/scan",
+        "operation_id": "scanAdminLiveTVTuner"
       },
-      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
+      "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Inventory media kind is heuristic and unresolved for this row; confirm in the section PR. Conditionally registered: authMiddleware != nil; liveTVHandler != nil. v2 registers the operation unconditionally and reports capability state instead.",
+      "retry_safety": "natural_idempotent"
     },
     {
       "listener": "api",
@@ -34840,11 +34862,11 @@
       "disposition_rule": "default_ported",
       "disposition_rationale": "No exclusion, removal, or ratified redesign applies; port to v2 in its section PR.",
       "owner": null,
-      "review_state": "proposed",
+      "review_state": "ratified",
       "v2": {
-        "method": null,
-        "path": null,
-        "operation_id": null
+        "method": "GET",
+        "path": "/api/v2/playback/quality-ladder",
+        "operation_id": "getPlaybackQualityLadder"
       },
       "notes": "No first-party or internal consumer found. Absence from first-party clients is not proof of disuse: third-party clients exist, and removal needs an affirmative product decision. Conditionally registered: authMiddleware != nil; playbackHandler != nil. v2 registers the operation unconditionally and reports capability state instead."
     },
