@@ -86,7 +86,8 @@ export interface LibraryEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   library: Library | null;
   chapterThumbnailsSupported: boolean;
-  trickplaySupported: boolean;
+  /** Undefined when the server does not offer seek previews. */
+  trickplaySupported?: boolean;
 }
 
 export function LibraryEditorDialog({
@@ -119,7 +120,7 @@ function LibraryEditorBody({
 }: {
   library: Library | null;
   chapterThumbnailsSupported: boolean;
-  trickplaySupported: boolean;
+  trickplaySupported?: boolean;
   onClose: () => void;
 }) {
   const [section, setSection] = useState<SectionId>("general");

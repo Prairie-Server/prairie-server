@@ -112,10 +112,10 @@ func TestNFOOnlyFitnessLibrary_FullSeriesDepth(t *testing.T) {
 		t.Errorf("NFO-only series must carry no remote ids, got tmdb=%q tvdb=%q imdb=%q",
 			item.TmdbID, item.TvdbID, item.ImdbID)
 	}
-	if want := "file://" + filepath.Join(root, "poster.jpg"); item.PosterSourcePath != want {
+	if want := filepath.Join(root, "poster.jpg"); localSourceFile(t, item.PosterSourcePath) != want {
 		t.Errorf("item PosterSourcePath = %q, want %q", item.PosterSourcePath, want)
 	}
-	if want := "file://" + filepath.Join(root, "fanart.jpg"); item.BackdropSourcePath != want {
+	if want := filepath.Join(root, "fanart.jpg"); localSourceFile(t, item.BackdropSourcePath) != want {
 		t.Errorf("item BackdropSourcePath = %q, want %q", item.BackdropSourcePath, want)
 	}
 
@@ -131,7 +131,7 @@ func TestNFOOnlyFitnessLibrary_FullSeriesDepth(t *testing.T) {
 	if seasons[0].Overview != "The classic schedule." {
 		t.Errorf("season 1 overview = %q", seasons[0].Overview)
 	}
-	if want := "file://" + filepath.Join(root, "Season 01", "poster.jpg"); seasons[0].PosterSourcePath != want {
+	if want := filepath.Join(root, "Season 01", "poster.jpg"); localSourceFile(t, seasons[0].PosterSourcePath) != want {
 		t.Errorf("season 1 PosterSourcePath = %q, want %q", seasons[0].PosterSourcePath, want)
 	}
 	if seasons[0].PosterPath != "" {
@@ -141,7 +141,7 @@ func TestNFOOnlyFitnessLibrary_FullSeriesDepth(t *testing.T) {
 		t.Errorf("season 2 = number %d title %q, want 2 / Course B",
 			seasons[1].SeasonNumber, seasons[1].Title)
 	}
-	if want := "file://" + filepath.Join(root, "Season 02", "poster.jpg"); seasons[1].PosterSourcePath != want {
+	if want := filepath.Join(root, "Season 02", "poster.jpg"); localSourceFile(t, seasons[1].PosterSourcePath) != want {
 		t.Errorf("season 2 PosterSourcePath = %q, want %q", seasons[1].PosterSourcePath, want)
 	}
 
@@ -154,7 +154,7 @@ func TestNFOOnlyFitnessLibrary_FullSeriesDepth(t *testing.T) {
 		episodes[0].Title != "Chest and Back" || episodes[0].Overview != "Push and pull." {
 		t.Errorf("episode S1E1 = %#v", episodes[0])
 	}
-	if want := "file://" + filepath.Join(root, "Season 01", "P90X S01E01 - Chest and Back-thumb.jpg"); episodes[0].StillSourcePath != want {
+	if want := filepath.Join(root, "Season 01", "P90X S01E01 - Chest and Back-thumb.jpg"); localSourceFile(t, episodes[0].StillSourcePath) != want {
 		t.Errorf("episode S1E1 StillSourcePath = %q, want %q", episodes[0].StillSourcePath, want)
 	}
 	if episodes[1].SeasonNumber != 2 || episodes[1].EpisodeNumber != 1 || episodes[1].Title != "Core" {
@@ -164,16 +164,16 @@ func TestNFOOnlyFitnessLibrary_FullSeriesDepth(t *testing.T) {
 	// Every image is enqueued as a file:// local source.
 	jobs := x.EnqueuedImageJobs()
 	wantSources := map[string]string{
-		"file://" + filepath.Join(root, "poster.jpg"):                                          metadata.ImageCacheTargetItem,
-		"file://" + filepath.Join(root, "fanart.jpg"):                                          metadata.ImageCacheTargetItem,
-		"file://" + filepath.Join(root, "Season 01", "poster.jpg"):                             metadata.ImageCacheTargetSeason,
-		"file://" + filepath.Join(root, "Season 02", "poster.jpg"):                             metadata.ImageCacheTargetSeason,
-		"file://" + filepath.Join(root, "Season 01", "P90X S01E01 - Chest and Back-thumb.jpg"): metadata.ImageCacheTargetEpisode,
-		"file://" + filepath.Join(root, "Season 02", "P90X S02E01 - Core-thumb.jpg"):           metadata.ImageCacheTargetEpisode,
+		filepath.Join(root, "poster.jpg"):                                          metadata.ImageCacheTargetItem,
+		filepath.Join(root, "fanart.jpg"):                                          metadata.ImageCacheTargetItem,
+		filepath.Join(root, "Season 01", "poster.jpg"):                             metadata.ImageCacheTargetSeason,
+		filepath.Join(root, "Season 02", "poster.jpg"):                             metadata.ImageCacheTargetSeason,
+		filepath.Join(root, "Season 01", "P90X S01E01 - Chest and Back-thumb.jpg"): metadata.ImageCacheTargetEpisode,
+		filepath.Join(root, "Season 02", "P90X S02E01 - Core-thumb.jpg"):           metadata.ImageCacheTargetEpisode,
 	}
 	got := make(map[string]string, len(jobs))
 	for _, job := range jobs {
-		got[job.SourcePath] = job.TargetType
+		got[localSourceFile(t, job.SourcePath)] = job.TargetType
 		if !strings.HasPrefix(job.SourcePath, "file://") {
 			t.Errorf("enqueued non-local source %q", job.SourcePath)
 		}
@@ -196,6 +196,7 @@ type remoteEpisodeStubProvider struct {
 	metadata *metadata.MetadataResult
 	seasons  []metadata.SeasonResult
 	episodes map[int][]metadata.EpisodeResult
+	images   []metadata.RemoteImage
 }
 
 func (p *remoteEpisodeStubProvider) Slug() string       { return p.slug }
@@ -210,6 +211,12 @@ func (p *remoteEpisodeStubProvider) GetMetadata(_ context.Context, _ metadata.Me
 		return &cp, nil
 	}
 	return &metadata.MetadataResult{}, nil
+}
+
+func (p *remoteEpisodeStubProvider) GetImages(_ context.Context, _ metadata.ImageRequest) ([]metadata.RemoteImage, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return append([]metadata.RemoteImage(nil), p.images...), nil
 }
 
 func (p *remoteEpisodeStubProvider) GetSeasons(_ context.Context, _ metadata.SeasonsRequest) ([]metadata.SeasonResult, error) {
@@ -294,6 +301,84 @@ func TestMixedRemoteShow_CuratedSeasonNFOWins(t *testing.T) {
 	episodes := x.Episodes(seriesID)
 	if len(episodes) != 1 || episodes[0].Title != "Remote Episode" {
 		t.Fatalf("episodes = %#v, want the remote episode (no episode NFO present)", episodes)
+	}
+}
+
+// Existing libraries carry the NFO provider after the remote providers. Local
+// season and episode artwork still beats the remote provider's, and art named
+// after an episode file never becomes series art.
+func TestLocalArtworkBeatsEarlierRemoteProvider(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "TV", "Real Show")
+	s1 := filepath.Join(root, "Season 01")
+	e1 := filepath.Join(s1, "Real Show S01E01.mkv")
+	writeFixtureFile(t, e1, "video")
+	writeFixtureFile(t, filepath.Join(root, "Season01-Poster.JPG"), "season-poster")
+	writeFixtureFile(t, filepath.Join(root, "FANART.jpg"), "series-fanart")
+	writeFixtureFile(t, filepath.Join(s1, "Real Show S01E01.jpg"), "episode-still")
+	writeFixtureFile(t, filepath.Join(s1, "Real Show S01E01-poster.jpg"), "episode-poster")
+
+	x := metadata.NewNFOSeriesHarness()
+	ctx := context.Background()
+	const seriesID = "series:tvdb:81189"
+	if err := x.SeedSeriesSkeleton(seriesID, "Real Show"); err != nil {
+		t.Fatalf("seed skeleton: %v", err)
+	}
+	remote := &remoteEpisodeStubProvider{
+		slug:     "tvdb",
+		metadata: &metadata.MetadataResult{HasMetadata: true, Title: "Real Show"},
+		seasons:  []metadata.SeasonResult{{SeasonNumber: 1, Title: "Season 1", PosterPath: "tvdb://season-1.jpg"}},
+		episodes: map[int][]metadata.EpisodeResult{
+			1: {{SeasonNumber: 1, EpisodeNumber: 1, Title: "Pilot", StillPath: "tvdb://still-1.jpg"}},
+		},
+		images: []metadata.RemoteImage{
+			{ProviderID: "tvdb", Type: metadata.ImagePoster, URL: "tvdb://series-poster.jpg", Rating: 8, Language: "en"},
+			{ProviderID: "tvdb", Type: metadata.ImageBackdrop, URL: "tvdb://series-fanart.jpg", Rating: 8},
+		},
+	}
+
+	result, err := x.Service().ProcessWithProviders(ctx, metadata.ProcessRequest{
+		ContentID: seriesID,
+		Hints: &metadata.MatchHints{
+			Title:                     "Real Show",
+			Type:                      "series",
+			FilePath:                  e1,
+			RepresentativeFilePath:    e1,
+			AllGroupFilePaths:         []string{e1},
+			PrimarySidecarSearchPaths: []string{root},
+		},
+		Language: "en",
+		Mode:     metadata.ModeInitialMatch,
+	}, []metadata.Provider{remote, nfo.NewProvider()})
+	if err != nil {
+		t.Fatalf("ProcessWithProviders: %v", err)
+	}
+	if result == nil || !result.Updated {
+		t.Fatalf("result = %#v, want Updated=true", result)
+	}
+
+	item, err := x.Item(seriesID)
+	if err != nil {
+		t.Fatalf("load series: %v", err)
+	}
+	if item.PosterSourcePath != "tvdb://series-poster.jpg" {
+		t.Errorf("series poster source = %q, want the remote poster, not episode-named art", item.PosterSourcePath)
+	}
+	if want := filepath.Join(root, "FANART.jpg"); localSourceFile(t, item.BackdropSourcePath) != want {
+		t.Errorf("series backdrop = %q, want %q", item.BackdropSourcePath, want)
+	}
+	seasons := x.Seasons(seriesID)
+	if len(seasons) != 1 {
+		t.Fatalf("seasons = %#v, want 1", seasons)
+	}
+	if want := filepath.Join(root, "Season01-Poster.JPG"); localSourceFile(t, seasons[0].PosterSourcePath) != want {
+		t.Errorf("season poster = %q, want %q over the earlier remote poster", seasons[0].PosterSourcePath, want)
+	}
+	episodes := x.Episodes(seriesID)
+	if len(episodes) != 1 {
+		t.Fatalf("episodes = %#v, want 1", episodes)
+	}
+	if want := filepath.Join(s1, "Real Show S01E01.jpg"); localSourceFile(t, episodes[0].StillSourcePath) != want {
+		t.Errorf("episode still = %q, want %q over the earlier remote still", episodes[0].StillSourcePath, want)
 	}
 }
 
@@ -408,5 +493,111 @@ func TestSeriesWithoutSeasonOrEpisodeNFOs_UnchangedFallback(t *testing.T) {
 	}
 	if jobs := x.EnqueuedImageJobs(); len(jobs) != 0 {
 		t.Errorf("image jobs = %#v, want none without sidecar art", jobs)
+	}
+}
+
+// Local sidecar art is served only after an image-cache job copies it into
+// artwork storage. With metadata.cache_images off no job runs, so a refresh
+// must ignore local art and keep the remote provider's artwork instead of
+// leaving the item, season, and episode slots empty.
+func TestLocalArtworkRequiresImageCaching(t *testing.T) {
+	const (
+		remotePoster = "https://img.example/series-poster.jpg"
+		remoteSeason = "https://img.example/season-1.jpg"
+		remoteStill  = "https://img.example/s01e01.jpg"
+	)
+	for _, tc := range []struct {
+		name         string
+		cacheImages  bool
+		wantPoster   string
+		wantSeason   string
+		wantStill    string
+		wantAnyLocal bool
+	}{
+		{name: "caching off uses remote art", cacheImages: false,
+			wantPoster: remotePoster, wantSeason: remoteSeason, wantStill: remoteStill},
+		{name: "caching on prefers local art", cacheImages: true, wantAnyLocal: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, episodeFiles := buildFitnessFixture(t)
+
+			x := metadata.NewNFOSeriesHarness()
+			x.Service().SetAutoCacheImages(tc.cacheImages)
+			ctx := context.Background()
+			const seriesID = "series:tvdb:4242"
+			if err := x.SeedSeriesSkeleton(seriesID, "P90X"); err != nil {
+				t.Fatalf("seed skeleton: %v", err)
+			}
+			remote := &remoteEpisodeStubProvider{
+				slug:     "tvdb",
+				metadata: &metadata.MetadataResult{HasMetadata: true, Title: "P90X"},
+				seasons:  []metadata.SeasonResult{{SeasonNumber: 1, PosterPath: remoteSeason}},
+				episodes: map[int][]metadata.EpisodeResult{
+					1: {{SeasonNumber: 1, EpisodeNumber: 1, Title: "Remote", StillPath: remoteStill}},
+				},
+				images: []metadata.RemoteImage{
+					{ProviderID: "tvdb", URL: remotePoster, Type: metadata.ImagePoster, Language: "en", Rating: 8},
+				},
+			}
+
+			// NFO first in the chain, so its local art wins whenever it is usable.
+			if _, err := x.Service().ProcessWithProviders(ctx, metadata.ProcessRequest{
+				ContentID: seriesID,
+				Hints: &metadata.MatchHints{
+					Title:                     "P90X",
+					Type:                      "series",
+					FilePath:                  episodeFiles[0],
+					RepresentativeFilePath:    episodeFiles[0],
+					AllGroupFilePaths:         episodeFiles,
+					PrimarySidecarSearchPaths: []string{root},
+				},
+				Language: "en",
+				Mode:     metadata.ModeInitialMatch,
+			}, []metadata.Provider{nfo.NewProvider(), remote}); err != nil {
+				t.Fatalf("ProcessWithProviders: %v", err)
+			}
+
+			item, err := x.Item(seriesID)
+			if err != nil {
+				t.Fatalf("item: %v", err)
+			}
+			seasons := x.Seasons(seriesID)
+			if len(seasons) == 0 || seasons[0].SeasonNumber != 1 {
+				t.Fatalf("seasons = %#v, want season 1 first", seasons)
+			}
+			episodes := x.Episodes(seriesID)
+			if len(episodes) == 0 || episodes[0].SeasonNumber != 1 || episodes[0].EpisodeNumber != 1 {
+				t.Fatalf("episodes = %#v, want S01E01 first", episodes)
+			}
+
+			sources := []string{
+				item.PosterSourcePath, item.BackdropSourcePath,
+				seasons[0].PosterSourcePath, episodes[0].StillSourcePath,
+			}
+			anyLocal := false
+			for _, source := range sources {
+				if strings.HasPrefix(source, "file://") {
+					anyLocal = true
+				}
+			}
+			if anyLocal != tc.wantAnyLocal {
+				t.Errorf("local sources present = %v, want %v (sources %q)", anyLocal, tc.wantAnyLocal, sources)
+			}
+			if tc.wantAnyLocal {
+				return
+			}
+			if item.PosterPath != tc.wantPoster {
+				t.Errorf("item PosterPath = %q, want %q", item.PosterPath, tc.wantPoster)
+			}
+			if seasons[0].PosterPath != tc.wantSeason {
+				t.Errorf("season PosterPath = %q, want %q", seasons[0].PosterPath, tc.wantSeason)
+			}
+			if episodes[0].StillPath != tc.wantStill {
+				t.Errorf("episode StillPath = %q, want %q", episodes[0].StillPath, tc.wantStill)
+			}
+			if jobs := x.EnqueuedImageJobs(); len(jobs) != 0 {
+				t.Errorf("caching off enqueued %d image jobs: %#v", len(jobs), jobs)
+			}
+		})
 	}
 }

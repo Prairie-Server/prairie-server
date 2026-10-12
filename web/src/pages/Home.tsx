@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { LayoutDashboard } from "lucide-react";
@@ -32,6 +32,7 @@ import {
   prefersReducedMotion,
 } from "@/hooks/useImmediateSidebarCollapse";
 import { SIDEBAR_DETAILS_REVEAL_DEADLINE_MS } from "@/components/sidebarItemNavigation";
+import { markCriticalContentLoaded } from "@/lib/startupPriority";
 
 const MAX_CONCURRENT_SECTION_REQUESTS = 5;
 const SKELETON_CARD_COUNT = 7;
@@ -213,6 +214,13 @@ export default function Home() {
     });
   }, [completedIds, inFlightIds, layout, queryClient]);
 
+  // Background widgets in the shell wait for this (see startupPriority).
+  const hasFirstContent =
+    completedIds.size > 0 || isError || (data !== undefined && layout.length === 0);
+  useEffect(() => {
+    if (hasFirstContent) markCriticalContentLoaded();
+  }, [hasFirstContent]);
+
   const viewModel = buildHomeSectionViewModel({
     layout,
     loadedSections,
@@ -237,7 +245,10 @@ export default function Home() {
   const heroSlot = renderHeroSlot(viewModel.hero, retrySection);
   const hasHeroSlot = heroSlot !== null;
   const rowPlaceholderHeight = carouselIntrinsicHeight(cardPresentation.poster_size);
-  let readyRowIndex = 0;
+  // Rows count toward the eager budget by layout position: a loading or
+  // failed row still holds its place on screen, a row that came back empty
+  // does not.
+  let layoutRowIndex = 0;
 
   if (isLoading && !data) {
     return <HomePageSkeleton />;
@@ -275,13 +286,15 @@ export default function Home() {
           if (slot.state === "empty") {
             return null;
           }
+          const rowIndex = layoutRowIndex++;
           if (slot.state === "ready" && slot.section) {
-            const rowIndex = readyRowIndex++;
             return (
               <DeferredHomeSection
                 key={slot.layout.id}
                 section={slot.section}
                 eager={rowIndex < EAGER_HOME_ROW_COUNT}
+                deferFirstCommit={initialCachedSections.has(slot.layout.id)}
+                priority={rowIndex === 0 && !hasHeroSlot}
                 restorationReady={rowRestorationReady}
                 placeholderHeight={rowPlaceholderHeight}
                 restoreDelayMs={Math.min(
@@ -310,7 +323,10 @@ export default function Home() {
             <p className="text-muted-foreground text-sm">
               Your home screen is empty. Customize it by adding sections to display your media.
             </p>
-            <Link to="/settings/home" className="text-primary text-sm font-medium hover:underline">
+            <Link
+              to="/settings/home-screen"
+              className="text-primary text-sm font-medium hover:underline"
+            >
               Customize Home Screen
             </Link>
           </div>
@@ -320,23 +336,33 @@ export default function Home() {
   );
 }
 
-function DeferredHomeSection({
+const DeferredHomeSection = memo(function DeferredHomeSection({
   section,
   eager,
+  deferFirstCommit,
+  priority,
   restorationReady,
   placeholderHeight,
   restoreDelayMs,
 }: {
   section: ResolvedSection;
   eager: boolean;
+  /** The row's data was already cached when Home first rendered. */
+  deferFirstCommit: boolean;
+  /** The first row, on screen at first paint. */
+  priority: boolean;
   restorationReady: boolean;
   placeholderHeight: string;
   restoreDelayMs: number;
 }) {
-  // Even visible rows start as fixed-size opaque space for the first commit.
-  // This keeps a cold Home return small enough for the sidebar handoff to
-  // begin before card trees and cached poster load events are mounted.
-  const [rendered, setRendered] = useState(prefersReducedMotion);
+  // Rows in Home's first commit start as fixed-size opaque space, even visible
+  // ones. This keeps a cold Home return small enough for the sidebar handoff
+  // to begin before card trees and cached poster load events are mounted. An
+  // above-fold row whose data arrives later renders in that same commit: the
+  // handoff is long under way, and a placeholder would only delay first paint.
+  const [rendered, setRendered] = useState(
+    () => prefersReducedMotion() || (eager && !deferFirstCommit),
+  );
   const placeholderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -383,7 +409,7 @@ function DeferredHomeSection({
     };
   }, [eager, rendered, restorationReady, restoreDelayMs]);
 
-  if (rendered) return <SectionRow section={section} />;
+  if (rendered) return <SectionRow section={section} priority={priority} />;
 
   return (
     <div
@@ -393,7 +419,7 @@ function DeferredHomeSection({
       style={{ minHeight: placeholderHeight }}
     />
   );
-}
+});
 
 function shouldWaitForSidebarReturn(): boolean {
   const userAgent = typeof navigator === "undefined" ? "" : navigator.userAgent;

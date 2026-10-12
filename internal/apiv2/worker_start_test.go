@@ -16,7 +16,7 @@ import (
 )
 
 func TestWorkerStartProtocol(t *testing.T) {
-	data, err := GenerateOpenAPI()
+	data, err := generatedOpenAPIBytes()
 	if err != nil {
 		t.Fatal(err)
 	}

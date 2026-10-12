@@ -13,9 +13,12 @@ Provider chains are keyed on `plugin_installations` rows, so builtins are
 registered **as data**: a reserved installation (`plugin_id='prairie.builtin'`,
 `kind='builtin'`, sentinel `install_path`, `update_policy='manual'`) plus a
 `metadata_provider.v1` capability `nfo` with `default_priority` 1 for
-movie/series/season/episode and `default_enabled=false`
+movie/series/season/episode
 (`migrations/sql/20260712100125_builtin_host_providers.sql`,
-`...124741_nfo_capability_season_episode_levels.sql`).
+`...124741_nfo_capability_season_episode_levels.sql`). It shipped with
+`default_enabled=false`; `...20261011201709_local_metadata_default_on.sql`
+turned it on by default, enabled every existing `nfo` chain row and moved the
+builtin rows to the front of each chain.
 
 - `internal/metadata/builtin.go` is the in-process registry; providers
   self-register (`internal/metadata/nfo/register.go`) and `buildProviders`
@@ -28,33 +31,224 @@ movie/series/season/episode and `default_enabled=false`
   depends on them.
 - On startup, `SyncBuiltinProviderChains` (`internal/metadata/builtin_sync.go`)
   first materializes legacy `content_level=''` chains per level, then appends
-  builtin capabilities to all existing chains, disabled. New libraries pick the
-  capability up through normal chain seeding. The chain-less fallback respects
-  `default_enabled=false`.
-- **Everything is inert until an admin enables "NFO Files" on a library.**
+  builtin capabilities to all existing chains (enabled, since `nfo` is
+  `default_enabled`) and moves builtin rows to the front. New libraries pick
+  the capability up enabled and first through normal chain seeding, and the
+  chain-less fallback includes it, except at a level where the library's
+  local row is switched off. A save that omits the local row gets it back,
+  enabled, at the next startup; turning local metadata off means saving the
+  row disabled.
+- Without `.nfo` files or sidecar art the provider returns nothing, so a
+  library without local files behaves as before. Each refresh still looks for
+  the candidate sidecar files.
+
+## Precedence: locks, then local, then remote
+
+Highest first: fields an admin locked while editing an item, then local
+metadata (NFO text and sidecar artwork), then remote providers (TMDB, TVDB,
+...), then filename parsing.
+
+- **The local tier runs first.** Builtin installations are the local tier
+  (`internal/metadata/local_tier.go`). `buildProviders` returns builtin
+  providers ahead of plugin providers, which covers saved chains, the
+  chain-less fallback and person refresh, whatever priority a row stores.
+  `SetChain`, chain seeding and the startup sync store builtin rows first, so
+  the API and the chain editor show the order that runs.
+- **Fields the NFO sets win.** Phase 2 folds provider results fill-empty in
+  chain order, so the NFO wins every scalar it supplies.
+- **Lists the NFO supplies are the whole list.** Genres, studios, networks,
+  countries, keywords, cast and crew (cast and crew count separately, like
+  their locks) are not extended by remote results; remote providers fill only
+  the lists the NFO left empty. Remote cast and crew enrich the NFO's credits
+  that match by provider ID or by name and kind (IDs, photos, roles) and never
+  add people (`internal/metadata/local_precedence.go`). Credits match only
+  within their role, so a remote director credit fills an empty crew rather
+  than folding into the same person's NFO actor credit. Lists from two remote
+  providers still accumulate. In fill-empty writes (scheduled refresh,
+  initial match of a stored item) an NFO list, credits included, fills an
+  empty stored list but is not added to or swapped for a stored one; a manual
+  refresh replaces it. The bulk
+  enrichment pass has no record of which stored lists came from the NFO, so
+  an enrichment-only provider can still add to them.
+- **Locks win in every mode.** The persist merge applies the item's locked
+  fields in initial match, scheduled and manual refresh, and Identify. Cast and
+  Crew are separate locks; with only one set, the stored credits are read so
+  the locked group survives the wholesale credit write, while the other group
+  is replaced by the incoming one as it would be without a lock, or kept when
+  the providers send none (`internal/metadata/people_locks.go`). An initial
+  match of a skeleton item keeps a locked title and year.
+- **One switch per library.** The chain editor shows the local entry as a
+  pinned "Local metadata (NFO + artwork)" switch that sets every level's row at
+  once and cannot be reordered. v2 marks the entry with
+  `ProviderChainEntry.local`; the frozen v1 shape is unchanged. Text and
+  artwork come from the same provider, so the switch turns both on or off.
+
+## Reading NFO files
+
+`internal/metadata/nfo/lookup.go` finds sidecars and `nfo.go`/`decode.go`/`ids.go`
+parse them. The reader accepts what Kodi and Jellyfin accept, because a file
+it rejects silently counts as "no NFO".
+
+- **Names** match case-insensitively (`Movie.NFO`, `TVSHOW.nfo`, `Season.NFO`,
+  `<basename>.NFO`) against a directory listing, exact spelling first. The
+  provider caches listings by directory modification and change time (a copy
+  tool can restore the first, not the second), so a flat folder of
+  thousands of movies is listed once per change, not once per item and phase.
+  A listing is cached only once its directory has gone a timestamp tick
+  unchanged, since a file added in the same tick leaves the time as it was:
+  a few seconds on a filesystem with coarse timestamps (a whole-millisecond
+  modification time), 20 ms otherwise. A cached listing also carries an index
+  of its stacked parts, built on first use, so a flat folder of many
+  multi-part movies is swept once per change.
+  A folder the server may traverse but not list falls back to the exact
+  names; a miss there counts as unreadable, since a differently cased name
+  can't be ruled out.
+- **Order** follows Kodi: `<basename>.nfo` beside each media file, then the
+  name a stacked movie's parts share (`Movie-cd1.mkv` and `Movie-cd2.mkv` →
+  `Movie.nfo`, and `CD1.Feature.mkv` and `CD2.Feature.mkv` → `Feature.nfo`;
+  the part tokens are the scanner's, only video files (never directories)
+  count as parts, though they may differ in container or separators
+  (`Film-part1-1080p.mkv`, `Film part2 1080p.mp4`), and a lone
+  `Movie Part 2.mkv` never reads `Movie.nfo`), then `movie.nfo`/`tvshow.nfo`.
+  Directory-level names are read only in the request's
+  `PrimarySidecarSearchPaths`, which upstream restricts to single-content
+  observed roots (`canUseObservedRootForDirectorySidecars`, the
+  same guard sidecar artwork uses), so a stray `movie.nfo` in a flat
+  multi-movie folder applies to none of its movies. A show's NFO is only ever
+  `tvshow.nfo`, so episode files are not probed for it.
+- **Limits:** files over 4 MiB, symlinked leaves, and non-regular files are
+  skipped with a warning, as for sidecar artwork. A file replaced between the
+  check and the read (an editor's atomic save) is read if it is still a
+  regular file; a symlink or FIFO swapped in is reported unreadable (the open
+  does not follow symlinks). A file that changes while it is read is read
+  once more, then reported unreadable; a recently written file with a coarse
+  timestamp is read twice and compared, since a same-size rewrite within the
+  tick leaves its size and time unchanged.
+- **Decoding:** one lenient decoder (`newNFODecoder`): valid UTF-8 is read
+  as UTF-8 even under a stale legacy declaration, a declared legacy charset is
+  decoded, other non-UTF-8 bytes are read as Windows-1252, UTF-16 with a BOM
+  is converted, HTML entities (`&eacute;`) resolve, an HTML `<br>` closes
+  itself, and neither a bare `&` nor a control character XML forbids rejects
+  the file. Numeric elements (year, season, episode,
+  actor order) are read leniently (`2.0`, a leading number followed by text);
+  a value that is not a whole number drops only that field.
+- **Link forms:** a URL-only file (just a provider link) yields identity hints
+  and no fields; a hybrid file (XML followed by a link) adds the link's ids to
+  the XML's. Links read: IMDb `tt…`, `themoviedb.org/movie|tv/<id>`, and TVDB
+  series URLs that carry a numeric id. A TMDB movie link only names a movie
+  and a TV or TVDB link only a show.
+- **Unreadable is not absent.** A sidecar that exists but cannot be read (an
+  I/O error, a permission problem), or a media file whose path no longer
+  holds a file (the provider follows symlinks, as the scanner does) or a
+  folder that is gone (an unmounted share often leaves an empty
+  mountpoint; the provider only sees files the catalog lists as present, so
+  it checks each one it relies on, and treats a series root or season folder
+  that holds none of the show's or season's episode files the same way),
+  makes the provider return
+  `metadata.ErrLocalMetadataUnavailable`; a folder that has lost its media
+  is not searched, so a stale `movie.nfo` or `tvshow.nfo` on the mountpoint
+  is never applied; each lookup re-checks the media afterwards, so a share
+  that drops mid-lookup is not read through. A missing NFO file is still
+  "no NFO", and a readable
+  candidate (another version's folder) still wins. A cataloged file deleted
+  from a folder that still holds the item's other files is just gone (the
+  share is mounted), so it is skipped rather than reported. Season and
+  episode requests carry every cataloged file of the show for this check
+  (`ShowFilePaths`), since a targeted refresh reads one season or episode
+  and seasons can share a folder. When one
+  path fails for permission and another because its share is gone, the
+  lookup reports the share: the order of paths must not decide whether a
+  match waits.
+  - Passes that replace stored values stop: manual refresh, and the series
+    season/episode target refresh in every mode (it replaces unlocked fields
+    even when scheduled), which reads only the targeted season or episode.
+  - An initial match waits: the outcome is `provider_transient`
+    (`hasTransientMatchError` checks the sentinel) with a queue message that
+    names the NFO, so the match queue retries instead of committing an
+    identity the NFO may contradict. A permission problem does not clear by
+    itself, so then the match goes ahead without the NFO, as it does when
+    there is none (`localSidecarDenied`: not a provider error either).
+  - Fill-empty passes (scheduled refresh, and a series' seasons and episodes
+    at initial match) carry on. `GetSeasons`/`GetEpisodes` skip only the
+    unreadable entry and return the rest with the error.
+- The provider caches parses by file content, so the identity, search, and
+  metadata phases of one pass parse a file once, and a rewrite is seen even
+  when it keeps the file's size and modification time.
 
 ## Identity: hint-first, never candidate-first
 
-NFO `<uniqueid>` values (tmdb/imdb/tvdb) are **trusted identity hints** seeded
-before remote search (`IdentityHintProvider`, applied in
-`internal/metadata/service.go`), unlocking full remote enrichment even when
-search-by-title fails. Conflict policy by mode:
+NFO ids are **trusted identity hints** seeded before remote search
+(`IdentityHintProvider`, applied in `internal/metadata/service.go`),
+unlocking full remote enrichment even when search-by-title fails. The forms
+read, strongest first: typed `<uniqueid>` (type spellings such as `TMDB`,
+`themoviedb`, `tmdb_id`, `TheTVDB` are normalized; `default="true"` wins
+within a type), an untyped or `unknown` `<uniqueid>` holding an IMDb id,
+`<imdbid>`/`<imdb_id>`/`<tmdbid>`/`<tvdbid>`, the legacy `<id>` (its
+TMDB/TVDB/IMDB attributes, or a `tt…` value; a bare number names no provider),
+a tvshow `<episodeguide>` (Kodi 20 JSON or the older TVDB/TMDB API URLs), and
+a hybrid file's trailing link. Values are checked with the pipeline's own
+rules (`internal/providerid`), so a malformed value (`N/A`, letters in a TMDB
+id, a `0` or `tt0000000` placeholder) claims nothing and a weaker valid form
+still supplies the id. Conflict policy
+by mode:
 
-- initial match / scheduled refresh: NFO hints beat folder-name hints; stored
-  durable IDs beat NFO hints (no background identity flips);
+- initial match: NFO ids replace folder- and filename-tag ids **as a set**
+  (`dropIDsNotRestatedByHints`): a tag id the NFO does not restate is dropped
+  rather than left as a trusted hint that would make the NFO's own title fail
+  selection. Once an NFO id that a remote provider returned survives the
+  lookups (or, in a chain with no remote search provider, the NFO's ids
+  alone), the replaced tag ids are rejected for the run, so
+  they are not persisted from the scanner's tag-anchored skeleton, and the
+  skeleton moves to the NFO's anchor (as a correcting Identify does) so the
+  tag's own title cannot later merge into it. A dead NFO identity leaves the
+  tag ids alone: when a provider rejects every id the NFO named, the search
+  runs again with the tag ids (less any the providers rejected), and an NFO
+  id recorded stale on an earlier attempt is not used as a hint, and the tag
+  id it replaced comes back even if the NFO names another provider. When a
+  transient failure keeps every remote provider from returning one of the
+  NFO's ids, the match waits rather than re-anchor on an id nothing checked;
+  a failure after one did (an enrichment quota) does not hold it. When a
+  provider confirms an NFO id in search and then rejects it (a 404 on its
+  details), the match also waits; the retry, with that id recorded stale,
+  searches with the tag ids. Stored
+  durable IDs beat NFO hints;
+- scheduled refresh: stored durable IDs beat NFO hints (no background identity
+  flips);
 - manual refresh: NFO hints beat stored IDs — the recovery path for a corrected
   NFO. The item's `content_id` re-anchors too (not just its stored provider
   IDs): a provider-anchored item whose fixed `<uniqueid>` now derives a
   different anchor is renamed to it, or merged onto the existing item already
   holding that id;
 - manual Identify: the user's choice wins; the NFO provider is skipped for the
-  whole operation.
+  whole operation. The choice is sticky: every Identify (including the one a
+  split runs for its target) sets `media_items.identity_chosen_at` in the
+  transaction that writes the identity it chose, and also in a merge that
+  commits before that write onto the item already holding the chosen IDs (the
+  row at the choice's anchor, or the owner of its provider IDs). The mark
+  always commits with the chosen IDs: a re-anchor rename keeps the old IDs
+  until the identity write, so it leaves the mark to that write. Renames and
+  merges carry the mark along, and a later refresh whose NFO names a different
+  identity keeps the chosen one. Running Identify again is how an admin
+  changes it.
+
+Whenever a run keeps an identity the NFO's IDs contradict, it logs the
+conflict and leaves the NFO provider out of every phase of that run (series,
+season and episode), since its text, lists and art describe the other title
+(`internal/metadata/identify_sticky.go`). Runs that keep the stored identity
+(scheduled refresh, initial match of a stored item, and a refresh of one
+season or episode, judged by the series' own files) treat a declared ID that
+differs from the stored one for the same provider as a conflict; an ID for a
+provider the item lacks only adds to it. After Identify, every run, manual
+refresh included, treats any declared IDs that don't confirm the chosen
+identity as a conflict. A stored ID already recorded as dead (a 404 in
+`stale_media_ids`) doesn't count as identity, so an NFO naming its replacement
+applies. A title-only NFO declares no identity and always applies.
 
 The NFO search candidate exists only for the title-only case and is defanged:
 ID-less candidates lose provider-priority tie-breaks to ID-bearing group
 members, `nfo` never counts as corroboration, and Phase-2 NFO results cannot
 inject provider-id keys. A title-only NFO yields a `matched` item under a
-path-deterministic `local:` content id; adding a `<uniqueid>` later promotes it
+path-deterministic `local-` content id; adding a `<uniqueid>` later promotes it
 to that provider anchor on the next refresh (this promotion from an unanchored
 id runs on scheduled refresh too — only an *already-anchored* identity is held
 stable in the background). NFO field edits propagate on **manual refresh only**
@@ -62,21 +256,66 @@ stable in the background). NFO field edits propagate on **manual refresh only**
 
 ## Sidecar artwork: copy into the S3 image cache
 
-Sidecar images (`poster`/`folder`/`cover`, `fanart`/`backdrop`/`background`,
-`logo`/`clearlogo`, and `<basename>-poster/-fanart/-logo` variants; extensions
-`.jpg/.jpeg/.png/.webp`, 8 MiB cap, symlinked leaves rejected) are discovered
-by the provider's `GetImages` (`internal/metadata/nfo/images.go`). Clients —
-including jellycompat — always receive the normal presigned
-`poster_url`/`backdrop_url`/`logo_url`; library files are never served
-directly, and API nodes never need filesystem access to libraries.
+Sidecar images are discovered by the provider's `GetImages`
+(`internal/metadata/nfo/images.go`) and its season and episode lookups
+(`internal/metadata/nfo/series_depth.go`). Clients — including jellycompat —
+always receive the normal presigned `poster_url`/`backdrop_url`/`logo_url`;
+library files are never served directly, and API nodes never need filesystem
+access to libraries.
 
-- Sources are recorded as `file://<absolute-logical-path>` in `*_source_path`
-  columns and cached by the metadata image-cache processor under
+Discovery lists each folder once per request and matches names ignoring case,
+so `Poster.JPG` and `Folder.jpg` count on case-sensitive filesystems; an entry
+spelled exactly as listed below wins over other spellings. A folder that can
+be searched but not listed (execute-only permission) still serves names looked
+up exactly. Listings of folders with 256 or more entries (a flat folder of many
+movies) are shared across requests for up to a minute while the folder's mtime
+is unchanged, and only once that mtime is a few seconds old (coarse filesystem
+timestamps), so such a folder is not listed again for every movie in it. Names
+in
+precedence order, each tried with `.jpg`, `.jpeg`, `.png`, `.webp`, `.tbn`,
+`.gif` (the formats libvips decodes; `.tbn` is a JPEG):
+
+| Slot | Names |
+| --- | --- |
+| Movie poster | `<basename>-poster`, then `poster`, `folder`, `cover`, `default`, `movie` |
+| Series poster | `poster`, `folder`, `cover`, `default`, `show` |
+| Backdrop | movie `<basename>-fanart`, then `fanart`, `backdrop`, `background`, `art` |
+| Logo | movie `<basename>-logo`, `<basename>-clearlogo`, then `logo`, `clearlogo` |
+| Season poster | `poster`, `folder`, `cover` in the season folder, then `seasonNN-poster` (`season-specials-poster` for season 0) in the series root |
+| Episode still | `<basename>-thumb`, then `<basename>` |
+
+- Basename names attach to one of the item's own media files and beat generic
+  names, as in Kodi. A series has no media file of its own (its request lists
+  every episode file), so a series uses generic names only and
+  `S01E01-poster.jpg` never becomes series art. Prairie stores one backdrop, so
+  the first match wins.
+- Generic names attach only in folders that hold a single content group; a
+  shared `folder.jpg` in a flat multi-movie folder applies to none. A season
+  folder that is the series root itself (a flat series) is not searched for
+  season names, so the series' own `poster.jpg` is not reused as every
+  season's poster.
+- Files must be regular (symlinked leaves are rejected), non-empty, and at most
+  25 MiB (`metadata.MaxArtworkSourceBytes`, which also caps provider
+  downloads in `internal/imagecache`). Skips an admin can fix (symlink, oversize, unreadable) log at
+  warn level; the rest at debug.
+
+Caching and refresh:
+
+- Sources are recorded as `file://<absolute-logical-path>?v=<size>-<mtime>`
+  (mtime in whole seconds, so mounts reporting different sub-second precision
+  agree) in `*_source_path` columns. The fingerprint exists only to change the source
+  path when a file is replaced under the same name: the changed source
+  re-queues the image-cache job (`EnqueueBatch` requeues on a different
+  `source_path`), and the processor strips the fingerprint before confining
+  and reading the file. Other consumers treat `file://` as a scheme prefix
+  only. The first refresh after this fingerprint was introduced re-queues
+  every local slot once.
+- The metadata image-cache processor caches the file under
   `local/{contentType}/{contentID}/{hash8}/{imageType}/...` (`hash8` = content
   hash; the discriminator sits before the imageType segment because variant
-  clamping reads the parent directory). Editing the file and refreshing rotates
-  the key; the stale hashed prefix is deleted after a successful re-cache, and
-  item deletion trims local paths to the content prefix.
+  clamping reads the parent directory). A replaced image rotates the key; the
+  stale hashed prefix is deleted after a successful re-cache, and item
+  deletion trims local paths to the content prefix.
 - The processor confines each read to the owning library's `media_folders`
   roots: a lexical check on the logical path, then a symlink-resolving re-check
   (both path and roots are resolved, so a legitimately symlinked root stays
@@ -85,12 +324,43 @@ directly, and API nodes never need filesystem access to libraries.
   over-cap) paths are stable failures with a long retry deferral; recovery is
   refresh-driven — the provider-artwork backfill sweep deliberately skips
   `file://` sources.
-- Generic filenames attach only when the directory holds a single content
-  group; a shared `folder.jpg` in a flat multi-movie folder applies to none.
-  `<basename>-poster.jpg` style names always attach to their file.
-- `applyBestImages`' final write has a local exemption so rating-0 local art
-  can fill already-matched items and cannot be stickily displaced by remote
-  art; the localization pass skips language-neutral local candidates.
+
+Precedence: local artwork beats remote providers wherever the NFO provider
+sits in the chain.
+
+- Items: `applyBestImages` always applies a local candidate, so rating-0 local
+  art fills already-matched items.
+- Seasons and episodes: `accumulateSeasonResults`/`accumulateEpisodeResults`
+  merge first-provider-wins, except that a local poster or still replaces a
+  remote one from an earlier provider (`internal/metadata/local_artwork_precedence.go`).
+  The remote poster a local one displaced stays on the merged result, and a
+  write that touches only a season's localization row (a refresh in a
+  language other than the item's canonical one) stores that provider poster,
+  as item localization rows skip local candidates.
+- A refresh that does not rediscover a slot's cached local copy (a `local/`
+  key with a `file://` source) keeps it unless the sidecar's own folder answers
+  and lists entries: then the file is either missing or still on disk but no
+  longer offered (renamed out of the naming rules, replaced by a better match,
+  or local metadata disabled), and the slot takes the provider's art. A folder
+  that is missing, empty, unreadable or slow to answer is what an unmounted
+  share or a vanished nested mount looks like, so the local copy stays. When
+  an item's media moves, the old art therefore stays only while its former
+  folder is gone; a former folder that still lists entries proves the library
+  is mounted, so the slot takes the new folder's local art or, without any,
+  the provider's. The folder is probed through `internal/rootcheck` with its
+  timeout, once per folder, before the sidecar itself is looked up. This
+  applies only at a level (item, season, episode) where the local provider
+  answered a request for artwork in this refresh (`withLocalArtworkSearched`):
+  with local metadata off for that level, during an Identify, in a run that
+  leaves local metadata out because the NFO names another title (see
+  Identity above), or when the local provider's call failed, cached local art
+  is stored artwork like any other and no library folder is probed.
+- Localization: local art is language-neutral. Localization rows skip local
+  candidates, and the read-side overlay (`internal/catalog/localize.go`) keeps
+  base art served from a `local/` key (`artworkkey.IsLocal`), so a viewer in
+  another language sees the same local art. A slot whose local copy is not
+  cached yet still serves its earlier art, which a localized image may
+  replace.
 
 **Deployment constraint:** the host running the metadata image-cache processor
 must mount the media libraries at the same paths as the scanner/metadata
@@ -99,7 +369,7 @@ worker, otherwise local artwork jobs fail until the mount is present.
 ## Series depth and mixed libraries
 
 `SeasonsRequest`/`EpisodesRequest` carry local path context; `season.nfo`
-supplies season name/plot, `<basename>.nfo` + `<basename>-thumb.ext` supply
+supplies season name/plot, `<basename>.nfo` and the episode still (see above) supply
 episode metadata/thumbs (`internal/metadata/nfo/series_depth.go`). **Naming
 supplies structure; NFOs supply metadata**: NFO season/episode numbers are
 advisory — directory/filename-derived numbers win with a warning. Episode NFOs
@@ -117,13 +387,14 @@ contract for sports/mixed libraries (events as movies, weekly shows as series).
 
 - The admin image picker does not surface local art (automatic chain path
   only).
-- Multi-part movies: a basename-mismatched NFO in a folder holding multiple
-  content groups is not found (directory candidates are suppressed there).
+- Multi-part movies: in a folder holding multiple content groups, only
+  `<basename>.nfo` and the stack base name are read; a differently named NFO
+  there is not found.
 - No NFO writing, no music/audiobook/ebook NFO (those ecosystems use
   OPF/metadata.json — future builtin providers via the same registry).
 - Feature detection: the `nfo` capability's presence in
   `GET /api/v1/libraries/provider-defaults` (see
-  `docs/architecture/v1-scope.md`).
+  `docs/architecture/v1-scope.md`); in v2 an entry with `local: true`.
 - `<set>` (movie collections) is not mapped: `MetadataResult` has no
   collection field, so `nfoCommon` (`internal/metadata/nfo/nfo.go`) does not
   decode it.

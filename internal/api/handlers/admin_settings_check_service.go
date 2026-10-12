@@ -35,7 +35,7 @@ func (h *AdminHandler) CheckAdminSettingsConnection(ctx context.Context, kind st
 	if err != nil {
 		return AdminSettingsCheckResult{}, ErrAdminSettingsCheckConfig
 	}
-	result, err := runAdminSettingsConnectionCheck(ctx, kind, cfg, effective)
+	result, err := h.runAdminSettingsConnectionCheck(ctx, kind, cfg, effective)
 	if err != nil {
 		return AdminSettingsCheckResult{}, err
 	}

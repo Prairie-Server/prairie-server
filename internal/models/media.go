@@ -23,8 +23,10 @@ type MediaFolder struct {
 	MetadataLanguage         string // ISO 639-1 code (e.g. "en", "ja")
 	AutoTranslateMetadata    bool   // AI-translate descriptions when providers lack this language
 	ChapterThumbnailsEnabled bool
-	TrickplayEnabled         bool
 	IntroDetectionEnabled    bool
+	// TrickplayEnabled generates seek-bar previews for the library's video
+	// files (internal/trickplay). Off by default.
+	TrickplayEnabled bool
 	// RealtimeMonitoring is the library's real-time monitoring switch. It
 	// takes effect only while the server-wide scanner.realtime_monitoring
 	// setting is on and the library is enabled.
@@ -77,10 +79,10 @@ type MediaFile struct {
 	SubtitleTracks               []SubtitleTrack    // JSONB
 	ExternalSubtitles            []ExternalSubtitle // JSONB
 	Chapters                     []MediaChapter     // JSONB; nil means not yet probed for chapters
+	MarkerThumbnails             []MarkerThumbnail  `json:"-"`
 	ChapterThumbnailRetryAfter   *time.Time
 	ChapterThumbnailFailureCount int
 	ChapterThumbnailLastError    string
-	Trickplay                    *MediaTrickplay // JSONB; nil means not yet generated
 	IntroStart                   *float64
 	IntroEnd                     *float64
 	CreditsStart                 *float64
@@ -135,11 +137,15 @@ type MediaFile struct {
 	MultiplePPSScanMtime *time.Time `json:"-"`
 	ProbeSource          string     // arrs, local
 	ProbeUpdatedAt       *time.Time
+	ProbeFailedAt        *time.Time // last local ffprobe rejected the file; cleared by a successful probe (see ProbeRejected)
 	MatchAttemptedAt     *time.Time
 	MissingSince         *time.Time
 	FirstSeenScanRunID   string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
+
+	// Non-nil only for an ephemeral on-demand overlay; fences canonical edits.
+	MarkerThumbnailBaseSegments []MarkerSegment `json:"-"`
 }
 
 // MediaChapter represents a single media chapter derived from embedded file metadata.
@@ -154,27 +160,6 @@ type MediaChapter struct {
 	ThumbnailRetryAfter *time.Time `json:"thumbnail_retry_after,omitempty"`
 	ThumbnailFailedAt   *time.Time `json:"thumbnail_failed_at,omitempty"`
 	ThumbnailLastError  string     `json:"thumbnail_last_error,omitempty"`
-}
-
-// MediaTrickplay stores interval sprite-sheet metadata for seek scrubbing previews.
-type MediaTrickplay struct {
-	IntervalSeconds float64               `json:"interval_seconds"`
-	Width           int                   `json:"width"`
-	Height          int                   `json:"height"`
-	TileColumns     int                   `json:"tile_columns"`
-	TileRows        int                   `json:"tile_rows"`
-	ThumbnailCount  int                   `json:"thumbnail_count"`
-	DurationSeconds int                   `json:"duration_seconds"`
-	Sheets          []MediaTrickplaySheet `json:"sheets,omitempty"`
-	RetryAfter      *time.Time            `json:"retry_after,omitempty"`
-	FailureCount    int                   `json:"failure_count,omitempty"`
-	LastError       string                `json:"last_error,omitempty"`
-}
-
-// MediaTrickplaySheet is one sprite sheet covering a contiguous tile range.
-type MediaTrickplaySheet struct {
-	Index int    `json:"index"`
-	Path  string `json:"path"`
 }
 
 // OverlaySummary is the compact media badge payload shared across API surfaces.
@@ -334,6 +319,20 @@ func (f *MediaFile) AudioOnlyProbeFacts() AudioOnlyProbeFacts {
 // audio evidence keep genuine MJPEG video from being normalized away.
 func (f *MediaFile) HasLegacyAttachedPictureVideo() bool {
 	return f.AudioOnlyProbeFacts().HasLegacyAttachedPictureVideo()
+}
+
+// ProbeRejected reports whether ffprobe rejected this file and no usable
+// stream metadata exists for it: no successful probe has been recorded and
+// nothing describes a video or audio stream. Such a file cannot be played until
+// it is replaced, as opposed to a file that has simply not been probed yet.
+// Rows that still carry stream metadata from an earlier probe or an import are
+// not rejected, so a transient probe failure never hides a known-good source.
+func (f *MediaFile) ProbeRejected() bool {
+	if f == nil || f.ProbeFailedAt == nil || f.ProbeUpdatedAt != nil {
+		return false
+	}
+	return strings.TrimSpace(f.CodecVideo) == "" && strings.TrimSpace(f.CodecAudio) == "" &&
+		len(f.VideoTracks) == 0 && len(f.AudioTracks) == 0
 }
 
 // IsAudioOnly reports whether a probed file carries no playable video stream —
@@ -517,6 +516,8 @@ const (
 	PersonKindComposer  PersonKind = 6
 	PersonKindAuthor    PersonKind = 7
 	PersonKindNarrator  PersonKind = 8
+	// PersonKindCreator credits a series' creators, who are not its directors.
+	PersonKindCreator PersonKind = 9
 )
 
 // String returns the Jellyfin-compatible type string for this PersonKind.
@@ -538,6 +539,8 @@ func (k PersonKind) String() string {
 		return "Author"
 	case PersonKindNarrator:
 		return "Narrator"
+	case PersonKindCreator:
+		return "Creator"
 	default:
 		return "Unknown"
 	}
@@ -548,6 +551,8 @@ func PersonKindFromJob(job string) PersonKind {
 	switch strings.ToLower(strings.TrimSpace(job)) {
 	case "director":
 		return PersonKindDirector
+	case "creator":
+		return PersonKindCreator
 	case "writer", "screenplay", "story", "novel":
 		return PersonKindWriter
 	case "composer", "original music composer", "music":
@@ -706,6 +711,14 @@ type MediaItem struct {
 	// PlayContentID is transient presentation metadata populated by resolvers
 	// whose displayed item differs from the leaf item that should play.
 	PlayContentID string
+	// PosterIsEpisodeStill and BackdropIsEpisodeStill are transient provenance
+	// set by the query that picks an episode card's artwork: true when the
+	// path is the episode's own still, false for season or series artwork, nil
+	// when no such query loaded the item. They travel with the paths so a
+	// cached item never pairs old artwork with newer provenance. json:"-"
+	// because some frozen v1 responses serialize MediaItem directly.
+	PosterIsEpisodeStill   *bool `json:"-"`
+	BackdropIsEpisodeStill *bool `json:"-"`
 }
 
 // MediaItemAlias is a provider-confirmed searchable title for a media item.

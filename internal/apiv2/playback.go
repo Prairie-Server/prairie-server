@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -129,16 +130,46 @@ type PlaybackDecision struct {
 type PlaybackRequestHeaders struct {
 	UserAgent       string `header:"User-Agent"`
 	DeviceID        string `header:"X-Device-ID"`
-	ClientName      string `header:"X-Client-Name"`
+	ClientName      string `header:"X-Client-Name" doc:"App name; when non-blank, the X-Client-* headers supply the whole client identity and X-Prairie-Client* is ignored"`
 	ClientVersion   string `header:"X-Client-Version"`
 	ClientBuild     string `header:"X-Client-Build"`
 	ClientChannel   string `header:"X-Client-Channel"`
 	ClientModel     string `header:"X-Client-Model"`
 	ClientPlatform  string `header:"X-Client-Platform"`
 	ClientOSVersion string `header:"X-Client-OS-Version"`
+	PrairieClient   string `header:"X-Prairie-Client" doc:"App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity" example:"Prairie Android TV"`
+	PrairieVersion  string `header:"X-Prairie-Client-Version" doc:"Marketing version paired with X-Prairie-Client" example:"1.0.0"`
+	PrairieBuild    string `header:"X-Prairie-Client-Build" doc:"Opaque build identifier paired with X-Prairie-Client" example:"5"`
+	PrairieChannel  string `header:"X-Prairie-Client-Channel" doc:"Opaque distribution channel paired with X-Prairie-Client" example:"release"`
 }
+
+// clientInfo resolves the caller's app identity from one header set, never a
+// mix of both. X-Client-Name is the declared v2 header, so a caller that sends
+// it keeps its X-Client-* values; the first-party apps and the web player send
+// only X-Prairie-Client*, the app identity headers the v1 bridge reads. Values are
+// clamped here, where the request is read, like the bridge does.
+func (h PlaybackRequestHeaders) clientInfo() playback.ClientInfo {
+	info := playback.ClientInfo{Name: h.ClientName, Version: h.ClientVersion, Build: h.ClientBuild, Channel: h.ClientChannel}
+	if strings.TrimSpace(h.ClientName) == "" && strings.TrimSpace(h.PrairieClient) != "" {
+		info = playback.ClientInfo{Name: h.PrairieClient, Version: h.PrairieVersion, Build: h.PrairieBuild, Channel: h.PrairieChannel}
+	}
+	return info.Normalized()
+}
+
+// PlaybackDeviceHeaders declare the client's device on a playback start. A
+// successful start records it in the profile's device registry, as a settings
+// read does; they do not change the playback device X-Device-ID names.
+// Unlike the settings operations they carry no length limits: an over-long
+// value is clamped when recorded, and must never refuse playback.
+type PlaybackDeviceHeaders struct {
+	PrairieDeviceID       string `header:"X-Prairie-Device-Id" doc:"The client's stable device identifier; a successful start records it in the profile's device registry (first 128 characters)" example:"iphone-1"`
+	PrairieDeviceName     string `header:"X-Prairie-Device-Name" doc:"Optional display name recorded on the device registry (first 120 characters)" example:"Living room"`
+	PrairieDevicePlatform string `header:"X-Prairie-Device-Platform" doc:"Optional platform recorded on the device registry (first 40 characters)" example:"iOS"`
+}
+
 type PlaybackStartInput struct {
 	PlaybackRequestHeaders
+	PlaybackDeviceHeaders
 	Body PlaybackStartBody
 }
 type PlaybackCapabilitiesOutput struct {
@@ -327,6 +358,7 @@ func registerPlayback(reg *Registry) {
 		if _, err := validationRequest.NormalizeAndValidate(); err != nil {
 			return nil, validationProblem("body", "invalid", err.Error())
 		}
+		caller.DeclaredDevice = handlers.NewDeviceMetadata(in.PrairieDeviceID, in.PrairieDeviceName, in.PrairieDevicePlatform)
 		response, err := reg.deps.Playback.StartPlaybackV2(ctx, caller, request)
 		if err != nil {
 			return nil, playbackProblem(err)
@@ -416,7 +448,8 @@ func (reg *Registry) playbackCaller(ctx context.Context, headers PlaybackRequest
 	if !playbackUUID(string(installation)) {
 		return handlers.PlaybackCaller{}, validationProblem("body.installation_id", "invalid", "Expected the installation identifier from capabilities.")
 	}
-	return handlers.PlaybackCaller{UserID: userID, ProfileID: profileID, InstallationID: string(installation), DeviceID: headers.DeviceID, UserAgent: headers.UserAgent, ClientName: headers.ClientName, ClientVersion: headers.ClientVersion, ClientBuild: headers.ClientBuild, ClientChannel: headers.ClientChannel, SiloClientName: observedClientName(ctx), DeviceName: headers.ClientModel, Platform: headers.ClientPlatform, RemoteAddr: clientip.FromContext(ctx)}, nil
+	client := headers.clientInfo()
+	return handlers.PlaybackCaller{UserID: userID, ProfileID: profileID, InstallationID: string(installation), DeviceID: headers.DeviceID, UserAgent: headers.UserAgent, ClientName: client.Name, ClientVersion: client.Version, ClientBuild: client.Build, ClientChannel: client.Channel, DeviceName: headers.ClientModel, Platform: headers.ClientPlatform, RemoteAddr: clientip.FromContext(ctx)}, nil
 }
 
 // playbackProblem maps a service error onto the shared problem catalog: the
@@ -463,7 +496,23 @@ func playbackDecision(in playback.DecisionResponseV3) PlaybackDecision {
 		p := in.PlaybackPlan
 		stream := p.Stream
 		stream.URL = playbackV2MediaURL(stream.URL)
-		out.PlaybackPlan = &PlaybackPlan{ProtocolVersion: p.ProtocolVersion, PlanID: p.PlanID, PlanAttemptKey: p.PlanAttemptKey, SessionID: p.SessionID, ExpiresAt: p.ExpiresAt, Delivery: p.Delivery, Stream: stream, Timeline: p.Timeline, SelectedTracks: p.SelectedTracks, EffectiveRecipe: p.EffectiveRecipe, Claims: p.Claims, Subtitle: playbackV2Subtitle(p.Subtitle), Transformations: p.Transformations, AppliedQuirks: p.AppliedQuirks, RuntimeCorrections: p.RuntimeCorrections, AvailableQualities: p.AvailableQualities, DegradationWarnings: p.DegradationWarnings, DecisionReason: p.DecisionReason, RequestedMediaFileID: ID(strconv.Itoa(p.RequestedMediaFileID)), EffectiveMediaFileID: ID(strconv.Itoa(p.EffectiveMediaFileID)), Source: playbackSource(p.Source), SubtitleFidelityPolicy: p.SubtitleFidelityPolicy}
+		out.PlaybackPlan = &PlaybackPlan{ProtocolVersion: p.ProtocolVersion, PlanID: p.PlanID, PlanAttemptKey: p.PlanAttemptKey, SessionID: p.SessionID, ExpiresAt: p.ExpiresAt, Delivery: p.Delivery, Stream: stream, Timeline: p.Timeline, SelectedTracks: p.SelectedTracks, EffectiveRecipe: p.EffectiveRecipe, Claims: p.Claims, Subtitle: playbackV2Subtitle(p.Subtitle), Transformations: p.Transformations, AppliedQuirks: p.AppliedQuirks, RuntimeCorrections: p.RuntimeCorrections, AvailableQualities: playbackQualities(p.AvailableQualities), DegradationWarnings: p.DegradationWarnings, DecisionReason: p.DecisionReason, RequestedMediaFileID: ID(strconv.Itoa(p.RequestedMediaFileID)), EffectiveMediaFileID: ID(strconv.Itoa(p.EffectiveMediaFileID)), Source: playbackSource(p.Source), SubtitleFidelityPolicy: p.SubtitleFidelityPolicy}
+	}
+	return out
+}
+
+// sourceQualityDisplayName is the v2 display name of the source quality entry.
+const sourceQualityDisplayName = "Original"
+
+// playbackQualities names the source entry "Original" on v2, so clients that
+// show display_name do not fall back to the wire label "original". The shared
+// plan keeps it unnamed: v1 serializes that plan and is frozen.
+func playbackQualities(in []playback.AvailableQualityV3) []playback.AvailableQualityV3 {
+	out := slices.Clone(in)
+	for i := range out {
+		if out[i].PreservesSource && out[i].DisplayName == "" {
+			out[i].DisplayName = sourceQualityDisplayName
+		}
 	}
 	return out
 }

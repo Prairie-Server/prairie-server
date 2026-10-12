@@ -176,6 +176,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Install libvips
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips-dev
+
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:

@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -528,6 +530,63 @@ func (r *ItemRepository) InsertIfAbsent(ctx context.Context, item *models.MediaI
 		return false, fmt.Errorf("commit media item insert tx: %w", err)
 	}
 	return inserted, nil
+}
+
+// SetStatusUnlessMatched sets an item's status and leaves a matched item
+// untouched. It reports whether a row changed, and returns ErrItemNotFound when
+// no item has contentID. The condition is part of the UPDATE, so a match
+// another writer stores at the same time is kept; reading the item and then
+// calling Upsert would write the stale copy over it.
+func (r *ItemRepository) SetStatusUnlessMatched(ctx context.Context, contentID, status string) (bool, error) {
+	if r.searchIndexEvents.disabledByActiveProvider() {
+		return r.setStatusUnlessMatched(ctx, r.pool, contentID, status)
+	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("begin media item status tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	changed, err := r.setStatusUnlessMatched(ctx, tx, contentID, status)
+	if err != nil {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("commit media item status tx: %w", err)
+	}
+	return changed, nil
+}
+
+// setStatusUnlessMatched's outer SELECT reads the snapshot taken before the
+// UPDATE, so it finds an item the UPDATE changed as well as one it skipped.
+func (r *ItemRepository) setStatusUnlessMatched(ctx context.Context, querier itemStatusQuerier, contentID, status string) (bool, error) {
+	var exists, changed bool
+	err := querier.QueryRow(ctx, `
+		WITH updated AS (
+			UPDATE media_items
+			SET status = $2, updated_at = NOW()
+			WHERE content_id = $1 AND lower(trim(status)) <> 'matched'
+			RETURNING content_id
+		)
+		SELECT EXISTS (SELECT 1 FROM media_items WHERE content_id = $1), EXISTS (SELECT 1 FROM updated)`, contentID, status).Scan(&exists, &changed)
+	if err != nil {
+		return false, fmt.Errorf("setting media item status: %w", err)
+	}
+	if !exists {
+		return false, ErrItemNotFound
+	}
+	if !changed {
+		return false, nil
+	}
+	if err := r.searchIndexEvents.EnqueueUpsert(ctx, querier, contentID); err != nil {
+		return false, fmt.Errorf("enqueueing catalog search upsert: %w", err)
+	}
+	return true, nil
+}
+
+type itemStatusQuerier interface {
+	itemExecer
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
 func (r *ItemRepository) upsert(ctx context.Context, execer itemExecer, item *models.MediaItem) error {
@@ -1252,12 +1311,19 @@ func (r *ItemRepository) searchWithFuzzyFallback(
 	return page, total, hi < total, !fuzzyTruncated, nil
 }
 
+// searchBlockHasExactTitle mirrors exact_title_match for a block's titles,
+// including yearSuffixedTitleSQL for non-episode items.
 func searchBlockHasExactTitle(items []*models.MediaItem, normalizedTitle string) bool {
 	if normalizedTitle == "" {
 		return false
 	}
 	for _, item := range items {
-		if item != nil && normalizeTitleForComparison(item.Title) == normalizedTitle {
+		if item == nil {
+			continue
+		}
+		title := normalizeTitleForComparison(item.Title)
+		if title == normalizedTitle ||
+			(item.Type != recentTVTypeEpisode && item.Year > 0 && title == normalizedTitle+" "+strconv.Itoa(item.Year)) {
 			return true
 		}
 	}
@@ -1419,26 +1485,108 @@ func scoreFuzzyTitleVariant(query string, queryTokens [][]rune, rawTitle string)
 	if !ok || len(titleTokens) == 0 {
 		return fuzzyTitleScore{editDistance: int(^uint(0) >> 1), extraTokens: int(^uint(0) >> 1)}
 	}
+	// Compare without spaces so "Live Stream From Hell" is an exact match for
+	// "Livestream from Hell" and "spiderman" for "Spider-Man".
+	compactTitle, compactQuery := compactFuzzyTokens(titleTokens), compactFuzzyTokens(queryTokens)
 	score := fuzzyTitleScore{
-		exact:       title == query,
-		contiguous:  strings.Contains(title, query),
+		exact:       compactTitle == compactQuery,
+		contiguous:  strings.Contains(compactTitle, compactQuery),
 		extraTokens: absInt(len(titleTokens) - len(queryTokens)),
 	}
-	for _, queryToken := range queryTokens {
-		maxEdits := fuzzyAutoMaxEdits(len(queryToken))
-		best := maxEdits + 1
-		for _, titleToken := range titleTokens {
-			distance := boundedLevenshteinRunes(queryToken, titleToken, maxEdits)
-			if distance < best {
-				best = distance
+	// A query word may also match two adjacent title words joined, and two
+	// adjacent query words joined may match one title word.
+	titleTerms := slices.Concat(titleTokens, joinAdjacentFuzzyTokens(titleTokens))
+	matches := make([]fuzzyTokenMatch, len(queryTokens))
+	for i, token := range queryTokens {
+		matches[i] = bestFuzzyTokenMatch(token, titleTerms)
+	}
+	for i := 0; i < len(queryTokens); i++ {
+		if i+1 < len(queryTokens) && (!matches[i].ok || !matches[i+1].ok) && fuzzyTokensJoinable(queryTokens[i], queryTokens[i+1]) {
+			if pair := bestFuzzyPairMatch(queryTokens[i], queryTokens[i+1], titleTerms); pair.ok {
+				score.matchedTokens += 2
+				score.editDistance += pair.distance
+				i++
+				continue
 			}
 		}
-		if best <= maxEdits {
+		if matches[i].ok {
 			score.matchedTokens++
 		}
-		score.editDistance += best
+		score.editDistance += matches[i].distance
 	}
 	return score
+}
+
+type fuzzyTokenMatch struct {
+	distance int
+	ok       bool // distance is within the token's typo allowance
+}
+
+func bestFuzzyTokenMatch(token []rune, terms [][]rune) fuzzyTokenMatch {
+	maxEdits := fuzzyAutoMaxEdits(len(token))
+	best := maxEdits + 1
+	for _, term := range terms {
+		if distance := boundedLevenshteinRunes(token, term, maxEdits); distance < best {
+			best = distance
+		}
+	}
+	return fuzzyTokenMatch{distance: best, ok: best <= maxEdits}
+}
+
+// bestFuzzyPairMatch matches two adjacent query words against one term split
+// into two parts, each part within its own word's typo allowance. Splitting
+// keeps a short word from being dropped: "ed wood" does not match "Wood", nor
+// "a spider" match "Spider".
+func bestFuzzyPairMatch(first, second []rune, terms [][]rune) fuzzyTokenMatch {
+	firstEdits, secondEdits := fuzzyAutoMaxEdits(len(first)), fuzzyAutoMaxEdits(len(second))
+	best := firstEdits + secondEdits + 1
+	for _, term := range terms {
+		if absInt(len(term)-len(first)-len(second)) > firstEdits+secondEdits {
+			continue
+		}
+		for split := max(0, len(first)-firstEdits); split <= min(len(term), len(first)+firstEdits); split++ {
+			head := boundedLevenshteinRunes(first, term[:split], firstEdits)
+			if head > firstEdits {
+				continue
+			}
+			if tail := boundedLevenshteinRunes(second, term[split:], secondEdits); tail <= secondEdits {
+				best = min(best, head+tail)
+			}
+		}
+	}
+	return fuzzyTokenMatch{distance: best, ok: best <= firstEdits+secondEdits}
+}
+
+func joinAdjacentFuzzyTokens(tokens [][]rune) [][]rune {
+	if len(tokens) < 2 {
+		return nil
+	}
+	joined := make([][]rune, 0, len(tokens)-1)
+	for i := 0; i+1 < len(tokens); i++ {
+		if fuzzyTokensJoinable(tokens[i], tokens[i+1]) {
+			joined = append(joined, slices.Concat(tokens[i], tokens[i+1]))
+		}
+	}
+	return joined
+}
+
+// compactFuzzyTokens joins tokens without spaces, except between two numbers.
+func compactFuzzyTokens(tokens [][]rune) string {
+	var b strings.Builder
+	for i, token := range tokens {
+		if i > 0 && !fuzzyTokensJoinable(tokens[i-1], token) {
+			b.WriteByte(' ')
+		}
+		b.WriteString(string(token))
+	}
+	return b.String()
+}
+
+// fuzzyTokensJoinable reports whether two adjacent words may be read as one.
+// Normalization turns number words into digits, so joining "1 2" into "12"
+// would make "One Two" an exact match for "Twelve".
+func fuzzyTokensJoinable(left, right []rune) bool {
+	return !unicode.IsDigit(left[len(left)-1]) || !unicode.IsDigit(right[0])
 }
 
 func fuzzyTitleScoreBetter(a, b fuzzyTitleScore) bool {
@@ -1583,7 +1731,7 @@ type searchQuerier interface {
 // independently of the caller's page size and to hand the fuzzy fallback the
 // complete block without a second FTS query.
 func (r *ItemRepository) execSearchBlock(ctx context.Context, q searchQuerier, dataSQL, countSQL string, args []any, limit, offset int, includeTotal bool) ([]*models.MediaItem, int, bool, []*models.MediaItem, error) {
-	rows, err := q.Query(ctx, dataSQL, args...)
+	rows, err := q.Query(ctx, dataSQL, searchPlanArgs(args)...)
 	if err != nil {
 		return nil, 0, false, nil, fmt.Errorf("searching media items: %w", err)
 	}
@@ -1614,7 +1762,7 @@ func (r *ItemRepository) execSearchBlock(ctx context.Context, q searchQuerier, d
 	if len(items) == 0 && offset > 0 {
 		// Drop the trailing limit/offset args from the data query.
 		countArgs := args[:len(args)-2]
-		if err := q.QueryRow(ctx, countSQL, countArgs...).Scan(&total); err != nil {
+		if err := q.QueryRow(ctx, countSQL, searchPlanArgs(countArgs)...).Scan(&total); err != nil {
 			return nil, 0, false, nil, fmt.Errorf("count fallback for empty search page: %w", err)
 		}
 		hasMore = total > offset+len(items)
@@ -2152,7 +2300,8 @@ func (r *ItemRepository) GetPeople(ctx context.Context, contentID string) ([]mod
 }
 
 // UpdateMetadata builds a dynamic UPDATE query for the media_items table,
-// setting only the non-nil fields in upd. Always bumps updated_at.
+// setting only the non-nil fields in upd and NULLing the ones it clears. A
+// cleared rating also loses its per-source row. Always bumps updated_at.
 // Returns ErrItemNotFound if no row matches contentID.
 func (r *ItemRepository) UpdateMetadata(ctx context.Context, contentID string, upd *MetadataUpdate) error {
 	tx, err := r.pool.Begin(ctx)
@@ -2279,6 +2428,7 @@ func (r *ItemRepository) UpdateMetadataTx(ctx context.Context, tx pgx.Tx, conten
 		setClauses = append(setClauses, "logo_source_path = ''")
 	}
 	addString("logo_source_path", upd.LogoSourcePath)
+	setClauses = append(setClauses, upd.nullClauses(itemClearableColumns...)...)
 
 	setClauses = append(setClauses, "updated_at = NOW()")
 
@@ -2292,6 +2442,16 @@ func (r *ItemRepository) UpdateMetadataTx(ctx context.Context, tx pgx.Tx, conten
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrItemNotFound
+	}
+	// The UPDATE above locked the item row before its rating sources, the
+	// order every rating source writer follows (see lockRatingSourceItem).
+	if sources := upd.clearedRatingSources(); len(sources) > 0 {
+		if _, err := tx.Exec(ctx, `
+			DELETE FROM media_item_rating_sources
+			WHERE content_id = $1 AND source = ANY($2::text[])`,
+			contentID, sources); err != nil {
+			return fmt.Errorf("deleting cleared rating sources: %w", err)
+		}
 	}
 	if err := r.searchIndexEvents.EnqueueUpsert(ctx, tx, contentID); err != nil {
 		return fmt.Errorf("enqueueing catalog search metadata update: %w", err)

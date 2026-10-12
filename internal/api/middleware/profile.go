@@ -20,13 +20,7 @@ func RequireProfile(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		profileID := extractProfileID(r)
 		if profileID == "" {
-			recordDenialReason(w, ReasonProfileHeaderRequired)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(errorResponse{
-				Error:   "bad_request",
-				Message: "X-Profile-Id header is required",
-			})
+			writeProfileHeaderRequired(w)
 			return
 		}
 
@@ -44,6 +38,21 @@ func extractProfileID(r *http.Request) string {
 		return id
 	}
 	return ""
+}
+
+// codeBadRequest is the v1 error code of a malformed or incomplete request.
+const codeBadRequest = "bad_request"
+
+// writeProfileHeaderRequired writes the v1 400 a route answers when it needs
+// an X-Profile-Id the request did not send.
+func writeProfileHeaderRequired(w http.ResponseWriter) {
+	recordDenialReason(w, ReasonProfileHeaderRequired)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(errorResponse{
+		Error:   codeBadRequest,
+		Message: "X-Profile-Id header is required",
+	})
 }
 
 // GetProfileID retrieves the profile ID from the context. Returns an empty

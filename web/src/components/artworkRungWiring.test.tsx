@@ -16,6 +16,11 @@ vi.mock("@/hooks/useOverlayPrefs", () => ({
 // The row's overflow menu pulls in admin/auth hooks that need providers these
 // markup-only tests do not stand up.
 vi.mock("@/components/MediaItemMenu", () => ({ default: () => null }));
+// The card reads the spoiler settings, which need a query client these
+// markup-only tests do not stand up.
+vi.mock("@/hooks/useEpisodeSpoilerPrefs", () => ({
+  useEpisodeSpoilerPrefs: () => ({ hideImages: false, hideOverviews: false }),
+}));
 vi.mock("@/playback/watchPlaybackContext", () => ({
   useWatchPlaybackController: () => ({ startPlayback: () => {} }),
 }));

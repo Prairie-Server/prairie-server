@@ -56,6 +56,11 @@ services:
   prairie:
     image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
     restart: unless-stopped
+    # On stop Prairie fails readiness, keeps serving for PRAIRIE_SHUTDOWN_DELAY
+    # (default 5s), then finishes in-flight requests. Docker kills a container
+    # 10s after asking it to stop, which would cut that short. A single server
+    # with no load balancer in front can set PRAIRIE_SHUTDOWN_DELAY=0.
+    stop_grace_period: 2m
     environment:
       MODE: integrated
       # Keep the container listeners fixed. PORT and JF_PORT in .env are
@@ -112,6 +117,9 @@ services:
   #   image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
   #   restart: unless-stopped
   #   profiles: [proxy]
+  #   # Lets the proxy finish in-flight requests on stop instead of being
+  #   # killed after Docker's default 10s.
+  #   stop_grace_period: 2m
   #   environment:
   #     MODE: proxy
   #     # Must be the SAME SECRET_KEY as the primary node (shared encrypted data).
@@ -149,6 +157,11 @@ services:
   #   image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
   #   restart: unless-stopped
   #   profiles: [transcode]
+  #   # On stop the node drains: it takes no new work and lets its sessions
+  #   # finish for up to PRAIRIE_NODE_DRAIN_TIMEOUT (default 10m, 0 turns it off).
+  #   # Docker kills a container 10s after asking it to stop, so the grace
+  #   # period must cover the drain plus a minute for the shutdown after it.
+  #   stop_grace_period: 11m
   #   environment:
   #     MODE: transcode
   #     # Must be the SAME SECRET_KEY as the primary node (shared encrypted data).

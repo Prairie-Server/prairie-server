@@ -99,7 +99,7 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 	if req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 
@@ -122,6 +122,9 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 		return LibraryView{}, apiError(http.StatusInternalServerError, "internal_error", "Failed to create library")
 	}
 	h.pokeRealtimeMonitor()
+	if req.TrickplayEnabled {
+		h.reconcileTrickplay()
+	}
 
 	// Seed default sections for the new library.
 	if h.SectionRepo != nil {
@@ -183,7 +186,7 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 
@@ -221,6 +224,9 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 		return LibraryView{}, apiError(http.StatusInternalServerError, "internal_error", "Failed to update library")
 	}
 	h.pokeRealtimeMonitor()
+	if req.affectsTrickplay() {
+		h.reconcileTrickplay()
+	}
 
 	// Fetch the updated folder to return it.
 	folder, err := h.folderRepo.GetByID(ctx, id)
@@ -408,6 +414,7 @@ func (h *LibraryHandler) LibraryProviderDefaults(ctx context.Context, libraryTyp
 			ProviderSlug:         e.CapabilityID,
 			Priority:             e.Priority,
 			Enabled:              e.Enabled,
+			Local:                e.Local,
 		})
 	}
 	return out, nil
@@ -1269,6 +1276,7 @@ func (h *LibraryHandler) LibraryProviders(ctx context.Context, id int) (map[stri
 			ProviderSlug:         e.CapabilityID,
 			Priority:             e.Priority,
 			Enabled:              e.Enabled,
+			Local:                e.Local,
 		})
 	}
 	return levels, nil

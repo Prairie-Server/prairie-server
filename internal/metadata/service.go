@@ -39,7 +39,7 @@ type FileContentUpdater interface {
 	FindContentIDByGroupKey(ctx context.Context, folderID int, groupKeyVersion int, contentGroupKey, preferredType string) (string, error)
 	ListByGroupKey(ctx context.Context, folderID int, groupKeyVersion int, contentGroupKey string) ([]*models.MediaFile, error)
 	ListByObservedRootPath(ctx context.Context, folderID int, observedRootPath string) ([]*models.MediaFile, error)
-	UpdateContentIDByObservedRootPath(ctx context.Context, folderID int, observedRootPath, contentID string) (int, error)
+	UpdateContentIDByObservedRootPath(ctx context.Context, folderID int, observedRootPath, contentID string) (int, []string, error)
 }
 
 // EpisodeLinker extends FileContentUpdater with episode linking.
@@ -72,6 +72,7 @@ type metadataItemRepo interface {
 	GetByExternalID(ctx context.Context, tmdbID, imdbID, tvdbID, itemType string) (*models.MediaItem, error)
 	GetByTitleYearType(ctx context.Context, title string, year int, itemType string) (*models.MediaItem, error)
 	Upsert(ctx context.Context, item *models.MediaItem) error
+	SetStatusUnlessMatched(ctx context.Context, contentID, status string) (bool, error)
 	IncrementRefreshFailure(ctx context.Context, contentID string) error
 	ReplacePeople(ctx context.Context, contentID string, people []models.ItemPerson) error
 	ListUnmatchedByFolderAndPathPrefix(ctx context.Context, folderID int, pathPrefix string, limit int) ([]string, error)
@@ -247,7 +248,7 @@ type metadataContentFileLister interface {
 type metadataServiceHooks struct {
 	process                   func(ctx context.Context, req ProcessRequest) (*ProcessResult, error)
 	createOrFindSkeleton      func(ctx context.Context, file *models.MediaFile, folderID int) (*skeletonResult, error)
-	updateItemStatus          func(ctx context.Context, contentID, status string) error
+	updateItemStatus          func(ctx context.Context, contentID, status string) (bool, error)
 	linkSeriesFilesToEpisodes func(ctx context.Context, seriesID string)
 	ensureSeriesEpisodeLinks  func(ctx context.Context, seriesID string) error
 	bulkEnrichmentTargets     func(ctx context.Context) ([]bulkEnrichmentTarget, error)
@@ -295,6 +296,12 @@ func (s providerIDValueSet) add(provider, providerID string) {
 		s[provider] = make(map[string]struct{})
 	}
 	s[provider][providerID] = struct{}{}
+}
+
+func (s providerIDValueSet) has(provider, providerID string) bool {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	_, ok := s[provider][normalizeProviderIDComparisonValue(provider, providerID)]
+	return ok
 }
 
 func (s providerIDValueSet) remove(provider, providerID string) {
@@ -656,6 +663,16 @@ func (s *MetadataService) Process(ctx context.Context, req ProcessRequest) (*Pro
 		return s.hooks.process(ctx, req)
 	}
 
+	if req.Mode != ModeIdentify {
+		pinned, err := s.pinnedUnmatchedBySplit(ctx, req.ContentID)
+		if err != nil {
+			return nil, err
+		}
+		if pinned {
+			return &ProcessResult{ContentID: req.ContentID, Pinned: true}, nil
+		}
+	}
+
 	var err error
 	req, err = s.prepareProcessRequest(ctx, req)
 	if err != nil {
@@ -964,7 +981,8 @@ func itemVideosFromRemote(contentID string, videos []RemoteVideo) []models.ItemV
 }
 
 // itemRatingSourcesFromResult converts pipeline rating sources into
-// media_item_rating_sources rows, in display order.
+// media_item_rating_sources rows, in display order, the source name breaking
+// ties so the rows are written in the same order every time.
 func itemRatingSourcesFromResult(contentID string, sources map[string]RatingSource) []models.ItemRatingSource {
 	rows := make([]models.ItemRatingSource, 0, len(sources))
 	for name, source := range sources {
@@ -981,7 +999,10 @@ func itemRatingSourcesFromResult(contentID string, sources map[string]RatingSour
 		rows = append(rows, row)
 	}
 	slices.SortFunc(rows, func(a, b models.ItemRatingSource) int {
-		return models.RatingSourceRank(a.Source) - models.RatingSourceRank(b.Source)
+		if rank := models.RatingSourceRank(a.Source) - models.RatingSourceRank(b.Source); rank != 0 {
+			return rank
+		}
+		return strings.Compare(a.Source, b.Source)
 	})
 	return rows
 }
@@ -1119,9 +1140,8 @@ func buildSeriesChildLocalContext(seriesRootPaths []string, filePaths []string, 
 
 // seriesChildLocalContextForContent builds the season/episode sidecar context
 // from a series' persisted media files (refresh paths, where no scan hints
-// are available).
-func (s *MetadataService) seriesChildLocalContextForContent(ctx context.Context, contentID string, folderID int) (seriesChildLocalContext, error) {
-	localCtx := s.localProviderContextForContent(ctx, contentID, folderID)
+// are available), given the series' local provider context.
+func (s *MetadataService) seriesChildLocalContextForContent(ctx context.Context, contentID string, folderID int, localCtx localProviderContext) (seriesChildLocalContext, error) {
 	roots, err := s.configuredNamingRootsForContent(ctx, contentID, folderID)
 	if err != nil {
 		return seriesChildLocalContext{}, err
@@ -1275,12 +1295,55 @@ func applyProvider404sToAccumulator(accumulator *MetadataResult, provider404s *p
 	suppressProviderIDValues(accumulator.ProviderIDs, provider404s.dropped)
 }
 
+// shouldReanchorProviderContentID reports whether a provider-anchored item may
+// move to the anchor its current identity derives. A manual refresh may. So may
+// an Identify whose correction rejected the item's live anchor
+// (anchorRejected): that anchor names a different title, and leaving the item
+// on it would let that title merge into this item when it is scanned in. The
+// same holds for an initial match whose NFO ids replaced the folder-tag ids
+// the scanner anchored the skeleton on. Scheduled jobs, and an Identify that
+// confirms or extends the match or only replaces a dead anchor, keep the
+// client-visible content_id.
 func shouldReanchorProviderContentID(
 	contentID string,
 	isNew bool,
 	mode RefreshMode,
+	anchorRejected bool,
 ) bool {
-	return !isNew && mode == ModeManualRefresh && contentid.IsProviderAnchored(contentID)
+	if isNew || !contentid.IsProviderAnchored(contentID) {
+		return false
+	}
+	return mode == ModeManualRefresh || ((mode == ModeIdentify || mode == ModeInitialMatch) && anchorRejected)
+}
+
+// identityCorrectionRejectsLiveAnchor reports whether a correction rejected
+// the provider ID contentID is anchored on while that ID is not known to be
+// dead. A dead anchor (recorded stale, or 404 in this run) can't be claimed by
+// another title, so it is safe to keep. resolved holds the provider IDs this
+// run's providers returned for the chosen identity: when they restate the
+// anchor, the choice only added a provider ID to the same title (an admin
+// picking a show's TVDB candidate for an item anchored on its TMDB ID), so the
+// anchor stands.
+func identityCorrectionRejectsLiveAnchor(
+	contentID string,
+	resolved map[string]string,
+	rejected providerIDValueSet,
+	dead ...providerIDValueSet,
+) bool {
+	provider, providerID, ok := contentid.ProviderAnchor(contentID)
+	if !ok || !rejected.has(provider, providerID) {
+		return false
+	}
+	if value := strings.TrimSpace(resolved[provider]); value != "" &&
+		normalizeProviderIDComparisonValue(provider, value) == normalizeProviderIDComparisonValue(provider, providerID) {
+		return false
+	}
+	for _, set := range dead {
+		if set.has(provider, providerID) {
+			return false
+		}
+	}
+	return true
 }
 
 // ProcessWithProviders runs the pipeline with explicit providers (for testing).
@@ -1378,9 +1441,17 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 	recordStaleIDs := req.ContentID != ""
 	var matchDecision *MatchDecision
 	var providerMatchErrors []error
+	// nfoReplacedTagIDs holds the folder- and filename-tag ids an NFO's id set
+	// (nfoHintIDs) replaced at initial match; they are rejected once an NFO id
+	// a remote provider returned (nfoVerifiedIDs) survives the lookups.
+	var nfoReplacedTagIDs, nfoHintIDs, nfoVerifiedIDs map[string]string
 	quarantinedProviderIDKeys := make(map[string]struct{})
 	replacedProviderIDKeys := make(map[string]struct{})
 	rejectedIdentityIDs := make(providerIDValueSet)
+	// skipLocalProvider leaves the local (identity-hint) provider out of every
+	// item-level phase: an Identify, and a refresh whose local files conflict
+	// with an admin's Identify choice.
+	skipLocalProvider := req.Mode == ModeIdentify
 
 	switch req.Mode {
 	case ModeInitialMatch:
@@ -1409,6 +1480,8 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 			accumulatedIDs["_filepath"] = req.Hints.FilePath
 		}
 		suppressProviderIDValues(accumulatedIDs, req.recordedStaleProviderIDs)
+		// The folder- and filename-tag ids an NFO's ids may replace.
+		tagIDs := unprotectedTrustedIDs(accumulatedIDs, req.ProviderIDs)
 
 		// Run search providers and choose a decisive normalized winner instead of
 		// letting the first non-empty result win.
@@ -1431,10 +1504,42 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		for key := range req.ProviderIDs {
 			protectedKeys[key] = true
 		}
-		wonHints := applyBuiltinIdentityHints(ctx, itemChain, searchQuery, accumulatedIDs, protectedKeys)
+		localHints := collectLocalIdentityHints(ctx, itemChain, searchQuery, req.recordedStaleProviderIDs)
+		if len(req.durableProviderIDs) > 0 {
+			// A stored item keeps its durable identity; local metadata for
+			// another title is left out (identify_sticky.go).
+			skipLocalProvider, err = s.localIdentityConflict(ctx, req.Mode, req.ContentID, localHints, canonicalIdentityProviderIDs(req.durableProviderIDs), req.recordedStaleProviderIDs)
+			if err != nil {
+				return nil, err
+			}
+			if skipLocalProvider {
+				localHints = nil
+			}
+		}
+		wonHints := applyLocalIdentityHints(ctx, localHints, accumulatedIDs, protectedKeys)
 		if len(wonHints) > 0 {
+			staleHints := staleLocalHints(ctx, itemChain, searchQuery, req.recordedStaleProviderIDs)
+			restoredKeys := dropStaleHints(wonHints, accumulatedIDs, tagIDs, staleHints)
+			// The NFO's ids replace the tag ids as a set, except a tag id that
+			// came back because the NFO's id for its provider is dead.
+			replaceProtected := protectedKeys
+			if len(restoredKeys) > 0 {
+				replaceProtected = maps.Clone(protectedKeys)
+				for _, key := range restoredKeys {
+					replaceProtected[key] = true
+				}
+			}
+			droppedHintKeys := dropIDsNotRestatedByHints(ctx, wonHints, accumulatedIDs, replaceProtected)
+			if len(wonHints) > 0 {
+				nfoReplacedTagIDs, nfoHintIDs = tagIDs, wonHints
+				if !chainChecksIDs(itemChain) {
+					// Nothing else can look the NFO's ids up, so they stand.
+					nfoVerifiedIDs = maps.Clone(wonHints)
+				}
+			}
 			hintsCopy := *selectionHints
 			overrideHintIDs(&hintsCopy, wonHints)
+			clearHintIDs(&hintsCopy, droppedHintKeys)
 			selectionHints = &hintsCopy
 		}
 		searchQuery = suppressTitleYearFallbackForTrustedIDs(searchQuery)
@@ -1445,7 +1550,15 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				if !ok {
 					continue
 				}
+				if _, local := p.(IdentityHintProvider); local && skipLocalProvider {
+					continue
+				}
 				results, searchErr := sp.Search(ctx, query)
+				if localSidecarDenied(searchErr) {
+					slog.WarnContext(ctx, "metadata: matching without an unreadable local sidecar", "component", "metadata",
+						"provider", p.Slug(), "error", searchErr)
+					continue
+				}
 				if searchErr != nil {
 					if handleProvider404(provider404s, accumulatedIDs, p.Slug(), searchErr,
 						"title", query.Title,
@@ -1477,11 +1590,34 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 					}
 					resultsForQuery = append(resultsForQuery, result)
 				}
+				if _, local := p.(IdentityHintProvider); !local {
+					for _, r := range results {
+						nfoVerifiedIDs = recordVerifiedIDs(nfoVerifiedIDs, r.ProviderIDs, nfoHintIDs)
+					}
+				}
 			}
 			return resultsForQuery
 		}
 
 		allResults := searchProviders(searchQuery)
+		// A dead NFO identity leaves the tag ids alone: when a provider
+		// rejected every id the NFO named, search again with the ids it
+		// replaced, less any the providers just rejected. Clearing the NFO's
+		// ids stops their tag ids from being rejected later. A transient
+		// failure is not a rejection; that match waits instead.
+		if len(nfoReplacedTagIDs) > 0 && !anyProviderIDKept(accumulatedIDs, nfoHintIDs) &&
+			!hasTransientMatchError(providerMatchErrors) {
+			maps.Copy(accumulatedIDs, nfoReplacedTagIDs)
+			suppressProviderIDValues(accumulatedIDs, provider404s.dropped)
+			selectionHints = sanitizedMatchHintProviderIDs(req.Hints)
+			for key := range nfoReplacedTagIDs {
+				if accumulatedIDs[key] == "" {
+					clearHintIDs(selectionHints, []string{key})
+				}
+			}
+			nfoReplacedTagIDs, nfoHintIDs, nfoVerifiedIDs = nil, nil, nil
+			allResults = searchProviders(searchQuery)
+		}
 
 		candidates := NormalizeCandidatesForLanguage(allResults, contentType, searchQuery.Language)
 		slog.DebugContext(ctx, "metadata: search candidates assembled", "component", "metadata",
@@ -1507,6 +1643,12 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		}
 
 		effectiveHints := selectionHints
+		// Every identity's results, primary first, for the alias check below.
+		type aliasAttempt struct {
+			hints      *MatchHints
+			candidates []MatchCandidate
+		}
+		aliasAttempts := []aliasAttempt{{selectionHints, candidates}}
 		winner, matched := trySelection(selectionHints, candidates)
 		// Structured IDs remain decisive and never fall back to a title search.
 		// For title/year identities, try independently parsed path hypotheses only
@@ -1533,6 +1675,7 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				if len(alternateCandidates) == 0 {
 					continue
 				}
+				aliasAttempts = append(aliasAttempts, aliasAttempt{&alternateHints, alternateCandidates})
 				alternateWinner, alternateMatched := trySelection(&alternateHints, alternateCandidates)
 				if len(candidates) == 0 || alternateMatched || bestCandidateScore(&alternateHints, alternateCandidates) > bestCandidateScore(effectiveHints, candidates) {
 					candidates = alternateCandidates
@@ -1544,6 +1687,28 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 					break
 				}
 			}
+		}
+		// Last: a search may still hold the right result under a title it didn't
+		// return, such as a regional release title, and the provider's details
+		// can confirm it. Check each identity's results in the order searched.
+		if !matched {
+			aliasCtx, cancelAlias := context.WithTimeout(ctx, titleAliasValidationTimeout)
+			aliasBudget := maxTitleAliasValidationCandidates
+			for _, attempt := range aliasAttempts {
+				aliasWinner, aliasErrors := validateMatchByProviderTitleAliases(
+					aliasCtx, attempt.hints, attempt.candidates, itemChain, searchQuery.Language, &aliasBudget,
+				)
+				providerMatchErrors = append(providerMatchErrors, aliasErrors...)
+				if aliasWinner != nil {
+					winner, matched = aliasWinner, true
+					effectiveHints, candidates = attempt.hints, attempt.candidates
+					break
+				}
+				if len(aliasErrors) > 0 {
+					break
+				}
+			}
+			cancelAlias()
 		}
 		trustedIDTypeMismatch := false
 		if !matched && len(candidates) == 0 && trustedHintIDsPresent(selectionHints) {
@@ -1659,8 +1824,19 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				protectedKeys[key] = true
 			}
 		}
-		wonHints := applyBuiltinIdentityHints(ctx, itemChain, searchQuery, accumulatedIDs, protectedKeys)
-		stored, hinted := storedItemIdentity(existing, req.durableProviderIDs), canonicalIdentityProviderIDs(wonHints)
+		// Local metadata for a different title than the one kept is left
+		// out (identify_sticky.go).
+		stored := storedItemIdentity(existing, req.durableProviderIDs)
+		localHints := collectLocalIdentityHints(ctx, itemChain, searchQuery, req.recordedStaleProviderIDs)
+		skipLocalProvider, err = s.localIdentityConflict(ctx, req.Mode, req.ContentID, localHints, stored, req.recordedStaleProviderIDs)
+		if err != nil {
+			return nil, err
+		}
+		if skipLocalProvider {
+			localHints = nil
+		}
+		wonHints := applyLocalIdentityHints(ctx, localHints, accumulatedIDs, protectedKeys)
+		hinted := canonicalIdentityProviderIDs(wonHints)
 		if req.Mode == ModeManualRefresh && identityChoiceCorrects(hinted, stored) {
 			// The stored IDs came from the match the corrected NFO overrides,
 			// so any the NFO doesn't restate are dropped, not re-fetched.
@@ -1677,6 +1853,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		for _, p := range itemChain {
 			sp, ok := p.(SearchProvider)
 			if !ok {
+				continue
+			}
+			if _, local := p.(IdentityHintProvider); local && skipLocalProvider {
 				continue
 			}
 			results, searchErr := sp.Search(ctx, searchQuery)
@@ -1759,8 +1938,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		_, isIdentityHinter := p.(IdentityHintProvider)
 		// A manual Identify is the user's explicit identification: the local
 		// hint provider (NFO) is skipped entirely so a stale sidecar cannot
-		// re-apply its title/ids over the user's choice in the same operation.
-		if isIdentityHinter && req.Mode == ModeIdentify {
+		// re-apply its title/ids over the user's choice in the same operation,
+		// nor in a later refresh while its files still name another title.
+		if isIdentityHinter && skipLocalProvider {
 			continue
 		}
 		result, err := mp.GetMetadata(ctx, MetadataRequest{
@@ -1775,6 +1955,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 			GroupTitle:                groupTitle,
 			GroupYear:                 groupYear,
 		})
+		if keepStoredValuesOnLocalReadError(req.Mode, err) {
+			return nil, fmt.Errorf("metadata: %s: %w", p.Slug(), err)
+		}
 		if err != nil {
 			if handleProvider404(provider404s, accumulatedIDs, p.Slug(), err,
 				"content_id", req.ContentID,
@@ -1791,7 +1974,7 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				slog.WarnContext(ctx, "metadata: provider error", "component", "metadata",
 					"provider", p.Slug(), "error", err)
 			}
-			if req.Mode == ModeInitialMatch {
+			if req.Mode == ModeInitialMatch && !localSidecarDenied(err) {
 				providerMatchErrors = append(providerMatchErrors, err)
 			}
 			continue
@@ -1801,6 +1984,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		}
 		if isEnrichmentProvider(p) {
 			enrichedBy = append(enrichedBy, p.Slug())
+		}
+		if !isIdentityHinter {
+			nfoVerifiedIDs = recordVerifiedIDs(nfoVerifiedIDs, result.ProviderIDs, nfoHintIDs)
 		}
 		foldProviderResult(accumulator, result, req.Language, p.Slug(), isIdentityHinter, quarantinedProviderIDKeys)
 		// Bootstrap: feed new IDs to subsequent providers.
@@ -1817,23 +2003,56 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 	suppressProviderIDValues(accumulator.ProviderIDs, accumulator.recordedStaleProviderIDs)
 	applyProvider404sToAccumulator(accumulator, provider404s)
 	accumulatedIDs = accumulator.ProviderIDs
+	// Tag ids an NFO replaced are rejected for this run once a remote
+	// provider returned one of the NFO's ids and it survived the lookups, so
+	// persistence drops them from the scanner's tag-anchored skeleton and
+	// moves it to the NFO's anchor (see shouldReanchorProviderContentID). A
+	// dead or unchecked NFO id leaves the tag ids alone.
+	if anyProviderIDKept(accumulatedIDs, nfoVerifiedIDs) {
+		rejectIdentityProviderIDs(rejectedIdentityIDs, accumulatedIDs, nfoReplacedTagIDs)
+	}
 	if len(replacedProviderIDKeys) > 0 {
 		accumulator.replacedProviderIDKeys = maps.Clone(replacedProviderIDKeys)
 	}
 	if len(rejectedIdentityIDs) > 0 {
 		accumulator.rejectedIdentityProviderIDs = rejectedIdentityIDs
 	}
+	// The NFO may name a different title than the search found; retry once it
+	// can be read instead of committing an identity it may contradict. Retry
+	// too when the NFO's ids replaced the tag ids and a transient failure kept
+	// every remote provider from returning one of them; a failure after one
+	// did (an enrichment quota, say) does not hold the match. Retry as well
+	// when a provider confirmed an NFO id in search and then rejected it (a
+	// 404 on its details): the retry, with that id recorded stale, searches
+	// with the tag ids instead of keeping them under the NFO's fields. Later
+	// phases add no match errors, so this is decided before their fetches.
+	localUnreadable := localMetadataTemporarilyUnavailable(providerMatchErrors)
+	nfoIDsUnconfirmed := len(nfoReplacedTagIDs) > 0 && !anyProviderIDKept(accumulatedIDs, nfoVerifiedIDs)
+	nfoIDsUnchecked := nfoIDsUnconfirmed && hasTransientMatchError(providerMatchErrors)
+	nfoIDsRejected := nfoIDsUnconfirmed && anyProviderIDIn(provider404s.dropped, nfoVerifiedIDs)
+	if req.Mode == ModeInitialMatch && (localUnreadable || nfoIDsUnchecked || nfoIDsRejected) {
+		upsertStaleProviderIDValues(ctx, s.staleIDRepo, req.ContentID, provider404s.stale)
+		if matchDecision == nil {
+			matchDecision = &MatchDecision{Threshold: automaticMatchAcceptanceFloor}
+		}
+		matchDecision.Outcome = MatchOutcomeProviderTransient
+		matchDecision.localSidecarUnreadable = localUnreadable
+		return &ProcessResult{Updated: false, Decision: matchDecision}, nil
+	}
 	// Phase 3: Images — all ImageProviders run, collect all available images.
 	var allImages []RemoteImage
+	var localArtworkSearched localArtworkLevel
 	for _, p := range itemChain {
 		ip, ok := p.(ImageProvider)
 		if !ok {
 			continue
 		}
-		// A manual Identify skips the local hint provider (NFO) across every
-		// phase: its sidecar art is resolved by file path, not by the chosen id,
-		// so a stale poster/fanart must not be re-applied over the user's choice.
-		if _, isIdentityHinter := p.(IdentityHintProvider); isIdentityHinter && req.Mode == ModeIdentify {
+		// When the local hint provider (NFO) is skipped (skipLocalProvider), it
+		// is skipped across every phase: its sidecar art is resolved by file
+		// path, not by the kept id, so a stale poster/fanart must not be
+		// re-applied over that identity.
+		_, isIdentityHinter := p.(IdentityHintProvider)
+		if isIdentityHinter && skipLocalProvider {
 			continue
 		}
 		images, err := ip.GetImages(ctx, ImageRequest{
@@ -1854,7 +2073,13 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				"provider", p.Slug(), "error", err)
 			continue
 		}
+		if isIdentityHinter {
+			localArtworkSearched |= localArtworkItem
+		}
 		allImages = append(allImages, images...)
+	}
+	if !s.localArtworkUsable() {
+		allImages = withoutLocalImages(allImages)
 	}
 
 	// Phase 4a: Seasons — resolve with "season" content level.
@@ -1882,9 +2107,10 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 			if !ok {
 				continue
 			}
-			// Identify skips the local hint provider (NFO): a stale season.nfo
-			// must not overlay season names on the user's chosen identity.
-			if _, isIdentityHinter := p.(IdentityHintProvider); isIdentityHinter && req.Mode == ModeIdentify {
+			// A skipped local hint provider (NFO): a stale season.nfo must not
+			// overlay season names on the identity the run keeps.
+			_, isIdentityHinter := p.(IdentityHintProvider)
+			if isIdentityHinter && skipLocalProvider {
 				continue
 			}
 			seasons, err := ep.GetSeasons(ctx, SeasonsRequest{
@@ -1893,7 +2119,11 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				Language:             req.Language,
 				SeriesRootPaths:      childCtx.seriesRootPaths,
 				SeasonDirectoryPaths: childCtx.seasonDirectoryPaths,
+				ShowFilePaths:        showFilePaths(childCtx.episodeFilePaths),
 			})
+			if keepStoredValuesOnLocalReadError(req.Mode, err) {
+				return nil, fmt.Errorf("metadata: %s seasons: %w", p.Slug(), err)
+			}
 			if err != nil {
 				// A missing season endpoint is scoped metadata, not proof that the
 				// parent series identity is stale.
@@ -1905,7 +2135,16 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				}
 				slog.WarnContext(ctx, "metadata: season provider error", "component", "metadata",
 					"provider", p.Slug(), "error", err)
-				continue
+				if !errors.Is(err, ErrLocalMetadataUnavailable) {
+					continue
+				}
+				// A fill-empty pass keeps the seasons the local provider could read.
+			}
+			if !s.localArtworkUsable() {
+				dropLocalSeasonArtwork(seasons)
+			}
+			if isIdentityHinter {
+				localArtworkSearched |= localArtworkSeason
 			}
 			accumulateSeasonResults(seasonResults, seasons)
 		}
@@ -1932,15 +2171,17 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 				return nil, err
 			}
 			episodeResults := make(map[episodeResultKey]*EpisodeResult)
+			showFiles := showFilePaths(childCtx.episodeFilePaths)
 			for _, seasonNumber := range episodeSeasonNumbers {
 				for _, p := range episodeChain {
 					ep, ok := p.(EpisodeProvider)
 					if !ok {
 						continue
 					}
-					// Identify skips the local hint provider (NFO): stale episode
-					// NFOs/thumbs must not overlay the user's chosen identity.
-					if _, isIdentityHinter := p.(IdentityHintProvider); isIdentityHinter && req.Mode == ModeIdentify {
+					// A skipped local hint provider (NFO): stale episode NFOs/thumbs
+					// must not overlay the identity the run keeps.
+					_, isIdentityHinter := p.(IdentityHintProvider)
+					if isIdentityHinter && skipLocalProvider {
 						continue
 					}
 					episodes, err := ep.GetEpisodes(ctx, EpisodesRequest{
@@ -1949,7 +2190,11 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 						Language:         req.Language,
 						SeriesRootPaths:  childCtx.seriesRootPaths,
 						EpisodeFilePaths: childCtx.episodeFilePaths[seasonNumber],
+						ShowFilePaths:    showFiles,
 					})
+					if keepStoredValuesOnLocalReadError(req.Mode, err) {
+						return nil, fmt.Errorf("metadata: %s episodes: %w", p.Slug(), err)
+					}
 					if err != nil {
 						if handleScopedProvider404(p.Slug(), accumulatedIDs, err,
 							"content_id", req.ContentID,
@@ -1959,7 +2204,16 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 						}
 						slog.WarnContext(ctx, "metadata: episode provider error", "component", "metadata",
 							"provider", p.Slug(), "season", seasonNumber, "error", err)
-						continue
+						if !errors.Is(err, ErrLocalMetadataUnavailable) {
+							continue
+						}
+						// A fill-empty pass keeps the episodes the local provider could read.
+					}
+					if !s.localArtworkUsable() {
+						dropLocalEpisodeArtwork(episodes)
+					}
+					if isIdentityHinter {
+						localArtworkSearched |= localArtworkEpisode
 					}
 					accumulateEpisodeResults(episodeResults, episodes)
 				}
@@ -1988,6 +2242,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		return &ProcessResult{Updated: false, Decision: matchDecision}, nil
 	}
 
+	if s.localArtworkUsable() {
+		ctx = withLocalArtworkSearched(ctx, localArtworkSearched)
+	}
 	result, err := s.mergeAndPersist(ctx, req, accumulator, allImages, allSeasons, allEpisodes, contentType)
 	if err != nil {
 		return nil, err
@@ -2026,7 +2283,15 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		upsertStaleProviderIDValues(ctx, s.staleIDRepo, followUpContentID, staleValues)
 	}
 	if result != nil && strings.TrimSpace(result.ContentID) != "" {
-		if syncErr := s.syncRefreshDebtForItem(ctx, result.ContentID); syncErr != nil {
+		syncCtx := ctx
+		// A claimed item merged into another one hands its counted attempt to
+		// the item it became. The merge keeps the higher attempt count of the
+		// two rows, so a merge into a row already at or past the terminal count
+		// can repeat the notice or miss it; it changes no scheduling.
+		if result.ContentID != req.ContentID && refreshAttemptCounted(ctx, RefreshTargetItem, req.ContentID) {
+			syncCtx = withCountedRefreshAttempt(ctx, RefreshTargetItem, result.ContentID)
+		}
+		if syncErr := s.syncRefreshDebtForItem(syncCtx, result.ContentID); syncErr != nil {
 			slog.WarnContext(ctx, "metadata: failed to sync refresh debt after successful metadata refresh", "component", "metadata",
 				"content_id", result.ContentID,
 				"error", syncErr)
@@ -2102,9 +2367,12 @@ func sameMatchCandidate(left, right MatchCandidate) bool {
 }
 
 func hasTransientMatchError(errs []error) bool {
+	if localMetadataTemporarilyUnavailable(errs) {
+		return true
+	}
 	for _, err := range errs {
-		if err == nil {
-			continue
+		if err == nil || errors.Is(err, ErrLocalMetadataUnavailable) {
+			continue // classified above, not by its message
 		}
 		switch status.Code(err) {
 		case codes.DeadlineExceeded, codes.ResourceExhausted, codes.Aborted, codes.Unavailable:
@@ -2125,11 +2393,15 @@ func hasTransientMatchError(errs []error) bool {
 // wins each field. Identity-hint providers contribute IDs exclusively through
 // the trusted-hint phase: their results merge metadata fields but never inject
 // provider-id keys that conflict with or extend the established identity
-// (kills chimeric ID sets).
+// (kills chimeric ID sets). The identity-hint provider is the local one (NFO):
+// the lists it supplies are not extended by later results (localListFields).
 func foldProviderResult(accumulator, result *MetadataResult, language, providerSlug string, isIdentityHinter bool, quarantined map[string]struct{}) {
 	result.ProviderIDs = sanitizeCandidateProviderIDs(result.ProviderIDs)
 	if isIdentityHinter {
 		result.ProviderIDs = nil
+		accumulator.localLists.record(result)
+	} else {
+		result = accumulator.localLists.restrict(accumulator, result)
 	}
 	for key := range quarantined {
 		delete(result.ProviderIDs, key)
@@ -2344,10 +2616,16 @@ func (s *MetadataService) mergeAndPersist(
 	if req.enrichmentOnly && existingItem == nil {
 		return nil, fmt.Errorf("enrichment target %q no longer exists", contentID)
 	}
+	// Nor may an Identify: a concurrent Identify can move the item to its
+	// corrected id after this one loaded it, and writing on without the stored
+	// item would drop its field locks.
+	if req.Mode == ModeIdentify && !isNew && contentID != "" && existingItem == nil {
+		return nil, fmt.Errorf("identify target %q: %w", contentID, catalog.ErrItemNotFound)
+	}
 	// Identity repairs (rebinding, local-ID promotion) belong to matching and
 	// refreshes, never to an enrichment write.
 	if !req.enrichmentOnly && !isNew && contentID != "" && existingItem != nil && (isProvisionalOwnershipStatus(existingItem.Status) || len(durableIDs) == 0) {
-		reboundTo, err := s.rebindItemByProviderIDsLocked(ctx, contentID, accumulator.ProviderIDs, contentType, len(durableIDs) == 0)
+		reboundTo, err := s.rebindItemByProviderIDsLocked(ctx, contentID, accumulator.ProviderIDs, contentType, len(durableIDs) == 0, req.Mode == ModeIdentify)
 		if err != nil {
 			return nil, err
 		}
@@ -2373,7 +2651,7 @@ func (s *MetadataService) mergeAndPersist(
 	// provider IDs are folded into the accumulator. See canonicalizeLocalContentID.
 	if !req.enrichmentOnly && !isNew && contentid.IsLocal(contentID) {
 		canonical, err := s.canonicalizeLocalContentID(
-			ctx, contentID, providerIDsStruct(accumulator.ProviderIDs), contentType)
+			ctx, contentID, providerIDsStruct(accumulator.ProviderIDs), contentType, req.Mode == ModeIdentify)
 		if err != nil {
 			return nil, fmt.Errorf("canonicalize local content id: %w", err)
 		}
@@ -2392,14 +2670,16 @@ func (s *MetadataService) mergeAndPersist(
 	}
 
 	// Re-anchor an already provider-anchored item whose corrected identity now
-	// derives a different anchor — the recovery path when an admin fixes a wrong
-	// <uniqueid> in an NFO. Manual refresh only: scheduled jobs and ModeIdentify
-	// must preserve the client-visible content_id even when an external ID is
-	// stale. Reuses the local-promotion machinery under the provider-dedup lock;
-	// a no-op when the derived anchor is unchanged.
-	if shouldReanchorProviderContentID(contentID, isNew, req.Mode) {
+	// derives a different anchor — the recovery path when an admin replaces a
+	// wrong match with Identify or fixes a wrong <uniqueid> in an NFO. See
+	// shouldReanchorProviderContentID for which modes may move the id. Reuses
+	// the local-promotion machinery under the provider-dedup lock; a no-op when
+	// the derived anchor is unchanged.
+	anchorRejected := identityCorrectionRejectsLiveAnchor(contentID, accumulator.ProviderIDs,
+		accumulator.rejectedIdentityProviderIDs, req.recordedStaleProviderIDs, accumulator.sameRunStaleProviderIDs)
+	if shouldReanchorProviderContentID(contentID, isNew, req.Mode, anchorRejected) {
 		reanchored, err := s.reanchorContentID(
-			ctx, contentID, providerIDsStruct(accumulator.ProviderIDs), contentType)
+			ctx, contentID, providerIDsStruct(accumulator.ProviderIDs), contentType, req.Mode == ModeIdentify)
 		if err != nil {
 			return nil, fmt.Errorf("reanchor provider content id: %w", err)
 		}
@@ -2464,15 +2744,29 @@ func (s *MetadataService) mergeAndPersist(
 		for key := range accumulator.replacedProviderIDKeys {
 			delete(existingResult.ProviderIDs, key)
 		}
+		// A skeleton's title and year came from the filename, so the match
+		// replaces them, unless an admin locked them.
 		if req.Mode == ModeInitialMatch && isSkeletonLikeStatus(existingItem.Status) {
-			existingResult.Title = ""
-			existingResult.SortTitle = ""
-			existingResult.Year = 0
+			if !isFieldLocked(locked, FieldName) {
+				existingResult.Title = ""
+				existingResult.SortTitle = ""
+			}
+			if !isFieldLocked(locked, FieldReleaseDates) {
+				existingResult.Year = 0
+			}
+		}
+		if mergeMode == MergeFillEmpty {
+			accumulator.localLists.keepStoredLists(accumulator, existingResult)
+			s.keepStoredLocalCredits(ctx, contentID, accumulator)
+		}
+		mergeLocked := locked
+		if !req.enrichmentOnly {
+			mergeLocked = s.peopleLocksForMerge(ctx, contentID, locked, existingResult, accumulator)
 		}
 		if isCanonicalWrite {
-			MergeMetadata(accumulator, existingResult, locked, mergeMode)
+			MergeMetadata(accumulator, existingResult, mergeLocked, mergeMode)
 		} else {
-			MergeGlobalMetadata(accumulator, existingResult, locked, mergeMode)
+			MergeGlobalMetadata(accumulator, existingResult, mergeLocked, mergeMode)
 		}
 		for key := range accumulator.quarantinedProviderIDKeys {
 			delete(existingResult.ProviderIDs, key)
@@ -2526,6 +2820,7 @@ func (s *MetadataService) mergeAndPersist(
 	// Apply best images.
 	if handleArtwork {
 		applyBestImages(item, images, mergeMode, req.Language)
+		keepUnconfirmedLocalItemArtwork(ctx, item, existingItem)
 		item.PosterThumbhash = mergedImageThumbhash(
 			existingImagePath(existingItem, ImagePoster),
 			existingImageThumbhash(existingItem, ImagePoster),
@@ -2567,6 +2862,7 @@ func (s *MetadataService) mergeAndPersist(
 		existingItem,
 		len(durableIDs) == 0,
 		contentType,
+		req.Mode == ModeIdentify,
 	)
 	if err != nil {
 		return nil, err
@@ -2645,21 +2941,26 @@ func (s *MetadataService) mergeAndPersist(
 
 	// Persist per-source ratings. The item row does not carry them, so the
 	// merge above saw no stored sources and passed every reported one through
-	// (or none, under a FieldRating lock). The stored rows are merged by the
-	// write instead: fill-empty keeps each source already stored, and
-	// replace-unlocked overwrites the sources this refresh reported. Identify
-	// replaces the whole set, even with an empty one, because it keeps the
-	// content_id while changing the title: a source only the previous match
-	// reported would otherwise stay on the item for good. Like the rating
-	// columns, they are provider-invariant and written for every language.
+	// (or none, under a FieldRating lock); the chain's provider order already
+	// picked one entry per source. The stored rows are merged by the write
+	// instead. A manual or scheduled refresh overwrites the sources this
+	// refresh reported: scores and vote counts keep moving after release, and
+	// discovery rows rank by the TMDB count. The enrichment-only bulk pass
+	// carries one provider's answer, so it only fills sources the item lacks
+	// and never overwrites the chain's choice. Identify replaces the whole set,
+	// even with an empty one, because it keeps the content_id while changing
+	// the title: a source only the previous match reported would otherwise
+	// stay on the item for good. Like the rating columns, they are
+	// provider-invariant and written for every language.
 	if s.ratingSourceRepo != nil && !isFieldLocked(locked, FieldRating) {
 		sources := itemRatingSourcesFromResult(contentID, accumulator.RatingSources)
+		replace := mergeMode == MergeReplaceUnlocked || (req.Mode == ModeScheduledRefresh && !req.enrichmentOnly)
 		var err error
 		switch {
 		case req.Mode == ModeIdentify:
 			err = s.ratingSourceRepo.Replace(ctx, contentID, sources)
 		case len(sources) > 0:
-			err = s.ratingSourceRepo.Upsert(ctx, contentID, sources, mergeMode == MergeReplaceUnlocked)
+			err = s.ratingSourceRepo.Upsert(ctx, contentID, sources, replace)
 		}
 		if err != nil {
 			slog.WarnContext(ctx, "metadata: failed to store rating sources", "component", "metadata", "content_id", contentID, "error", err)
@@ -2708,16 +3009,21 @@ func (s *MetadataService) persistItemAndProviderIDs(
 	existingItem *models.MediaItem,
 	missingDurableIDs bool,
 	contentType string,
+	identityChosen bool,
 ) (string, error) {
 	if item == nil || strings.TrimSpace(item.ContentID) == "" {
 		return "", fmt.Errorf("content_id is required")
 	}
 	if itemRepo, ok := s.itemRepo.(*catalog.ItemRepository); ok && s.dbPool != nil {
 		if providerRepo, ok := s.providerIDRepo.(*catalog.ProviderIDRepository); ok && providerRepo != nil {
-			return s.persistItemAndProviderIDsTx(ctx, itemRepo, providerRepo, item, providerIDs, isNew, existingItem, missingDurableIDs, contentType)
+			return s.persistItemAndProviderIDsTx(ctx, itemRepo, providerRepo, item, providerIDs, isNew, existingItem, missingDurableIDs, contentType, identityChosen)
 		}
 	}
-	return s.persistItemAndProviderIDsLegacy(ctx, item, providerIDs, isNew, existingItem, missingDurableIDs, contentType)
+	contentID, err := s.persistItemAndProviderIDsLegacy(ctx, item, providerIDs, isNew, existingItem, missingDurableIDs, contentType)
+	if err == nil && identityChosen {
+		err = s.recordIdentityChoice(ctx, contentID)
+	}
+	return contentID, err
 }
 
 func (s *MetadataService) persistItemAndProviderIDsTx(
@@ -2730,9 +3036,10 @@ func (s *MetadataService) persistItemAndProviderIDsTx(
 	existingItem *models.MediaItem,
 	missingDurableIDs bool,
 	contentType string,
+	identityChosen bool,
 ) (string, error) {
 	contentID := item.ContentID
-	err := s.persistItemAndProviderIDsOnceTx(ctx, itemRepo, providerRepo, item, providerIDs)
+	err := s.persistItemAndProviderIDsOnceTx(ctx, itemRepo, providerRepo, item, providerIDs, identityChosen)
 	if err == nil {
 		return contentID, nil
 	}
@@ -2740,7 +3047,7 @@ func (s *MetadataService) persistItemAndProviderIDsTx(
 		return "", fmt.Errorf("persisting provider IDs for %s: %w", contentID, err)
 	}
 
-	reboundTo, recoverErr := s.recoverProviderIDConflict(ctx, contentID, providerIDs, contentType, true)
+	reboundTo, recoverErr := s.recoverProviderIDConflict(ctx, contentID, providerIDs, contentType, true, identityChosen)
 	if recoverErr != nil {
 		return "", fmt.Errorf("recovering provider ID conflict for %s: %w", contentID, recoverErr)
 	}
@@ -2748,7 +3055,7 @@ func (s *MetadataService) persistItemAndProviderIDsTx(
 		return "", fmt.Errorf("persisting provider IDs for %s: %w", contentID, err)
 	}
 	item.ContentID = reboundTo
-	if retryErr := s.persistItemAndProviderIDsOnceTx(ctx, itemRepo, providerRepo, item, providerIDs); retryErr != nil {
+	if retryErr := s.persistItemAndProviderIDsOnceTx(ctx, itemRepo, providerRepo, item, providerIDs, identityChosen); retryErr != nil {
 		return "", fmt.Errorf("persisting provider IDs after conflict recovery for %s: %w", reboundTo, retryErr)
 	}
 	return reboundTo, nil
@@ -2760,6 +3067,7 @@ func (s *MetadataService) persistItemAndProviderIDsOnceTx(
 	providerRepo *catalog.ProviderIDRepository,
 	item *models.MediaItem,
 	providerIDs map[string]string,
+	identityChosen bool,
 ) error {
 	tx, err := s.dbPool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -2772,6 +3080,13 @@ func (s *MetadataService) persistItemAndProviderIDsOnceTx(
 	}
 	if providerRepo != nil {
 		if err := providerRepo.ReplaceByContentIDTx(ctx, tx, item.ContentID, item.Type, providerIDs); err != nil {
+			return err
+		}
+	}
+	// An Identify's choice commits with the identity it chose
+	// (identify_sticky.go).
+	if identityChosen {
+		if err := catalog.MarkIdentityChosenTx(ctx, tx, item.ContentID); err != nil {
 			return err
 		}
 	}
@@ -2802,7 +3117,7 @@ func (s *MetadataService) persistItemAndProviderIDsLegacy(
 	}
 	if err := s.providerIDRepo.ReplaceByContentID(ctx, contentID, providerIDs); err != nil {
 		if isProviderIDUniqueConflict(err) {
-			reboundTo, reboundErr := s.recoverProviderIDConflict(ctx, contentID, providerIDs, contentType, true)
+			reboundTo, reboundErr := s.recoverProviderIDConflict(ctx, contentID, providerIDs, contentType, true, false)
 			if reboundErr != nil {
 				return "", fmt.Errorf("recovering provider ID conflict for %s: %w", contentID, reboundErr)
 			}
@@ -2852,7 +3167,9 @@ func (s *MetadataService) RefreshScheduledItem(ctx context.Context, contentID st
 }
 
 // RefreshScheduledTarget re-fetches metadata for a queued item, season, or
-// episode target using the background refresh merge policy.
+// episode target using the background refresh merge policy. The caller must
+// have claimed the target's debt row: the claim counted this attempt, so a
+// target that reaches its terminal attempts here reports it.
 //
 // A queued item may be the durable recovery for a viewer's trailer request
 // whose process died mid-refresh (see RequestTrailersRefresh). That request
@@ -2861,6 +3178,7 @@ func (s *MetadataService) RefreshScheduledItem(ctx context.Context, contentID st
 // a recovery that fails hands the slot back instead of leaving the viewer
 // blocked for a week over trailers nobody ever stored.
 func (s *MetadataService) RefreshScheduledTarget(ctx context.Context, targetType, contentID string) error {
+	ctx = withCountedRefreshAttempt(ctx, targetType, contentID)
 	if NormalizeRefreshTargetType(targetType) == RefreshTargetItem {
 		if claim := s.adoptTrailersRefreshClaim(ctx, contentID); claim != nil {
 			return claim.run(ctx)
@@ -2958,19 +3276,19 @@ func (s *MetadataService) refreshTarget(ctx context.Context, targetType, content
 	case RefreshTargetItem:
 		return s.refreshItemTarget(ctx, contentID, folderID, mode, incrementDebtAttempt)
 	case RefreshTargetSeason:
-		err := s.refreshSeasonTarget(ctx, contentID, folderID, mode)
+		seriesID, err := s.refreshSeasonTarget(ctx, contentID, folderID, mode)
 		if err != nil {
 			s.recordRefreshTargetFailure(ctx, targetType, contentID, err, incrementDebtAttempt)
 			return err
 		}
-		return s.syncRefreshDebtForTarget(ctx, targetType, contentID)
+		return s.syncRefreshDebtForTargetOrDefer(ctx, targetType, contentID, seriesID)
 	case RefreshTargetEpisode:
-		err := s.refreshEpisodeTarget(ctx, contentID, folderID, mode)
+		seriesID, err := s.refreshEpisodeTarget(ctx, contentID, folderID, mode)
 		if err != nil {
 			s.recordRefreshTargetFailure(ctx, targetType, contentID, err, incrementDebtAttempt)
 			return err
 		}
-		return s.syncRefreshDebtForTarget(ctx, targetType, contentID)
+		return s.syncRefreshDebtForTargetOrDefer(ctx, targetType, contentID, seriesID)
 	default:
 		return fmt.Errorf("unsupported metadata refresh target type %q", targetType)
 	}
@@ -2979,7 +3297,35 @@ func (s *MetadataService) refreshTarget(ctx context.Context, targetType, content
 // RequestStaleMetadataRefresh nudges a stale target into the durable refresh
 // queue and starts a detached refresh when the target is due. Provider work is
 // never done inline on the caller's request path.
+//
+// Detail views call this for incomplete items. A target whose only debt is
+// episode-incomplete debt parked after its terminal attempts stays parked: a
+// view adds no evidence that another provider fetch would help. A view no
+// longer lifts it to the top priority band or refreshes it; its terminal
+// re-check, an operator refresh, a rescan, or a trailer request still does.
 func (s *MetadataService) RequestStaleMetadataRefresh(ctx context.Context, targetType, contentID string) error {
+	if s == nil || s.refreshDebtRepo == nil {
+		return nil
+	}
+	targetType = NormalizeRefreshTargetType(targetType)
+	contentID = strings.TrimSpace(contentID)
+	if targetType == "" || contentID == "" {
+		return nil
+	}
+	debt, err := s.refreshDebtRepo.GetTarget(ctx, targetType, contentID)
+	if err != nil && !errors.Is(err, ErrRefreshDebtNotFound) {
+		return err
+	}
+	if debt != nil && isParkedEpisodeDebt(debt.ReasonMask, debt.AttemptCount) {
+		return nil
+	}
+	return s.queueStaleMetadataRefresh(ctx, targetType, contentID)
+}
+
+// queueStaleMetadataRefresh is RequestStaleMetadataRefresh without the terminal
+// check, for callers whose own work needs the next refresh whatever the
+// target's episode debt is.
+func (s *MetadataService) queueStaleMetadataRefresh(ctx context.Context, targetType, contentID string) error {
 	if s == nil || s.refreshDebtRepo == nil {
 		return nil
 	}
@@ -3532,7 +3878,9 @@ func (s *MetadataService) recordRefreshTargetFailure(ctx context.Context, target
 			"content_id", contentID,
 			"refresh_error", refreshErr,
 			"error", err)
+		return
 	}
+	noteScheduledRefreshFailure(ctx, targetType, contentID)
 }
 
 func (s *MetadataService) syncRefreshDebtForItem(ctx context.Context, contentID string) error {
@@ -3574,7 +3922,8 @@ func (s *MetadataService) syncRefreshDebtForItem(ctx context.Context, contentID 
 		return err
 	}
 	now := time.Now().UTC()
-	logRefreshDebtTerminal(RefreshTargetItem, contentID, reasonMask, attemptCount)
+	logRefreshDebtTerminal(RefreshTargetItem, contentID, reasonMask, attemptCount,
+		refreshAttemptCounted(ctx, RefreshTargetItem, contentID))
 	return s.refreshDebtRepo.MarkSuccess(
 		ctx,
 		contentID,
@@ -3626,7 +3975,8 @@ func (s *MetadataService) syncRefreshDebtForSeason(ctx context.Context, seasonID
 	if err != nil {
 		return err
 	}
-	logRefreshDebtTerminal(RefreshTargetSeason, seasonID, reasonMask, attemptCount)
+	logRefreshDebtTerminal(RefreshTargetSeason, seasonID, reasonMask, attemptCount,
+		refreshAttemptCounted(ctx, RefreshTargetSeason, seasonID))
 	return s.refreshDebtRepo.MarkTargetSuccess(
 		ctx,
 		RefreshTargetSeason,
@@ -3660,7 +4010,8 @@ func (s *MetadataService) syncRefreshDebtForEpisode(ctx context.Context, episode
 	if err != nil {
 		return err
 	}
-	logRefreshDebtTerminal(RefreshTargetEpisode, episodeID, reasonMask, attemptCount)
+	logRefreshDebtTerminal(RefreshTargetEpisode, episodeID, reasonMask, attemptCount,
+		refreshAttemptCounted(ctx, RefreshTargetEpisode, episodeID))
 	return s.refreshDebtRepo.MarkTargetSuccess(
 		ctx,
 		RefreshTargetEpisode,
@@ -3719,7 +4070,8 @@ func (s *MetadataService) syncRefreshDebtFailure(ctx context.Context, contentID 
 		attemptCount++
 	}
 	now := time.Now().UTC()
-	logRefreshDebtTerminal(RefreshTargetItem, contentID, reasonMask, attemptCount)
+	logRefreshDebtTerminal(RefreshTargetItem, contentID, reasonMask, attemptCount,
+		incrementAttempt || refreshAttemptCounted(ctx, RefreshTargetItem, contentID))
 	return s.refreshDebtRepo.MarkFailure(
 		ctx,
 		contentID,
@@ -3749,7 +4101,8 @@ func (s *MetadataService) syncRefreshDebtTargetFailure(ctx context.Context, targ
 		attemptCount++
 	}
 	now := time.Now().UTC()
-	logRefreshDebtTerminal(targetType, contentID, reasonMask, attemptCount)
+	logRefreshDebtTerminal(targetType, contentID, reasonMask, attemptCount,
+		incrementAttempt || refreshAttemptCounted(ctx, targetType, contentID))
 	return s.refreshDebtRepo.MarkTargetFailure(
 		ctx,
 		targetType,
@@ -3830,26 +4183,28 @@ func itemHasEpisodeMetadataDebt(item *models.MediaItem) bool {
 		item.EpisodeMetadataIncomplete
 }
 
-func (s *MetadataService) refreshSeasonTarget(ctx context.Context, seasonID string, folderID int, mode RefreshMode) error {
+// refreshSeasonTarget refreshes one season and reports the series it belongs to.
+func (s *MetadataService) refreshSeasonTarget(ctx context.Context, seasonID string, folderID int, mode RefreshMode) (string, error) {
 	if s == nil || s.seasonRepo == nil {
-		return ErrMetadataNotFound
+		return "", ErrMetadataNotFound
 	}
 	season, err := s.seasonRepo.GetByID(ctx, seasonID)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return s.refreshSeriesChildTarget(ctx, season.SeriesID, season.SeasonNumber, 0, folderID, mode)
+	return season.SeriesID, s.refreshSeriesChildTarget(ctx, season.SeriesID, season.SeasonNumber, 0, folderID, mode)
 }
 
-func (s *MetadataService) refreshEpisodeTarget(ctx context.Context, episodeID string, folderID int, mode RefreshMode) error {
+// refreshEpisodeTarget refreshes one episode and reports the series it belongs to.
+func (s *MetadataService) refreshEpisodeTarget(ctx context.Context, episodeID string, folderID int, mode RefreshMode) (string, error) {
 	if s == nil || s.episodeRepo == nil {
-		return ErrMetadataNotFound
+		return "", ErrMetadataNotFound
 	}
 	episode, err := s.episodeRepo.GetByID(ctx, episodeID)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return s.refreshSeriesChildTarget(ctx, episode.SeriesID, episode.SeasonNumber, episode.EpisodeNumber, folderID, mode)
+	return episode.SeriesID, s.refreshSeriesChildTarget(ctx, episode.SeriesID, episode.SeasonNumber, episode.EpisodeNumber, folderID, mode)
 }
 
 func (s *MetadataService) refreshSeriesChildTarget(
@@ -3884,7 +4239,26 @@ func (s *MetadataService) refreshSeriesChildTarget(
 	}
 
 	updated := false
-	childCtx, err := s.seriesChildLocalContextForContent(ctx, seriesID, folderID)
+	// The link and debt passes cover the whole series, so a scheduled refresh
+	// batch runs them once per series instead of once per season or episode.
+	// They also run when a later language fails after an earlier one wrote
+	// rows, on a context detached from the refresh's own cancellation, since
+	// that failure may be the refresh's deadline.
+	defer func() {
+		if updated {
+			syncCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), seriesEpisodeSyncTimeout)
+			defer cancel()
+			s.syncSeriesEpisodeStateOrDefer(syncCtx, seriesID)
+		}
+	}()
+	// Listing the series' files once serves both the sidecar context and the
+	// local identity check.
+	localCtx := s.localProviderContextForContent(ctx, seriesID, folderID)
+	childCtx, err := s.seriesChildLocalContextForContent(ctx, seriesID, folderID, localCtx)
+	if err != nil {
+		return err
+	}
+	skipLocal, err := s.seriesChildSkipsLocal(ctx, series, folderID, localCtx)
 	if err != nil {
 		return err
 	}
@@ -3897,23 +4271,28 @@ func (s *MetadataService) refreshSeriesChildTarget(
 			canonicalLanguage = "en"
 		}
 
-		providerIDs, err := s.resolveSeriesRefreshProviderIDs(ctx, series, folderID, language)
+		providerIDs, err := s.resolveSeriesRefreshProviderIDs(ctx, series, folderID, language, skipLocal)
 		if err != nil {
 			return err
 		}
-		seasons, err := s.fetchTargetSeasonResults(ctx, providerIDs, folderID, language, seasonNumber, childCtx)
+		seasons, seasonSearched, err := s.fetchTargetSeasonResults(ctx, providerIDs, folderID, language, seasonNumber, childCtx, skipLocal)
 		if err != nil {
 			return err
 		}
-		episodes, err := s.fetchTargetEpisodeResults(ctx, providerIDs, folderID, language, seasonNumber, episodeNumber, childCtx)
+		episodes, episodeSearched, err := s.fetchTargetEpisodeResults(ctx, providerIDs, folderID, language, seasonNumber, episodeNumber, childCtx, skipLocal)
 		if err != nil {
 			return err
 		}
 		if len(seasons) == 0 && len(episodes) == 0 {
 			continue
 		}
-		s.persistSeasonsAndEpisodes(ctx, series, providerIDs, canonicalLanguage, language, seasons, episodes, mergeMode)
-		updated = true
+		persistCtx := ctx
+		if s.localArtworkUsable() {
+			persistCtx = withLocalArtworkSearched(ctx, seasonSearched|episodeSearched)
+		}
+		if s.persistSeasonAndEpisodeRows(persistCtx, series, providerIDs, canonicalLanguage, language, seasons, episodes, mergeMode) {
+			updated = true
+		}
 	}
 	if !updated {
 		return ErrMetadataNotFound
@@ -3921,7 +4300,7 @@ func (s *MetadataService) refreshSeriesChildTarget(
 	return nil
 }
 
-func (s *MetadataService) resolveSeriesRefreshProviderIDs(ctx context.Context, series *models.MediaItem, folderID int, language string) (map[string]string, error) {
+func (s *MetadataService) resolveSeriesRefreshProviderIDs(ctx context.Context, series *models.MediaItem, folderID int, language string, skipLocal bool) (map[string]string, error) {
 	accumulatedIDs := make(map[string]string)
 	if series == nil {
 		return accumulatedIDs, nil
@@ -3973,6 +4352,9 @@ func (s *MetadataService) resolveSeriesRefreshProviderIDs(ctx context.Context, s
 		if !ok {
 			continue
 		}
+		if _, local := p.(IdentityHintProvider); local && skipLocal {
+			continue
+		}
 		results, searchErr := sp.Search(ctx, searchQuery)
 		if searchErr != nil {
 			if handleProvider404(provider404s, accumulatedIDs, p.Slug(), searchErr,
@@ -4003,15 +4385,21 @@ func (s *MetadataService) resolveSeriesRefreshProviderIDs(ctx context.Context, s
 	return accumulatedIDs, nil
 }
 
-func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, providerIDs map[string]string, folderID int, language string, seasonNumber int, childCtx seriesChildLocalContext) ([]SeasonResult, error) {
+// fetchTargetSeasonResults also reports localArtworkSeason when the local
+// provider answered, as processInternal records it.
+func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, providerIDs map[string]string, folderID int, language string, seasonNumber int, childCtx seriesChildLocalContext, skipLocal bool) ([]SeasonResult, localArtworkLevel, error) {
 	seasonChain, err := s.resolveChainCached(ctx, folderID, "season")
 	if err != nil {
-		return nil, fmt.Errorf("resolve season provider chain: %w", err)
+		return nil, 0, fmt.Errorf("resolve season provider chain: %w", err)
 	}
+	var searched localArtworkLevel
 	seasonResults := make(map[int]*SeasonResult)
 	for _, p := range seasonChain {
 		ep, ok := p.(EpisodeProvider)
 		if !ok {
+			continue
+		}
+		if _, local := p.(IdentityHintProvider); local && skipLocal {
 			continue
 		}
 		seasons, err := ep.GetSeasons(ctx, SeasonsRequest{
@@ -4019,8 +4407,12 @@ func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, provider
 			ContentType:          anchoredItemTypeSeries,
 			Language:             language,
 			SeriesRootPaths:      childCtx.seriesRootPaths,
-			SeasonDirectoryPaths: childCtx.seasonDirectoryPaths,
+			SeasonDirectoryPaths: targetSeasonPaths(childCtx.seasonDirectoryPaths, seasonNumber),
+			ShowFilePaths:        showFilePaths(childCtx.episodeFilePaths),
 		})
+		if errors.Is(err, ErrLocalMetadataUnavailable) {
+			return nil, 0, fmt.Errorf("metadata: %s seasons: %w", p.Slug(), err)
+		}
 		if err != nil {
 			if handleScopedProvider404(p.Slug(), providerIDs, err, "season", seasonNumber) {
 				continue
@@ -4029,6 +4421,12 @@ func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, provider
 				"provider", p.Slug(), "season", seasonNumber, "error", err)
 			continue
 		}
+		if !s.localArtworkUsable() {
+			dropLocalSeasonArtwork(seasons)
+		}
+		if _, local := p.(IdentityHintProvider); local {
+			searched |= localArtworkSeason
+		}
 		for _, season := range seasons {
 			if season.SeasonNumber != seasonNumber {
 				continue
@@ -4036,18 +4434,24 @@ func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, provider
 			accumulateSeasonResults(seasonResults, []SeasonResult{season})
 		}
 	}
-	return flattenSeasonResults(seasonResults), nil
+	return flattenSeasonResults(seasonResults), searched, nil
 }
 
-func (s *MetadataService) fetchTargetEpisodeResults(ctx context.Context, providerIDs map[string]string, folderID int, language string, seasonNumber int, episodeNumber int, childCtx seriesChildLocalContext) ([]EpisodeResult, error) {
+// fetchTargetEpisodeResults also reports localArtworkEpisode when the local
+// provider answered, as processInternal records it.
+func (s *MetadataService) fetchTargetEpisodeResults(ctx context.Context, providerIDs map[string]string, folderID int, language string, seasonNumber int, episodeNumber int, childCtx seriesChildLocalContext, skipLocal bool) ([]EpisodeResult, localArtworkLevel, error) {
 	episodeChain, err := s.resolveChainCached(ctx, folderID, "episode")
 	if err != nil {
-		return nil, fmt.Errorf("resolve episode provider chain: %w", err)
+		return nil, 0, fmt.Errorf("resolve episode provider chain: %w", err)
 	}
+	var searched localArtworkLevel
 	episodeResults := make(map[episodeResultKey]*EpisodeResult)
 	for _, p := range episodeChain {
 		ep, ok := p.(EpisodeProvider)
 		if !ok {
+			continue
+		}
+		if _, local := p.(IdentityHintProvider); local && skipLocal {
 			continue
 		}
 		episodes, err := ep.GetEpisodes(ctx, EpisodesRequest{
@@ -4055,8 +4459,12 @@ func (s *MetadataService) fetchTargetEpisodeResults(ctx context.Context, provide
 			SeasonNumber:     seasonNumber,
 			Language:         language,
 			SeriesRootPaths:  childCtx.seriesRootPaths,
-			EpisodeFilePaths: childCtx.episodeFilePaths[seasonNumber],
+			EpisodeFilePaths: targetEpisodeFilePaths(childCtx.episodeFilePaths[seasonNumber], episodeNumber),
+			ShowFilePaths:    showFilePaths(childCtx.episodeFilePaths),
 		})
+		if errors.Is(err, ErrLocalMetadataUnavailable) {
+			return nil, 0, fmt.Errorf("metadata: %s episodes: %w", p.Slug(), err)
+		}
 		if err != nil {
 			if handleScopedProvider404(p.Slug(), providerIDs, err, "season", seasonNumber) {
 				continue
@@ -4064,6 +4472,12 @@ func (s *MetadataService) fetchTargetEpisodeResults(ctx context.Context, provide
 			slog.WarnContext(ctx, "metadata: target episode provider error", "component", "metadata",
 				"provider", p.Slug(), "season", seasonNumber, "error", err)
 			continue
+		}
+		if !s.localArtworkUsable() {
+			dropLocalEpisodeArtwork(episodes)
+		}
+		if _, local := p.(IdentityHintProvider); local {
+			searched |= localArtworkEpisode
 		}
 		for _, episode := range episodes {
 			if episode.SeasonNumber != seasonNumber {
@@ -4075,7 +4489,7 @@ func (s *MetadataService) fetchTargetEpisodeResults(ctx context.Context, provide
 			accumulateEpisodeResults(episodeResults, []EpisodeResult{episode})
 		}
 	}
-	return flattenEpisodeResults(episodeResults), nil
+	return flattenEpisodeResults(episodeResults), searched, nil
 }
 
 func (s *MetadataService) enqueueSeriesChildImages(ctx context.Context, seriesID string, inputs []EnqueueImageCacheJobInput) {
@@ -4147,6 +4561,50 @@ func isRemoteImageSourcePath(path string) bool {
 // cache by the processor; they are never served directly.
 func isLocalImageSourcePath(path string) bool {
 	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(path)), "file://")
+}
+
+// localArtworkUsable reports whether refreshes may select local sidecar
+// artwork. A file:// source is never served directly: only an image-cache job
+// copies it into artwork storage. With caching off (metadata.cache_images) or
+// unwired, a chosen local image would leave the slot empty instead of falling
+// back to provider artwork, so refreshes ignore local art altogether.
+func (s *MetadataService) localArtworkUsable() bool {
+	return s != nil && s.autoCacheImages.Load() && s.imageCacheJobs != nil
+}
+
+// withoutLocalImages returns images minus local sidecar candidates. It returns
+// images itself when none are local.
+func withoutLocalImages(images []RemoteImage) []RemoteImage {
+	if !slices.ContainsFunc(images, func(img RemoteImage) bool { return isLocalImageSourcePath(img.URL) }) {
+		return images
+	}
+	remote := make([]RemoteImage, 0, len(images))
+	for _, img := range images {
+		if !isLocalImageSourcePath(img.URL) {
+			remote = append(remote, img)
+		}
+	}
+	return remote
+}
+
+// dropLocalSeasonArtwork clears local sidecar posters so a later provider in
+// the chain can fill the slot.
+func dropLocalSeasonArtwork(seasons []SeasonResult) {
+	for i := range seasons {
+		if isLocalImageSourcePath(seasons[i].PosterPath) {
+			seasons[i].PosterPath = ""
+		}
+	}
+}
+
+// dropLocalEpisodeArtwork clears local sidecar stills so a later provider in
+// the chain can fill the slot.
+func dropLocalEpisodeArtwork(episodes []EpisodeResult) {
+	for i := range episodes {
+		if isLocalImageSourcePath(episodes[i].StillPath) {
+			episodes[i].StillPath = ""
+		}
+	}
 }
 
 // isCacheableImageSourcePath gates the image-cache enqueue paths: remote
@@ -4245,6 +4703,7 @@ func accumulateSeasonResults(accumulator map[int]*SeasonResult, seasons []Season
 			continue
 		}
 
+		preferLocalSeasonPoster(existing, &season)
 		MergeSeasonResult(&season, existing, MergeFillEmpty)
 	}
 }
@@ -4280,6 +4739,7 @@ func accumulateEpisodeResults(accumulator map[episodeResultKey]*EpisodeResult, e
 			continue
 		}
 
+		preferLocalEpisodeStill(existing, &episode)
 		MergeEpisodeResult(&episode, existing, MergeFillEmpty)
 	}
 }
@@ -4357,19 +4817,7 @@ func buildItemLocalizationRecord(
 	}
 	// Local sidecar art is language-neutral: it must not duplicate into every
 	// localization row, so local candidates only compete at the item level.
-	remoteImages := images
-	for _, img := range images {
-		if isLocalImageSourcePath(img.URL) {
-			remoteImages = make([]RemoteImage, 0, len(images))
-			for _, candidate := range images {
-				if !isLocalImageSourcePath(candidate.URL) {
-					remoteImages = append(remoteImages, candidate)
-				}
-			}
-			break
-		}
-	}
-	applyBestImages(locItem, remoteImages, mergeMode, preferredLanguage)
+	applyBestImages(locItem, withoutLocalImages(images), mergeMode, preferredLanguage)
 	prepareItemImagesForQueue(locItem, existingLocItem)
 
 	loc.PosterPath = locItem.PosterPath
@@ -4406,6 +4854,12 @@ func buildSeasonLocalizationRecord(
 	previousPosterPath := loc.PosterPath
 	previousPosterSourcePath := loc.PosterSourcePath
 	previousPosterThumbhash := loc.PosterThumbhash
+
+	// Local art belongs to the base season row; the localization row takes
+	// the provider poster a local one displaced.
+	if season.remotePosterPath != "" {
+		season.PosterPath, season.PosterThumbhash = season.remotePosterPath, season.remotePosterThumbhash
+	}
 
 	mergeScalar(&loc.Title, season.Title, mergeMode)
 	mergeScalar(&loc.Overview, season.Overview, mergeMode)
@@ -4686,7 +5140,9 @@ func bulkUpsertWithFallback[T any](
 	return succeeded
 }
 
-// persistSeasonsAndEpisodes creates/updates seasons and episodes in the DB.
+// persistSeasonsAndEpisodes writes provider seasons and episodes for a whole
+// series refresh, then relinks the series' files and re-syncs its episode
+// debt straight away: the caller's own debt sync reads the result.
 func (s *MetadataService) persistSeasonsAndEpisodes(
 	ctx context.Context,
 	series *models.MediaItem,
@@ -4697,14 +5153,35 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 	episodes []EpisodeResult,
 	mergeMode MergeMode,
 ) {
-	if series == nil || strings.TrimSpace(series.ContentID) == "" {
+	if !s.persistSeasonAndEpisodeRows(ctx, series, providerIDs, canonicalLanguage, language, seasons, episodes, mergeMode) {
 		return
+	}
+	s.syncSeriesEpisodeState(ctx, series.ContentID)
+}
+
+// persistSeasonAndEpisodeRows writes provider seasons and episodes and queues
+// their images without the series-wide link and debt passes. It reports false
+// when there is no series to write to.
+func (s *MetadataService) persistSeasonAndEpisodeRows(
+	ctx context.Context,
+	series *models.MediaItem,
+	providerIDs map[string]string,
+	canonicalLanguage string,
+	language string,
+	seasons []SeasonResult,
+	episodes []EpisodeResult,
+	mergeMode MergeMode,
+) bool {
+	if series == nil || strings.TrimSpace(series.ContentID) == "" {
+		return false
 	}
 	seriesID := series.ContentID
 	seasonIDs := make(map[int]string, len(seasons))
 	isCanonicalWrite := strings.EqualFold(canonicalLanguage, language)
 	imagesLocked := artworkLocked(series)
 	imageJobs := make([]EnqueueImageCacheJobInput, 0, len(seasons)+len(episodes))
+	seasonArtwork := newLocalArtworkRetention(ctx, seriesID, localArtworkSeason)
+	episodeArtwork := seasonArtwork.atLevel(localArtworkEpisode)
 	fallbackProvider := primaryProviderID(providerIDs)
 	keyAttribution := func(sourcePath string) (string, string) {
 		// Local sidecar sources attribute to the synthetic "local" provider,
@@ -4734,6 +5211,9 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			ContentType:       anchoredItemTypeSeries,
 			ImageType:         ImageCacheImagePoster,
 			SeasonNumber:      &seasonNumber,
+			// Seasons of a provider-anchored series keep their content ID
+			// when the series is rebuilt; see enqueueItemImages.
+			RequeueSucceeded: !isCachedImagePath(season.PosterPath),
 		})
 	}
 	addEpisodeImageJob := func(episode *models.Episode) {
@@ -4754,6 +5234,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			ImageType:         ImageCacheImageStill,
 			SeasonNumber:      &seasonNumber,
 			EpisodeNumber:     &episodeNumber,
+			RequeueSucceeded:  !isCachedImagePath(episode.StillPath),
 		})
 	}
 	addSeasonLocalizationImageJob := func(season *models.Season, loc *models.SeasonLocalization) {
@@ -4773,6 +5254,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			ContentType:       anchoredItemTypeSeries,
 			ImageType:         ImageCacheImagePoster,
 			SeasonNumber:      &seasonNumber,
+			RequeueSucceeded:  !isCachedImagePath(loc.PosterPath),
 		})
 	}
 
@@ -4853,7 +5335,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			// preserveCachedArtwork sees the raw provider path so a local
 			// file:// source still routes into *_source_path here.
 			nextPath, nextThumbhash, nextSourcePath := preserveCachedArtwork(
-				season.PosterPath,
+				seasonArtwork.providerPath(season.PosterPath, existingSeason.PosterPath, existingSeason.PosterSourcePath),
 				season.PosterThumbhash,
 				existingSeason.PosterPath,
 				existingSeason.PosterSourcePath,
@@ -5248,7 +5730,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 				// preserveCachedArtwork sees the raw provider path so a local
 				// file:// source still routes into *_source_path here.
 				nextPath, nextThumbhash, nextSourcePath := preserveCachedArtwork(
-					ep.StillPath,
+					episodeArtwork.providerPath(ep.StillPath, existingEpisode.StillPath, existingEpisode.StillSourcePath),
 					ep.StillThumbhash,
 					existingEpisode.StillPath,
 					existingEpisode.StillSourcePath,
@@ -5452,7 +5934,12 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 	}
 
 	s.enqueueSeriesChildImages(ctx, seriesID, imageJobs)
+	return true
+}
 
+// syncSeriesEpisodeState relinks a series' files to its episodes and re-syncs
+// the series' episode metadata debt. Both passes walk the whole series.
+func (s *MetadataService) syncSeriesEpisodeState(ctx context.Context, seriesID string) {
 	if err := s.ensureSeriesEpisodeLinks(ctx, seriesID); err != nil {
 		slog.WarnContext(ctx, "metadata: failed to ensure series episode links", "component", "metadata",
 			"series_id", seriesID, "error", err)
@@ -5754,6 +6241,12 @@ func (s *MetadataService) linkSeriesFilesToEpisodesWithOptions(ctx context.Conte
 		}
 	}
 
+	// Ambiguous dates are reported once per series on each pass: the same
+	// unlinked files come back every pass until their metadata or names change.
+	ambiguousFiles := 0
+	ambiguousAirDates := make(map[string]struct{})
+	var exampleAmbiguous *models.MediaFile
+	exampleAmbiguousAirDate := ""
 	for _, file := range files {
 		hint, ok := hints[file.ID]
 		if !ok {
@@ -5765,10 +6258,15 @@ func (s *MetadataService) linkSeriesFilesToEpisodesWithOptions(ctx context.Conte
 		episodeNum := hint.episodeNum
 		if hint.airDate != "" {
 			candidates := episodesByAirDate[hint.airDate]
-			selected, ok := selectAirDateEpisodeCandidate(candidates, seriesItem)
+			selected, ok := selectAirDateEpisodeCandidate(candidates, seriesItem, hint)
 			if !ok {
 				if len(candidates) > 1 {
-					slog.WarnContext(ctx, "metadata: skipped ambiguous air-date episode link", "component", "metadata",
+					ambiguousFiles++
+					ambiguousAirDates[hint.airDate] = struct{}{}
+					if exampleAmbiguous == nil {
+						exampleAmbiguous, exampleAmbiguousAirDate = file, hint.airDate
+					}
+					slog.DebugContext(ctx, "metadata: skipped ambiguous air-date episode link", "component", "metadata",
 						"series_id", seriesID,
 						"file_id", file.ID,
 						"file_path", file.FilePath,
@@ -5815,26 +6313,88 @@ func (s *MetadataService) linkSeriesFilesToEpisodesWithOptions(ctx context.Conte
 				"error", err)
 		}
 	}
+	if ambiguousFiles > 0 {
+		slog.WarnContext(ctx, "metadata: skipped ambiguous air-date episode links", "component", "metadata",
+			"series_id", seriesID,
+			"files", ambiguousFiles,
+			"air_dates", len(ambiguousAirDates),
+			"example_file_id", exampleAmbiguous.ID,
+			"example_air_date", exampleAmbiguousAirDate)
+	}
 	return nil
 }
 
-func selectAirDateEpisodeCandidate(candidates []*models.Episode, seriesItem *models.MediaItem) (*models.Episode, bool) {
-	if len(candidates) == 0 {
+// selectAirDateEpisodeCandidate picks the episode a by-date file belongs to
+// among the series' episodes that aired that day. Each rule narrows the
+// candidates only when it keeps at least one, so a rule that matches none of
+// them never rules out the rest: the series' own provider numbering, the
+// episode title in the filename, the file's season folder, and finally
+// regular episodes over same-day specials.
+func selectAirDateEpisodeCandidate(candidates []*models.Episode, seriesItem *models.MediaItem, hint episodeLinkHint) (*models.Episode, bool) {
+	remaining := make([]*models.Episode, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate != nil {
+			remaining = append(remaining, candidate)
+		}
+	}
+	// narrow reports false when the rule matched none of several candidates.
+	narrow := func(keep func(*models.Episode) bool) bool {
+		if len(remaining) < 2 {
+			return true
+		}
+		kept := make([]*models.Episode, 0, len(remaining))
+		for _, candidate := range remaining {
+			if keep(candidate) {
+				kept = append(kept, candidate)
+			}
+		}
+		if len(kept) == 0 {
+			return false
+		}
+		remaining = kept
+		return true
+	}
+
+	for _, provider := range preferredEpisodeProviders(seriesItem) {
+		if len(remaining) < 2 {
+			break
+		}
+		if filtered := filterEpisodesByProviderID(remaining, provider); len(filtered) > 0 {
+			remaining = filtered
+			break
+		}
+	}
+	titleMatched := true
+	if airDateTitleIsEvidence(hint.title) {
+		title := normalizeTitleForScoring(hint.title)
+		titleMatched = narrow(func(candidate *models.Episode) bool { return normalizeTitleForScoring(candidate.Title) == title })
+	}
+	if hint.seasonKnown {
+		narrow(func(candidate *models.Episode) bool { return candidate.SeasonNumber == hint.seasonNum })
+	}
+	// A titled file that matches no candidate may be a special its provider
+	// titles differently, so only then is a regular episode not the default.
+	if titleMatched {
+		narrow(func(candidate *models.Episode) bool { return candidate.SeasonNumber > 0 })
+	}
+
+	if len(remaining) != 1 {
 		return nil, false
 	}
-	if len(candidates) == 1 {
-		return candidates[0], true
-	}
-	for _, provider := range preferredEpisodeProviders(seriesItem) {
-		filtered := filterEpisodesByProviderID(candidates, provider)
-		if len(filtered) == 1 {
-			return filtered[0], true
-		}
-		if len(filtered) > 1 {
-			return nil, false
-		}
-	}
-	return nil, false
+	return remaining[0], true
+}
+
+// unknownEpisodeTitle is the normalized placeholder renamers write for an
+// episode without a title.
+const unknownEpisodeTitle = "unknown"
+
+// airDateTitleIsEvidence reports whether a by-date filename's title can pick
+// between same-day episodes. Generic titles and the Unknown placeholder cannot.
+func airDateTitleIsEvidence(title string) bool {
+	// Check the normalized form, which is what the title match compares, so
+	// spellings such as "Episode-83" or "(TBA)" count as generic too.
+	normalized := normalizeTitleForScoring(title)
+	return !isGenericEpisodeMatchTitle(normalized) && normalized != unknownEpisodeTitle
 }
 
 func preferredEpisodeProviders(seriesItem *models.MediaItem) []string {
@@ -5883,7 +6443,9 @@ type episodeLinkHint struct {
 	seasonKnown bool
 	episodeNum  int
 	airDate     string
-	ok          bool
+	// title is the episode title a by-date filename carries after its date.
+	title string
+	ok    bool
 }
 
 func (s *MetadataService) updateEpisodeMetadataState(ctx context.Context, seriesID string, incomplete bool, lastCheckedAt *time.Time) {
@@ -5902,9 +6464,12 @@ func (s *MetadataService) updateEpisodeMetadataState(ctx context.Context, series
 	}
 }
 
-func (s *MetadataService) refreshSeriesEpisodeMetadataState(ctx context.Context, seriesID string, now time.Time) {
+// refreshSeriesEpisodeMetadataState re-syncs the series' episode refresh debt
+// and incomplete flag. It reports false when it could not read the series'
+// debt or episodes; failures on single rows are logged and do not count.
+func (s *MetadataService) refreshSeriesEpisodeMetadataState(ctx context.Context, seriesID string, now time.Time) bool {
 	if s == nil || s.episodeRepo == nil {
-		return
+		return true
 	}
 
 	// Observe debt versions before reading completeness so a concurrent refresh's
@@ -5916,7 +6481,7 @@ func (s *MetadataService) refreshSeriesEpisodeMetadataState(ctx context.Context,
 		if err != nil {
 			slog.WarnContext(ctx, "metadata: failed to snapshot episode refresh debt", "component", "metadata",
 				"series_id", seriesID, "error", err)
-			return
+			return false
 		}
 	}
 
@@ -5924,12 +6489,24 @@ func (s *MetadataService) refreshSeriesEpisodeMetadataState(ctx context.Context,
 	if err != nil {
 		slog.WarnContext(ctx, "metadata: failed to list series episodes for completeness check", "component", "metadata",
 			"series_id", seriesID, "error", err)
-		return
+		return false
 	}
 
+	// Episode targets that failed during a scheduled refresh batch keep the
+	// failure their own refresh recorded while they still have debt; a later
+	// target in the batch that completed one lets the sweep clear its row.
+	failedEpisodes := failedEpisodeDebtFromContext(ctx)
+	keptActionable := false
 	var completeEpisodeIDs []string
 	var actionableEpisodes []*models.Episode
 	for _, episode := range episodes {
+		if episode != nil {
+			if _, failed := failedEpisodes[strings.TrimSpace(episode.ContentID)]; failed &&
+				EpisodeHasActionableMetadataDebt(episode, now) {
+				keptActionable = true
+				continue
+			}
+		}
 		if !EpisodeHasActionableMetadataDebt(episode, now) {
 			if s.refreshDebtRepo != nil && episode != nil {
 				if id := strings.TrimSpace(episode.ContentID); id != "" {
@@ -5956,7 +6533,8 @@ func (s *MetadataService) refreshSeriesEpisodeMetadataState(ctx context.Context,
 		}
 	}
 
-	s.updateEpisodeMetadataState(ctx, seriesID, len(actionableEpisodes) > 0, new(now))
+	s.updateEpisodeMetadataState(ctx, seriesID, len(actionableEpisodes) > 0 || keptActionable, new(now))
+	return true
 }
 
 func (s *MetadataService) syncVisibleEpisodeRefreshDebt(ctx context.Context, episode *models.Episode, now time.Time) error {
@@ -5971,7 +6549,10 @@ func (s *MetadataService) syncVisibleEpisodeRefreshDebt(ctx context.Context, epi
 	if err != nil {
 		return err
 	}
-	logRefreshDebtTerminal(RefreshTargetEpisode, episode.ContentID, reasonMask, attemptCount)
+	// No terminal notice here: this sweep re-syncs every incomplete episode in
+	// the series, and a success leaves attempt_count unchanged, so a row at the
+	// terminal count would be reported again on every sweep. The episode's own
+	// target sync reports the claim that took it there.
 	return s.refreshDebtRepo.MarkTargetSuccess(
 		ctx,
 		RefreshTargetEpisode,
@@ -6006,7 +6587,15 @@ func parseEpisodeLinkHint(file *models.MediaFile, libraryRoots ...string) episod
 		return episodeLinkHint{seasonNum: fnh.SeasonNum, seasonKnown: fnh.SeasonKnown, episodeNum: fnh.EpisodeNum, ok: true}
 	}
 	if fnh.AirDate != "" {
-		return episodeLinkHint{airDate: fnh.AirDate, ok: true}
+		// A by-date name has no episode number, but its season folder and
+		// title still tell same-day episodes apart.
+		return episodeLinkHint{
+			seasonNum:   fnh.SeasonNum,
+			seasonKnown: fnh.SeasonKnown,
+			airDate:     fnh.AirDate,
+			title:       extractAirDateMatchTitle(file.FilePath),
+			ok:          true,
+		}
 	}
 	return episodeLinkHint{}
 }
@@ -6122,6 +6711,49 @@ func applyFolderIDHints(res *skeletonResult, hints *naming.FolderIDHints) {
 	}
 	if hints.TvdbID != "" {
 		res.TvdbID = hints.TvdbID
+	}
+}
+
+// groupOverrideProviderIDs returns the provider IDs an operator's group
+// override forces, or nil when it forces none.
+func groupOverrideProviderIDs(override *models.MediaGroupOverride) *naming.FolderIDHints {
+	if override == nil {
+		return nil
+	}
+	return mergeFolderIDHints(nil, &naming.FolderIDHints{
+		TmdbID: override.ForcedTmdbID,
+		ImdbID: override.ForcedImdbID,
+		TvdbID: override.ForcedTvdbID,
+	})
+}
+
+// applyGroupOverride forces an operator's group override onto a skeleton.
+// The override settles the group's identity, so an ambiguous skeleton becomes
+// matchable again; any other status is the item's own and is kept.
+func applyGroupOverride(res *skeletonResult, override *models.MediaGroupOverride) {
+	if res == nil || override == nil {
+		return
+	}
+	if override.ForcedType != "" {
+		res.Type = override.ForcedType
+	}
+	if override.ForcedTitle != "" {
+		res.Title = override.ForcedTitle
+	}
+	if override.ForcedYear > 0 {
+		res.Year = override.ForcedYear
+	}
+	if override.ForcedTmdbID != "" {
+		res.TmdbID = override.ForcedTmdbID
+	}
+	if override.ForcedImdbID != "" {
+		res.ImdbID = override.ForcedImdbID
+	}
+	if override.ForcedTvdbID != "" {
+		res.TvdbID = override.ForcedTvdbID
+	}
+	if res.ItemStatus == "ambiguous" { //nolint:goconst // Item statuses are literals throughout this package.
+		res.ItemStatus = "pending" //nolint:goconst // queueStatePending is a test-local constant.
 	}
 }
 
@@ -6327,7 +6959,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 			}
 		}
 	}
-	hasGroupOverride := false
+	var groupOverride *models.MediaGroupOverride
 	if s.groupOverrideRepo != nil && contentGroupKey != "" {
 		override, err := s.groupOverrideRepo.Get(ctx, folderID, groupKeyVersion, contentGroupKey)
 		if err != nil {
@@ -6338,26 +6970,8 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 				"error", err,
 			)
 		} else if override != nil {
-			hasGroupOverride = true
-			if override.ForcedType != "" {
-				res.Type = override.ForcedType
-			}
-			if override.ForcedTitle != "" {
-				res.Title = override.ForcedTitle
-			}
-			if override.ForcedYear > 0 {
-				res.Year = override.ForcedYear
-			}
-			if override.ForcedTmdbID != "" {
-				res.TmdbID = override.ForcedTmdbID
-			}
-			if override.ForcedImdbID != "" {
-				res.ImdbID = override.ForcedImdbID
-			}
-			if override.ForcedTvdbID != "" {
-				res.TvdbID = override.ForcedTvdbID
-			}
-			res.ItemStatus = "pending"
+			groupOverride = override
+			applyGroupOverride(res, override)
 		}
 	}
 	if res.Type == "" {
@@ -6393,17 +7007,33 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	if folderIDs == nil && contentRootPath != "" && contentRootPath != observedRootPath {
 		folderIDs = naming.ParseFolderIDs(skeletonFolderAnchorName(contentRootPath, libraryRoots))
 	}
+	// A heuristic folder ID is a guess, so an operator's forced ID for the same
+	// provider beats it, as it does when the match worker reuses a linked item.
+	if folderIDs != nil {
+		folderIDs = mergeFolderIDHints(folderIDs, groupOverrideProviderIDs(groupOverride))
+	}
 
 	effectiveExternalIDs := folderIDs
 	if trustedIDs != nil {
 		effectiveExternalIDs = trustedIDs
+	}
+	// An admin split this root into an unmatched item. Its folder still carries
+	// the source's provider tag and the source may still hold the root or group
+	// claim, so resolve it only through the item its files already link to.
+	splitPinned, splitPinnedRoot, err := s.splitPinForFile(ctx, folderID, observedRootPath, file.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	if splitPinned {
+		trustedIDs, folderIDs, effectiveExternalIDs = nil, nil, nil
+		res.TmdbID, res.ImdbID, res.TvdbID = "", "", ""
 	}
 	// A queued file can outlive the parser that assigned its group. Matching
 	// refreshed title/year hints under the old automatic group key would let a
 	// subsequent claim relink unrelated files. Let a scan rebuild that grouping
 	// before any catalog writes; operator overrides and explicit IDs establish
 	// identity independently of how the filename currently parses.
-	if !hasGroupOverride && scannedGroupIdentityChanged(scannedIdentity, file, effectiveExternalIDs, libraryRoots...) {
+	if groupOverride == nil && scannedGroupIdentityChanged(scannedIdentity, file, effectiveExternalIDs, libraryRoots...) {
 		return nil, errors.New("filename identity changed since the last scan; rescan the library to update file grouping")
 	}
 	if effectiveExternalIDs != nil {
@@ -6440,7 +7070,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 		res.ItemStatus = "skipped"
 		return res, nil
 	}
-	if res.ItemStatus == "ambiguous" {
+	if res.ItemStatus == "ambiguous" && !splitPinned {
 		confirmedIDs, err := s.resolveMovieTitleAmbiguity(ctx, file, res, libraryRoots...)
 		if err != nil {
 			return nil, err
@@ -6451,7 +7081,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 			res.ItemStatus = "pending"
 		}
 	}
-	if effectiveExternalIDs == nil {
+	if effectiveExternalIDs == nil && !splitPinned && !s.movieRootHasTaggedFile(ctx, folderID, observedRootPath, res.Type) {
 		// Record for admin diagnostics only — no longer bail out.
 		s.recordSkippedRoot(ctx, folderID, observedRootPath, skippedReasonMissingFolderIDs, file.FilePath)
 	}
@@ -6471,7 +7101,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 
 	// Dedup 1: confirmed content-group ownership always wins, including for
 	// movies. Provisional claims are intentionally ignored.
-	if contentGroupKey != "" && s.groupClaimRepo != nil {
+	if contentGroupKey != "" && s.groupClaimRepo != nil && !splitPinned {
 		claimedGroup, err := s.groupClaimRepo.Get(ctx, folderID, groupKeyVersion, contentGroupKey)
 		if err != nil {
 			return nil, fmt.Errorf("loading claimed content group: %w", err)
@@ -6494,7 +7124,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	}
 
 	// Dedup 2: confirmed root ownership also wins for both movies and series.
-	if contentRootPath != "" && s.rootClaimRepo != nil {
+	if contentRootPath != "" && s.rootClaimRepo != nil && !splitPinned {
 		claimedRoot, err := s.rootClaimRepo.Get(ctx, folderID, contentRootPath)
 		if err != nil {
 			return nil, fmt.Errorf("loading claimed root path: %w", err)
@@ -6515,9 +7145,10 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	}
 
 	// Dedup 3: same observed TV root reuses the already-linked root-scoped item.
-	if res.Type == "series" {
-		res.Type = "series"
-		existingContentID, err := s.fileRepo.FindContentIDByObservedRootPath(ctx, folderID, observedRootPath, "series")
+	// A root pinned whole by a split does the same for movies: its files all
+	// link to the split target, and a new version there belongs with them.
+	if res.Type == "series" || splitPinnedRoot {
+		existingContentID, err := s.fileRepo.FindContentIDByObservedRootPath(ctx, folderID, observedRootPath, res.Type)
 		if err != nil {
 			return nil, fmt.Errorf("finding existing item by observed root path: %w", err)
 		}
@@ -6538,7 +7169,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	// still form one resolved scanner group; reuse the series item another
 	// episode created instead of adding a provisional item per episode.
 	flatSeriesGroup := res.Type == "series" && contentGroupKey != "" && filepath.Clean(observedRootPath) == filepath.Clean(file.FilePath) &&
-		(hasGroupOverride || (scannedIdentity != nil && scannedIdentity.State == scannedGroupStateResolved))
+		(groupOverride != nil || (scannedIdentity != nil && scannedIdentity.State == scannedGroupStateResolved))
 	if flatSeriesGroup {
 		existingContentID, err := s.seriesContentIDForGroup(ctx, folderID, groupKeyVersion, contentGroupKey, file.ID)
 		if err != nil {
@@ -6727,6 +7358,24 @@ func (s *MetadataService) folderTypeForSkeleton(ctx context.Context, folderID in
 	return folder.Type, nil
 }
 
+// movieRootHasTaggedFile reports whether another file of a movie root carries a
+// provider tag in its own name. A scan counts such a root as tagged, so an
+// untagged sibling version must not flag it again.
+func (s *MetadataService) movieRootHasTaggedFile(ctx context.Context, folderID int, observedRootPath, contentType string) bool {
+	if s == nil || s.fileRepo == nil || contentType != matchContentTypeMovie {
+		return false
+	}
+	files, err := s.fileRepo.ListByObservedRootPath(ctx, folderID, observedRootPath)
+	if err != nil {
+		slog.WarnContext(ctx, "metadata: failed to list root files for skipped-root check", "component", "metadata",
+			"folder_id", folderID,
+			"root_path", observedRootPath,
+			"error", err)
+		return false
+	}
+	return naming.AnyFileNameHasProviderTag(files)
+}
+
 // recordSkippedRoot records the root of file for admin diagnostics in
 // skipped_media_roots. Failures are logged and swallowed: diagnostics must
 // never block skeleton creation.
@@ -6861,32 +7510,29 @@ func (s *MetadataService) claimGroupAndRelink(
 	return s.groupClaimRepo.ClaimAndRelinkFiles(ctx, folderID, groupKeyVersion, contentGroupKey, contentID)
 }
 
-// updateItemStatus sets the status field on a media_items row.
-func (s *MetadataService) updateItemStatus(ctx context.Context, contentID, status string) error {
+// updateItemStatus sets the status field on a media_items row that is not
+// matched, and reports whether the row changed. Neither a failed enrichment
+// retry nor an override settled a moment too late invalidates an accepted
+// catalog match: a matched item keeps its status, metadata, and ownership while
+// the queue records the retry failure. The repository checks that inside the
+// UPDATE, so a match stored while this runs is kept too. A missing item is an
+// error.
+func (s *MetadataService) updateItemStatus(ctx context.Context, contentID, status string) (bool, error) {
 	if s != nil && s.hooks.updateItemStatus != nil {
 		return s.hooks.updateItemStatus(ctx, contentID, status)
 	}
 	if s == nil || s.itemRepo == nil {
-		return fmt.Errorf("metadata item repository is not configured")
+		return false, fmt.Errorf("metadata item repository is not configured")
 	}
 	if strings.TrimSpace(contentID) == "" {
-		return fmt.Errorf("content id is required to update item status")
+		return false, fmt.Errorf("content id is required to update item status")
 	}
 
-	existing, err := s.itemRepo.GetByID(ctx, contentID)
+	changed, err := s.itemRepo.SetStatusUnlessMatched(ctx, contentID, status)
 	if err != nil {
-		return fmt.Errorf("loading item %s before status update: %w", contentID, err)
+		return false, fmt.Errorf("setting item %s to status %s: %w", contentID, status, err)
 	}
-	// A failed enrichment retry does not invalidate an accepted catalog match.
-	// Keep its metadata and ownership while the queue records the retry failure.
-	if status == "unmatched" && existing.Status == "matched" { //nolint:goconst // unmatchedStatus is a test-local constant.
-		return nil
-	}
-	existing.Status = status
-	if err := s.itemRepo.Upsert(ctx, existing); err != nil {
-		return fmt.Errorf("upserting item %s with status %s: %w", contentID, status, err)
-	}
-	return nil
+	return changed, nil
 }
 
 // upsertLibraryMembership creates a library membership for the given item
@@ -6963,12 +7609,16 @@ func (s *MetadataService) confirmedOwnershipItem(ctx context.Context, contentID 
 	return item, true
 }
 
+// rebindItemByProviderIDsLocked merges the source onto the confirmed item
+// that already owns its provider IDs. With markIdentity (an Identify) the
+// merge also records the choice on that item, as reanchorContentID does.
 func (s *MetadataService) rebindItemByProviderIDsLocked(
 	ctx context.Context,
 	sourceContentID string,
 	providerIDs map[string]string,
 	itemType string,
 	allowMatchedSource bool,
+	markIdentity bool,
 ) (string, error) {
 	if s == nil || sourceContentID == "" {
 		return "", nil
@@ -6983,7 +7633,7 @@ func (s *MetadataService) rebindItemByProviderIDsLocked(
 	if existing == nil || existing.ContentID == "" || existing.ContentID == sourceContentID {
 		return "", nil
 	}
-	if err := s.rebindItemToExistingItem(ctx, sourceContentID, existing.ContentID, allowMatchedSource); err != nil {
+	if err := s.rebindItemOnto(ctx, sourceContentID, existing.ContentID, allowMatchedSource, markIdentity); err != nil {
 		return "", err
 	}
 	slog.InfoContext(ctx, "metadata: rebound skeleton to existing item", "component", "metadata",
@@ -7000,6 +7650,7 @@ func (s *MetadataService) recoverProviderIDConflict(
 	providerIDs map[string]string,
 	itemType string,
 	allowMatchedSource bool,
+	markIdentity bool,
 ) (string, error) {
 	existing, err := s.findExistingByProviderIDs(ctx, providerIDs, itemType, sourceContentID)
 	if err != nil {
@@ -7027,13 +7678,13 @@ func (s *MetadataService) recoverProviderIDConflict(
 			return "", fmt.Errorf("loading source status for provider conflict recovery: %w", statusErr)
 		}
 		if isProvisionalOwnershipStatus(sourceStatus) && isConfirmedOwnershipStatus(existing.Status) {
-			canonicalID, err := canonicalizeProviderIDDuplicateInto(ctx, s.dbPool, sourceContentID, existing.ContentID, false)
+			canonicalID, err := canonicalizeProviderIDDuplicateInto(ctx, s.dbPool, sourceContentID, existing.ContentID, false, markIdentity)
 			if err != nil {
 				return "", err
 			}
 			return canonicalID, nil
 		}
-		canonicalID, err := s.canonicalizeProviderIDDuplicate(ctx, sourceContentID, existing.ContentID, allowMatchedSource)
+		canonicalID, err := s.canonicalizeProviderIDDuplicate(ctx, sourceContentID, existing.ContentID, allowMatchedSource, markIdentity)
 		if err != nil {
 			return "", err
 		}
@@ -7041,10 +7692,16 @@ func (s *MetadataService) recoverProviderIDConflict(
 			return canonicalID, nil
 		}
 	}
-	return s.rebindItemByProviderIDsLocked(ctx, sourceContentID, providerIDs, itemType, allowMatchedSource)
+	return s.rebindItemByProviderIDsLocked(ctx, sourceContentID, providerIDs, itemType, allowMatchedSource, markIdentity)
 }
 
 func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromContentID, toContentID string, allowMatchedSource bool) error {
+	return s.rebindItemOnto(ctx, fromContentID, toContentID, allowMatchedSource, false)
+}
+
+// rebindItemOnto is rebindItemToExistingItem that, with markIdentity, also
+// records an Identify choice on the target in the same transaction.
+func (s *MetadataService) rebindItemOnto(ctx context.Context, fromContentID, toContentID string, allowMatchedSource, markIdentity bool) error {
 	if s == nil || fromContentID == "" || toContentID == "" || fromContentID == toContentID {
 		return nil
 	}
@@ -7138,6 +7795,18 @@ func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromCont
 			args: []any{fromContentID, toContentID},
 		},
 		{
+			// An admin's Identify choice survives the merge (identify_sticky.go).
+			name: "keep identity choice",
+			sql: `
+				UPDATE media_items dest
+				SET identity_chosen_at = GREATEST(dest.identity_chosen_at, src.identity_chosen_at)
+				FROM media_items src
+				WHERE dest.content_id = $2 AND src.content_id = $1
+				  AND src.identity_chosen_at IS NOT NULL
+			`,
+			args: []any{fromContentID, toContentID},
+		},
+		{
 			name: "delete orphaned skeleton",
 			sql: `
 				DELETE FROM media_items
@@ -7171,6 +7840,11 @@ func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromCont
 			return fmt.Errorf("%s: %w", step.name, err)
 		}
 	}
+	if markIdentity {
+		if err := catalog.MarkIdentityChosenTx(ctx, tx, toContentID); err != nil {
+			return err
+		}
+	}
 	if err := catalog.RecomputeSeriesLatestEpisodeAdded(ctx, tx, []string{fromContentID}); err != nil {
 		return err
 	}
@@ -7187,34 +7861,83 @@ func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromCont
 
 // mergeEpisodeIDPairs maps the source series' episode content ids onto the
 // target series' episodes by (season, episode) number, so episode-level user
-// state survives a series merge. Episodes with no counterpart on the target
-// are skipped: their state stays on ids that die with the source series, which
-// is today's behavior, and the next scan recreates the episodes on the target.
+// state survives a series merge. A source episode with no counterpart on the
+// target is paired with the id the target composes for it, when both series are
+// provider-anchored and the source episode is on its series' composition: the
+// source's composed id does not die with it, because the show the source
+// anchor names mints it again when it is scanned in, so its state moves to the
+// id the target's episode takes when a scan creates it. Other unpaired
+// episodes keep their state on ids that die with the source series.
 func mergeEpisodeIDPairs(ctx context.Context, tx pgx.Tx, fromContentID, toContentID string) ([]reattribute.IDPair, error) {
 	rows, err := tx.Query(ctx, `
-		SELECT src.content_id, dest.content_id
+		SELECT src.content_id, src.season_number, src.episode_number, dest.content_id
 		FROM episodes src
-		JOIN episodes dest
+		LEFT JOIN episodes dest
 		  ON dest.series_id = $2
 		 AND dest.season_number = src.season_number
 		 AND dest.episode_number = src.episode_number
 		WHERE src.series_id = $1
-		  AND src.content_id <> dest.content_id
 	`, fromContentID, toContentID)
 	if err != nil {
 		return nil, fmt.Errorf("mapping episode ids for merge %s -> %s: %w", fromContentID, toContentID, err)
 	}
-	defer rows.Close()
-
-	var pairs []reattribute.IDPair
+	var pairs, composed []reattribute.IDPair
 	for rows.Next() {
-		var pair reattribute.IDPair
-		if err := rows.Scan(&pair.From, &pair.To); err != nil {
+		var sourceID string
+		var seasonNumber, episodeNumber int
+		var destID *string
+		if err := rows.Scan(&sourceID, &seasonNumber, &episodeNumber, &destID); err != nil {
+			rows.Close()
 			return nil, fmt.Errorf("scanning episode id pair: %w", err)
 		}
-		pairs = append(pairs, pair)
+		if destID != nil {
+			if *destID != sourceID {
+				pairs = append(pairs, reattribute.IDPair{From: sourceID, To: *destID})
+			}
+			continue
+		}
+		oldID, okOld := contentid.ForEpisode(fromContentID, seasonNumber, episodeNumber)
+		newID, okNew := contentid.ForEpisode(toContentID, seasonNumber, episodeNumber)
+		if okOld && okNew && sourceID == oldID && newID != sourceID {
+			composed = append(composed, reattribute.IDPair{From: sourceID, To: newID})
+		}
 	}
-	return pairs, rows.Err()
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("mapping episode ids for merge %s -> %s: %w", fromContentID, toContentID, err)
+	}
+	if len(composed) == 0 {
+		return pairs, nil
+	}
+
+	// An id held by another series' episode is not this target's to give.
+	targets := make([]string, len(composed))
+	for i, pair := range composed {
+		targets[i] = pair.To
+	}
+	takenRows, err := tx.Query(ctx, `SELECT content_id FROM episodes WHERE content_id = ANY($1)`, targets)
+	if err != nil {
+		return nil, fmt.Errorf("checking composed episode ids for merge %s -> %s: %w", fromContentID, toContentID, err)
+	}
+	taken := make(map[string]struct{})
+	for takenRows.Next() {
+		var id string
+		if err := takenRows.Scan(&id); err != nil {
+			takenRows.Close()
+			return nil, fmt.Errorf("scanning composed episode id: %w", err)
+		}
+		taken[id] = struct{}{}
+	}
+	takenRows.Close()
+	if err := takenRows.Err(); err != nil {
+		return nil, fmt.Errorf("checking composed episode ids for merge %s -> %s: %w", fromContentID, toContentID, err)
+	}
+	for _, pair := range composed {
+		if _, ok := taken[pair.To]; !ok {
+			pairs = append(pairs, pair)
+		}
+	}
+	return pairs, nil
 }
 
 func rebindDeletableStatuses(allowMatchedSource bool) []string {
@@ -7688,7 +8411,7 @@ func applyBestImages(item *models.MediaItem, images []RemoteImage, mode MergeMod
 
 	selectBest := func(imageType ImageType, filters []func(RemoteImage) bool) *best {
 		for _, img := range images {
-			if img.Type == imageType && img.URL != "" && isLocalImageSourcePath(img.URL) {
+			if img.Type == imageType && img.URL != "" && isLocalImageSourcePath(img.URL) && isWordmarkLogoCandidate(img) {
 				return &best{url: img.URL, rating: img.Rating, providerID: img.ProviderID}
 			}
 		}
@@ -7696,7 +8419,7 @@ func applyBestImages(item *models.MediaItem, images []RemoteImage, mode MergeMod
 		for _, accept := range filters {
 			candidate := &best{}
 			for _, img := range images {
-				if img.Type != imageType || img.URL == "" || !accept(img) {
+				if img.Type != imageType || img.URL == "" || !isWordmarkLogoCandidate(img) || !accept(img) {
 					continue
 				}
 				if candidate.url == "" {
@@ -7794,7 +8517,39 @@ func applyBestImages(item *models.MediaItem, images []RemoteImage, mode MergeMod
 	}
 	applyIfBetter(&item.PosterPath, bestByType[ImagePoster])
 	applyIfBetter(&item.BackdropPath, bestByType[ImageBackdrop])
-	applyIfBetter(&item.LogoPath, bestByType[ImageLogo])
+	if bestByType[ImageLogo].url == "" && mode == MergeReplaceUnlocked && !imagesLocked && itemHasClearArtLogo(item) {
+		// A user-triggered refresh must not preserve clear art stored as the
+		// logo when no wordmark replacement exists. A logo kept under the
+		// Images lock was chosen by an admin and stays.
+		item.LogoPath = ""
+		item.LogoSourcePath = ""
+	} else {
+		applyIfBetter(&item.LogoPath, bestByType[ImageLogo])
+	}
+}
+
+// isWordmarkLogoCandidate rejects clear art offered as a logo. Clear art is an
+// illustrated composite of the title with characters or props, not the title
+// wordmark a logo slot expects. TVDB plugins before v1.4.0 reported series
+// ClearArt as ImageLogo; TVDB serves ClearArt under a /clearart/ path and
+// ClearLogo under /clearlogo/, so the path identifies it for every plugin
+// version. Local sidecars stay authoritative.
+func isWordmarkLogoCandidate(img RemoteImage) bool {
+	if img.Type != ImageLogo || isLocalImageSourcePath(img.URL) {
+		return true
+	}
+	return !isClearArtPath(img.URL)
+}
+
+func itemHasClearArtLogo(item *models.MediaItem) bool {
+	if item == nil {
+		return false
+	}
+	return isClearArtPath(item.LogoSourcePath) || isClearArtPath(item.LogoPath)
+}
+
+func isClearArtPath(path string) bool {
+	return strings.Contains(strings.ToLower(path), "/clearart/")
 }
 
 type itemArtworkField struct {
@@ -7830,6 +8585,13 @@ func keepStoredArtwork(item, existing *models.MediaItem) {
 
 func prepareItemImagesForQueue(item, existing *models.MediaItem) {
 	for _, field := range itemArtworkFields(item) {
+		// applyBestImages intentionally clears a clear-art logo on a manual
+		// refresh when no wordmark replacement exists. Do not let the
+		// generic cached-art preservation path restore that rejected logo.
+		if field.imageType == ImageLogo && *field.path == "" && !artworkLocked(existing) && itemHasClearArtLogo(existing) {
+			*field.source = ""
+			continue
+		}
 		existingPath := existingImagePath(existing, field.imageType)
 		existingThumbhash := existingImageThumbhash(existing, field.imageType)
 		existingSource := existingImageSourcePath(existing, field.imageType)
@@ -7879,6 +8641,12 @@ func (s *MetadataService) enqueueItemImages(ctx context.Context, item *models.Me
 			ProviderContentID: providerContentID,
 			ContentType:       imageCacheContentType(item.Type),
 			ImageType:         ImageTypeToString(field.imageType),
+			// An item rebuilt under the same content ID (a Complete Refresh,
+			// or removing and re-adding a local-only series) has no cached
+			// copy, but its earlier job for this source still reads
+			// succeeded. Without a requeue, local artwork stays blank and
+			// remote artwork stays uncached.
+			RequeueSucceeded: !isCachedImagePath(*field.path),
 		})
 	}
 	s.enqueueImageCacheJobs(ctx, "item", item.ContentID, inputs)
@@ -7891,8 +8659,11 @@ func (s *MetadataService) enqueueItemLocalizationImages(ctx context.Context, ite
 	locItem := &models.MediaItem{
 		ContentID:          loc.ContentID,
 		Type:               item.Type,
+		PosterPath:         loc.PosterPath,
 		PosterSourcePath:   loc.PosterSourcePath,
+		BackdropPath:       loc.BackdropPath,
 		BackdropSourcePath: loc.BackdropSourcePath,
+		LogoPath:           loc.LogoPath,
 		LogoSourcePath:     loc.LogoSourcePath,
 	}
 	inputs := make([]EnqueueImageCacheJobInput, 0, 3)
@@ -7912,6 +8683,9 @@ func (s *MetadataService) enqueueItemLocalizationImages(ctx context.Context, ite
 			ProviderContentID: providerContentID,
 			ContentType:       imageCacheContentType(item.Type),
 			ImageType:         ImageTypeToString(field.imageType),
+			// Localization rows are deleted with their item, so a rebuild
+			// leaves them in the same state; see enqueueItemImages.
+			RequeueSucceeded: !isCachedImagePath(*field.path),
 		})
 	}
 	s.enqueueImageCacheJobs(ctx, "item localization", loc.ContentID, inputs)
@@ -8130,7 +8904,11 @@ func (s *MetadataService) FetchItemImages(ctx context.Context, providerIDs map[s
 			providerErrors[p.Slug()] = err.Error()
 			continue
 		}
-		allImages = append(allImages, images...)
+		for _, image := range images {
+			if isWordmarkLogoCandidate(image) {
+				allImages = append(allImages, image)
+			}
+		}
 	}
 
 	// Sort by rating descending (popularity).
@@ -8139,6 +8917,138 @@ func (s *MetadataService) FetchItemImages(ctx context.Context, providerIDs map[s
 	})
 
 	return allImages, providerErrors, nil
+}
+
+// FetchSeasonImages queries the configured season provider chain for the full
+// artwork gallery of one exact season. Providers must echo SeasonNumber on
+// scoped results, preventing an older plugin that ignores the request field
+// from leaking show artwork into a numbered season. If a provider has not yet
+// adopted the gallery contract, its exact primary poster from GetSeasons is a
+// compatibility fallback. Specials additionally include ordinary show posters
+// after every exact Specials result, giving users a useful fallback when no
+// dedicated Specials artwork exists.
+func (s *MetadataService) FetchSeasonImages(ctx context.Context, providerIDs map[string]string, language string, folderID int, seasonNumber int) ([]RemoteImage, map[string]string, error) {
+	chain, err := s.resolveChainCached(ctx, folderID, "season")
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolving provider chain: %w", err)
+	}
+
+	var exactImages []RemoteImage
+	var specialsFallback []RemoteImage
+	providerErrors := make(map[string]string)
+	// Exact and fallback results are deduplicated separately so a show poster
+	// from an earlier provider cannot shadow the same URL confirmed as exact
+	// season art by a later provider. Fallbacks that duplicate an exact result
+	// are dropped once every provider has answered.
+	exactSeen := make(map[string]struct{})
+	fallbackSeen := make(map[string]struct{})
+	appendPoster := func(target *[]RemoteImage, seen map[string]struct{}, image RemoteImage) bool {
+		if image.Type != ImagePoster || strings.TrimSpace(image.URL) == "" {
+			return false
+		}
+		if _, duplicate := seen[image.URL]; duplicate {
+			return false
+		}
+		seen[image.URL] = struct{}{}
+		*target = append(*target, image)
+		return true
+	}
+
+	for _, p := range chain {
+		exactFound := false
+		ip, imageCapable := p.(ImageProvider)
+		if imageCapable {
+			requestedSeason := seasonNumber
+			images, imageErr := ip.GetImages(ctx, ImageRequest{
+				ProviderIDs:  providerIDs,
+				ContentType:  "series",
+				Language:     language,
+				SeasonNumber: &requestedSeason,
+			})
+			if imageErr != nil {
+				slog.WarnContext(ctx, "fetch season images: provider gallery error", "component", "metadata",
+					"provider", p.Slug(), "season", seasonNumber, "error", imageErr)
+				providerErrors[p.Slug()] = imageErr.Error()
+			} else {
+				for _, image := range images {
+					if image.SeasonNumber == nil || *image.SeasonNumber != seasonNumber {
+						continue
+					}
+					if strings.TrimSpace(image.ProviderID) == "" {
+						image.ProviderID = p.Slug()
+					}
+					if appendPoster(&exactImages, exactSeen, image) {
+						exactFound = true
+					}
+				}
+			}
+		}
+
+		// Backward-compatible exact primary for providers that do not yet emit
+		// season-scoped gallery records.
+		if !exactFound {
+			if ep, ok := p.(EpisodeProvider); ok {
+				seasons, seasonErr := ep.GetSeasons(ctx, SeasonsRequest{
+					ProviderIDs: providerIDs,
+					ContentType: "series",
+					Language:    language,
+				})
+				if seasonErr != nil {
+					slog.WarnContext(ctx, "fetch season images: provider season error", "component", "metadata",
+						"provider", p.Slug(), "season", seasonNumber, "error", seasonErr)
+					providerErrors[p.Slug()] = seasonErr.Error()
+				} else {
+					for _, season := range seasons {
+						if season.SeasonNumber != seasonNumber || strings.TrimSpace(season.PosterPath) == "" {
+							continue
+						}
+						n := seasonNumber
+						appendPoster(&exactImages, exactSeen, RemoteImage{
+							ProviderID:   p.Slug(),
+							URL:          season.PosterPath,
+							Type:         ImagePoster,
+							SeasonNumber: &n,
+						})
+						break
+					}
+				}
+			}
+		}
+
+		if seasonNumber == 0 && imageCapable {
+			images, imageErr := ip.GetImages(ctx, ImageRequest{
+				ProviderIDs: providerIDs,
+				ContentType: "series",
+				Language:    language,
+			})
+			if imageErr != nil {
+				slog.WarnContext(ctx, "fetch season images: Specials show fallback error", "component", "metadata",
+					"provider", p.Slug(), "error", imageErr)
+				providerErrors[p.Slug()] = imageErr.Error()
+				continue
+			}
+			for _, image := range images {
+				if image.SeasonNumber != nil {
+					continue
+				}
+				if strings.TrimSpace(image.ProviderID) == "" {
+					image.ProviderID = p.Slug()
+				}
+				appendPoster(&specialsFallback, fallbackSeen, image)
+			}
+		}
+	}
+
+	fallbacks := specialsFallback[:0]
+	for _, image := range specialsFallback {
+		if _, exact := exactSeen[image.URL]; !exact {
+			fallbacks = append(fallbacks, image)
+		}
+	}
+
+	sort.SliceStable(exactImages, func(i, j int) bool { return exactImages[i].Rating > exactImages[j].Rating })
+	sort.SliceStable(fallbacks, func(i, j int) bool { return fallbacks[i].Rating > fallbacks[j].Rating })
+	return append(exactImages, fallbacks...), providerErrors, nil
 }
 
 // ApplyItemImage downloads a single image, caches it to S3, and returns
@@ -8412,12 +9322,13 @@ func storedItemIdentity(item *models.MediaItem, durable map[string]string) map[s
 // ID differs from the stored value for its key, or the item stores identity
 // IDs and none of the chosen ones agrees with them. Restating a stored ID,
 // with or without adding one the item lacks, confirms or extends the match.
+// Values compare normalized, so an IMDb ID stored in another case agrees.
 func identityChoiceCorrects(chosen, stored map[string]string) bool {
 	agrees, hasStored := false, false
 	for _, key := range trustedSearchIDKeys {
-		old := strings.TrimSpace(stored[key])
+		old := normalizeProviderIDComparisonValue(key, stored[key])
 		hasStored = hasStored || old != ""
-		next := chosen[key]
+		next := normalizeProviderIDComparisonValue(key, chosen[key])
 		if old == "" || next == "" {
 			continue
 		}
@@ -8464,33 +9375,28 @@ func mediaItemWithProviderIDs(item *models.MediaItem, providerIDs map[string]str
 	return &selectionItem
 }
 
-// applyBuiltinIdentityHints consults the chain's IdentityHintProviders (the
-// built-in NFO provider) and folds their curated tmdb/imdb/tvdb ids into
-// accumulatedIDs ahead of Phase-1 search. Keys in protected (stored durable
-// ids) are never overwritten — a conflict is logged and the stored value
-// kept. The returned map holds the hint values that won a slot in
-// accumulatedIDs, so candidate selection can anchor on them through the
-// trusted-hint machinery.
-func applyBuiltinIdentityHints(
+// applyLocalIdentityHints folds the curated tmdb/imdb/tvdb ids the chain's
+// IdentityHintProviders (the built-in NFO provider) declared, as collected by
+// collectLocalIdentityHints, into accumulatedIDs ahead of Phase-1 search. Keys
+// in protected (stored durable ids) are never overwritten — a conflict is
+// logged and the stored value kept. The returned map holds the hint values
+// that won a slot in accumulatedIDs, so candidate selection can anchor on them
+// through the trusted-hint machinery.
+func applyLocalIdentityHints(
 	ctx context.Context,
-	chain []Provider,
-	query SearchQuery,
+	local []localIdentityHint,
 	accumulatedIDs map[string]string,
 	protected map[string]bool,
 ) map[string]string {
 	var won map[string]string
-	for _, p := range chain {
-		hinter, ok := p.(IdentityHintProvider)
-		if !ok {
-			continue
-		}
-		hints := hinter.IdentityHints(ctx, query)
+	for _, hint := range local {
+		hints := hint.ids
 		for _, key := range trustedSearchIDKeys {
 			value, valid := sanitizeProviderIDValue(key, hints[key])
 			if !valid {
 				if strings.TrimSpace(hints[key]) != "" {
 					slog.WarnContext(ctx, "metadata: ignoring malformed local identity hint", "component", "metadata",
-						"provider", p.Slug(), "key", key, "value", strings.TrimSpace(hints[key]))
+						"provider", hint.provider, "key", key, "value", strings.TrimSpace(hints[key]))
 				}
 				continue
 			}
@@ -8498,13 +9404,13 @@ func applyBuiltinIdentityHints(
 			if current != "" && protected[key] {
 				if current != value {
 					slog.WarnContext(ctx, "metadata: local identity hint conflicts with stored id; keeping stored id", "component", "metadata",
-						"provider", p.Slug(), "key", key, "stored", current, "hint", value)
+						"provider", hint.provider, "key", key, "stored", current, "hint", value)
 				}
 				continue
 			}
 			if current != "" && current != value {
 				slog.WarnContext(ctx, "metadata: local identity hint overrides conflicting hint id", "component", "metadata",
-					"provider", p.Slug(), "key", key, "previous", current, "hint", value)
+					"provider", hint.provider, "key", key, "previous", current, "hint", value)
 			}
 			accumulatedIDs[key] = value
 			if won == nil {

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -12,6 +14,12 @@ type fakePersonRefreshRepo struct {
 	persons           map[int64]models.Person
 	refreshAttempts   []int64
 	refreshAttemptErr error
+	updateErr         error
+	// storedIdentity, when set, is the identity UpdateRefreshed reports
+	// storing, as resolving an id conflict would.
+	storedIdentity *catalog.PersonIdentity
+	outcomes       []catalog.PersonRefreshOutcome
+	identities     []catalog.PersonIdentity
 }
 
 func newFakePersonRefreshRepo(persons ...models.Person) *fakePersonRefreshRepo {
@@ -31,18 +39,50 @@ func (r *fakePersonRefreshRepo) Get(_ context.Context, id int64) (*models.Person
 	return &cp, nil
 }
 
-func (r *fakePersonRefreshRepo) Update(_ context.Context, person models.Person) error {
+func (r *fakePersonRefreshRepo) UpdateRefreshed(_ context.Context, person models.Person, lookedUp catalog.PersonIdentity) (catalog.PersonIdentity, error) {
+	if r.updateErr != nil {
+		return catalog.PersonIdentity{}, r.updateErr
+	}
+	if catalog.PersonIdentityOf(r.persons[person.ID]) != lookedUp {
+		return catalog.PersonIdentity{}, catalog.ErrPersonIdentityChanged
+	}
 	r.persons[person.ID] = person
-	return nil
+	if r.storedIdentity != nil {
+		return *r.storedIdentity, nil
+	}
+	return catalog.PersonIdentityOf(person), nil
 }
 
-func (r *fakePersonRefreshRepo) FindRefreshCandidates(_ context.Context, _ int) ([]int64, error) {
+func (r *fakePersonRefreshRepo) ClaimRefreshCandidates(_ context.Context, _ int) ([]int64, error) {
 	return nil, nil
 }
 
 func (r *fakePersonRefreshRepo) MarkRefreshAttempt(_ context.Context, id int64) error {
 	r.refreshAttempts = append(r.refreshAttempts, id)
 	return r.refreshAttemptErr
+}
+
+// StartRefreshAttemptUnlessStartedSince skips when the stored person's
+// attempt is later than since.
+func (r *fakePersonRefreshRepo) StartRefreshAttemptUnlessStartedSince(_ context.Context, id int64, since time.Time) (bool, error) {
+	if attempted := r.persons[id].MetadataRefreshAttemptedAt; attempted != nil && attempted.After(since) {
+		return false, nil
+	}
+	if r.refreshAttemptErr != nil {
+		return false, r.refreshAttemptErr
+	}
+	r.refreshAttempts = append(r.refreshAttempts, id)
+	return true, nil
+}
+
+func (r *fakePersonRefreshRepo) RecordRefreshOutcome(ctx context.Context, _ int64, identity catalog.PersonIdentity, outcome catalog.PersonRefreshOutcome) error {
+	// The service must record with a context that outlives the lookup's.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	r.outcomes = append(r.outcomes, outcome)
+	r.identities = append(r.identities, identity)
+	return nil
 }
 
 type stubPersonProvider struct {
@@ -298,6 +338,56 @@ func TestPersistSeasonsAndEpisodes_ManualRefreshReplacesNonEmptyButPreservesBlan
 	}
 	if episode.StillPath != "s3://episode-old.jpg" || episode.StillThumbhash != "episode-thumb" {
 		t.Fatalf("episode still fields = (%q, %q), want existing still preserved", episode.StillPath, episode.StillThumbhash)
+	}
+}
+
+func TestPersistSeasonsAndEpisodes_ImageLockPreservesSelectedSeasonPoster(t *testing.T) {
+	const seriesID = "series-locked-season-artwork"
+
+	service, _, seasonRepo, _ := newSeasonEpisodeServiceForTest(seriesID)
+	ctx := context.Background()
+	seasonRepo.seasons[seasonKey(seriesID, 1)] = &models.Season{
+		ContentID:        "season-1",
+		SeriesID:         seriesID,
+		SeasonNumber:     1,
+		Title:            "Old Season 1",
+		PosterPath:       "artwork/series/manual-season-1/revision/original.jpg",
+		PosterSourcePath: "tmdb://manual-season-1.jpg",
+		PosterThumbhash:  "manual-thumb",
+	}
+	seasonRepo.seasons[seasonKey(seriesID, 2)] = &models.Season{
+		ContentID:    "season-2",
+		SeriesID:     seriesID,
+		SeasonNumber: 2,
+		Title:        "Old Season 2",
+	}
+
+	service.persistSeasonsAndEpisodes(
+		ctx,
+		&models.MediaItem{ContentID: seriesID, Type: "series", LockedFields: []int{int(FieldImages)}},
+		map[string]string{"tmdb": "123"},
+		"en",
+		"en",
+		[]SeasonResult{
+			{SeasonNumber: 1, Title: "New Season 1", PosterPath: "tmdb://automatic-season-1.jpg"},
+			{SeasonNumber: 2, Title: "New Season 2", PosterPath: "tmdb://automatic-season-2.jpg"},
+		},
+		nil,
+		MergeReplaceUnlocked,
+	)
+
+	selected := seasonRepo.seasons[seasonKey(seriesID, 1)]
+	if selected.PosterPath != "artwork/series/manual-season-1/revision/original.jpg" ||
+		selected.PosterSourcePath != "tmdb://manual-season-1.jpg" || selected.PosterThumbhash != "manual-thumb" {
+		t.Fatalf("selected poster was overwritten: %#v", selected)
+	}
+	if selected.Title != "New Season 1" {
+		t.Fatalf("season title = %q, want metadata refresh to update non-image fields", selected.Title)
+	}
+
+	missing := seasonRepo.seasons[seasonKey(seriesID, 2)]
+	if missing.PosterPath != "tmdb://automatic-season-2.jpg" || missing.PosterSourcePath != "tmdb://automatic-season-2.jpg" {
+		t.Fatalf("missing poster was not backfilled while images were locked: %#v", missing)
 	}
 }
 

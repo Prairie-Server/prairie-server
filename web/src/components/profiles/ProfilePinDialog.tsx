@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Check, Loader2, X } from "lucide-react";
+import { pinLockoutMessage } from "./pinLockout";
+
 interface ProfilePinDialogProps {
   profile: Profile | null;
   onClose: () => void;
@@ -53,8 +55,12 @@ export function ProfilePinDialog({
 
       setError("Incorrect PIN");
       setPin("");
-    } catch {
-      setError("Verification failed");
+    } catch (err) {
+      const lockout = pinLockoutMessage(err);
+      if (lockout) {
+        setPin("");
+      }
+      setError(lockout ?? "Verification failed");
     } finally {
       setVerifying(false);
     }

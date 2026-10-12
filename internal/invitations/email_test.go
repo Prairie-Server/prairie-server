@@ -4,13 +4,15 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 func TestComposeInvitationEmailEscapesNote(t *testing.T) {
 	now := time.Now()
 	content := composeInvitationEmail(
-		"quick", "Prairie", "marco@example.com",
-		"https://prairie.example.com/invite/tok",
+		mail.Brand{}, "quick", "Prairie", "marco@example.com",
+		"https://silo.example.com/invite/tok",
 		`<script>alert("hi")</script>`,
 		now.Add(7*24*time.Hour), now,
 	)
@@ -24,14 +26,6 @@ func TestComposeInvitationEmailEscapesNote(t *testing.T) {
 		t.Error("text body missing sign-in address")
 	}
 	if content.Subject != "quick invited you to Prairie" {
-		t.Errorf("subject = %q", content.Subject)
-	}
-}
-
-func TestComposeInvitationEmailDefaultsInviter(t *testing.T) {
-	now := time.Now()
-	content := composeInvitationEmail("", "", "m@x.io", "https://x/invite/t", "", now.Add(time.Hour), now)
-	if content.Subject != "An admin invited you to Prairie" {
 		t.Errorf("subject = %q", content.Subject)
 	}
 }

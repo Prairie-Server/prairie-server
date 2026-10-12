@@ -1,6 +1,6 @@
 module github.com/prairie-server/prairie-server
 
-go 1.26.7
+go 1.26.9
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/client_model v0.6.3
-	github.com/redis/go-redis/v9 v9.22.0
+	github.com/redis/go-redis/v9 v9.18.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/sys v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -29,6 +29,7 @@ require (
 	github.com/h2non/bimg v1.1.9
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/joho/godotenv v1.5.1
+	github.com/miekg/dns v1.1.61
 	github.com/mmcdole/gofeed v1.5.0
 	github.com/oasdiff/oasdiff v1.32.1
 	github.com/oklog/ulid/v2 v2.1.2
@@ -44,7 +45,7 @@ require (
 	go.n16f.net/thumbhash v1.1.0
 	go.opentelemetry.io/otel/trace v1.46.0
 	golang.org/x/image v0.46.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/tools v0.50.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -57,6 +58,7 @@ require (
 	github.com/andybalholm/brotli v1.2.3 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -139,7 +141,7 @@ require (
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260929144347-55c8d99e04c9
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20261012164003-eb8175742938
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.22.0
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

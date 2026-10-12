@@ -111,19 +111,6 @@ func TestVariantKeyRebuild(t *testing.T) {
 	}
 }
 
-func TestKeyVariant(t *testing.T) {
-	tests := map[string]string{
-		"tmdb/movies/550/poster/w780.abc123.webp": "w780",
-		"tvdb/series/1/still/w300.webp":           "w300",
-		"tmdb/movies/550/poster/original.webp":    "original",
-	}
-	for key, want := range tests {
-		if got := keyVariant(key); got != want {
-			t.Errorf("keyVariant(%q) = %q, want %q", key, got, want)
-		}
-	}
-}
-
 func TestOriginalArtworkFallsBackToResizedVariant(t *testing.T) {
 	original := "tmdb/movies/550/poster/original.abc123.webp"
 	// Prairie's widest poster rung is w500.

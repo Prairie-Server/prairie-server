@@ -237,3 +237,16 @@ func TestWiderVariantKeysPreservesLegacyUnrevisionedKeys(t *testing.T) {
 		t.Fatalf("got %v, want legacy keys without a revision segment", got)
 	}
 }
+
+func TestOriginalOfNamesTheRevisionsOriginal(t *testing.T) {
+	for key, want := range map[string]string{
+		"tmdb/movies/550/poster/w500.abc123.webp":     "tmdb/movies/550/poster/original.abc123.webp",
+		"tmdb/movies/550/poster/original.abc123.webp": "tmdb/movies/550/poster/original.abc123.webp",
+		"tmdb/movies/550/poster/w500.webp":            "tmdb/movies/550/poster/w500.webp",
+		"w500.abc123.webp":                            "w500.abc123.webp",
+	} {
+		if got := OriginalOf(key); got != want {
+			t.Errorf("OriginalOf(%q) = %q, want %q", key, got, want)
+		}
+	}
+}

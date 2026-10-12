@@ -188,6 +188,9 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 	for key, value := range filteredResponseHeaders(response.GetHeaders()) {
 		w.Header().Set(key, value)
 	}
+	// A plugin answers with its own Content-Type; the browser must not
+	// reinterpret the body as something else (script, HTML) on Prairie's origin.
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if response.GetStatusCode() == 0 {
 		response.StatusCode = http.StatusOK
 	}
@@ -229,6 +232,7 @@ func (p *HTTPProxy) serveResolvedAsset(w http.ResponseWriter, r *http.Request, i
 		http.NotFound(w, r)
 		return
 	}
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, resolvedPath)
 }
 

@@ -71,10 +71,21 @@ func (f *fakeServerSettingsStore) UpdateAtomic(
 
 func TestAdminGetEffectiveSettingsReturnsRuntimeDefaultsAndRedactsSecrets(t *testing.T) {
 	settings := &fakeServerSettingsStore{values: map[string]string{
-		"server.log_level": "debug",
-		"tmdb.api_key":     "never-return-this",
+		"server.log_level":         "debug",
+		"tmdb.api_key":             "never-return-this",
+		"clientip.trusted_proxies": "10.0.0.0/8",
 	}}
-	handler := &AdminHandler{SettingsRepo: settings}
+	handler := &AdminHandler{
+		SettingsRepo: settings,
+		BootstrapSensitiveConfigured: map[string]bool{
+			"clientip.trusted_proxies": true,
+			"redis.url":                true,
+		},
+		BootstrapSensitiveValues: map[string]string{
+			"clientip.trusted_proxies": "192.0.2.0/24, 2001:db8::/32",
+			"redis.url":                "redis://private.example.invalid:6379",
+		},
+	}
 	rec := httptest.NewRecorder()
 
 	handler.HandleGetEffectiveSettings(rec, httptest.NewRequest(http.MethodGet, "/admin/settings/effective", nil))
@@ -97,6 +108,12 @@ func TestAdminGetEffectiveSettingsReturnsRuntimeDefaultsAndRedactsSecrets(t *tes
 	}
 	if _, leaked := values["tmdb.api_key"]; leaked {
 		t.Fatal("effective settings response leaked tmdb.api_key")
+	}
+	if got := values["clientip.trusted_proxies"]; got != "192.0.2.0/24, 2001:db8::/32" {
+		t.Fatalf("clientip.trusted_proxies = %q, want active environment value", got)
+	}
+	if _, leaked := values["redis.url"]; leaked {
+		t.Fatal("effective settings response leaked environment-managed redis.url")
 	}
 }
 
@@ -213,40 +230,6 @@ func TestAdminSettingsWritesRejectMachineManagedCheckpoint(t *testing.T) {
 			t.Fatalf("atomic update calls = %d, want 0", settings.atomicCalls)
 		}
 	})
-}
-
-func TestAdminGetEffectiveSettingsUsesEnvironmentManagedRuntimeValue(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{
-		"clientip.trusted_proxies": "10.0.0.0/8",
-	}}
-	handler := &AdminHandler{
-		SettingsRepo: settings,
-		BootstrapSensitiveConfigured: map[string]bool{
-			"clientip.trusted_proxies": true,
-			"redis.url":                true,
-		},
-		BootstrapSensitiveValues: map[string]string{
-			"clientip.trusted_proxies": "192.0.2.0/24, 2001:db8::/32",
-			"redis.url":                "redis://private.example.invalid:6379",
-		},
-	}
-	rec := httptest.NewRecorder()
-
-	handler.HandleGetEffectiveSettings(rec, httptest.NewRequest(http.MethodGet, "/admin/settings/effective", nil))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
-	}
-	var values map[string]string
-	if err := json.NewDecoder(rec.Body).Decode(&values); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if got := values["clientip.trusted_proxies"]; got != "192.0.2.0/24, 2001:db8::/32" {
-		t.Fatalf("clientip.trusted_proxies = %q, want active environment value", got)
-	}
-	if _, leaked := values["redis.url"]; leaked {
-		t.Fatal("effective settings response leaked environment-managed redis.url")
-	}
 }
 
 func TestAdminSettingsValidationIncludesEnvironmentManagedValues(t *testing.T) {
@@ -675,7 +658,7 @@ func TestAdminSettingsRejectClearingOnlyRedisTransport(t *testing.T) {
 		}
 	})
 
-	t.Run("bootstrap Sentinel", func(t *testing.T) {
+	t.Run("bootstrap Redis URL", func(t *testing.T) {
 		settings := newStore()
 		handler := &AdminHandler{
 			SettingsRepo:            settings,
@@ -1029,12 +1012,14 @@ func TestCheckS3ObjectPermissionsCleansUpAfterAmbiguousPutFailure(t *testing.T) 
 func TestCheckS3ObjectPermissionsUsesFreshContextForFailureCleanup(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var cleanupContextErr error
+	cleanupCalled := false
 	client := &fakeS3SettingsCheckClient{
 		getObject: func(context.Context, string, string) ([]byte, error) {
 			cancel()
 			return nil, context.Canceled
 		},
 		delete: func(ctx context.Context, _, _ string) error {
+			cleanupCalled = true
 			cleanupContextErr = ctx.Err()
 			return nil
 		},
@@ -1045,8 +1030,8 @@ func TestCheckS3ObjectPermissionsUsesFreshContextForFailureCleanup(t *testing.T)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error = %v, want context cancellation", err)
 	}
-	if cleanupContextErr != nil {
-		t.Fatalf("cleanup context error = %v, want live cleanup context", cleanupContextErr)
+	if !cleanupCalled || cleanupContextErr != nil {
+		t.Fatalf("cleanup called = %v, context error = %v; want cleanup on a live context", cleanupCalled, cleanupContextErr)
 	}
 }
 
