@@ -2456,7 +2456,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Read a retained job. Administrators may read all jobs; item refresh owners may read their own safe result. */
+    /** Read a retained job. Administrators acting through the account's primary profile may read all jobs; item refresh owners may read their own safe result. */
     get: operations["getAdminJob"];
     put?: never;
     post?: never;
@@ -20578,6 +20578,18 @@ export interface components {
       /** @description Opaque seed for subsequent explicit window jumps; carries query scope and the initial insertion fence */
       window_cursor: string;
     };
+    CatalogCommunityRating: {
+      /**
+       * Format: double
+       * @description Mean star rating, rounded to one decimal
+       */
+      average: number;
+      /**
+       * Format: int64
+       * @description Number of ratings behind the average
+       */
+      count: number;
+    };
     CatalogEffectiveSort: {
       /** @example title */
       field: string;
@@ -20802,6 +20814,8 @@ export interface components {
       cast: components["schemas"]["CastCredit"][];
       /** @description Presigned, short-lived. Transparent cut-out art. Movies and series only */
       clearart_url?: string;
+      /** @description Mean of every profile's 1-5 star rating for this item. Absent when fewer than 3 ratings exist, so a small server does not reveal individual ratings. */
+      community_rating?: components["schemas"]["CatalogCommunityRating"];
       /**
        * @description Deterministic catalog identifier
        * @example movie:heat-1995
@@ -55602,7 +55616,12 @@ export interface operations {
   getAdminJob: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Optional. When present, it must name a profile of the authenticated account. */
+        "X-Profile-Id"?: string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
+      };
       path: {
         id: string;
       };
@@ -55631,6 +55650,15 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -111499,6 +111527,10 @@ export interface operations {
         /** @description Optional first precondition, evaluated before If-None-Match: a tag that does not match the current representation is 412 precondition_failed. */
         "If-Match"?: string;
         "If-None-Match"?: string;
+        /** @description Optional. When present, it must name a profile of the authenticated account. */
+        "X-Profile-Id"?: string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         job_id: string;
@@ -111540,6 +111572,15 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Forbidden */
+      403: {
         headers: {
           [name: string]: unknown;
         };

@@ -271,16 +271,17 @@ type ItemDetail struct {
 	SeasonCount *int `json:"season_count,omitempty"`
 
 	// Season-specific.
-	SeriesID       string          `json:"series_id,omitempty"`
-	SeriesTitle    string          `json:"series_title,omitempty"`
-	SeasonNumber   *int            `json:"season_number,omitempty"`
-	EpisodeNumber  *int            `json:"episode_number,omitempty"`
-	EpisodeCount   *int            `json:"episode_count,omitempty"`
-	AirDate        *string         `json:"air_date,omitempty"`
-	IsSpecials     bool            `json:"is_specials,omitempty"`
-	SeasonUserData *SeasonUserData `json:"user_data,omitempty"`
-	UserState      *ItemUserState  `json:"user_state,omitempty"`
-	UserRating     *int            `json:"user_rating,omitempty"`
+	SeriesID        string           `json:"series_id,omitempty"`
+	SeriesTitle     string           `json:"series_title,omitempty"`
+	SeasonNumber    *int             `json:"season_number,omitempty"`
+	EpisodeNumber   *int             `json:"episode_number,omitempty"`
+	EpisodeCount    *int             `json:"episode_count,omitempty"`
+	AirDate         *string          `json:"air_date,omitempty"`
+	IsSpecials      bool             `json:"is_specials,omitempty"`
+	SeasonUserData  *SeasonUserData  `json:"user_data,omitempty"`
+	UserState       *ItemUserState   `json:"user_state,omitempty"`
+	UserRating      *int             `json:"user_rating,omitempty"`
+	CommunityRating *CommunityRating `json:"community_rating,omitempty"`
 
 	// File versions available for playback.
 	Versions         []FileVersion     `json:"versions"`

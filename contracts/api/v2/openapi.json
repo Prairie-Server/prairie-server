@@ -21680,6 +21680,29 @@
         ],
         "type": "object"
       },
+      "CatalogCommunityRating": {
+        "additionalProperties": false,
+        "properties": {
+          "average": {
+            "description": "Mean star rating, rounded to one decimal",
+            "format": "double",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "number"
+          },
+          "count": {
+            "description": "Number of ratings behind the average",
+            "format": "int64",
+            "minimum": 3,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "average",
+          "count"
+        ],
+        "type": "object"
+      },
       "CatalogEffectiveSort": {
         "additionalProperties": false,
         "properties": {
@@ -22222,6 +22245,10 @@
           "clearart_url": {
             "description": "Presigned, short-lived. Transparent cut-out art. Movies and series only",
             "type": "string"
+          },
+          "community_rating": {
+            "$ref": "#/components/schemas/CatalogCommunityRating",
+            "description": "Mean of every profile's 1-5 star rating for this item. Absent when fewer than 3 ratings exist, so a small server does not reveal individual ratings."
           },
           "content_id": {
             "description": "Deterministic catalog identifier",
@@ -85663,6 +85690,28 @@
         "operationId": "getAdminJob",
         "parameters": [
           {
+            "description": "Optional. When present, it must name a profile of the authenticated account.",
+            "in": "header",
+            "name": "X-Profile-Id",
+            "schema": {
+              "examples": [
+                "1"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked",
+            "in": "header",
+            "name": "X-Profile-Token",
+            "schema": {
+              "examples": [
+                "pvt_5f3a9c1e7b2d4e8fa0c6"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "in": "path",
             "name": "id",
             "required": true,
@@ -85708,6 +85757,16 @@
               }
             },
             "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -85775,11 +85834,11 @@
             "bearerAuth": []
           }
         ],
-        "summary": "Read a retained job. Administrators may read all jobs; item refresh owners may read their own safe result.",
+        "summary": "Read a retained job. Administrators acting through the account's primary profile may read all jobs; item refresh owners may read their own safe result.",
         "tags": [
           "admin-tasks"
         ],
-        "x-silo-class": "authenticated",
+        "x-silo-class": "profile_scoped",
         "x-silo-service-backed": true
       }
     },
@@ -169919,6 +169978,28 @@
             }
           },
           {
+            "description": "Optional. When present, it must name a profile of the authenticated account.",
+            "in": "header",
+            "name": "X-Profile-Id",
+            "schema": {
+              "examples": [
+                "1"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked",
+            "in": "header",
+            "name": "X-Profile-Token",
+            "schema": {
+              "examples": [
+                "pvt_5f3a9c1e7b2d4e8fa0c6"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "in": "path",
             "name": "job_id",
             "required": true,
@@ -169993,6 +170074,16 @@
               }
             },
             "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -170082,7 +170173,7 @@
         "tags": [
           "libraries"
         ],
-        "x-silo-class": "authenticated",
+        "x-silo-class": "profile_scoped",
         "x-silo-conditional": true,
         "x-silo-service-backed": true
       }

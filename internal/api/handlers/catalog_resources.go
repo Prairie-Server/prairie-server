@@ -298,6 +298,12 @@ func (h *CatalogResourceHandler) enrichItemDetail(ctx context.Context, v ItemVie
 		detail.FolderPaths = nil
 	}
 
+	if h.items.ratingsRepo != nil {
+		if average, count, err := h.items.ratingsRepo.Aggregate(ctx, detail.ContentID); err == nil {
+			detail.CommunityRating = catalog.NewCommunityRating(average, count)
+		}
+	}
+
 	h.enrichViewerState(ctx, v, detail)
 }
 

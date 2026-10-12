@@ -9,6 +9,15 @@
 Commands assume the repository root is the cwd. Unprefixed paths are relative to the
 server's `/api/v2` base URL.
 
+The public v1 bridge routes that decode a JSON body before any credential is checked
+(`POST /api/v1/auth/login`, `/api/v1/auth/setup`, `/api/v1/auth/signup`,
+`/api/v1/auth/refresh`, `/api/v1/auth/device/start`, `/api/v1/auth/device/poll`,
+`/api/v1/auth/oauth/complete` and `/api/v1/invitations/{token}/accept`) read at most 1 MiB,
+the same as the v2 structured-body cap. When decoding the JSON value needs more than that,
+the route answers `413` without processing the request: `too_large` in the v1 error shape,
+or plain text on `/api/v1/auth/oauth/complete`. Only the first JSON value is decoded; data
+after it is ignored, not rejected.
+
 ## Login sessions
 
 Login sessions belong to accounts and are separate from household profiles, registered
@@ -331,6 +340,23 @@ the v2 socket-ticket check used by the events, playback-control,
 watch-together and admin-logs sockets (a watch-together re-check that fails closes the
 room). None of them is a token refresh, so a client that signs out only on a refresh 401
 stays signed in and retries.
+
+## Sign-in rate limits
+
+Operations that name a rate-limit budget (`login`, `setup`, `signup`, `invitation`,
+`password_reset`, the `device_*` budgets and the others above) spend one counter per
+budget wherever they run: v1 and v2, and for `login` and the device budgets the
+Jellyfin-compatible listener too. A budget counts per client IP. That is the address taken
+from `X-Forwarded-For` or `X-Real-IP` when the connection comes from a trusted proxy
+(`clientip.trusted_proxies`, every private range and loopback by default), otherwise the
+connection's own address.
+
+When the client IP came from those headers, the request also spends a budget keyed on the
+connection's own address: ten times the per-client one, shared by every client behind that
+proxy. Naming a new client in the headers on each request therefore stops at that budget.
+Direct connections and requests through a network access provider, whose plugin writes the
+header itself, spend only the per-client budget. An exhausted budget answers 429 with
+`Retry-After`.
 
 ## Profile PINs
 

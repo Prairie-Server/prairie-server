@@ -8,6 +8,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	catalogsvc "github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/policy"
@@ -80,7 +81,10 @@ func (reg *Registry) refreshAdminItemMetadata(ctx context.Context, in *AdminItem
 	if err != nil {
 		return nil, collectionProblem(err)
 	}
-	return &AdminCatalogJobAcceptedOutput{Location: Prefix + "/admin/jobs/" + job.ID, RetryAfter: "5", Body: reg.adminTaskJobOf(ctx, job, claims.Role == models.RoleAdmin)}, nil
+	// The job already exists; a failed acting-admin lookup only narrows what
+	// the response shows.
+	actingAdmin, _ := apimw.ActingAdmin(ctx)
+	return &AdminCatalogJobAcceptedOutput{Location: Prefix + "/admin/jobs/" + job.ID, RetryAfter: "5", Body: reg.adminTaskJobOf(ctx, job, actingAdmin)}, nil
 }
 func (reg *Registry) updateAdminItemMetadata(ctx context.Context, in *AdminItemMetadataUpdateInput) (*CatalogItemDetailOutput, error) {
 	if reg.deps.AdminItemMetadata == nil {

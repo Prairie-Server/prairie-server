@@ -9,7 +9,8 @@ manifest=scripts/prairie-invariants.txt
 failures=0
 checked=0
 while IFS=$'\t' read -r path min pattern why || [[ -n "${path:-}" ]]; do
-  [[ -z "${path// }" || "$path" == \#* ]] && continue
+  # [:space:] also covers the \r of a CRLF checkout on Windows.
+  [[ -z "${path//[[:space:]]}" || "$path" == \#* ]] && continue
   checked=$((checked + 1))
   if [[ ! -f "$path" ]]; then
     echo "::error file=$path::Prairie invariant: file missing ($why)"
