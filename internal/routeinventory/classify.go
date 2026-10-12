@@ -847,6 +847,9 @@ var infrastructureMiddleware = []string{
 	// deviceclass.Middleware (Prairie) records the client device class for
 	// artwork sizing; it never grants or changes authorization.
 	"deviceclass.Middleware",
+	// apimw.ProvideActingAdmin only makes the acting-admin decision available
+	// to handlers (apimw.ActingAdmin); it admits and refuses nothing itself.
+	"apimw.ProvideActingAdmin",
 }
 
 func classifyAuth(middleware []string) (string, []string) {
