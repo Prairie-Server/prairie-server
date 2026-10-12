@@ -807,8 +807,8 @@ function NoProviderPanel({
   if (!active) {
     return (
       <p className="text-muted-foreground pt-5 text-sm">
-        No sign-in provider is on, so people sign in with Prairie passwords. Pick a provider above to
-        set it up.
+        No sign-in provider is on, so people sign in with Prairie passwords. Pick a provider above
+        to set it up.
       </p>
     );
   }

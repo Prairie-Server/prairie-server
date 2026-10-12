@@ -13,8 +13,8 @@ const COPY = {
     description: (
       <>
         Sonarr/Radarr report the path of the <em>imported library file</em> — their root folder, not
-        the download client&apos;s working directory. If that root differs from the path Prairie sees,
-        map it here. Same path on both sides? Enter it twice.
+        the download client&apos;s working directory. If that root differs from the path Prairie
+        sees, map it here. Same path on both sides? Enter it twice.
       </>
     ),
     fromLabel: "Sonarr/Radarr root folder",
@@ -26,8 +26,8 @@ const COPY = {
     heading: "Match paths",
     description: (
       <>
-        Only needed when this source reports paths that differ from the ones Prairie sees, for example
-        when Sonarr runs in another container. Leave empty when both sides match.
+        Only needed when this source reports paths that differ from the ones Prairie sees, for
+        example when Sonarr runs in another container. Leave empty when both sides match.
       </>
     ),
     fromLabel: "Path the source reports",

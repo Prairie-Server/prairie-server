@@ -10,6 +10,11 @@ import {
   withoutHLSVariableSubstitutionV3,
 } from "./hlsEngine";
 
+const safariUA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15";
+const chromeUA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151.0.0.0 Safari/537.36";
+
 describe("withoutHLSVariableSubstitutionV3", () => {
   it("drops only the opt-in flag so a native player gets the legacy manifest", () => {
     expect(withoutHLSVariableSubstitutionV3("/v2/s/master.m3u8?st=abc&hls_vars=1")).toBe(

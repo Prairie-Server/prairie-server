@@ -41,8 +41,8 @@ export function DeleteRowDialog({
         <DialogHeader>
           <DialogTitle>Delete {rowTitle}?</DialogTitle>
           <DialogDescription>
-            The row goes away from {pageLabel} for everyone. If Prairie made a collection just for this
-            row, it removes that collection too when nothing else uses it.
+            The row goes away from {pageLabel} for everyone. If Prairie made a collection just for
+            this row, it removes that collection too when nothing else uses it.
           </DialogDescription>
         </DialogHeader>
         {conflict ? (
@@ -102,8 +102,8 @@ export function DeleteRowsDialog({
           <DialogTitle>Delete {rows}?</DialogTitle>
           <DialogDescription>
             {count === 1 ? "The row goes" : "The rows go"} away from {pageLabel} for everyone. If
-            Prairie made a collection just for one of them, it removes that collection too when nothing
-            else uses it.
+            Prairie made a collection just for one of them, it removes that collection too when
+            nothing else uses it.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="items-center sm:justify-between">

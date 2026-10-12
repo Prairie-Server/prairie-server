@@ -307,9 +307,10 @@ function LinkIdentityDialog({
               placeholder="https://id.example.com|8f14e45f"
             />
             <p id={subjectHintId} className="text-muted-foreground text-xs">
-              The provider's exact ID for the person, as Prairie stores it. OpenID Connect: the issuer
-              and subject joined by | (Entra ID: tenant ID and object ID). LDAP: the directory's
-              unique ID, such as entryUUID or objectGUID. Prairie never matches on a name or email.
+              The provider's exact ID for the person, as Prairie stores it. OpenID Connect: the
+              issuer and subject joined by | (Entra ID: tenant ID and object ID). LDAP: the
+              directory's unique ID, such as entryUUID or objectGUID. Prairie never matches on a
+              name or email.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">

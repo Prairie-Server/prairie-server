@@ -482,8 +482,8 @@ function DisconnectDialog({
           <AlertDialogTitle>Disconnect {name}?</AlertDialogTitle>
           <AlertDialogDescription>
             You won&apos;t be able to sign in with {name} anymore. Afterwards, sign in with your
-            Prairie password. The server only allows this while your account can still sign in another
-            way.
+            Prairie password. The server only allows this while your account can still sign in
+            another way.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (

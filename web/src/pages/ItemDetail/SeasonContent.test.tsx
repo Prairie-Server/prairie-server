@@ -95,6 +95,9 @@ vi.mock("@/components/MediaItemMenu", () => ({
 
 vi.mock("@/components/CastCarousel", () => ({
   default: () => <div />,
+  PersonCard: ({ name, href }: { name: string; href: string | null }) => (
+    <a href={href ?? undefined}>{name}</a>
+  ),
 }));
 
 vi.mock("@/components/ui/skeleton", () => ({
@@ -324,9 +327,7 @@ describe("SeasonContent", () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain(">Directors</dt>");
     expect(markup).toContain("Season Director");
-    expect(markup).not.toContain("Creators");
     expect(markup).not.toContain("Series Creator");
   });
 });

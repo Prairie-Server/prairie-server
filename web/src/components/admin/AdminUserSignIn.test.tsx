@@ -404,7 +404,9 @@ describe("AdminUserSignIn password and break-glass", () => {
   it("sets a temporary password on an account without password sign-in", async () => {
     const user = userEvent.setup();
     mount();
-    expect(screen.getByText("Off: alice can't sign in with a Prairie password.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Off: alice can't sign in with a Prairie password."),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Set a password" }));
     const dialog = await screen.findByRole("dialog", { name: "Set a password" });
     const input = within(dialog).getByLabelText("New password");

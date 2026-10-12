@@ -438,8 +438,8 @@ function ChatGPTConnectionPanel({
             </Button>
           </form>
           <p className="text-muted-foreground text-xs">
-            Finish within ten minutes. Prairie stores the connected account’s credentials securely on
-            your server.
+            Finish within ten minutes. Prairie stores the connected account’s credentials securely
+            on your server.
           </p>
           <Button variant="outline" disabled={complete.isPending} onClick={clearLogin}>
             Cancel
@@ -451,8 +451,8 @@ function ChatGPTConnectionPanel({
           <DialogHeader>
             <DialogTitle>You’re using your ChatGPT plan</DialogTitle>
             <DialogDescription>
-              Eligible text AI requests in Prairie use your ChatGPT plan. You can manage Prairie’s access
-              and usage limits in ChatGPT settings.
+              Eligible text AI requests in Prairie use your ChatGPT plan. You can manage Prairie’s
+              access and usage limits in ChatGPT settings.
             </DialogDescription>
           </DialogHeader>
           <Button onClick={() => setWelcomeOpen(false)}>Got it</Button>

@@ -1132,8 +1132,8 @@ export default function WebhookSyncSettings() {
                               <span className="text-foreground">User Data Saved</span> for items
                               marked played or unplayed. User Data Saved also fires during playback;
                               Prairie ignores those deliveries. Leave{" "}
-                              <span className="text-foreground">Playback Progress</span> off — Prairie
-                              ignores it and it generates heavy traffic.
+                              <span className="text-foreground">Playback Progress</span> off —
+                              Prairie ignores it and it generates heavy traffic.
                             </li>
                             <li>
                               Paste the template below into{" "}

@@ -132,19 +132,20 @@ function NetworkSignInRow({ installation }: { installation: PluginInstallation }
           Anyone whose device can reach this server over {label} can sign in, including people you
           share the server with; tagged devices can&apos;t. To limit it, set the plugin&apos;s
           &ldquo;Who can sign in&rdquo; to people granted{" "}
-          <code className="font-mono">siloserver.org/cap/prairie</code>. {label} sign-in never matches
-          an existing account by email: its owner connects {label} from their own Sign-in settings.
+          <code className="font-mono">siloserver.org/cap/prairie</code>. {label} sign-in never
+          matches an existing account by email: its owner connects {label} from their own Sign-in
+          settings.
         </p>
         <p>
           Roles come from grants in your tailnet policy: a{" "}
           <code className="font-mono">siloserver.org/cap/prairie</code> grant with{" "}
           <code className="font-mono">{`{"role":"admin"}`}</code> makes someone a Prairie admin, and{" "}
           <code className="font-mono">{`{"role":"user"}`}</code> a regular user. Anyone who can edit
-          the tailnet policy can make themselves a Prairie admin. Without a grant, a person&apos;s role
-          is left as it is, so removing someone&apos;s admin grant doesn&apos;t demote them: grant
-          them <code className="font-mono">{`{"role":"user"}`}</code> instead. Policy changes apply
-          at the next sign-in or access re-check. An account that also signs in through your main
-          sign-in provider takes its role from that provider.
+          the tailnet policy can make themselves a Prairie admin. Without a grant, a person&apos;s
+          role is left as it is, so removing someone&apos;s admin grant doesn&apos;t demote them:
+          grant them <code className="font-mono">{`{"role":"user"}`}</code> instead. Policy changes
+          apply at the next sign-in or access re-check. An account that also signs in through your
+          main sign-in provider takes its role from that provider.
         </p>
         <pre className="bg-muted overflow-x-auto rounded-md p-3 font-mono">{GRANT_EXAMPLE}</pre>
         <p>

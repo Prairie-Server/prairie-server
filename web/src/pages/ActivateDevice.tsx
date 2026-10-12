@@ -356,7 +356,12 @@ function ActivateDeviceRequest() {
                     <LogIn /> Sign in to approve
                   </Link>
                 </Button>
-                <Button type="button" variant="outline" className="w-full" onClick={enterAnotherCode}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={enterAnotherCode}
+                >
                   <QrCode />
                   Enter another code
                 </Button>
@@ -377,7 +382,12 @@ function ActivateDeviceRequest() {
                     Try again
                   </Button>
                 ) : null}
-                <Button type="button" variant="outline" className="w-full" onClick={enterAnotherCode}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={enterAnotherCode}
+                >
                   <QrCode />
                   Enter another code
                 </Button>
@@ -386,7 +396,9 @@ function ActivateDeviceRequest() {
               <div className="space-y-5">
                 <div className="space-y-1">
                   <h2 className="text-lg font-semibold">Sign in {deviceName}?</h2>
-                  {deviceLine ? <p className="text-muted-foreground text-sm">{deviceLine}</p> : null}
+                  {deviceLine ? (
+                    <p className="text-muted-foreground text-sm">{deviceLine}</p>
+                  ) : null}
                 </div>
 
                 {details.status === "pending" && shownCode ? (
@@ -452,8 +464,8 @@ function ActivateDeviceRequest() {
                         </p>
                       )}
                       <p className="text-sm font-medium">
-                        Only approve a {isQuickConnect ? "device" : "TV"} that&apos;s in front of you
-                        right now.
+                        Only approve a {isQuickConnect ? "device" : "TV"} that&apos;s in front of
+                        you right now.
                       </p>
                       {details.ip_address_hint ? (
                         <p className="text-muted-foreground text-xs">

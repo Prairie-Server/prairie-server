@@ -561,6 +561,7 @@ function CatalogResults({
                       Select Loaded
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                      <RotateCcw className="size-4" />
                       Clear
                     </Button>
                     <Button

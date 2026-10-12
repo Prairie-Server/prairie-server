@@ -582,7 +582,10 @@ export default function Login() {
                     variant="outline"
                     className="w-full justify-start gap-3"
                   >
-                    <a href={startHref(entry.installation_id ?? "")} onClick={() => clearSignedOut()}>
+                    <a
+                      href={startHref(entry.installation_id ?? "")}
+                      onClick={() => clearSignedOut()}
+                    >
                       {entry.icon_url && <img src={entry.icon_url} alt="" className="h-5 w-5" />}
                       <span>{entry.display_name}</span>
                     </a>
@@ -654,8 +657,8 @@ export default function Login() {
                     </Select>
                     {hasDirectoryProvider ? (
                       <p id={providerPickerHintId} className="text-muted-foreground text-xs">
-                        Automatic: accounts with a Prairie password sign in with it, everyone else with
-                        the directory.
+                        Automatic: accounts with a Prairie password sign in with it, everyone else
+                        with the directory.
                       </p>
                     ) : null}
                   </div>

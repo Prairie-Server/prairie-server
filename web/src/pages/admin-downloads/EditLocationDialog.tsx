@@ -306,8 +306,8 @@ function NodeLocationFields({
           ) : null}
           {gbError ? <p className="text-destructive text-xs">{gbError}</p> : null}
           <p className="text-muted-foreground text-xs">
-            {formatStorageBytes(indexed)} stored now. Over budget, Prairie deletes cached files early,
-            least recently used first. Files a device is still waiting on stay.
+            {formatStorageBytes(indexed)} stored now. Over budget, Prairie deletes cached files
+            early, least recently used first. Files a device is still waiting on stay.
           </p>
         </div>
         <p className="text-muted-foreground text-xs">

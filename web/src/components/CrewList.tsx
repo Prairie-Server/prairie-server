@@ -13,18 +13,18 @@ interface CrewListProps {
   jobs?: readonly string[];
 }
 
-/** Jobs to display, in order. Others are ignored unless none match. */
-const DISPLAY_JOBS = ["Director", "Writer", "Producer", "Creator", "Executive Producer"] as const;
+/**
+ * Jobs to display, in order, when the page doesn't choose its own. Creator is
+ * left out on purpose: a series page names its own jobs (see SeriesContent), and
+ * season and episode pages keep the series' creators off their crew rail.
+ */
+const DISPLAY_JOBS = ["Director", "Writer", "Producer", "Executive Producer"] as const;
 
 function normalizeJob(job: string): string {
   return job.trim().toLowerCase();
 }
 
-function pickCrew(
-  crew: CrewMember[],
-  limit: number,
-  jobs: readonly string[],
-): CrewMember[] {
+function pickCrew(crew: CrewMember[], limit: number, jobs: readonly string[]): CrewMember[] {
   const preferred = new Map<string, number>();
   jobs.forEach((job, index) => preferred.set(normalizeJob(job), index));
 

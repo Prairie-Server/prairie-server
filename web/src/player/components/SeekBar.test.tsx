@@ -133,7 +133,9 @@ it("keeps the preview while dragging and on touch", async () => {
   expect((await screen.findByTestId("seek-preview-image")).style.backgroundImage).toContain(
     "sheet-1.jpg",
   );
-  fireEvent.mouseUp(document, { clientX: 950 });
+  // Prairie keeps the bubble when the drag is released over the bar, so release
+  // below it to see the preview go away.
+  fireEvent.mouseUp(document, { clientX: 950, clientY: 200 });
   expect(screen.queryByTestId("seek-preview")).toBeNull();
 
   fireEvent.touchStart(slider, { touches: [{ clientX: 100 }] });

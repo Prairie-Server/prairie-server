@@ -256,7 +256,7 @@ it("keeps a link invitation usable when the address already has an account", asy
   expect(auth.completeLogin).not.toHaveBeenCalled();
 });
 
-it("keeps a link invitation in the browser on Android", async () => {
+it("never offers an open-in-app link, since prairie-android registers no invite host", async () => {
   const agent = vi
     .spyOn(navigator, "userAgent", "get")
     .mockReturnValue(
@@ -265,7 +265,7 @@ it("keeps a link invitation in the browser on Android", async () => {
   try {
     mount();
     await screen.findByLabelText("Password", { exact: true });
-    expect(screen.getByRole("link", { name: /Open in the Prairie app/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Open in the Prairie app/ })).toBeNull();
     cleanup();
     lookup = async () => json(linkInvitation);
     mount();

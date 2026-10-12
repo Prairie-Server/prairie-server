@@ -96,6 +96,9 @@ vi.mock("@/hooks/queries/ratings", () => ({
 
 vi.mock("@/components/CastCarousel", () => ({
   default: () => <div />,
+  PersonCard: ({ name, href }: { name: string; href: string | null }) => (
+    <a href={href ?? undefined}>{name}</a>
+  ),
 }));
 
 vi.mock("./DetailHero", () => ({
@@ -283,12 +286,11 @@ describe("SeriesContent", () => {
       </QueryClientProvider>,
     );
 
-    expect(markup).toContain(">Creators</dt>");
+    // Prairie's crew rail has no job headings: creators lead, then the director.
     for (const creator of creators) {
       expect(markup).toContain(`href="${buildPersonCatalogHref(creator.person_id)}"`);
       expect(markup).toContain(creator.name);
     }
-    expect(markup).toContain(">Directors</dt>");
-    expect(markup.indexOf(">Creators</dt>")).toBeLessThan(markup.indexOf(">Directors</dt>"));
+    expect(markup.indexOf("Creator Three")).toBeLessThan(markup.indexOf("Series Director"));
   });
 });

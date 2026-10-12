@@ -138,11 +138,16 @@ describe("buildStartRequestV3", () => {
     expect(
       buildStartRequestV3({ ...startBase, extraClientFeatures: videoClientFeaturesV3(true) })
         .client_features,
-    ).toEqual(["playback_plan_v3", "plan_invalidated_v1", "hls_variable_substitution_v1"]);
+    ).toEqual([
+      "playback_plan_v3",
+      "plan_invalidated_v1",
+      "marker_thumbnails_v1",
+      "hls_variable_substitution_v1",
+    ]);
     expect(
       buildStartRequestV3({ ...startBase, extraClientFeatures: videoClientFeaturesV3(false) })
         .client_features,
-    ).toEqual(["playback_plan_v3", "plan_invalidated_v1"]);
+    ).toEqual(["playback_plan_v3", "plan_invalidated_v1", "marker_thumbnails_v1"]);
   });
 
   it("declares the protocol version and the plan feature", () => {

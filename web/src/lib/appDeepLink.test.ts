@@ -71,7 +71,7 @@ describe("buildWatchPartyDeepLink", () => {
 
 describe("buildDeviceDeepLink", () => {
   it("emits the prairie://device contract both apps register", () => {
-    expect(buildDeviceDeepLink("3f2a9d5e", "https://silo.example.net:8443", "4821-7730")).toBe(
+    expect(buildDeviceDeepLink("3f2a9d5e", "https://prairie.example.net:8443", "4821-7730")).toBe(
       "prairie://device?server=3f2a9d5e&url=https%3A%2F%2Fprairie.example.net%3A8443&code=48217730",
     );
   });
