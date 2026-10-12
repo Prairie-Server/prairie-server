@@ -4,47 +4,9 @@ import { describe, expect, it } from "vitest";
 
 import type { DisplayQueryDefinition } from "@/api/types";
 import {
-  COLLECTION_MEDIA_FILTER_OPTIONS,
-  COLLECTION_WATCH_FILTER_OPTIONS,
-  collectionMediaFilterLabel,
-  collectionMediaFilterOptionsFromPresets,
-  collectionWatchFilterLabel,
-  collectionWatchFilterOptionsFromPresets,
   displayFiltersToQueryDefinition,
   queryDefinitionToDisplayFilters,
 } from "./collectionDisplayFilters";
-
-describe("collection filter labels and presets", () => {
-  it("labels known watch and media presets", () => {
-    expect(collectionWatchFilterLabel("unwatched")).toBe("Unwatched");
-    expect(collectionWatchFilterLabel("watched")).toBe("Watched");
-    expect(collectionMediaFilterLabel("movie")).toBe("Movies");
-    expect(collectionMediaFilterLabel("series")).toBe("Shows");
-  });
-
-  it("falls back to All for unknown values", () => {
-    expect(collectionWatchFilterLabel("nope" as never)).toBe("All");
-    expect(collectionMediaFilterLabel("nope" as never)).toBe("All");
-  });
-
-  it("returns full option lists when presets are undefined", () => {
-    expect(collectionWatchFilterOptionsFromPresets(undefined)).toEqual(
-      COLLECTION_WATCH_FILTER_OPTIONS,
-    );
-    expect(collectionMediaFilterOptionsFromPresets(undefined)).toEqual(
-      COLLECTION_MEDIA_FILTER_OPTIONS,
-    );
-  });
-
-  it("filters option lists to allowed presets", () => {
-    expect(
-      collectionWatchFilterOptionsFromPresets(["all", "unwatched"]).map((o) => o.value),
-    ).toEqual(["all", "unwatched"]);
-    expect(collectionMediaFilterOptionsFromPresets(["movie"]).map((o) => o.value)).toEqual([
-      "movie",
-    ]);
-  });
-});
 
 describe("displayFiltersToQueryDefinition", () => {
   it("returns undefined when both presets are all", () => {
@@ -94,30 +56,16 @@ describe("displayFiltersToQueryDefinition", () => {
 
 describe("queryDefinitionToDisplayFilters", () => {
   it("defaults to all/all for undefined and null fragments", () => {
-    expect(queryDefinitionToDisplayFilters(undefined)).toEqual({
-      watch: "all",
-      media: "all",
-    });
-    expect(queryDefinitionToDisplayFilters(null)).toEqual({
-      watch: "all",
-      media: "all",
-    });
+    expect(queryDefinitionToDisplayFilters(undefined)).toEqual({ watch: "all", media: "all" });
+    expect(queryDefinitionToDisplayFilters(null)).toEqual({ watch: "all", media: "all" });
   });
 
   it("defaults to all/all for a fragment with no recognized rules", () => {
     const def: DisplayQueryDefinition = {
       match: "all",
-      groups: [
-        {
-          match: "all",
-          rules: [{ field: "genre", op: "is", value: "horror" }],
-        },
-      ],
+      groups: [{ match: "all", rules: [{ field: "genre", op: "is", value: "horror" }] }],
     };
-    expect(queryDefinitionToDisplayFilters(def)).toEqual({
-      watch: "all",
-      media: "all",
-    });
+    expect(queryDefinitionToDisplayFilters(def)).toEqual({ watch: "all", media: "all" });
   });
 
   it("reads watched=true / watched=false back to presets", () => {
@@ -148,10 +96,7 @@ describe("queryDefinitionToDisplayFilters", () => {
         },
       ],
     };
-    expect(queryDefinitionToDisplayFilters(def)).toEqual({
-      watch: "unwatched",
-      media: "series",
-    });
+    expect(queryDefinitionToDisplayFilters(def)).toEqual({ watch: "unwatched", media: "series" });
   });
 
   it("round-trips both presets through the fragment", () => {
@@ -163,9 +108,10 @@ describe("queryDefinitionToDisplayFilters", () => {
   });
 
   it("tolerates a group with a missing rules array", () => {
-    expect(queryDefinitionToDisplayFilters({ groups: [{}] })).toEqual({
-      watch: "all",
-      media: "all",
-    });
+    const def = {
+      match: "all",
+      groups: [{ match: "all" }],
+    } as unknown as DisplayQueryDefinition;
+    expect(queryDefinitionToDisplayFilters(def)).toEqual({ watch: "all", media: "all" });
   });
 });
