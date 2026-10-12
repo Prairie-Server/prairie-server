@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/database/pglock"
 	"github.com/prairie-server/prairie-server/internal/mediasample"

@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/models"
-	"github.com/prairie-server/prairie-server/internal/scantrigger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 type fakeStore struct {

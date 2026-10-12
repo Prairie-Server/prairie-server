@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
-	"github.com/prairie-server/prairie-server/internal/logredact"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/prairie-server/prairie-server/internal/logredact"
 )
 
 // ScanSourceProvider yields changed paths for one source. The engine calls

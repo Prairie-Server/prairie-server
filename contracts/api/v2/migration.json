@@ -30345,11 +30345,12 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -30497,11 +30498,12 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -30955,11 +30957,12 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -31005,11 +31008,12 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -31157,11 +31161,12 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],

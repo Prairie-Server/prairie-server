@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"

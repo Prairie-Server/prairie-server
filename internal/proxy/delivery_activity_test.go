@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/prairie-server/prairie-server/internal/nodesessions"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
-	"github.com/redis/go-redis/v9"
 )
 
 func deliveryRedisTestClient(t *testing.T) *redis.Client {

@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/redis/go-redis/v9"
 )
 
 func redisTestClient(t *testing.T) *redis.Client {

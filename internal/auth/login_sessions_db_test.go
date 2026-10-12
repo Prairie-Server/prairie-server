@@ -10,11 +10,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // TestLoginSessionActivityAndAdminRevocationDB needs a migrated throwaway DB.

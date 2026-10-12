@@ -24,8 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // respTestServer speaks enough RESP2 for a go-redis client to connect,

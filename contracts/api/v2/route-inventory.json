@@ -19488,11 +19488,12 @@
       "handler_expr": "liveTVHandler.HandleListChannels",
       "handler_kind": "method",
       "handler_resolved": true,
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -19589,11 +19590,12 @@
       "handler_expr": "liveTVHandler.HandleListGuide",
       "handler_kind": "method",
       "handler_resolved": true,
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -19894,11 +19896,12 @@
       "handler_expr": "liveTVHandler.HandleGetProgram",
       "handler_kind": "method",
       "handler_resolved": true,
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -19927,11 +19930,12 @@
       "handler_expr": "liveTVHandler.HandleListRecordings",
       "handler_kind": "method",
       "handler_resolved": true,
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],
@@ -20028,11 +20032,12 @@
       "handler_expr": "liveTVHandler.HandleListSeriesRules",
       "handler_kind": "method",
       "handler_resolved": true,
-      "middleware_chain": 5,
+      "middleware_chain": 7,
       "auth_class": "profile_scoped",
       "auth_traits": [
         "authenticated",
         "demo_guarded",
+        "household_profile_gate",
         "rate_limited",
         "viewer_access"
       ],

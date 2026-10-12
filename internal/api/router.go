@@ -3770,11 +3770,16 @@ func newChiRouter(deps Dependencies) chi.Router {
 
 				if liveTVHandler != nil {
 					r.Route("/livetv", func(r chi.Router) {
-						r.Get("/channels", liveTVHandler.HandleListChannels)
-						r.Get("/guide", liveTVHandler.HandleListGuide)
-						r.Get("/programs/{programId}", liveTVHandler.HandleGetProgram)
-						r.Get("/recordings", liveTVHandler.HandleListRecordings)
-						r.Get("/series-rules", liveTVHandler.HandleListSeriesRules)
+						// Profile-optional viewer reads: a household with a
+						// limited profile must name one (apimw.HouseholdProfileGate).
+						r.Group(func(r chi.Router) {
+							r.Use(householdProfileGate)
+							r.Get("/channels", liveTVHandler.HandleListChannels)
+							r.Get("/guide", liveTVHandler.HandleListGuide)
+							r.Get("/programs/{programId}", liveTVHandler.HandleGetProgram)
+							r.Get("/recordings", liveTVHandler.HandleListRecordings)
+							r.Get("/series-rules", liveTVHandler.HandleListSeriesRules)
+						})
 
 						r.Group(func(r chi.Router) {
 							r.Use(apimw.RequireProfile)
