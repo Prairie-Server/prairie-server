@@ -33,8 +33,6 @@ type Library struct {
 	AutoTranslateMetadata      bool     `json:"auto_translate_metadata" doc:"Translate descriptions when providers lack the language" example:"false"`
 	ChapterThumbnailsEnabled   bool     `json:"chapter_thumbnails_enabled" example:"false"`
 	ChapterThumbnailsSupported bool     `json:"chapter_thumbnails_supported" doc:"Whether the server can produce chapter thumbnails (public asset storage is configured)" example:"true"`
-	TrickplayEnabled           bool     `json:"trickplay_enabled" doc:"Generate seek-bar preview sprite sheets for this library" example:"false"`
-	TrickplaySupported         bool     `json:"trickplay_supported" doc:"Whether the server can store seek-bar previews (artwork storage is configured)" example:"true"`
 	IntroDetectionEnabled      bool     `json:"intro_detection_enabled" example:"false"`
 	TrickplayEnabled           bool     `json:"trickplay_enabled" doc:"Generate seek-bar preview images for the library's video files" example:"false"`
 	TrickplaySupported         bool     `json:"trickplay_supported" doc:"Whether the server can produce seek-bar previews (public asset storage is configured)" example:"true"`
@@ -55,7 +53,6 @@ type LibraryCreate struct {
 	Name                     string   `json:"name" minLength:"1" example:"Movies"`
 	MetadataLanguage         string   `json:"metadata_language,omitempty" doc:"ISO 639-1 code; default en" example:"en"`
 	ChapterThumbnailsEnabled bool     `json:"chapter_thumbnails_enabled,omitempty" doc:"Requires public asset storage" example:"false"`
-	TrickplayEnabled         bool     `json:"trickplay_enabled,omitempty" doc:"Requires artwork storage" example:"false"`
 	IntroDetectionEnabled    bool     `json:"intro_detection_enabled,omitempty" example:"false"`
 	TrickplayEnabled         bool     `json:"trickplay_enabled,omitempty" doc:"Generate seek-bar preview images; requires public asset storage" example:"false"`
 	TrailerKinds             []string `json:"trailer_kinds,omitempty" doc:"Remote video kinds to fetch; omitted applies the default (every provider kind), empty disables them" example:"[\"trailer\"]"`
@@ -72,7 +69,6 @@ type LibraryUpdate struct {
 	MetadataLanguage         *string   `json:"metadata_language,omitempty" nullable:"false" doc:"ISO 639-1 code; a change queues a quick metadata refresh" example:"en"`
 	AutoTranslateMetadata    *bool     `json:"auto_translate_metadata,omitempty" nullable:"false" example:"false"`
 	ChapterThumbnailsEnabled *bool     `json:"chapter_thumbnails_enabled,omitempty" nullable:"false" example:"false"`
-	TrickplayEnabled         *bool     `json:"trickplay_enabled,omitempty" nullable:"false" doc:"Requires artwork storage" example:"false"`
 	IntroDetectionEnabled    *bool     `json:"intro_detection_enabled,omitempty" nullable:"false" example:"false"`
 	TrickplayEnabled         *bool     `json:"trickplay_enabled,omitempty" nullable:"false" doc:"Generate seek-bar preview images; turning it off deletes the library's previews" example:"false"`
 	TrailerKinds             *[]string `json:"trailer_kinds,omitempty" nullable:"false" doc:"Replaces the allow-list; empty disables remote videos" example:"[\"trailer\"]"`
@@ -1066,7 +1062,6 @@ func (reg *Registry) createLibrary(ctx context.Context, in *LibraryCreateInput) 
 		Name:                     in.Body.Name,
 		MetadataLanguage:         in.Body.MetadataLanguage,
 		ChapterThumbnailsEnabled: in.Body.ChapterThumbnailsEnabled,
-		TrickplayEnabled:         in.Body.TrickplayEnabled,
 		IntroDetectionEnabled:    in.Body.IntroDetectionEnabled,
 		TrailerKinds:             in.Body.TrailerKinds,
 		RealtimeMonitoring:       in.Body.RealtimeMonitoring,
@@ -1103,7 +1098,6 @@ func (reg *Registry) updateLibrary(ctx context.Context, in *LibraryUpdateInput) 
 		MetadataLanguage:         in.Body.MetadataLanguage,
 		AutoTranslateMetadata:    in.Body.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled: in.Body.ChapterThumbnailsEnabled,
-		TrickplayEnabled:         in.Body.TrickplayEnabled,
 		IntroDetectionEnabled:    in.Body.IntroDetectionEnabled,
 		TrailerKinds:             in.Body.TrailerKinds,
 		RealtimeMonitoring:       in.Body.RealtimeMonitoring,
@@ -1505,8 +1499,6 @@ func libraryOf(v handlers.LibraryView) Library {
 		AutoTranslateMetadata:      v.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled:   v.ChapterThumbnailsEnabled,
 		ChapterThumbnailsSupported: v.ChapterThumbnailsSupported,
-		TrickplayEnabled:           v.TrickplayEnabled,
-		TrickplaySupported:         v.TrickplaySupported,
 		IntroDetectionEnabled:      v.IntroDetectionEnabled,
 		TrickplayEnabled:           v.TrickplayEnabled,
 		TrickplaySupported:         v.TrickplaySupported,

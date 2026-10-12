@@ -99,7 +99,7 @@ func (h *LibraryHandler) CreateLibrary(ctx context.Context, req LibraryCreateReq
 	if req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 
@@ -186,7 +186,7 @@ func (h *LibraryHandler) UpdateLibrary(ctx context.Context, id, userID int, req 
 	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && !h.chapterThumbnailStoreReady() {
 		return LibraryView{}, fieldError("chapter_thumbnails_enabled", "Chapter thumbnails require configured artwork storage")
 	}
-	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !h.trickplayStoreReady() {
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && h.ArtworkStore == nil {
 		return LibraryView{}, fieldError("trickplay_enabled", "Seek previews require configured artwork storage")
 	}
 

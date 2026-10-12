@@ -168,10 +168,6 @@ type PlaybackChapterThumbnailQueuer interface {
 	QueuePriorityFileAtPosition(ctx context.Context, fileID int, targetSeconds float64)
 }
 
-type TrickplayQueuer interface {
-	QueuePriorityFileAtPosition(ctx context.Context, fileID int, targetSeconds float64)
-}
-
 // PlaybackOriginalLanguageLookup fetches the original language for a content item.
 type PlaybackOriginalLanguageLookup interface {
 	GetOriginalLanguage(ctx context.Context, contentID string) (string, error)
@@ -239,7 +235,6 @@ type PlaybackHandler struct {
 	// simply stays unknown and the copy route is never withdrawn.
 	CopySafetyRacer        PlaybackCopySafetyRacer
 	ChapterThumbnailQueuer PlaybackChapterThumbnailQueuer
-	TrickplayQueuer        TrickplayQueuer
 	IntroAnalyzer          PlaybackEpisodeAnalyzer
 	IntroRepository        PlaybackIntroEligibilityChecker
 	MarkerRegistry         *markers.Registry

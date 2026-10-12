@@ -208,13 +208,7 @@ describe("marker detection switch", () => {
   ])("labels detection for %s libraries", (type, label) => {
     const { result } = renderHook(() => useLibraryForm({ library: null }));
     act(() => result.current.handleTypeChange(type));
-    render(
-      <AdvancedFields
-        form={result.current}
-        chapterThumbnailsSupported={false}
-        trickplaySupported={false}
-      />,
-    );
+    render(<AdvancedFields form={result.current} chapterThumbnailsSupported={false} />);
     expect(screen.getByText(label)).toBeTruthy();
   });
 
@@ -231,26 +225,14 @@ describe("marker detection switch", () => {
   ])("describes what detection covers in %s libraries", (type, description) => {
     const { result } = renderHook(() => useLibraryForm({ library: null }));
     act(() => result.current.handleTypeChange(type));
-    render(
-      <AdvancedFields
-        form={result.current}
-        chapterThumbnailsSupported={false}
-        trickplaySupported={false}
-      />,
-    );
+    render(<AdvancedFields form={result.current} chapterThumbnailsSupported={false} />);
     expect(screen.getByText(description)).toBeTruthy();
   });
 
   it("is hidden for book libraries", () => {
     const { result } = renderHook(() => useLibraryForm({ library: null }));
     act(() => result.current.handleTypeChange("audiobooks"));
-    render(
-      <AdvancedFields
-        form={result.current}
-        chapterThumbnailsSupported={false}
-        trickplaySupported={false}
-      />,
-    );
+    render(<AdvancedFields form={result.current} chapterThumbnailsSupported={false} />);
     expect(screen.queryByText(/Detect .*markers/)).toBeNull();
   });
 });

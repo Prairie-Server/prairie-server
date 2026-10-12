@@ -920,7 +920,6 @@ export interface FileVersion {
   audio_tracks?: VersionAudioTrack[];
   subtitle_tracks?: VersionSubtitleTrack[];
   chapters?: VersionChapter[];
-  trickplay?: VersionTrickplay | null;
   intro?: TimeRange | null;
   credits?: TimeRange | null;
   recap?: TimeRange | null;
@@ -957,21 +956,6 @@ export interface VersionChapter {
   source: string;
   thumbnail_url?: string;
   thumbnail_thumbhash?: string;
-}
-
-export interface VersionTrickplaySheet {
-  index: number;
-  url: string;
-}
-
-export interface VersionTrickplay {
-  interval_seconds: number;
-  width: number;
-  height: number;
-  tile_columns: number;
-  tile_rows: number;
-  thumbnail_count: number;
-  sheets: VersionTrickplaySheet[];
 }
 
 export interface VersionVideoTrack {
@@ -3596,8 +3580,6 @@ export interface Library {
   auto_translate_metadata: boolean;
   chapter_thumbnails_enabled: boolean;
   chapter_thumbnails_supported: boolean;
-  trickplay_enabled: boolean;
-  trickplay_supported: boolean;
   intro_detection_enabled: boolean;
   /** Generate seek-bar previews for the library's video files. Absent from servers without seek previews. */
   trickplay_enabled?: boolean;
@@ -3747,7 +3729,6 @@ export interface CreateLibraryRequest {
   metadata_language?: string;
   auto_translate_metadata?: boolean;
   chapter_thumbnails_enabled?: boolean;
-  trickplay_enabled?: boolean;
   intro_detection_enabled?: boolean;
   /** Sent only when it changes, so a server without seek previews never sees it. */
   trickplay_enabled?: boolean;

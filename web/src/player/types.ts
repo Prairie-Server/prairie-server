@@ -34,7 +34,6 @@ export interface PlayerFileVersion {
   video_tracks?: PlayerVideoTrack[];
   audio_tracks?: PlayerAudioTrack[];
   chapters?: PlayerChapter[];
-  trickplay?: PlayerTrickplay | null;
   intro?: PlayerTimeRange | null;
   credits?: PlayerTimeRange | null;
   recap?: PlayerTimeRange | null;
@@ -71,21 +70,6 @@ export interface PlayerChapter {
   source: string;
   thumbnail_url?: string;
   thumbnail_thumbhash?: string;
-}
-
-export interface PlayerTrickplaySheet {
-  index: number;
-  url: string;
-}
-
-export interface PlayerTrickplay {
-  interval_seconds: number;
-  width: number;
-  height: number;
-  tile_columns: number;
-  tile_rows: number;
-  thumbnail_count: number;
-  sheets: PlayerTrickplaySheet[];
 }
 
 export interface PlayerVideoTrack {

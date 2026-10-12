@@ -158,7 +158,6 @@ type Dependencies struct {
 	// the capability this API advertises cannot drift from whether the extraction
 	// service was actually constructed.
 	ChapterThumbnailStoreReady bool
-	TrickplayStoreReady        bool
 	S3Private                  *s3client.Client              // private internal bucket client (may be nil)
 	BrandingService            *branding.Service             // white-label branding (nil when DB unavailable)
 	EmailBrand                 *mail.BrandLoader             // server branding for outgoing email (nil sends Prairie's default)
@@ -273,7 +272,6 @@ type Dependencies struct {
 	MetadataService        handlers.MatchMetadataService     // metadata search+process (may be nil)
 	CollectionService      *catalog.LibraryCollectionService // collection service (may be nil)
 	ChapterThumbnailQueuer catalog.ChapterThumbnailQueuer
-	TrickplayQueuer        handlers.TrickplayQueuer
 	PlaybackRealtimeHub    *playback.RealtimeHub
 	OnUserSessionsRevoked  func(ctx context.Context, userID int)
 	// OnDownloadService receives the configured download service when the
@@ -749,10 +747,6 @@ func newChiRouter(deps Dependencies) chi.Router {
 	if deps.FolderRepo != nil {
 		libraryHandler = handlers.NewLibraryHandler(deps.FolderRepo, deps.LibraryIngester, userRepo, deps.DB, deps.Refresher, deps.AppContext)
 		libraryHandler.ChapterThumbnailStoreReady = deps.ChapterThumbnailStoreReady
-		libraryHandler.TrickplayStoreReady = deps.TrickplayStoreReady
-		if !libraryHandler.TrickplayStoreReady {
-			libraryHandler.TrickplayStoreReady = deps.ChapterThumbnailStoreReady
-		}
 		if accessGroupStore != nil {
 			libraryHandler.AccessGroups = accessGroupStore
 		}
@@ -1433,7 +1427,6 @@ func newChiRouter(deps Dependencies) chi.Router {
 		}
 		playbackHandler.ProbeEnsurer = deps.ProbeEnsurer
 		playbackHandler.ChapterThumbnailQueuer = deps.ChapterThumbnailQueuer
-		playbackHandler.TrickplayQueuer = deps.TrickplayQueuer
 		if settingsRepo != nil {
 			playbackHandler.SettingsRepo = settingsRepo
 		}

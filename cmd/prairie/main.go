@@ -1589,7 +1589,6 @@ func main() {
 	// Published to the API from here rather than recomputed there: one decision,
 	// so the admin toggle cannot offer a capability the service does not have.
 	deps.ChapterThumbnailStoreReady = chapterThumbnailStoreReady(deps)
-	deps.TrickplayStoreReady = deps.ChapterThumbnailStoreReady
 	var chapterThumbService *chapterthumbs.Service
 	if deps.FileRepo != nil && deps.FolderRepo != nil && deps.Blobs.Assets != nil {
 		chapterThumbService = chapterthumbs.NewService(
@@ -1613,23 +1612,6 @@ func main() {
 			deps.ChapterThumbnailQueuer = chapterThumbService
 		}
 	}
-	var trickplayService *trickplay.SheetService
-	trickplayObjStore := trickplayObjectStore(deps)
-	if deps.FileRepo != nil && deps.FolderRepo != nil && trickplayObjStore != nil {
-		trickplayService = trickplay.NewSheetService(
-			deps.FileRepo,
-			deps.FolderRepo,
-			settingsRepo,
-			trickplayObjStore,
-			playback.ResolveFFmpegPath(cfg.Playback.FFmpegPath),
-			cfg.Playback.ChapterThumbnailWorkers,
-		)
-		if trickplayService != nil {
-			trickplayService.Start(appCtx)
-			deps.TrickplayQueuer = trickplayService
-		}
-	}
-
 	var pluginHost *pluginhost.Host
 	var pluginService *plugins.Service
 	var pluginInstallationStore *plugins.InstallationStore
@@ -3152,9 +3134,6 @@ func main() {
 		}
 		if chapterBackfiller, ok := deps.ChapterThumbnailQueuer.(*chapterthumbs.Service); ok {
 			taskMgr.Register(tasks.NewChapterThumbnailBackfillTask(chapterBackfiller, 25))
-		}
-		if trickplayBackfiller, ok := deps.TrickplayQueuer.(*trickplay.SheetService); ok {
-			taskMgr.Register(tasks.NewTrickplayBackfillTask(trickplayBackfiller, 25))
 		}
 		maintenanceSteps = append(maintenanceSteps, tasks.NewActivityLogCleanupTask(deps.DB, settingsRepo, activityPM))
 		taskMgr.Register(tasks.NewOperationalLogCleanupTask(deps.DB, settingsRepo, opsPM))
@@ -5034,7 +5013,7 @@ func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
 	imageutil.SetEncodeBudgetSize(0)
 }
 
-// Prairie's AVIF/trickplay artwork consumers predate upstream's blobstore and
+// Prairie's AVIF artwork consumers predate upstream's blobstore and
 // speak a bucket-oriented contract. blobArtworkStore adapts the assets store
 // to it; the bucket argument is ignored because blobstore keys are logical.
 type blobArtworkStore struct{ store blobstore.Store }
@@ -5097,13 +5076,6 @@ func artworkBackendName(deps api.Dependencies) string {
 
 func chapterThumbnailStoreReady(deps api.Dependencies) bool {
 	return deps.Blobs.Assets != nil
-}
-
-func trickplayObjectStore(deps api.Dependencies) trickplay.ObjectStore {
-	if a := artworkBlobAdapter(deps); a != nil {
-		return a
-	}
-	return nil
 }
 
 func ensureAuditDetailIndexes(ctx context.Context, pool *pgxpool.Pool) error {

@@ -64,17 +64,13 @@ type LibraryHandler struct {
 	ArtworkStore          blobstore.Store
 	ArtworkResolver       artworkurl.Resolver
 	// ChapterThumbnailStoreReady reports whether a store exists to hold chapter
-	// thumbnails when ArtworkStore is not wired (Prairie). Trickplay sheets use
-	// the same store.
+	// thumbnails when ArtworkStore is not wired (Prairie).
 	ChapterThumbnailStoreReady bool
-	// TrickplayStoreReady mirrors ChapterThumbnailStoreReady; both features share
-	// the artwork object store.
-	TrickplayStoreReady bool
-	appCtx              context.Context
-	EventBus            cache.EventBus
-	EventsHub           *evt.Hub
-	ScanRegistry        *evt.ScanRegistry
-	ScanQueue           libraryScanQueuer
+	appCtx                     context.Context
+	EventBus                   cache.EventBus
+	EventsHub                  *evt.Hub
+	ScanRegistry               *evt.ScanRegistry
+	ScanQueue                  libraryScanQueuer
 	// RealtimeMonitor, when set, reconciles real-time library monitoring
 	// right after a library create, update or delete handled on this node.
 	RealtimeMonitor libraryMonitorPoker
@@ -218,7 +214,6 @@ type createLibraryRequest struct {
 	Name                     string   `json:"name"`
 	MetadataLanguage         string   `json:"metadata_language,omitempty"`
 	ChapterThumbnailsEnabled bool     `json:"chapter_thumbnails_enabled,omitempty"`
-	TrickplayEnabled         bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh; omitted = default (all provider kinds).
@@ -226,6 +221,8 @@ type createLibraryRequest struct {
 	// RealtimeMonitoring is set only by the v2 createLibrary operation; the
 	// frozen /api/v1 body never carries it. nil means on.
 	RealtimeMonitoring *bool `json:"-"`
+	// TrickplayEnabled is set only by the v2 createLibrary operation.
+	TrickplayEnabled bool `json:"-"`
 }
 
 // updateLibraryRequest represents the JSON body for PUT /libraries/{id}.
@@ -237,7 +234,6 @@ type updateLibraryRequest struct {
 	MetadataLanguage         *string   `json:"metadata_language,omitempty"`
 	AutoTranslateMetadata    *bool     `json:"auto_translate_metadata,omitempty"`
 	ChapterThumbnailsEnabled *bool     `json:"chapter_thumbnails_enabled,omitempty"`
-	TrickplayEnabled         *bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    *bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh (ExtraKind values); empty array disables remote videos.
@@ -245,6 +241,8 @@ type updateLibraryRequest struct {
 	// RealtimeMonitoring is set only by the v2 updateLibrary operation; the
 	// frozen /api/v1 body never carries it, so v1 updates leave it unchanged.
 	RealtimeMonitoring *bool `json:"-"`
+	// TrickplayEnabled is set only by the v2 updateLibrary operation.
+	TrickplayEnabled *bool `json:"-"`
 }
 
 // affectsTrickplay reports whether the update can change which of the
@@ -293,8 +291,6 @@ type libraryResponse struct {
 	AutoTranslateMetadata      bool       `json:"auto_translate_metadata"`
 	ChapterThumbnailsEnabled   bool       `json:"chapter_thumbnails_enabled"`
 	ChapterThumbnailsSupported bool       `json:"chapter_thumbnails_supported"`
-	TrickplayEnabled           bool       `json:"trickplay_enabled"`
-	TrickplaySupported         bool       `json:"trickplay_supported"`
 	IntroDetectionEnabled      bool       `json:"intro_detection_enabled"`
 	TrailerKinds               []string   `json:"trailer_kinds"`
 	SortOrder                  int        `json:"sort_order"`
@@ -306,8 +302,10 @@ type libraryResponse struct {
 	// RealtimeMonitoring is read by the v2 library view only; the frozen
 	// /api/v1 response does not carry it.
 	RealtimeMonitoring bool `json:"-"`
-	// Prairie: TrickplayEnabled and TrickplaySupported are declared above with
-	// JSON tags, so both the v1 response and the v2 library view carry them.
+	// TrickplayEnabled and TrickplaySupported are read by the v2 library
+	// view only.
+	TrickplayEnabled   bool `json:"-"`
+	TrickplaySupported bool `json:"-"`
 }
 
 type libraryMountCheckRootResponse struct {
@@ -441,7 +439,6 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 		ChapterThumbnailsEnabled:   f.ChapterThumbnailsEnabled,
 		ChapterThumbnailsSupported: false,
 		TrickplayEnabled:           f.TrickplayEnabled,
-		TrickplaySupported:         false,
 		IntroDetectionEnabled:      f.IntroDetectionEnabled,
 		TrailerKinds:               trailerKinds,
 		SortOrder:                  f.SortOrder,
@@ -458,7 +455,7 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 func (h *LibraryHandler) toLibraryResponseWithPoster(ctx context.Context, f *models.MediaFolder) libraryResponse {
 	resp := toLibraryResponse(f)
 	resp.ChapterThumbnailsSupported = h.chapterThumbnailStoreReady()
-	resp.TrickplaySupported = h.trickplayStoreReady()
+	resp.TrickplaySupported = h.ArtworkStore != nil
 	if f.PosterPath != "" && h.ArtworkResolver != nil {
 		resp.PosterURL = h.ArtworkResolver.ResolveURLs(ctx, []string{f.PosterPath})[f.PosterPath].URL
 	}
@@ -1828,10 +1825,4 @@ func (h *LibraryHandler) ScanControlAvailable() bool { return h.ScanQueue != nil
 // chapterThumbnailStoreReady reports whether chapter thumbnails have a store.
 func (h *LibraryHandler) chapterThumbnailStoreReady() bool {
 	return h.ArtworkStore != nil || h.ChapterThumbnailStoreReady
-}
-
-// trickplayStoreReady reports whether trickplay sprite sheets have a store;
-// they share the chapter-thumbnail artwork store.
-func (h *LibraryHandler) trickplayStoreReady() bool {
-	return h.TrickplayStoreReady || h.chapterThumbnailStoreReady()
 }

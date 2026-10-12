@@ -45,8 +45,6 @@ export function libraryFromV2(library: LibraryV2): Library {
     auto_translate_metadata: library.auto_translate_metadata,
     chapter_thumbnails_enabled: library.chapter_thumbnails_enabled,
     chapter_thumbnails_supported: library.chapter_thumbnails_supported,
-    trickplay_enabled: library.trickplay_enabled,
-    trickplay_supported: library.trickplay_supported,
     intro_detection_enabled: library.intro_detection_enabled,
     trickplay_enabled: library.trickplay_enabled,
     trickplay_supported: library.trickplay_supported,
@@ -75,7 +73,6 @@ export function libraryCreateToV2(body: CreateLibraryRequest): V2Body<"POST /api
     ...(body.chapter_thumbnails_enabled === undefined
       ? {}
       : { chapter_thumbnails_enabled: body.chapter_thumbnails_enabled }),
-    ...(body.trickplay_enabled === undefined ? {} : { trickplay_enabled: body.trickplay_enabled }),
     ...(body.intro_detection_enabled === undefined
       ? {}
       : { intro_detection_enabled: body.intro_detection_enabled }),
