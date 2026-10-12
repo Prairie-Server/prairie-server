@@ -12,22 +12,22 @@ import (
 )
 
 const (
-	opListLiveTVChannels       = "listLiveTVChannels"
-	opGetLiveTVGuide           = "getLiveTVGuide"
-	opGetLiveTVProgram         = "getLiveTVProgram"
-	opStartLiveTVSession       = "startLiveTVSession"
-	opHeartbeatLiveTVSession   = "heartbeatLiveTVSession"
-	opStopLiveTVSession        = "stopLiveTVSession"
-	opListLiveTVRecordings     = "listLiveTVRecordings"
-	opScheduleLiveTVRecording  = "scheduleLiveTVRecording"
-	opCancelLiveTVRecording    = "cancelLiveTVRecording"
-	opListLiveTVSeriesRules    = "listLiveTVSeriesRules"
-	opCreateLiveTVSeriesRule   = "createLiveTVSeriesRule"
-	opDeleteLiveTVSeriesRule   = "deleteLiveTVSeriesRule"
-	liveTVTag                  = "livetv"
-	liveTVDomain               = "Live TV"
-	liveTVTransportMPEGTS      = "mpegts"
-	liveTVGuideMaxWindow       = 7 * 24 * time.Hour
+	opListLiveTVChannels      = "listLiveTVChannels"
+	opGetLiveTVGuide          = "getLiveTVGuide"
+	opGetLiveTVProgram        = "getLiveTVProgram"
+	opStartLiveTVSession      = "startLiveTVSession"
+	opHeartbeatLiveTVSession  = "heartbeatLiveTVSession"
+	opStopLiveTVSession       = "stopLiveTVSession"
+	opListLiveTVRecordings    = "listLiveTVRecordings"
+	opScheduleLiveTVRecording = "scheduleLiveTVRecording"
+	opCancelLiveTVRecording   = "cancelLiveTVRecording"
+	opListLiveTVSeriesRules   = "listLiveTVSeriesRules"
+	opCreateLiveTVSeriesRule  = "createLiveTVSeriesRule"
+	opDeleteLiveTVSeriesRule  = "deleteLiveTVSeriesRule"
+	liveTVTag                 = "livetv"
+	liveTVDomain              = "Live TV"
+	liveTVTransportMPEGTS     = "mpegts"
+	liveTVGuideMaxWindow      = 7 * 24 * time.Hour
 )
 
 // LiveTVService is the application seam behind the v2 Live TV operations.
