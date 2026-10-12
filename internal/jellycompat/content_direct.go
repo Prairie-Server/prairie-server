@@ -1396,6 +1396,10 @@ func mediaItemToListItem(mi *models.MediaItem) upstreamListItem {
 		BackdropPath:      mi.BackdropPath,
 		BackdropThumbhash: mi.BackdropThumbhash,
 		LogoPath:          mi.LogoPath,
+		BannerPath:        mi.BannerPath,
+		ThumbPath:         mi.ThumbPath,
+		ClearArtPath:      mi.ClearArtPath,
+		DiscPath:          mi.DiscPath,
 		UpdatedAt:         mi.UpdatedAt,
 		Runtime:           mi.Runtime,
 		SeasonCount:       mi.SeasonCount,
@@ -1436,6 +1440,11 @@ func itemDetailToUpstream(d *catalog.ItemDetail) upstreamItemDetail {
 		PosterURL:        d.PosterURL,
 		BackdropURL:      d.BackdropURL,
 		LogoURL:          d.LogoURL,
+		BannerURL:        d.BannerURL,
+		ThumbURL:         d.ThumbURL,
+		ClearArtURL:      d.ClearArtURL,
+		DiscURL:          d.DiscURL,
+		BackdropURLs:     d.BackdropURLs,
 		Studios:          d.Studios,
 		Countries:        d.Countries,
 		SeasonCount:      d.SeasonCount,
@@ -1452,6 +1461,12 @@ func itemDetailToUpstream(d *catalog.ItemDetail) upstreamItemDetail {
 		Crew:             d.Crew,
 		Videos:           d.Videos,
 		Extras:           d.Extras,
+		// Cached artwork paths that seed the image tags.
+		BannerPath:         d.BannerPath,
+		ThumbPath:          d.ThumbPath,
+		ClearArtPath:       d.ClearArtPath,
+		DiscPath:           d.DiscPath,
+		ExtraBackdropPaths: d.ExtraBackdropPaths,
 	}
 	if detail.Genres == nil {
 		detail.Genres = []string{}

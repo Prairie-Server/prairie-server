@@ -65,12 +65,6 @@ func TestParseRedisURLSentinel(t *testing.T) {
 	if err != nil || failover.ReadTimeout != 4*time.Second {
 		t.Fatalf("read timeout = %v (%v), want the 4s from the URL", failover.ReadTimeout, err)
 	}
-	// go-redis reads a duration of zero as "use the default".
-	_, failover, err = ParseRedisURL("redis://sentinel-1:26379?master_name=mymaster&read_timeout=0s&dial_timeout=0s")
-	if err != nil || failover.ReadTimeout != 0 || failover.DialTimeout != 5*time.Second {
-		t.Fatalf("timeouts = read %v, dial %v (%v), want the defaults", failover.ReadTimeout, failover.DialTimeout, err)
-	}
-
 	_, failover, err = ParseRedisURL("redis://[2001:db8::1]:26379?master%5Fname=mymaster")
 	if err != nil {
 		t.Fatal(err)
@@ -86,6 +80,9 @@ func TestParseRedisURLRejectsInvalid(t *testing.T) {
 		"redis://sentinel-1:26379?master_name=%20",
 		"redis://sentinel-1:26379?master_name=mymaster&addr=sentinel-2",
 		"redis://sentinel-1:26379?master_name=mymaster&unknown=1",
+		// go-redis 9.23 reads a duration of zero as "no timeout".
+		"redis://sentinel-1:26379?master_name=mymaster&read_timeout=0s",
+		"redis://sentinel-1:26379?master_name=mymaster&dial_timeout=0",
 		// go-redis would dial the Redis port on the Sentinel host.
 		"redis://sentinel-1?master_name=mymaster",
 		"redis://sentinel-1:?master_name=mymaster",

@@ -250,3 +250,36 @@ func TestOriginalOfNamesTheRevisionsOriginal(t *testing.T) {
 		}
 	}
 }
+
+func TestIsLocal(t *testing.T) {
+	for key, want := range map[string]bool{
+		"local/movies/1/0badf00d/poster/original.webp": true,
+		"nfo/movies/1/poster/original.webp":            true,
+		"tmdb/movies/1/poster/original.webp":           false,
+		"nfo-extra/movies/1/poster/original.webp":      false,
+		"": false,
+	} {
+		if got := IsLocal(key); got != want {
+			t.Errorf("IsLocal(%q) = %v, want %v", key, got, want)
+		}
+	}
+}
+
+func TestVariantWidthsExtendedArtworkTypes(t *testing.T) {
+	for imageType, want := range map[string][]int{
+		ImageThumb:    {1280, 500, 300},
+		ImageBanner:   {1000, 500},
+		ImageClearArt: {1000, 500},
+		ImageDisc:     {1000, 500, 300},
+	} {
+		got := VariantWidths(imageType)
+		if len(got) != len(want) {
+			t.Fatalf("VariantWidths(%q) = %v, want %v", imageType, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("VariantWidths(%q) = %v, want %v", imageType, got, want)
+			}
+		}
+	}
+}
