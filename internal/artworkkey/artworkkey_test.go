@@ -264,3 +264,22 @@ func TestIsLocal(t *testing.T) {
 		}
 	}
 }
+
+func TestVariantWidthsExtendedArtworkTypes(t *testing.T) {
+	for imageType, want := range map[string][]int{
+		ImageThumb:    {1280, 500, 300},
+		ImageBanner:   {1000, 500},
+		ImageClearArt: {1000, 500},
+		ImageDisc:     {1000, 500, 300},
+	} {
+		got := VariantWidths(imageType)
+		if len(got) != len(want) {
+			t.Fatalf("VariantWidths(%q) = %v, want %v", imageType, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("VariantWidths(%q) = %v, want %v", imageType, got, want)
+			}
+		}
+	}
+}
