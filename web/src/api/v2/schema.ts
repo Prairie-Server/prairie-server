@@ -20061,7 +20061,7 @@ export interface components {
       apns_environment: "production" | "sandbox";
       apns_token: string;
       /** @enum {string} */
-      apns_topic: "org.siloserver.silo";
+      apns_topic: "org.prairieserver.prairie" | "org.siloserver.silo";
       device_id: string;
       /** @enum {string} */
       push_mode?: "off" | "in_app_only" | "private_push";

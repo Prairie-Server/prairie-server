@@ -40,7 +40,7 @@ func TestOrderedApplePushTransport(t *testing.T) {
 	headers := profileOwner()
 	headers["X-Push-Installation-Key"] = base64.RawURLEncoding.EncodeToString([]byte(strings.Repeat("k", 32)))
 	headers["X-Push-Generation"] = "9007199254740993"
-	body := `{"device_id":"install","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.siloserver.silo","push_mode":"private_push"}`
+	body := `{"device_id":"install","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.prairieserver.prairie","push_mode":"private_push"}`
 	path := Prefix + "/devices/push/apple"
 	r := do(t, h, http.MethodPost, path, body, headers)
 	if r.Code != 200 || !strings.Contains(r.Body.String(), `"generation":"9007199254740993"`) || !strings.Contains(r.Body.String(), `"display_token":"synthetic-display"`) || f.identity.SessionID != "session" || f.cmd.ProfileID != "p-owner" || f.cmd.UserID != 1 {
