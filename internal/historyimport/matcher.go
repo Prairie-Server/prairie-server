@@ -121,7 +121,7 @@ func (m *Matcher) matchEpisode(ctx context.Context, record Record) (*Match, stri
 		label  string
 	}{
 		{column: "tvdb_id", value: record.TVDBID, label: "tvdb_id"},
-		{column: "tmdb_id", value: record.TMDBID, label: "tmdb_id"},
+		{column: tmdbIDColumn, value: record.TMDBID, label: "tmdb_id"},
 		{column: "imdb_id", value: record.IMDbID, label: "imdb_id"},
 	} {
 		if candidate.value == "" {
@@ -156,7 +156,7 @@ func (m *Matcher) matchEpisode(ctx context.Context, record Record) (*Match, stri
 		label  string
 	}{
 		{column: "tvdb_id", value: record.SeriesTVDBID, label: "series tvdb_id"},
-		{column: "tmdb_id", value: record.SeriesTMDBID, label: "series tmdb_id"},
+		{column: tmdbIDColumn, value: record.SeriesTMDBID, label: "series tmdb_id"},
 		{column: "imdb_id", value: record.SeriesIMDbID, label: "series imdb_id"},
 	} {
 		if candidate.value == "" {
@@ -223,7 +223,7 @@ func (m *Matcher) matchMedia(ctx context.Context, kind, tmdbID, imdbID, tvdbID s
 		value  string
 		label  string
 	}{
-		{column: "tmdb_id", value: tmdbID, label: "tmdb_id"},
+		{column: tmdbIDColumn, value: tmdbID, label: "tmdb_id"},
 		{column: "imdb_id", value: imdbID, label: "imdb_id"},
 		{column: "tvdb_id", value: tvdbID, label: "tvdb_id"},
 	}
@@ -234,7 +234,7 @@ func (m *Matcher) matchMedia(ctx context.Context, kind, tmdbID, imdbID, tvdbID s
 			label  string
 		}{
 			{column: "tvdb_id", value: tvdbID, label: "tvdb_id"},
-			{column: "tmdb_id", value: tmdbID, label: "tmdb_id"},
+			{column: tmdbIDColumn, value: tmdbID, label: "tmdb_id"},
 			{column: "imdb_id", value: imdbID, label: "imdb_id"},
 		}
 		if preferTMDB {

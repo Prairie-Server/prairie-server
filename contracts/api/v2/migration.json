@@ -30395,7 +30395,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30547,7 +30547,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30598,7 +30598,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30649,7 +30649,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30700,7 +30700,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30751,7 +30751,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30802,7 +30802,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -30853,7 +30853,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -31513,7 +31513,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -31564,7 +31564,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -31615,7 +31615,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -31666,7 +31666,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",
@@ -31717,7 +31717,7 @@
       "handler_kind": "method",
       "source_file": "internal/api/router.go",
       "route_group": "/api/v1/livetv",
-      "middleware_chain": 9,
+      "middleware_chain": 10,
       "auth_class": "acting_admin",
       "auth_traits": [
         "acting_admin",

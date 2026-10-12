@@ -1497,7 +1497,7 @@ func TestOAuthNative_IssuerSerialization(t *testing.T) {
 	// A start on the public origin of a public URL with a path, a default
 	// port and upper case names its origin only.
 	rig := newOAuthRig(t)
-	rig.h.SetHostBaseURL("HTTPS://Prairie.Test:443/media/")
+	rig.h.SetHostBaseURL("HTTPS://Silo.Test:443/media/")
 	_, cookie := rig.nativeStart(t, "code_challenge="+nativeChallenge+"&app_state=s1")
 	if got := rig.nativeCallback(t, cookie).Query().Get("iss"); got != "https://silo.test" {
 		t.Fatalf("iss = %q", got)

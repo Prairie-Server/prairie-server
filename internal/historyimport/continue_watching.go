@@ -308,6 +308,9 @@ func (s *Service) reconcileContinueWatching(ctx context.Context, userID int, pro
 // imdbIDColumn is the media_items column and provider key for IMDb ids.
 const imdbIDColumn = "imdb_id"
 
+// tmdbIDColumn is the media_items column for TMDB ids.
+const tmdbIDColumn = "tmdb_id"
+
 // seriesIDsByProviderIDs returns every Prairie series with the first of
 // series' provider IDs that matches any, in the matcher's order (TVDB, then
 // TMDB, then IMDb, or TMDB first when PreferTMDB is set). Unlike
@@ -316,7 +319,7 @@ const imdbIDColumn = "imdb_id"
 // once the primary one matches.
 func (s *Service) seriesIDsByProviderIDs(ctx context.Context, series Record) ([]string, error) {
 	candidates := []struct{ column, value string }{
-		{"tvdb_id", series.TVDBID}, {"tmdb_id", series.TMDBID}, {imdbIDColumn, series.IMDbID},
+		{"tvdb_id", series.TVDBID}, {tmdbIDColumn, series.TMDBID}, {imdbIDColumn, series.IMDbID},
 	}
 	if series.PreferTMDB {
 		candidates[0], candidates[1] = candidates[1], candidates[0]
