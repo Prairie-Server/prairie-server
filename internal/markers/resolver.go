@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,6 +24,9 @@ type ExternalIDs struct {
 	TvdbID        string
 	SeasonNumber  int
 	EpisodeNumber int
+	// Released is the episode air date or movie release date, when known.
+	// It sets cache freshness and is not part of the lookup identity.
+	Released time.Time `json:"-"`
 }
 
 // HasAnyID reports whether at least one usable external identifier is
@@ -85,17 +89,19 @@ func (r *DBExternalIDResolver) ResolveForFile(ctx context.Context, file *models.
 		// can drift during multi-version moves.
 		var showTmdb, showImdb, showTvdb string
 		var season, episode int
+		var aired *time.Time
 		err := r.pool.QueryRow(ctx, `
 			SELECT COALESCE(e.season_number, 0),
 			       COALESCE(e.episode_number, 0),
 			       COALESCE(NULLIF(mi.tmdb_id, ''), ''),
 			       COALESCE(NULLIF(mi.imdb_id, ''), ''),
-			       COALESCE(NULLIF(mi.tvdb_id, ''), '')
+			       COALESCE(NULLIF(mi.tvdb_id, ''), ''),
+			       e.air_date
 			FROM episodes e
 			LEFT JOIN media_items mi ON mi.content_id = e.series_id
 			WHERE e.content_id = $1`, episodeID).Scan(
 			&season, &episode,
-			&showTmdb, &showImdb, &showTvdb,
+			&showTmdb, &showImdb, &showTvdb, &aired,
 		)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
@@ -116,6 +122,7 @@ func (r *DBExternalIDResolver) ResolveForFile(ctx context.Context, file *models.
 			TvdbID:        showTvdb,
 			SeasonNumber:  season,
 			EpisodeNumber: episode,
+			Released:      dateOrZero(aired),
 		}, nil
 	}
 
@@ -124,12 +131,14 @@ func (r *DBExternalIDResolver) ResolveForFile(ctx context.Context, file *models.
 	}
 
 	var tmdb, imdb, tvdb, itemType string
+	var released *time.Time
 	err := r.pool.QueryRow(ctx, `
 		SELECT COALESCE(NULLIF(tmdb_id, ''), ''),
 		       COALESCE(NULLIF(imdb_id, ''), ''),
 		       COALESCE(NULLIF(tvdb_id, ''), ''),
-		       COALESCE(type, '')
-		FROM media_items WHERE content_id = $1`, contentID).Scan(&tmdb, &imdb, &tvdb, &itemType)
+		       COALESCE(type, ''),
+		       release_date
+		FROM media_items WHERE content_id = $1`, contentID).Scan(&tmdb, &imdb, &tvdb, &itemType, &released)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ExternalIDs{}, nil
@@ -140,9 +149,17 @@ func (r *DBExternalIDResolver) ResolveForFile(ctx context.Context, file *models.
 		return ExternalIDs{}, nil
 	}
 	return ExternalIDs{
-		Kind:   ItemKindMovie,
-		TmdbID: tmdb,
-		ImdbID: imdb,
-		TvdbID: tvdb,
+		Kind:     ItemKindMovie,
+		TmdbID:   tmdb,
+		ImdbID:   imdb,
+		TvdbID:   tvdb,
+		Released: dateOrZero(released),
 	}, nil
+}
+
+func dateOrZero(date *time.Time) time.Time {
+	if date == nil {
+		return time.Time{}
+	}
+	return *date
 }

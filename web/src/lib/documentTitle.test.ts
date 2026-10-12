@@ -64,7 +64,9 @@ describe("resolveAdminDocumentTitle", () => {
     expect(resolveAdminDocumentTitle("/admin/plugins/silo.mdblist")).toBe("Admin Plugin");
     expect(resolveAdminDocumentTitle("/admin/collections")).toBe("Admin Collections");
     expect(resolveAdminDocumentTitle("/admin/diagnostics")).toBe("Admin Client Diagnostics");
+    expect(resolveAdminDocumentTitle("/admin/downloads")).toBe("Admin Downloads");
     expect(resolveAdminDocumentTitle("/admin/policy")).toBe("Admin Policy");
+    expect(resolveAdminDocumentTitle("/admin/sections")).toBe("Admin Sections");
     expect(resolveAdminDocumentTitle("/admin/tasks/refresh-metadata")).toBe("Admin Task");
     expect(resolveAdminDocumentTitle("/admin/users/42")).toBe("Admin User");
     expect(resolveAdminDocumentTitle("/admin/unknown")).toBe("Admin");

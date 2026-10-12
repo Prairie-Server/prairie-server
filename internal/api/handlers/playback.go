@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/catalog"
@@ -67,13 +68,11 @@ type SessionManagerInterface interface {
 	// stop can withdraw.
 	WatchTransportStop(sessionID string) (<-chan struct{}, func())
 	SetRemoteTransport(sessionID string, remote bool) error
-	SetEffectiveMediaFileID(sessionID string, fileID int) error
 	SetTranscodeNodeURL(sessionID, url string) error
 	SetTranscodeRoute(sessionID string, route playback.TranscodeRoute) error
 	ApplyReplacement(sessionID string, replacement playback.SessionReplacement) (playback.SessionReplacementRollback, error)
 	ApplyReplacementIfRoute(sessionID string, expected playback.TranscodeRoute, replacement playback.SessionReplacement) (playback.SessionReplacementRollback, bool, error)
 	RollbackReplacement(sessionID string, rollback playback.SessionReplacementRollback) error
-	SetWebSocket(sessionID string, connected bool) error
 	SetRealtimeConnection(sessionID string, connected bool) error
 	SetProgressPersistenceDisabled(sessionID string, disabled bool) error
 	StopSession(sessionID string) error
@@ -191,6 +190,7 @@ type PlaybackHandler struct {
 	sessionMgr              SessionManagerInterface
 	fileResolver            FilePathResolver            // optional; enables stream_url in responses
 	StoreProvider           userstore.UserStoreProvider // optional; enables progress/history persistence
+	DeviceSightings         *DeviceSightings            // optional; registers the device that starts playback
 	WatchScrobbler          PlaybackWatchScrobbler
 	StableIdentityResolver  *watchstate.StableIdentityResolver
 	CompletionObserver      watchstate.CompletionObserver // optional; auto-removes watched items from the watchlist
@@ -321,6 +321,10 @@ type sessionExpirationHookAdder interface {
 	AddExpirationHook(func(*playback.Session))
 }
 
+type sessionFinishHookAdder interface {
+	AddFinishHook(func(context.Context, *playback.Session))
+}
+
 // NewPlaybackHandler creates a new PlaybackHandler backed by the given
 // session manager. Pass optional FilePathResolver to enable stream_url
 // and subtitle_urls in start playback responses.
@@ -393,6 +397,9 @@ func NewPlaybackHandler(sessionMgr SessionManagerInterface, opts ...FilePathReso
 	}
 	if adder, ok := sessionMgr.(sessionExpirationHookAdder); ok {
 		adder.AddExpirationHook(h.handleExpiredSession)
+	}
+	if adder, ok := sessionMgr.(sessionFinishHookAdder); ok {
+		adder.AddFinishHook(h.handleFinishedSession)
 	}
 	return h
 }
@@ -798,6 +805,7 @@ func identityRecipeCard(s *playback.Session) playback.RecipeCard {
 	switch s.PlayMethod {
 	case playback.PlayRemux:
 		card = playback.NewRemuxRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID, s.TranscodeAudio, s.AudioTrackIndex, s.RemuxDVMode)
+		card.RemuxResumeLeadingPictureDrop = s.RemuxResumeLeadingPictureDrop
 		card.TargetCodecAudio = s.TargetAudioCodec
 		card.TargetAudioChannels = s.TargetAudioChannels
 		card.TargetAudioBitrateKbps = s.TargetAudioBitrateKbps
@@ -883,18 +891,6 @@ func (h *PlaybackHandler) loadFileByPreferredID(
 	return nil, nil
 }
 
-func directPlayAudioTrackIndex(file *models.MediaFile) int {
-	if file == nil || len(file.AudioTracks) == 0 {
-		return 0
-	}
-	for i, track := range file.AudioTracks {
-		if track.Default {
-			return i
-		}
-	}
-	return 0
-}
-
 func normalizeAudioTrackIndex(file *models.MediaFile, audioTrackIndex int) int {
 	if file == nil || len(file.AudioTracks) == 0 {
 		return 0
@@ -902,7 +898,7 @@ func normalizeAudioTrackIndex(file *models.MediaFile, audioTrackIndex int) int {
 	if audioTrackIndex >= 0 && audioTrackIndex < len(file.AudioTracks) {
 		return audioTrackIndex
 	}
-	return directPlayAudioTrackIndex(file)
+	return playback.SelectAudioTrack(file.AudioTracks, "", nil)
 }
 
 func (h *PlaybackHandler) resolveSeriesID(ctx context.Context, file *models.MediaFile) string {
@@ -1042,16 +1038,25 @@ func (h *PlaybackHandler) persistStopAndHistory(ctx context.Context, session *pl
 		WithStableIdentityResolver(h.StableIdentityResolver).
 		WithCompletionObserver(h.CompletionObserver)
 	stoppedAt := time.Now().UTC()
-	result, err := watchSvc.RecordPlaybackStop(ctx, session.UserID, session.ProfileID, targetID, duration, session.Position, stoppedAt, userstore.VersionHints{
+	hints := userstore.VersionHints{
 		FileID:     file.ID,
 		Resolution: file.Resolution,
 		HDR:        file.HDR,
 		CodecVideo: file.CodecVideo,
 		EditionKey: file.EditionKey,
-	}, thresholds)
+	}
+	var result watchstate.PlaybackStopResult
+	if session.IsJellyfinCompat {
+		result, err = watchSvc.RecordPlaybackStopOnce(ctx, session.UserID, session.ProfileID, targetID, duration, session.Position, stoppedAt, hints, thresholds, compatPlayHistoryID(session.ID))
+	} else {
+		result, err = watchSvc.RecordPlaybackStop(ctx, session.UserID, session.ProfileID, targetID, duration, session.Position, stoppedAt, hints, thresholds)
+	}
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to persist playback stop", "component", "api", "session", session.ID, "error", err)
-	} else {
+	}
+	// A history row this stop wrote still counts when a later write failed:
+	// no later stop of a once-recorded play refreshes the profile for it.
+	if (err == nil && !result.AlreadyRecorded) || result.HistoryID != "" {
 		triggerProfileRefresh(ctx, h.profileStaler, h.profileRefreshRequester, session.UserID, session.ProfileID)
 	}
 	return result
@@ -1204,7 +1209,7 @@ func (h *PlaybackHandler) finalizeSessionStopWithResult(ctx context.Context, ses
 	}
 	h.cancelPlaybackStartSideEffectsV3(ctx, session.ID)
 
-	stopResult := h.persistStopAndHistory(ctx, session)
+	stopResult := h.recordStopHistory(ctx, session)
 	if h.WatchScrobbler != nil {
 		if event, ok := h.scrobbleEventForStoppedSession(ctx, session, stopResult); ok && (userInitiated || stopResult.Completed) {
 			if err := h.WatchScrobbler.ScrobbleStop(ctx, event); err != nil {
@@ -1216,14 +1221,6 @@ func (h *PlaybackHandler) finalizeSessionStopWithResult(ctx context.Context, ses
 			}
 		}
 	}
-	if entry, buildErr := h.buildAdminHistoryEntry(ctx, session); buildErr != nil {
-		slog.ErrorContext(ctx, "failed to build admin history", "component", "api", "session", session.ID, "error", buildErr)
-	} else if entry != nil && h.AdminStore != nil {
-		if err := h.AdminStore.RecordHistory(ctx, *entry); err != nil {
-			slog.ErrorContext(ctx, "failed to record admin history", "component", "api", "session", session.ID, "error", err)
-		}
-	}
-
 	if h.AdminStore != nil {
 		if err := h.AdminStore.DeleteSession(ctx, session.ID); err != nil {
 			slog.ErrorContext(ctx, "failed to delete synced session", "component", "api", "session", session.ID, "error", err)
@@ -1244,6 +1241,40 @@ func (h *PlaybackHandler) finalizeSessionStopWithResult(ctx context.Context, ses
 		h.syncSessionsNow(ctx, syncReason)
 	}
 	return stopResult
+}
+
+// recordStopHistory writes a stopped session to watch history and the admin
+// playback log. The admin log keeps one row per session.
+func (h *PlaybackHandler) recordStopHistory(ctx context.Context, session *playback.Session) watchstate.PlaybackStopResult {
+	// A Jellyfin session copy without a position never saw the play's
+	// progress: a start that failed to route, or a replica that only served
+	// media while another replica took the reports. It must not record the
+	// play in place of a copy that did.
+	if session.IsJellyfinCompat && session.Position <= 0 {
+		return watchstate.PlaybackStopResult{}
+	}
+	result := h.persistStopAndHistory(ctx, session)
+	if entry, err := h.buildAdminHistoryEntry(ctx, session); err != nil {
+		slog.ErrorContext(ctx, "failed to build admin history", "component", "api", "session", session.ID, "error", err)
+	} else if entry != nil && h.AdminStore != nil {
+		if err := h.AdminStore.RecordHistory(ctx, *entry); err != nil {
+			slog.ErrorContext(ctx, "failed to record admin history", "component", "api", "session", session.ID, "error", err)
+		}
+	}
+	return result
+}
+
+// compatPlayHistoryNamespace derives a Jellyfin play's watch-history row ID
+// from its native session ID.
+var compatPlayHistoryNamespace = uuid.MustParse("5d0f2b8e-3c4a-4f61-9e7b-2a8c1d6e4b90")
+
+// compatPlayHistoryID names the watch-history row of a Jellyfin session. The
+// replica that receives the client's stop finishes its copy, and any replica
+// holding another copy of the session expires that copy once the play is
+// over; with one row ID per session, the first copy that can record the play
+// does and the rest change nothing.
+func compatPlayHistoryID(sessionID string) string {
+	return uuid.NewSHA1(compatPlayHistoryNamespace, []byte(sessionID)).String()
 }
 
 func (h *PlaybackHandler) finalizeSessionAbort(ctx context.Context, session *playback.Session, syncNow bool, syncReason string) {
@@ -1319,6 +1350,20 @@ func (h *PlaybackHandler) handleExpiredSession(session *playback.Session) {
 		// deny its tokens so no replica serves it again.
 		h.markAttemptStoppedServerSide(ctx, sessionCopy.ID)
 	}()
+}
+
+// handleFinishedSession records a play that another playback frontend ended
+// through FinishSession. That frontend owns the rest of its stop: transcode
+// and transport teardown, watch-provider scrobbles, and the live-session sync.
+func (h *PlaybackHandler) handleFinishedSession(ctx context.Context, session *playback.Session) {
+	if h == nil || session == nil || session.ID == "" {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	// Clients often drop the connection right after reporting a stop.
+	h.recordStopHistory(context.WithoutCancel(ctx), session)
 }
 
 func playbackProgressTarget(file *models.MediaFile) string {
@@ -2159,8 +2204,8 @@ func (h *PlaybackHandler) maybeStartThrottler(ctx context.Context, session *play
 // still accept one that direct-plays or remuxes without forbidden video
 // encoding.
 // Within each class it prefers SDR, then resolution, then bitrate.
-func (h *PlaybackHandler) findAlternateFile(ctx context.Context, source *models.MediaFile) (*models.MediaFile, error) {
-	candidates, err := h.findAlternateFiles(ctx, source)
+func (h *PlaybackHandler) findAlternateFile(ctx context.Context, source *models.MediaFile, filter catalog.AccessFilter) (*models.MediaFile, error) {
+	candidates, err := h.findAlternateFiles(ctx, source, filter)
 	if err != nil || len(candidates) == 0 {
 		return nil, err
 	}
@@ -2171,7 +2216,13 @@ func (h *PlaybackHandler) findAlternateFile(ctx context.Context, source *models.
 // fallback order. Callers that plan candidates must keep trying after a
 // terminal: a lower-resolution candidate can still fail while a later 4K
 // candidate direct-plays or remuxes without forbidden video encoding.
-func (h *PlaybackHandler) findAlternateFiles(ctx context.Context, source *models.MediaFile) ([]*models.MediaFile, error) {
+//
+// Only versions the viewer may play are returned: the per-file checks
+// loadAuthorizedFile applies to a requested file (library access and the
+// maximum playback quality), and present on disk. The sibling query itself is
+// unfiltered, and the requested file's authorization says nothing about which
+// library a sibling version lives in or how high its resolution is.
+func (h *PlaybackHandler) findAlternateFiles(ctx context.Context, source *models.MediaFile, filter catalog.AccessFilter) ([]*models.MediaFile, error) {
 	if h.FileVersionFetcher == nil {
 		return nil, fmt.Errorf("file version fetcher not configured")
 	}
@@ -2189,7 +2240,10 @@ func (h *PlaybackHandler) findAlternateFiles(ctx context.Context, source *models
 
 	candidates := make([]*models.MediaFile, 0, len(files))
 	for _, f := range files {
-		if f.ID == source.ID {
+		if f == nil || f.ID == source.ID {
+			continue
+		}
+		if f.MissingSince != nil || !catalog.FileAllowedByAccess(f, filter) {
 			continue
 		}
 		if source.EditionKey != "" && f.EditionKey != source.EditionKey {

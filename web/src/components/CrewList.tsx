@@ -9,6 +9,8 @@ interface CrewListProps {
   crew: CrewMember[];
   limit?: number;
   fullBleed?: boolean;
+  /** Jobs to rank first, in order; all crew is shown when none match. Defaults to DISPLAY_JOBS. */
+  jobs?: readonly string[];
 }
 
 /** Jobs to display, in order. Others are ignored unless none match. */
@@ -18,9 +20,13 @@ function normalizeJob(job: string): string {
   return job.trim().toLowerCase();
 }
 
-function pickCrew(crew: CrewMember[], limit: number): CrewMember[] {
+function pickCrew(
+  crew: CrewMember[],
+  limit: number,
+  jobs: readonly string[],
+): CrewMember[] {
   const preferred = new Map<string, number>();
-  DISPLAY_JOBS.forEach((job, index) => preferred.set(normalizeJob(job), index));
+  jobs.forEach((job, index) => preferred.set(normalizeJob(job), index));
 
   const ranked = crew
     .map((member, index) => ({
@@ -49,12 +55,17 @@ function pickCrew(crew: CrewMember[], limit: number): CrewMember[] {
  * Portrait crew rail matching CastCarousel card metrics (avoids tiny cast vs
  * oversized definition-list crew imbalance).
  */
-export default function CrewList({ crew, limit = 16, fullBleed = false }: CrewListProps) {
+export default function CrewList({
+  crew,
+  limit = 16,
+  fullBleed = false,
+  jobs = DISPLAY_JOBS,
+}: CrewListProps) {
   const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   if (crew.length === 0) return null;
 
-  const visible = pickCrew(crew, limit);
+  const visible = pickCrew(crew, limit, jobs);
   if (visible.length === 0) return null;
 
   return (

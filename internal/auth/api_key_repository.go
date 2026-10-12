@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -104,6 +106,15 @@ func (r *APIKeyRepository) hashAPIKey(key string) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+// ValidTextKey reports whether a client-supplied lookup key (an API key or a
+// session token) can be sent to Postgres as a text parameter: valid UTF-8
+// with no NUL byte. Postgres rejects any other value with an encoding error
+// (SQLSTATE 22021), which a caller would mistake for an unreachable store; a
+// key that fails this check cannot match a stored one.
+func ValidTextKey(key string) bool {
+	return utf8.ValidString(key) && !strings.ContainsRune(key, 0)
+}
+
 // generateAPIKey creates a cryptographically random API key with the "sa_" prefix.
 func generateAPIKey() (string, error) {
 	b := make([]byte, 32)
@@ -156,7 +167,12 @@ func (r *APIKeyRepository) Create(ctx context.Context, userID int, label string,
 }
 
 // GetByKey looks up an API key by its full key string (including "sa_" prefix).
+// A key Postgres cannot take as text matches no key: ErrAPIKeyNotFound, not
+// the query error that would read as a store outage.
 func (r *APIKeyRepository) GetByKey(ctx context.Context, key string) (*models.APIKey, error) {
+	if !ValidTextKey(key) {
+		return nil, ErrAPIKeyNotFound
+	}
 	// Primary lookup uses deterministic equality-hash. During rollout, we
 	// also fall back to plaintext lookup so legacy keys keep working until the
 	// next backfill.

@@ -8,10 +8,9 @@ import (
 )
 
 const (
-	DefaultIntervalSeconds = 10.0
-	DefaultTileWidth       = 320
-	DefaultTileColumns     = 10
-	DefaultTileRows        = 10
+	DefaultTileWidth   = 320
+	DefaultTileColumns = 10
+	DefaultTileRows    = 10
 )
 
 // TileIndex returns the zero-based tile covering the given playback time.

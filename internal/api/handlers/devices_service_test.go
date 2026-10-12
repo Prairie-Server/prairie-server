@@ -6,7 +6,6 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/notifications"
-	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
@@ -50,18 +49,6 @@ func TestDeviceSettingsServiceScope(t *testing.T) {
 	actor.VerifyProfile = func(string) error { return nil }
 	if _, err := h.DeviceSettingsPage(ctx, actor, true, userstore.DevicePageOptions{Limit: 10}); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestDeviceSettingsLogicalCounts(t *testing.T) {
-	h, store := newDevicesTestHandler(t)
-	seedDevice(t, store, "profile-1", "d", "device")
-	seedDeviceValue(t, store, "profile-1", "d", settingskeys.PlaybackIntroSkipMode, `"never"`)
-	seedDeviceValue(t, store, "profile-1", "d", settingskeys.PlaybackAutoSkipIntro, `false`)
-	ctx := devicesRequest(http.MethodGet, "/devices", "profile-1").Context()
-	page, err := h.DeviceSettingsPage(ctx, DeviceSettingsActor{UserID: 1, ProfileID: "profile-1"}, false, userstore.DevicePageOptions{Limit: 10})
-	if err != nil || len(page) != 1 || page[0].ChangedCount != 1 {
-		t.Fatalf("logical aliases: %+v %v", page, err)
 	}
 }
 

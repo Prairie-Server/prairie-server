@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/prairie-server/prairie-server/internal/ai/chatgpt"
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/catalog"
@@ -23,6 +24,8 @@ import (
 	"github.com/prairie-server/prairie-server/internal/recommendations/embeddings"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
+
+const adminTextAIConnectionFailureMessage = "Text AI connection failed. Check the model, reasoning level, account connection, and provider usage limits."
 
 type adminSettingsConnectionCheckRequest struct {
 	Values    map[string]string `json:"values"`
@@ -43,11 +46,6 @@ type s3SettingsCheckClient interface {
 	DeleteObject(ctx context.Context, bucket, key string) error
 }
 
-type redisSettingsCheckClient interface {
-	Ping(ctx context.Context) error
-	Close() error
-}
-
 type embeddingsSettingsCheckClient interface {
 	Embed(ctx context.Context, texts []string) ([][]float32, error)
 }
@@ -59,6 +57,13 @@ type mdblistSettingsCheckClient interface {
 type aiSettingsCheckClient interface {
 	Chat(ctx context.Context, messages []llm.Message, jsonObject bool) (string, error)
 	Transcribe(ctx context.Context, req llm.TranscribeRequest) (*llm.Transcription, error)
+}
+
+// redisSettingsCheckClient is the Prairie seam probeRedisConfig pings through,
+// so tests can stand in for Redis when exercising the reject-unreachable save.
+type redisSettingsCheckClient interface {
+	Ping(ctx context.Context) error
+	Close() error
 }
 
 type redisSettingsCheckAdapter struct {
@@ -73,11 +78,6 @@ func (a *redisSettingsCheckAdapter) Close() error {
 	return cache.CloseRedisClient(a.client)
 }
 
-var newAdminS3SettingsCheckClient = func(cfg s3client.BucketConfig) s3SettingsCheckClient {
-	cfg.Role = "checks"
-	return s3client.NewClient(cfg)
-}
-
 var newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
 	client, err := cache.NewRedisClientForRole(cfg, "checks")
 	if err != nil {
@@ -87,6 +87,11 @@ var newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettin
 		return nil, nil
 	}
 	return &redisSettingsCheckAdapter{client: client}, nil
+}
+
+var newAdminS3SettingsCheckClient = func(cfg s3client.BucketConfig) s3SettingsCheckClient {
+	cfg.Role = "checks"
+	return s3client.NewClient(cfg)
 }
 
 var newAdminEmbeddingsSettingsCheckClient = func(
@@ -136,7 +141,7 @@ func (h *AdminHandler) HandleCheckSettingsConnection(w http.ResponseWriter, r *h
 		return
 	}
 
-	response, err := runAdminSettingsConnectionCheck(r.Context(), kind, cfg, effectiveSettings)
+	response, err := h.runAdminSettingsConnectionCheck(r.Context(), kind, cfg, effectiveSettings)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "Unsupported connection check kind")
 		return
@@ -144,7 +149,7 @@ func (h *AdminHandler) HandleCheckSettingsConnection(w http.ResponseWriter, r *h
 	writeJSON(w, http.StatusOK, response)
 }
 
-func runAdminSettingsConnectionCheck(ctx context.Context, kind string, cfg *config.Config, effectiveSettings map[string]string) (connectionCheckResponse, error) {
+func (h *AdminHandler) runAdminSettingsConnectionCheck(ctx context.Context, kind string, cfg *config.Config, effectiveSettings map[string]string) (connectionCheckResponse, error) {
 	var response connectionCheckResponse
 	switch kind {
 	case "s3_public", "s3_operational":
@@ -156,7 +161,14 @@ func runAdminSettingsConnectionCheck(ctx context.Context, kind string, cfg *conf
 	case "recommendations_embedding":
 		response = checkRecommendationsEmbeddingConnection(ctx, cfg)
 	case "ai_chat":
-		response = checkAIChatConnection(ctx, cfg)
+		if cfg.AI.AuthMode == llm.AuthModeChatGPT {
+			if h.ChatGPT == nil {
+				return connectionCheckResponse{Message: adminChatGPTSignInRequiredMessage, safeMessage: adminChatGPTSignInRequiredMessage}, nil
+			}
+			response = checkAIChatConnectionWithToken(ctx, cfg, h.ChatGPT)
+		} else {
+			response = checkAIChatConnection(ctx, cfg)
+		}
 	case "ai_transcription":
 		response = checkAITranscriptionConnection(ctx, cfg)
 	case "meilisearch":
@@ -184,24 +196,40 @@ func checkMDBListConnection(ctx context.Context, cfg *config.Config) connectionC
 
 func aiClientConfig(cfg *config.Config) llm.Config {
 	return llm.Config{
-		BaseURL:    strings.TrimSpace(cfg.AI.BaseURL),
-		APIKey:     cfg.AI.APIKey,
-		ChatModel:  strings.TrimSpace(cfg.AI.ChatModel),
-		ASRBaseURL: strings.TrimSpace(cfg.AI.ASRBaseURL),
-		ASRAPIKey:  cfg.AI.ASRAPIKey,
-		ASRModel:   strings.TrimSpace(cfg.AI.ASRModel),
+		AuthMode:        cfg.AI.AuthMode,
+		ReasoningEffort: cfg.AI.ReasoningEffort,
+		BaseURL:         strings.TrimSpace(cfg.AI.BaseURL),
+		APIKey:          cfg.AI.APIKey,
+		ChatModel:       strings.TrimSpace(cfg.AI.ChatModel),
+		ASRBaseURL:      strings.TrimSpace(cfg.AI.ASRBaseURL),
+		ASRAPIKey:       cfg.AI.ASRAPIKey,
+		ASRModel:        strings.TrimSpace(cfg.AI.ASRModel),
 	}
 }
 
 func checkAIChatConnection(ctx context.Context, cfg *config.Config) connectionCheckResponse {
-	if strings.TrimSpace(cfg.AI.BaseURL) == "" {
+	return checkAIChatConnectionWithToken(ctx, cfg, nil)
+}
+
+func checkAIChatConnectionWithToken(ctx context.Context, cfg *config.Config, connection *chatgpt.Service) connectionCheckResponse {
+	if cfg.AI.AuthMode != llm.AuthModeChatGPT && strings.TrimSpace(cfg.AI.BaseURL) == "" {
 		return connectionCheckResponse{Success: false, Message: "Text AI base URL is required."}
 	}
 	if strings.TrimSpace(cfg.AI.ChatModel) == "" {
 		return connectionCheckResponse{Success: false, Message: "Chat model is required."}
 	}
 
-	client := newAdminAISettingsCheckClient(aiClientConfig(cfg))
+	clientCfg := aiClientConfig(cfg)
+	if connection != nil {
+		checkConfig, err := connection.CheckTextConfig(ctx)
+		if err != nil {
+			return connectionCheckResponse{Message: adminTextAIConnectionFailureMessage, safeMessage: adminTextAIConnectionFailureMessage}
+		}
+		checkConfig.ChatModel = clientCfg.ChatModel
+		checkConfig.ReasoningEffort = clientCfg.ReasoningEffort
+		clientCfg = checkConfig
+	}
+	client := newAdminAISettingsCheckClient(clientCfg)
 	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	if _, err := client.Chat(checkCtx, []llm.Message{
@@ -209,8 +237,9 @@ func checkAIChatConnection(ctx context.Context, cfg *config.Config) connectionCh
 		{Role: "user", Content: "Check this Prairie text translation connection."},
 	}, true); err != nil {
 		return connectionCheckResponse{
-			Success: false,
-			Message: fmt.Sprintf("Text AI connection check failed: %v", err),
+			Success:     false,
+			Message:     fmt.Sprintf("Text AI connection check failed: %v", err),
+			safeMessage: adminTextAIConnectionFailureMessage,
 		}
 	}
 
@@ -574,7 +603,7 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 // probeRedisConfig pings Redis so unreachable URLs cannot be persisted and later
 // brick startup under a process supervisor.
 func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
-	if strings.TrimSpace(redisCfg.URL) == "" && redisCfg.SentinelMaster == "" {
+	if strings.TrimSpace(redisCfg.URL) == "" {
 		return errors.New("redis URL is required")
 	}
 	client, err := newAdminRedisSettingsCheckClient(redisCfg)

@@ -22,6 +22,7 @@ export const ADMIN_SETTINGS_PAGE_IDS = [
   "infrastructure",
   "appearance",
   "security",
+  "sign-in",
   "library",
   "playback",
   "downloads",

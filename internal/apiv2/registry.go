@@ -48,17 +48,18 @@ var classes = map[Class]bool{
 // Metadata keys the registry stores on the Huma operation so the gate can
 // read the declaration at request time.
 const (
-	metaClass           = "silo.class"
-	metaPermission      = "silo.permission"
-	metaDemoRestricted  = "silo.demo_restricted"
-	metaProfileOptional = "silo.profile_optional"
-	metaMaxBodyBytes    = "silo.max_body_bytes"
-	metaRateLimitBucket = "silo.rate_limit_bucket"
-	metaGuarded         = "silo.guarded"
-	metaConditional     = "silo.conditional"
-	metaCreateOnly      = "silo.create_only"
-	metaRetrySafety     = "silo.retry_safety"
-	metaDeprecation     = "silo.deprecation"
+	metaClass           = "prairie.class"
+	metaPermission      = "prairie.permission"
+	metaDemoRestricted  = "prairie.demo_restricted"
+	metaProfileOptional = "prairie.profile_optional"
+	metaHouseholdGate   = "prairie.household_profile_gate"
+	metaMaxBodyBytes    = "prairie.max_body_bytes"
+	metaRateLimitBucket = "prairie.rate_limit_bucket"
+	metaGuarded         = "prairie.guarded"
+	metaConditional     = "prairie.conditional"
+	metaCreateOnly      = "prairie.create_only"
+	metaRetrySafety     = "prairie.retry_safety"
+	metaDeprecation     = "prairie.deprecation"
 	// metaIdentityOnly marks an operation whose output declares an ETag: its
 	// responses are served identity-encoded (IdentityEncoded), so a request
 	// that forbids identity is refused up front (encodingGuard).
@@ -146,7 +147,21 @@ type Operation struct {
 	// but the profile-required gate is not run, as on the v1 routes whose
 	// group runs viewer access without RequireProfile (profiles, devices).
 	// The handler then decides what an account-scoped caller may do.
+	// An operation that reads or acts on catalog content also sets
+	// HouseholdProfileGate; any other is listed as exempt, with its reason,
+	// in TestHouseholdProfileGateCoversProfileOptionalOperations.
 	ProfileOptional bool
+	// HouseholdProfileGate narrows an absent X-Profile-Id on an operation
+	// that serves catalog content: when any profile on the account is
+	// PIN-protected or access-restricted (access.HouseholdRequiresProfile),
+	// the request is refused with the missing-header validation problem
+	// rather than answered at the account's own, broader limits. Accounts
+	// whose profiles are all unrestricted, and API keys, keep account scope.
+	// It is for a ProfileOptional ClassProfileScoped operation, or a
+	// ClassPermissionGated one, whose gates also accept an absent header.
+	// Capability probes, profile selection and account operations leave it
+	// unset: they must work before a profile is chosen.
+	HouseholdProfileGate bool
 	// MaxBodyBytes lowers this operation's structured-body cap; 0 takes
 	// MaxJSONBodyBytes. Set it here rather than on the embedded Huma
 	// operation: Register applies the framework's off-by-one convention and
@@ -267,6 +282,7 @@ func Register[I, O any](reg *Registry, op Operation, handler func(context.Contex
 	op.Metadata[metaPermission] = op.Permission
 	op.Metadata[metaDemoRestricted] = op.DemoRestricted
 	op.Metadata[metaProfileOptional] = op.ProfileOptional
+	op.Metadata[metaHouseholdGate] = op.HouseholdProfileGate
 	op.Metadata[metaRateLimitBucket] = op.RateLimitBucket
 	op.Metadata[metaGuarded] = op.Guarded
 	op.Metadata[metaConditional] = op.Conditional
@@ -361,6 +377,9 @@ func checkOperation(op Operation) error {
 	}
 	if op.ProfileOptional && op.Class != ClassProfileScoped {
 		return fmt.Errorf("profile optional is only meaningful on class %s", ClassProfileScoped)
+	}
+	if op.HouseholdProfileGate && op.Class != ClassPermissionGated && (op.Class != ClassProfileScoped || !op.ProfileOptional) {
+		return fmt.Errorf("household profile gate narrows an absent X-Profile-Id; it needs a profile-optional %s or a %s operation", ClassProfileScoped, ClassPermissionGated)
 	}
 	if op.MaxBodyBytes < 0 {
 		return fmt.Errorf("max body bytes %d must not be negative", op.MaxBodyBytes)

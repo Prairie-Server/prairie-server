@@ -14,6 +14,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 type curationImageItems map[string]*models.MediaItem
@@ -40,6 +41,7 @@ func (curationImageEpisodes) GetByID(context.Context, string) (*models.Episode, 
 type curationImageService struct {
 	calls   int
 	request metadata.ApplyItemImageRequest
+	private bool
 	fail    bool
 	stored  string
 }
@@ -47,9 +49,13 @@ type curationImageService struct {
 func (f *curationImageService) FetchItemImages(context.Context, map[string]string, string, string, int) ([]metadata.RemoteImage, map[string]string, error) {
 	return []metadata.RemoteImage{{ProviderID: "tmdb", URL: "source", Type: metadata.ImagePoster}}, nil, nil
 }
-func (f *curationImageService) ApplyItemImage(_ context.Context, r metadata.ApplyItemImageRequest) (*metadata.ApplyItemImageResult, error) {
+func (f *curationImageService) FetchSeasonImages(context.Context, map[string]string, string, int, int) ([]metadata.RemoteImage, map[string]string, error) {
+	return []metadata.RemoteImage{{ProviderID: "tmdb", URL: "source", Type: metadata.ImagePoster}}, nil, nil
+}
+func (f *curationImageService) ApplyItemImage(ctx context.Context, r metadata.ApplyItemImageRequest) (*metadata.ApplyItemImageResult, error) {
 	f.calls++
 	f.request = r
+	f.private = netguard.PrivateAccess(ctx)
 	if f.fail {
 		return nil, errors.New("synthetic image failure")
 	}
@@ -74,6 +80,9 @@ func TestAdminImageSharedBridgeAndEpisodePreflight(t *testing.T) {
 	_, err := h.ApplyAdminItemImage(t.Context(), "episode", AdminItemImageRequest{OriginalURL: "source", Type: "poster", ProviderID: "tmdb"})
 	if err == nil || svc.calls != 1 || svc.request.ImageType != metadata.ImageStill || svc.request.SeasonNumber == nil || *svc.request.SeasonNumber != 0 || svc.request.EpisodeNumber == nil || *svc.request.EpisodeNumber != 2 {
 		t.Fatalf("episode %v %+v", err, svc.request)
+	}
+	if !svc.private {
+		t.Fatal("admin apply did not allow a local network image source")
 	}
 }
 func TestAdminImageSharedPublishesImmutableRevision(t *testing.T) {

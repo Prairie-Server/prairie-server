@@ -13,6 +13,8 @@
   "trickplay_enabled": false,
   "trickplay_supported": false,
   "intro_detection_enabled": false,
+  "trickplay_enabled": false,
+  "trickplay_supported": true,
   "trailer_kinds": [
     "trailer"
   ],

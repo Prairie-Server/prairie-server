@@ -20,6 +20,7 @@ import {
   Download,
   ExternalLink,
   FolderPlus,
+  GalleryHorizontal,
   Inbox,
   Info,
   Loader2,
@@ -28,6 +29,7 @@ import {
   RefreshCw,
   Scissors,
   RotateCcw,
+  Shuffle,
   Tags,
   UsersRound,
   Hand,
@@ -52,10 +54,12 @@ import type {
 import RefreshMetadataDialog from "@/components/RefreshMetadataDialog";
 import { MarkerEditor } from "@/components/markers/MarkerEditor";
 import RedetectMarkersDialog from "@/components/markers/RedetectMarkersDialog";
+import { TrickplayStatusDialog } from "@/components/admin/trickplay/TrickplayStatusDialog";
 import StarRating from "@/components/StarRating";
 import { MediaActionIcon } from "@/components/mediaActionIcons";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { parseWatchHref } from "@/pages/watchRouteHelpers";
+import type { TitleLink } from "@/lib/titleLinks";
 import VersionDropdown from "./VersionDropdown";
 import AudioTracksPopover from "./AudioTracksPopover";
 import SubtitlesPopover from "./SubtitlesPopover";
@@ -116,7 +120,7 @@ function PrimaryActionButton({ action }: { action: ActionBarPrimaryAction }) {
       onClick={action.onClick}
       disabled={inert}
       aria-busy={action.pending || undefined}
-      className={`${interactiveClass} relative h-11 gap-2.5 overflow-hidden rounded-full px-8 text-[15px] font-bold tracking-wide`}
+      className={`${interactiveClass} relative h-11 gap-2.5 overflow-hidden rounded-full px-8 text-[0.9375rem] font-bold tracking-wide`}
     >
       {Icon && (
         <Icon
@@ -164,20 +168,18 @@ export interface ActionBarSecondaryAction {
   pressed?: boolean;
 }
 
-/** An external page for the title, such as IMDb or TMDB. */
-export interface ActionBarLink {
-  label: string;
-  href: string;
-}
-
 export interface ActionBarProps {
   compactMobile?: boolean;
   contentId?: string;
+  canAddToCollection?: boolean;
+  /** The item's title, named by Add to collection. */
+  itemTitle?: string;
   watchTogether?: ActionBarWatchTogether;
   /** Replaces the Play action. */
   primaryAction?: ActionBarPrimaryAction;
   secondaryActions?: ActionBarSecondaryAction[];
-  links?: ActionBarLink[];
+  /** The title's pages elsewhere, such as IMDb or TMDB. */
+  links?: TitleLink[];
   playHref?: string;
   playLabel?: string;
   playProgress?: number;
@@ -214,6 +216,8 @@ export interface ActionBarProps {
   canCurateMetadata?: boolean;
   /** Enables the "Edit Markers" action (playable items only: movies/episodes). */
   canEditMarkers?: boolean;
+  /** Enables the admin "Seek Previews" action; the server must offer seek previews. */
+  canManageTrickplay?: boolean;
   versions?: FileVersion[];
   playbackVariants?: PlaybackVariant[];
   selectedVersion?: FileVersion | null;
@@ -222,6 +226,8 @@ export interface ActionBarProps {
   onSearchSubtitles?: () => void;
   /** Opens the season picker to request seasons the library is missing. */
   onRequestSeasons?: () => void;
+  /** Shuffles this series' or season's episodes. */
+  onShuffle?: () => void;
   rating?: number | null;
   onRatingChange?: (rating: number | null) => void;
   qualityPreference?: string | null;
@@ -244,6 +250,8 @@ export interface ActionBarProps {
 export default function ActionBar({
   compactMobile = false,
   contentId,
+  canAddToCollection = true,
+  itemTitle,
   watchTogether,
   primaryAction,
   secondaryActions,
@@ -274,6 +282,7 @@ export default function ActionBar({
   isAdmin = false,
   canCurateMetadata = false,
   canEditMarkers = false,
+  canManageTrickplay = false,
   versions,
   playbackVariants,
   selectedVersion,
@@ -281,6 +290,7 @@ export default function ActionBar({
   onDownload,
   onSearchSubtitles,
   onRequestSeasons,
+  onShuffle,
   rating,
   onRatingChange,
   audioSelectionMode = "auto",
@@ -319,6 +329,8 @@ export default function ActionBar({
   const [redetectDialogOpen, setRedetectDialogOpen] = useState(false);
   const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [markerEditorOpen, setMarkerEditorOpen] = useState(false);
+  const [trickplayOpen, setTrickplayOpen] = useState(false);
+  const showTrickplay = isAdmin && canManageTrickplay && !!contentId;
   const showMarkerEditor = canEditMarkers && !!contentId;
   const hasMultipleVersions = (playbackVariants?.length ?? 0) > 1 || (versions?.length ?? 0) > 1;
   const showPlayChoiceDialog =
@@ -561,7 +573,12 @@ export default function ActionBar({
     items[nextIndex]?.focus({ preventScroll: true });
   };
   const hasOverflowActions = Boolean(
-    restartHref || onToggleWatchlist || onDownload || onSearchSubtitles || onRequestSeasons,
+    restartHref ||
+    onShuffle ||
+    onToggleWatchlist ||
+    onDownload ||
+    onSearchSubtitles ||
+    onRequestSeasons,
   );
   const hasAdminActions = Boolean(isAdmin && (contentId || onRedetectMarkers));
   const hasMetadataActions = Boolean(
@@ -572,7 +589,7 @@ export default function ActionBar({
     hasOverflowActions ||
     hasAdminActions ||
     hasMetadataActions ||
-    Boolean(contentId) ||
+    Boolean(contentId && canAddToCollection) ||
     (compactMobile && Boolean(onToggleFavorite || onRatingChange)) ||
     Boolean(watchTogether);
 
@@ -619,7 +636,7 @@ export default function ActionBar({
           showPlayChoiceDialog ? (
             <Button
               onClick={openPlayChoiceDialog}
-              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[15px] font-bold tracking-wide shadow-md`}
+              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[0.9375rem] font-bold tracking-wide shadow-md`}
             >
               <Play className="size-[18px] fill-current" />
               {playText}
@@ -628,7 +645,7 @@ export default function ActionBar({
           ) : selectedVersion ? (
             <Button
               onClick={() => handleSelectedVersionPlay(false)}
-              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[15px] font-bold tracking-wide shadow-md`}
+              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[0.9375rem] font-bold tracking-wide shadow-md`}
             >
               <Play className="size-[18px] fill-current" />
               {playText}
@@ -637,7 +654,7 @@ export default function ActionBar({
           ) : (
             <Button
               onClick={() => startPlaybackFromHref(playHref)}
-              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[15px] font-bold tracking-wide shadow-md`}
+              className={`${responsivePlayActionClass} relative h-11 cursor-pointer gap-2.5 overflow-hidden rounded-full px-8 text-[0.9375rem] font-bold tracking-wide shadow-md`}
             >
               <Play className="size-[18px] fill-current" />
               {playText}
@@ -647,7 +664,7 @@ export default function ActionBar({
         ) : (
           <Button
             disabled
-            className="h-11 gap-2.5 rounded-full px-8 text-[15px] font-bold tracking-wide"
+            className="h-11 gap-2.5 rounded-full px-8 text-[0.9375rem] font-bold tracking-wide"
           >
             <Play className="size-[18px] fill-current" />
             {playLabel}
@@ -664,7 +681,7 @@ export default function ActionBar({
               disabled={action.pending}
               aria-busy={action.pending || undefined}
               aria-pressed={action.pressed}
-              className={`${responsivePrimaryActionClass} h-11 rounded-full px-5 text-[14px] font-semibold enabled:cursor-pointer`}
+              className={`${responsivePrimaryActionClass} h-11 rounded-full px-5 text-[0.875rem] font-semibold enabled:cursor-pointer`}
             >
               {Icon && (
                 <Icon
@@ -677,27 +694,13 @@ export default function ActionBar({
           );
         })}
 
-        {links?.map((link) => (
-          <Button
-            key={link.href}
-            asChild
-            variant="glass"
-            className={`${staticGlassActionClass} h-11 cursor-pointer rounded-full px-4 text-[13px] font-semibold tracking-wide`}
-          >
-            <a href={link.href} target="_blank" rel="noreferrer">
-              {link.label}
-              <ExternalLink aria-hidden="true" className="size-3.5 opacity-60" />
-            </a>
-          </Button>
-        ))}
-
         {/* ── Watched toggle ─────────────────────────────────── */}
         {watchedLabel && onToggleWatched && (
           <Button
             variant="glass"
             onClick={onToggleWatched}
             disabled={isUpdatingWatched}
-            className={`${responsivePrimaryActionClass} h-11 min-w-[161px] rounded-full px-5 text-[14px] font-semibold enabled:cursor-pointer`}
+            className={`${responsivePrimaryActionClass} h-11 min-w-[161px] rounded-full px-5 text-[0.875rem] font-semibold enabled:cursor-pointer`}
           >
             <Check className="size-[18px]" />
             {compactMobile ? (
@@ -792,6 +795,12 @@ export default function ActionBar({
                   )}
                 </div>
               )}
+              {onShuffle && (
+                <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onShuffle}>
+                  <Shuffle className="size-4" />
+                  Shuffle
+                </DetailOverflowMenuItem>
+              )}
               {restartHref && (
                 <DetailOverflowMenuItem
                   closeMenu={closeOverflowMenu}
@@ -807,7 +816,7 @@ export default function ActionBar({
                   {inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
                 </DetailOverflowMenuItem>
               )}
-              {contentId && (
+              {contentId && canAddToCollection && (
                 <DetailOverflowMenuItem
                   closeMenu={closeOverflowMenu}
                   onAction={() => setAddToCollectionOpen(true)}
@@ -839,7 +848,7 @@ export default function ActionBar({
                   <div role="separator" className="bg-border -mx-1 my-1 h-px" />
                   <div
                     role="presentation"
-                    className="text-muted-foreground flex items-center gap-1.5 px-2 pt-1 pb-0.5 text-[10px] font-semibold tracking-[0.16em] uppercase"
+                    className="text-muted-foreground flex items-center gap-1.5 px-2 pt-1 pb-0.5 text-[0.625rem] font-semibold tracking-[0.16em] uppercase"
                   >
                     {watchTogether.liveRoom ? (
                       <span aria-hidden="true" className="size-1.5 rounded-full bg-emerald-400" />
@@ -929,6 +938,15 @@ export default function ActionBar({
                           : "Re-detect Markers"}
                     </DetailOverflowMenuItem>
                   )}
+                  {showTrickplay && (
+                    <DetailOverflowMenuItem
+                      closeMenu={closeOverflowMenu}
+                      onAction={() => setTrickplayOpen(true)}
+                    >
+                      <GalleryHorizontal className="size-4" />
+                      Seek Previews
+                    </DetailOverflowMenuItem>
+                  )}
                   {canCurateMetadata && onEditMetadata && (
                     <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onEditMetadata}>
                       <MediaActionIcon action="editMetadata" />
@@ -1001,6 +1019,14 @@ export default function ActionBar({
           onConfirm={handleRefreshConfirm}
           isPending={isRefreshing}
         />
+        {showTrickplay && contentId && (
+          <TrickplayStatusDialog
+            open={trickplayOpen}
+            onOpenChange={setTrickplayOpen}
+            itemId={contentId}
+            versions={versions}
+          />
+        )}
         {isAdmin && onRedetectMarkers && !redetectKind && (
           <RedetectMarkersDialog
             open={redetectDialogOpen}
@@ -1009,11 +1035,12 @@ export default function ActionBar({
             isPending={isRedetectingMarkers}
           />
         )}
-        {contentId && (
+        {contentId && canAddToCollection && (
           <AddToCollectionDialog
             open={addToCollectionOpen}
             onOpenChange={setAddToCollectionOpen}
             mediaItemId={contentId}
+            itemTitle={itemTitle}
           />
         )}
       </div>
@@ -1060,6 +1087,29 @@ export default function ActionBar({
             />
           )}
         </div>
+      )}
+
+      {/* ── The title on IMDb, TMDB and TVDB ─────────────────── */}
+      {/* A row of its own, so the links never push the library actions
+          (watched, favorite, rating, more) onto another line. */}
+      {links && links.length > 0 && (
+        <ul aria-label="External links" className="detail-external-links flex flex-wrap gap-2">
+          {links.map((link) => (
+            <li key={link.href}>
+              <Button
+                asChild
+                variant="glass"
+                size="sm"
+                className={`${staticGlassActionClass} cursor-pointer rounded-full text-xs font-semibold tracking-wide`}
+              >
+                <a href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label} <span className="sr-only">(opens in a new tab)</span>
+                  <ExternalLink aria-hidden="true" className="size-3 opacity-60" />
+                </a>
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
