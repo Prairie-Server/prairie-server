@@ -54,7 +54,7 @@ export function PillSwitcher({
           aria-label={label}
           onScroll={measure}
           className={cn(
-            "-mx-1 overflow-x-auto px-1 py-1 [--strip-fade:4rem] [--strip-hold:1.75rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            "-mx-1 [scrollbar-width:none] overflow-x-auto px-1 py-1 [--strip-fade:4rem] [--strip-hold:1.75rem] [&::-webkit-scrollbar]:hidden",
             edgeMask(edges),
           )}
         >
