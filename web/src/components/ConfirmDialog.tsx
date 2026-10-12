@@ -55,7 +55,9 @@ export function ConfirmDialog({
   const descriptionId = `${id}-description`;
   const noteId = `${id}-note`;
   // The list and the warning sit outside the description, so name them too:
-  // a screen reader then reads every consequence when the dialog opens.
+  // a screen reader then reads every consequence when the dialog opens. The id
+  // goes on the Description itself: Radix appends its Description id to this list
+  // (deduped), so an id on an inner element would read the description twice.
   const describedBy = [
     descriptionId,
     ...items.map((_, index) => itemId(index)),
@@ -85,9 +87,7 @@ export function ConfirmDialog({
       <AlertDialogContent aria-describedby={describedBy} onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            <span id={descriptionId}>{description}</span>
-          </AlertDialogDescription>
+          <AlertDialogDescription id={descriptionId}>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         {items.length > 0 ? (
           <ul aria-label={bullets?.label} className="m-0 grid list-disc gap-1 pl-5 text-sm">
