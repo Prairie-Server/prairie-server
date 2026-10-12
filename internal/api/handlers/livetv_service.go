@@ -17,9 +17,11 @@ import (
 // same keys on both listeners.
 
 // liveTVViewer returns the caller and whether ownership must be enforced:
-// administrators may act on any viewer's sessions, recordings and rules.
+// an acting administrator may act on any viewer's sessions, recordings and
+// rules. An acting-admin lookup error enforces ownership.
 func liveTVViewer(ctx context.Context) (userID int, profileID string, enforceOwner bool) {
-	return apimw.GetUserID(ctx), apimw.GetProfileID(ctx), !apimw.IsAdmin(ctx)
+	admin, err := apimw.ActingAdmin(ctx)
+	return apimw.GetUserID(ctx), apimw.GetProfileID(ctx), err != nil || !admin
 }
 
 // LiveTVGuideWindow is the default guide window: from now for 12 hours.

@@ -49,8 +49,9 @@ type ClientDiagnosticEventsOutput struct {
 
 // clientEventLimiter is a per-account fixed one-minute window.
 type clientEventLimiter struct {
-	mu      sync.Mutex
-	windows map[int]clientEventWindow
+	mu        sync.Mutex
+	windows   map[int]clientEventWindow
+	lastSweep time.Time
 }
 
 type clientEventWindow struct {
@@ -73,7 +74,8 @@ func (l *clientEventLimiter) allow(userID int, now time.Time) bool {
 	}
 	w.count++
 	l.windows[userID] = w
-	if len(l.windows) > 10_000 {
+	if len(l.windows) > 10_000 && now.Sub(l.lastSweep) >= time.Minute {
+		l.lastSweep = now
 		for id, candidate := range l.windows {
 			if now.Sub(candidate.start) >= time.Minute {
 				delete(l.windows, id)
