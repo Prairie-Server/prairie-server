@@ -20182,6 +20182,18 @@ export interface components {
       /** @description Opaque seed for subsequent explicit window jumps; carries query scope and the initial insertion fence */
       window_cursor: string;
     };
+    CatalogCommunityRating: {
+      /**
+       * Format: double
+       * @description Mean star rating, rounded to one decimal
+       */
+      average: number;
+      /**
+       * Format: int64
+       * @description Number of ratings behind the average
+       */
+      count: number;
+    };
     CatalogEffectiveSort: {
       /** @example title */
       field: string;
@@ -20399,6 +20411,8 @@ export interface components {
       badges?: string[];
       /** @description Empty, never null */
       cast: components["schemas"]["CastCredit"][];
+      /** @description Mean of every profile's 1-5 star rating for this item. Absent when fewer than 3 ratings exist, so a small server does not reveal individual ratings. */
+      community_rating?: components["schemas"]["CatalogCommunityRating"];
       /**
        * @description Deterministic catalog identifier
        * @example movie:heat-1995

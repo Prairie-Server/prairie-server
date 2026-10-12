@@ -19,6 +19,7 @@ type ratingsRepository interface {
 	Delete(ctx context.Context, userID int, profileID, mediaItemID string) error
 	List(ctx context.Context, userID int, profileID string, limit, offset int) ([]catalog.UserRating, error)
 	ListPage(ctx context.Context, userID int, profileID string, after *catalog.RatingKey, limit int) ([]catalog.UserRating, error)
+	Aggregate(ctx context.Context, mediaItemID string) (average float64, count int, err error)
 }
 
 // LocalRatingEventDispatcher sends a profile's rating changes to its watch

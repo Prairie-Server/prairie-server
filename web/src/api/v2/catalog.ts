@@ -316,6 +316,7 @@ export function catalogItemDetailFromV2(item: CatalogItemDetailV2): ItemDetail {
     user_data: item.user_data ? watchRollupFromV2(item.user_data) : undefined,
     user_state: item.user_state,
     user_rating: item.user_rating ?? null,
+    community_rating: item.community_rating ?? null,
     folder_paths: item.folder_paths,
     videos: item.videos,
     extras: item.extras,

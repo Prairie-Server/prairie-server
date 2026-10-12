@@ -387,6 +387,7 @@ type CatalogItemDetail struct {
 	IsSpecials                      bool                                 `json:"is_specials,omitempty"`
 	UserData                        *WatchRollup                         `json:"user_data,omitempty"`
 	UserRating                      *int                                 `json:"user_rating,omitempty"`
+	CommunityRating                 *CatalogCommunityRating              `json:"community_rating,omitempty" doc:"Mean of every profile's 1-5 star rating for this item. Absent when fewer than 3 ratings exist, so a small server does not reveal individual ratings."`
 	Versions                        []FileVersion                        `json:"versions" doc:"Empty, never null"`
 	PlaybackVariants                []PlaybackVariant                    `json:"playback_variants,omitempty"`
 	Videos                          []catalogpkg.ItemVideoInfo           `json:"videos,omitempty" doc:"Trailers and clips"`
@@ -410,6 +411,12 @@ type CatalogItemDetail struct {
 	Audiobook                       *catalogpkg.AudiobookDetailExtension `json:"audiobook,omitempty"`
 	Ebook                           *catalogpkg.EbookDetailExtension     `json:"ebook,omitempty"`
 	Manga                           *catalogpkg.MangaDetailExtension     `json:"manga,omitempty"`
+}
+
+// CatalogCommunityRating is the aggregate star rating all profiles gave an item.
+type CatalogCommunityRating struct {
+	Average float64 `json:"average" minimum:"1" maximum:"5" doc:"Mean star rating, rounded to one decimal"`
+	Count   int     `json:"count" minimum:"3" doc:"Number of ratings behind the average"`
 }
 
 // CatalogRatingSource is one source's rating of an item.
@@ -1408,7 +1415,7 @@ func catalogItemDetailOf(d *catalogpkg.ItemDetail, sel ratingsources.Selection) 
 		SortTitle: d.SortTitle, OriginalTitle: d.OriginalTitle, Tagline: d.Tagline, PendingTranslationLanguage: d.PendingTranslationLanguage,
 		ImdbID: d.ImdbID, TmdbID: d.TmdbID, TvdbID: d.TvdbID, Cast: NonNil(d.Cast), Crew: NonNil(d.Crew), Countries: d.Countries, LockedFields: d.LockedFields,
 		FirstAirDate: d.FirstAirDate, AirTime: d.AirTime, AirTimezone: d.AirTimezone, SeasonCount: d.SeasonCount, EpisodeCount: d.EpisodeCount,
-		AirDate: d.AirDate, IsSpecials: d.IsSpecials, UserData: watchRollupOf(d.SeasonUserData), UserRating: d.UserRating,
+		AirDate: d.AirDate, IsSpecials: d.IsSpecials, UserData: watchRollupOf(d.SeasonUserData), UserRating: d.UserRating, CommunityRating: catalogCommunityRatingOf(d.CommunityRating),
 		Versions: fileVersionsOf(d.Versions), PlaybackVariants: playbackVariantsOf(d.PlaybackVariants), Videos: d.Videos, RatingSources: catalogRatingSourcesOf(ratingSources), Ratings: catalogRatingsOf(d, sel), Extras: d.Extras,
 		FolderPaths: d.FolderPaths, Subtitles: NonNil(d.Subtitles), Intro: d.Intro, Credits: d.Credits, Recap: d.Recap, Preview: d.Preview,
 		EffectiveVersionResolution: d.EffectiveVersionResolution,
@@ -1457,4 +1464,11 @@ func seasonOf(s handlers.SeasonView) Season {
 	return Season{ContentID: s.ContentID, PlayContentID: s.PlayContentID, SeasonNumber: s.SeasonNumber, IsSpecials: s.IsSpecials, Title: s.Title,
 		Overview: s.Overview, AirDate: datePtr(s.AirDate), EpisodeCount: s.EpisodeCount, PosterURL: s.PosterURL, PosterThumbhash: s.PosterThumbhash,
 		UserData: watchRollupOf(s.UserData)}
+}
+
+func catalogCommunityRatingOf(r *catalogpkg.CommunityRating) *CatalogCommunityRating {
+	if r == nil {
+		return nil
+	}
+	return &CatalogCommunityRating{Average: r.Average, Count: r.Count}
 }

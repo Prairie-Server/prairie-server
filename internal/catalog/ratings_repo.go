@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -245,4 +246,44 @@ func (r *RatingsRepo) ListForItems(ctx context.Context, userID int, profileID st
 		result[itemID] = rating
 	}
 	return result, rows.Err()
+}
+
+// minCommunityRatings is the fewest ratings an item needs before its community
+// rating is shown. On a small household server a lower count would let one
+// member work out another's individual rating.
+const minCommunityRatings = 3
+
+// CommunityRating is the mean star rating every profile gave an item.
+type CommunityRating struct {
+	Average float64 `json:"average"`
+	Count   int     `json:"count"`
+}
+
+// NewCommunityRating rounds the average to one decimal and returns nil below
+// minCommunityRatings.
+func NewCommunityRating(average float64, count int) *CommunityRating {
+	if count < minCommunityRatings {
+		return nil
+	}
+	return &CommunityRating{Average: math.Round(average*10) / 10, Count: count}
+}
+
+// Aggregate returns the mean rating and rating count for an item across all
+// users and profiles.
+//
+// ponytail: no per-viewer access filter. Ratings are only written through
+// access-checked paths, so every row was made by someone who could see the
+// item; a rating stays counted if that access is later revoked. Join the
+// viewer's library access here if that ever matters.
+func (r *RatingsRepo) Aggregate(ctx context.Context, mediaItemID string) (average float64, count int, err error) {
+	err = r.pool.QueryRow(ctx, `
+		SELECT COALESCE(AVG(rating), 0)::float8, COUNT(*)
+		FROM user_ratings
+		WHERE media_item_id = $1`,
+		mediaItemID,
+	).Scan(&average, &count)
+	if err != nil {
+		return 0, 0, fmt.Errorf("aggregate ratings: %w", err)
+	}
+	return average, count, nil
 }
