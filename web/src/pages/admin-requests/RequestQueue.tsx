@@ -205,7 +205,7 @@ export function RequestQueue() {
         onValueChange={(value) => updateParams((params) => params.set("view", value))}
         className="gap-4"
       >
-        <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:mx-0 sm:px-0">
+        <div className="-mx-4 [scrollbar-width:thin] overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           <TabsList aria-label="Request views" className="w-max">
             {REQUEST_QUEUE_VIEWS.map((view) => (
               <TabsTrigger key={view.value} value={view.value} className="px-3">
