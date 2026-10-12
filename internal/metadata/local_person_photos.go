@@ -37,7 +37,7 @@ func (s *MetadataService) applyLocalPersonPhotos(ctx context.Context, contentID 
 		return
 	}
 	inputs := localPersonPhotoJobs(ctx, s.personRepo, contentID, usableLocalPersonPhotos(people, s.localSourceUsable))
-	s.enqueueImageCacheJobs(ctx, "person", contentID, inputs)
+	_ = s.enqueueImageCacheJobs(ctx, "person", contentID, inputs)
 }
 
 // localPersonPhotoJobs records the photo sources people take and returns the

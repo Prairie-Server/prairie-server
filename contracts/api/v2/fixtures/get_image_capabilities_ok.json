@@ -1,5 +1,5 @@
 {
-  "revision": "bb7c9622c71dd44c107f2aa42e5d4253e853209fbffac2d7e851b96bfa9b557f",
+  "revision": "0ebdd7fa6c49a596cc6371358390a174e111965b73e938af57b825b2b2200118",
   "state": "available",
   "allowed": true,
   "episode_still_provenance": true,
@@ -51,7 +51,7 @@
     "still": {
       "small": 300,
       "medium": 500,
-      "large": 780
+      "large": 500
     },
     "thumb": {
       "small": 300,
