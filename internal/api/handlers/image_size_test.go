@@ -105,7 +105,7 @@ func TestSizedLogoPathMatchesItemDetail(t *testing.T) {
 		{imagesize.Unset, "tmdb/movies/550/logo/w500.png"},
 		{imagesize.Small, "tmdb/movies/550/logo/w500.png"},
 		{imagesize.Medium, "tmdb/movies/550/logo/w500.png"},
-		{imagesize.Large, "tmdb/movies/550/logo/w1280.png"},
+		{imagesize.Large, "tmdb/movies/550/logo/w500.png"},
 		{imagesize.Original, logo},
 	}
 	if got := sizedFeaturedLogoPath(logo, imagesize.Unset); got != logo {

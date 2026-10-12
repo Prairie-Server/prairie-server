@@ -66,7 +66,7 @@ function notFound() {
     title: "Not found",
     status: 404,
     detail: "Device login request not found",
-    instance: "urn:prairie:request:1",
+    instance: "urn:silo:request:1",
   } as never);
 }
 
@@ -470,7 +470,7 @@ it("says when an account has tried too many Quick Connect codes", async () => {
           title: "Rate limited",
           status: 429,
           detail: "Too many Quick Connect codes tried. Try again later.",
-          instance: "urn:prairie:request:1",
+          instance: "urn:silo:request:1",
         } as never,
         900,
       ),
@@ -499,7 +499,7 @@ it("explains that an admin viewing as someone can't look up a Quick Connect code
         title: "Permission denied",
         status: 403,
         detail: "Only the account's own signed-in session can look up a Quick Connect code.",
-        instance: "urn:prairie:request:1",
+        instance: "urn:silo:request:1",
       } as never),
     )) as never);
   mount("/activate?code=482177");
@@ -516,7 +516,7 @@ it("says a PIN lockout is about the profile, not the codes", async () => {
         title: "Rate limited",
         status: 429,
         detail: "Too many incorrect PINs.",
-        instance: "urn:prairie:request:1",
+        instance: "urn:silo:request:1",
       } as never,
       300,
     ),
@@ -545,7 +545,7 @@ it("reloads a Quick Connect request that moved on before it was declined", async
         title: "Expired",
         status: 410,
         detail: "Device login request has expired.",
-        instance: "urn:prairie:request:1",
+        instance: "urn:silo:request:1",
       } as never),
     );
   }) as never);

@@ -280,7 +280,7 @@ describe("WatchPlaybackHost shuffle", () => {
         title: "Conflict",
         status: 409,
         detail: "Nothing here can be played.",
-        instance: "urn:prairie:request:1",
+        instance: "urn:silo:request:1",
       }),
     );
     const movie = await renderPlayback({ contentId: "movie-1", shuffleId: "shuffle-1" }, client);

@@ -161,7 +161,7 @@ func TestBuildRemuxArgsKeepsRPUForProfile8AndPlainFiles(t *testing.T) {
 // explicit preserve recipe must fail fast instead of emitting a stream with
 // dangling RPUs and no enhancement layer.
 func TestStartRemuxRejectsPreservedProfile7(t *testing.T) {
-	if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, 7, RemuxDVPreserveV3, filepath.Join(t.TempDir(), "missing-ffmpeg")); err == nil || !strings.Contains(err.Error(), "Dolby Vision profile 7 cannot be preserved in a progressive remux") {
+	if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, 7, RemuxDVPreserveV3, filepath.Join(t.TempDir(), "missing-ffmpeg")); err == nil || !strings.Contains(err.Error(), "dolby vision profile 7 cannot be preserved in a progressive remux") {
 		t.Fatalf("preserve profile 7 error = %v, want the unsupported-profile rejection", err)
 	}
 }

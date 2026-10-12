@@ -76,8 +76,8 @@ func TestRedisClientsTakeDatabaseNumberFromRedisDB(t *testing.T) {
 // Runs without a Redis server: the name Redis receives must carry the database
 // number that the same connection selected.
 func TestRedisEventBusSendsScopedChannelToRedis(t *testing.T) {
-	bare := []string{"SUBSCRIBE prairie:admin on database 0", "PUBLISH prairie:admin on database 0"}
-	db5 := []string{"SUBSCRIBE prairie:admin@db5 on database 5", "PUBLISH prairie:admin@db5 on database 5"}
+	bare := []string{"SUBSCRIBE silo:admin on database 0", "PUBLISH silo:admin on database 0"}
+	db5 := []string{"SUBSCRIBE silo:admin@db5 on database 5", "PUBLISH silo:admin@db5 on database 5"}
 	for _, tc := range []struct {
 		name string
 		path string
@@ -85,7 +85,7 @@ func TestRedisEventBusSendsScopedChannelToRedis(t *testing.T) {
 		want []string
 		bare bool
 	}{
-		{"database 3", "/3", "", []string{"SUBSCRIBE prairie:admin@db3 on database 3", "PUBLISH prairie:admin@db3 on database 3"}, false},
+		{"database 3", "/3", "", []string{"SUBSCRIBE silo:admin@db3 on database 3", "PUBLISH silo:admin@db3 on database 3"}, false},
 		{"database 0", "/0", "", bare, false},
 		{"no database number", "", "", bare, false},
 		{"negative database number", "/-1", "", bare, false},

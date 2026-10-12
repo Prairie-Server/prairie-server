@@ -1007,12 +1007,19 @@ func TestCache_ResolvesPluginURL(t *testing.T) {
 		t.Error("Thumbhash is empty")
 	}
 	keys := s3.keys()
-	if len(keys) != 4 {
-		t.Errorf("expected 4 uploaded variants, got %d: %v", len(keys), keys)
+	// Prairie's ladder: original plus w500/w300/w200 WebP, with an AVIF
+	// sibling for each resized rung (the original has none).
+	if len(keys) != 7 {
+		t.Errorf("expected 7 uploaded objects, got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w780", "w500", "w300"} {
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		if want := result.VariantPaths[variant]; !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
+		}
+	}
+	for _, variant := range []string{"w500", "w300", "w200"} {
+		if want := artworkkey.WebPAVIFSibling(result.VariantPaths[variant]); !hasKey(keys, want) {
+			t.Errorf("missing AVIF sibling %q in %v", want, keys)
 		}
 	}
 }

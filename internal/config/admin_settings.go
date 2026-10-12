@@ -1128,7 +1128,7 @@ func ParseRedisURL(raw string) (*redisv9.Options, *redisv9.FailoverOptions, erro
 		// would reach Redis changed.
 		return nil, nil, errors.New("redis: a + in a Sentinel URL parameter means a space; write %2B for a plus sign")
 	}
-	failover, err := redisv9.ParseFailoverURL(raw)
+	failover, err := redisv9.ParseFailoverURL(withoutZeroSentinelTimeouts(raw, u, query))
 	if err != nil {
 		return nil, nil, redisURLError(err)
 	}
@@ -1163,6 +1163,36 @@ func ParseRedisURL(raw string) (*redisv9.Options, *redisv9.FailoverOptions, erro
 		failover.DialTimeout = 5 * time.Second
 	}
 	return nil, failover, nil
+}
+
+// withoutZeroSentinelTimeouts drops a dial_timeout or read_timeout of zero from
+// the URL. go-redis v9.18 read zero as "use the default"; newer versions turn
+// it into -1, "no timeout", which the checks below refuse. Leaving the
+// parameter out keeps the documented meaning of zero.
+func withoutZeroSentinelTimeouts(raw string, u *url.URL, query url.Values) string {
+	changed := false
+	for _, name := range []string{"dial_timeout", "read_timeout"} {
+		value := query.Get(name)
+		if value == "" {
+			continue
+		}
+		zero := false
+		if i, err := strconv.Atoi(value); err == nil {
+			zero = i == 0
+		} else if d, err := time.ParseDuration(value); err == nil {
+			zero = d == 0
+		}
+		if zero {
+			query.Del(name)
+			changed = true
+		}
+	}
+	if !changed {
+		return raw
+	}
+	stripped := *u
+	stripped.RawQuery = query.Encode()
+	return stripped.String()
 }
 
 // errRedisNegativePoolSize refuses a negative pool_size. go-redis replaces

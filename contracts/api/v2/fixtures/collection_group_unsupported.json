@@ -3,5 +3,5 @@
   "title": "Capability unsupported",
   "status": 501,
   "detail": "The acting account does not support collection groups",
-  "instance": "urn:prairie:request:00000000000000000000010c"
+  "instance": "urn:silo:request:00000000000000000000010c"
 }

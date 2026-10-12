@@ -189,7 +189,7 @@ describe("ProfileHomeSections", () => {
           title: "Validation failed",
           status: 400,
           detail: "The request did not pass validation; see errors.",
-          instance: "urn:prairie:request:1",
+          instance: "urn:silo:request:1",
           errors: [
             {
               location: "body.overrides",

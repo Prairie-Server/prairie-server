@@ -211,7 +211,7 @@ describe("Sources list", () => {
                 type: "https://siloserver.org/docs/api/v2/problems/validation_failed",
                 title: "Validation failed",
                 status: 422,
-                instance: "urn:prairie:request:000000000000000000000001",
+                instance: "urn:silo:request:000000000000000000000001",
                 ...fixture.problem,
               }),
               { status: 422, headers: { "Content-Type": "application/problem+json" } },

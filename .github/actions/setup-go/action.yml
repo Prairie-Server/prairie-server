@@ -47,6 +47,9 @@ runs:
       uses: actions/setup-go@v6
       with:
         go-version: '>=1.26 <1.27'
+        # The runner image pins an older patch release; govulncheck needs the
+        # newest stdlib security fixes (net/http).
+        check-latest: true
         cache: false
 
     - name: Read the Go version

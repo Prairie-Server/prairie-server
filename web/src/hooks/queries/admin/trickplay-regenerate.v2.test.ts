@@ -30,7 +30,7 @@ it("does not refresh or replay a regeneration after 401", async () => {
           title: "Invalid token",
           status: 401,
           detail: "Expired",
-          instance: "urn:prairie:request:test",
+          instance: "urn:silo:request:test",
         }),
         { status: 401, headers: { "Content-Type": "application/problem+json" } },
       );

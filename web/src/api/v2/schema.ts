@@ -27493,8 +27493,8 @@ export interface components {
       errors?: components["schemas"]["ProblemError"][];
       /**
        * Format: uri
-       * @description urn:prairie:request:<request-id>, matching the X-Request-ID response header
-       * @example urn:prairie:request:000000000000000000000003
+       * @description urn:silo:request:<request-id>, matching the X-Request-ID response header
+       * @example urn:silo:request:000000000000000000000003
        */
       instance: string;
       /**

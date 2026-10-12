@@ -57,7 +57,7 @@ describe("useStartShuffle", () => {
         title: "Conflict",
         status: 409,
         detail: "Nothing here can be played.",
-        instance: "urn:prairie:request:1",
+        instance: "urn:silo:request:1",
       }),
     );
     const { result } = renderHook(() => useStartShuffle(), { wrapper });
