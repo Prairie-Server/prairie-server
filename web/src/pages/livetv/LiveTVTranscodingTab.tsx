@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLiveTVTuners } from "@/hooks/queries/useLiveTV";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { FieldGroup } from "@/pages/admin-settings/FieldGroup";
-import { SaveBar } from "@/pages/admin-settings/SaveBar";
+import { SaveBar } from "@/components/SaveBar";
 import { SettingField } from "@/pages/admin-settings/SettingField";
 
 const KEYS = [

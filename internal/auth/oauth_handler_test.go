@@ -254,7 +254,7 @@ func TestOAuthInit_BouncesToPublicOriginOnce(t *testing.T) {
 		t.Fatalf("bounced start: code = %d cookie = %v inits = %d", w.Code, cookie, rig.client.inits)
 	}
 	// The default port is the same origin.
-	if _, cookie := rig.start(t, "https://PRAIRIE.test:443/api/v1/auth/oauth/42/init"); cookie == nil {
+	if _, cookie := rig.start(t, "https://SILO.test:443/api/v1/auth/oauth/42/init"); cookie == nil {
 		t.Fatal("explicit default port was treated as another origin")
 	}
 }
@@ -1483,7 +1483,7 @@ func TestOAuthRoutesRefuseCredentialsInstallations(t *testing.T) {
 func TestOAuthNative_IssuerSerialization(t *testing.T) {
 	for _, tc := range []struct{ scheme, host, want string }{
 		{"https", "silo.test", "https://silo.test"},
-		{"HTTPS", "Prairie.Example.TEST:443", "https://silo.example.test"},
+		{"HTTPS", "Silo.Example.TEST:443", "https://silo.example.test"},
 		{"http", "10.0.0.5:80", "http://10.0.0.5"},
 		{"http", "10.0.0.5:8096", "http://10.0.0.5:8096"},
 		{"https", "[FE80::1]:8443", "https://[fe80::1]:8443"},
@@ -1544,7 +1544,7 @@ func TestSameOriginComparesCanonicalHosts(t *testing.T) {
 		{"https", "[::1]", "https://[0:0:0:0:0:0:0:1]", true},
 		{"https", "[::1]:443", "https://[0:0:0:0:0:0:0:1]", true},
 		{"http", "[::1]:8096", "http://[::1]:8096", true},
-		{"https", "Prairie.Example.test", "https://silo.example.test:443", true},
+		{"https", "Silo.Example.test", "https://silo.example.test:443", true},
 		{"https", "[::2]", "https://[::1]", false},
 		{"http", "silo.example.test", "https://silo.example.test", false},
 		{"https", "silo.example.test:8443", "https://silo.example.test", false},

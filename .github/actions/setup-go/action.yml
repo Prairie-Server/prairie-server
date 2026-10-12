@@ -99,6 +99,8 @@ runs:
     - name: Wait for libvips
       shell: bash
       run: |
+        # Jobs that install libvips inline start no background install.
+        [ -e "$RUNNER_TEMP/libvips.log" ] || exit 0
         timeout 60 sh -c 'until [ -s "$RUNNER_TEMP/libvips.status" ]; do sleep 1; done' || { cat "$RUNNER_TEMP/libvips.log"; exit 1; }
         cat "$RUNNER_TEMP/libvips.log"
         exit "$(cat "$RUNNER_TEMP/libvips.status")"

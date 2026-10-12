@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/prairie-server/prairie-server/internal/auditmutation"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/logstream"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func TestMutationCommitRollbackAndHistoryDB(t *testing.T) {
