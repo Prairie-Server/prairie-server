@@ -201,6 +201,24 @@ Items carry Jellyfin 12's `OriginalLanguage` (movies and series). Episodes set
 or to the series poster when the season has none; both are removed when the
 request disables Primary images.
 
+### Extended artwork
+
+Movies and series that have a banner, landscape thumb, clear art or disc art
+list it in `ImageTags` under Jellyfin's image types `Banner`, `Thumb`, `Art` and
+`Disc`, on lists and detail alike. `BackdropImageTags` lists every backdrop,
+the primary first, and is empty when the item has no primary backdrop.
+
+| Route | Serves |
+|---|---|
+| `GET /Items/{id}/Images/Banner` | The banner; 404 without one. |
+| `GET /Items/{id}/Images/Thumb` | The landscape thumb. Without one it serves the backdrop, then the poster, as before. |
+| `GET /Items/{id}/Images/Art` | The clear art; 404 without one. |
+| `GET /Items/{id}/Images/Disc` | The disc art; 404 without one. |
+| `GET /Items/{id}/Images/Backdrop/{index}` | Index 0 (or no index) is the primary backdrop; index `i` is the item's `i`-th backdrop after it, 404 past the last. Other image types ignore the index. |
+
+An episode's `ParentThumbImageTag` still names its series' backdrop; the series'
+`Thumb` route serves its landscape thumb when it has one.
+
 | Routes | Behavior |
 |---|---|
 | `GET /Items/{id}/Ancestors` | Visible episode/season/series/library ancestry. When an item belongs to multiple libraries, chooses its first visible library parent. |
@@ -443,6 +461,14 @@ Sign-in refuses an account holding a temporary password with `401` and a message
 sign in to Silo first: Jellyfin clients cannot run the password change it requires
 (see [temporary passwords](auth-api.md#temporary-passwords)). The account's other
 state is unaffected, and signing in works again once the password is changed.
+
+Each sign-in, by password or Quick Connect, opens its own Prairie login session, and the
+compat session lives only as long as it (see
+[login sessions](auth-api.md#login-sessions)). Every authenticated request, stream
+grant, and socket re-check looks the login session up, one indexed read, on whichever
+node answers. A revoked or expired login session ends the compat session with `401`; a
+lookup that fails is a retryable `503` and keeps it. `sa_` API keys have no login
+session and are checked as keys instead.
 
 ### Quick Connect
 

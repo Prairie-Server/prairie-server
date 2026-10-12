@@ -1161,3 +1161,13 @@ func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
 	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
 	return c
 }
+
+// The cache key's type segment must name the same type the variant ladder and
+// the metadata pipeline use, or cached paths stop matching their ladder.
+func TestImageTypeNameMatchesMetadataNames(t *testing.T) {
+	for imageType := metadata.ImagePoster; imageType <= metadata.ImageDisc; imageType++ {
+		if got, want := imageTypeName(imageType), metadata.ImageTypeToString(imageType); got != want {
+			t.Errorf("imageTypeName(%d) = %q, want %q", imageType, got, want)
+		}
+	}
+}
