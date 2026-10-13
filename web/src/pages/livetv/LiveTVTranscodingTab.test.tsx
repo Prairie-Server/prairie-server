@@ -46,6 +46,7 @@ function tuner(overrides: Partial<LiveTVTuner> = {}): LiveTVTuner {
     status: "ready",
     channel_count: 12,
     last_error: "",
+    transcode_codecs: [],
     ...overrides,
   };
 }

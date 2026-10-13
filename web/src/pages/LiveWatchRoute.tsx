@@ -124,8 +124,9 @@ export default function LiveWatchRoute() {
         }
         sessionIdRef.current = session.session_id;
         setActiveSessionId(session.session_id);
-        const nextUrl = session.hls_url || session.stream_url || null;
-        setTransport(session.transport === "hls" || Boolean(session.hls_url) ? "hls" : "mpegts");
+        // stream_url stays on the v1 media routes; use it exactly as returned.
+        const nextUrl = session.stream_url || null;
+        setTransport(session.transport === "hls" ? "hls" : "mpegts");
         setStreamURL(nextUrl);
         if (!nextUrl) {
           setTuneError("Live TV session started but no stream URL was returned");

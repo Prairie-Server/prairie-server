@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildLiveWatchHref, releaseLiveTVSessionOnUnload } from "./liveTVWatch";
 
-vi.mock("@/api/client", () => ({
-  getAccessToken: () => "access-token",
-  getProfileId: () => "profile-1",
-  getProfileToken: () => "profile-token",
+const mockV2 = vi.fn();
+vi.mock("@/api/v2/request", () => ({
+  v2: (...args: unknown[]) => mockV2(...args),
 }));
 
 afterEach(() => {
@@ -23,29 +22,24 @@ describe("buildLiveWatchHref", () => {
 });
 
 describe("releaseLiveTVSessionOnUnload", () => {
-  it("sends an authenticated keepalive DELETE so the tuner is freed", () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-    vi.stubGlobal("fetch", fetchMock);
+  it("sends a keepalive v2 DELETE so the tuner is freed", () => {
+    mockV2.mockReset().mockResolvedValue(undefined);
 
     releaseLiveTVSessionOnUnload("sess-1");
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const call = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(call[0]).toBe("/api/v1/livetv/sessions/sess-1");
-    expect(call[1]).toMatchObject({ method: "DELETE", keepalive: true });
-    expect(call[1].headers).toMatchObject({
-      Authorization: "Bearer access-token",
-      "X-Profile-Id": "profile-1",
-      "X-Profile-Token": "profile-token",
+    expect(mockV2).toHaveBeenCalledTimes(1);
+    expect(mockV2).toHaveBeenCalledWith("DELETE /api/v2/livetv/sessions/{session_id}", {
+      path: { session_id: "sess-1" },
+      keepalive: true,
+      retryAuthentication: false,
     });
   });
 
   it("ignores an empty session id", () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    mockV2.mockReset();
 
     releaseLiveTVSessionOnUnload("");
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockV2).not.toHaveBeenCalled();
   });
 });

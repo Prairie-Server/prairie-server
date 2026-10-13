@@ -1,22 +1,8 @@
 import { useEffect } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api } from "@/api/client";
-import type {
-  LiveTVChannel,
-  LiveTVChannelsResponse,
-  LiveTVGuideResponse,
-  LiveTVGuideSource,
-  LiveTVGuideSourcesResponse,
-  LiveTVRecording,
-  LiveTVRecordingsResponse,
-  LiveTVSessionStartResponse,
-  LiveTVDiscoverTunersResponse,
-  LiveTVTuner,
-  LiveTVTunersResponse,
-  SchedulesDirectLineupsResponse,
-  XMLSyncLineupsResponse,
-} from "@/api/types";
+import { v2, type V2Body, type V2OptionalBody, type V2Query } from "@/api/v2/request";
+import type { components } from "@/api/v2/schema";
 import { adminKeys } from "./keys";
 
 const LIVETV_STALE_TIME = 30_000;
@@ -27,18 +13,15 @@ export const LIVETV_HEARTBEAT_INTERVAL_MS = 30_000;
 export function useLiveTVTuners() {
   return useQuery({
     queryKey: adminKeys.liveTVTuners(),
-    queryFn: () => api<LiveTVTunersResponse>("/livetv/tuners").then((data) => data.tuners ?? []),
+    queryFn: () => v2("GET /api/v2/admin/livetv/tuners").then((data) => data.items ?? []),
     staleTime: LIVETV_STALE_TIME,
   });
 }
 
 export function useDiscoverLiveTVTuners() {
   return useMutation({
-    mutationFn: (body: { timeout_ms?: number; include_udp?: boolean; probe_urls?: string[] }) =>
-      api<LiveTVDiscoverTunersResponse>("/livetv/tuners/discover", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+    mutationFn: (body: V2OptionalBody<"POST /api/v2/admin/livetv/tuners/discover">) =>
+      v2("POST /api/v2/admin/livetv/tuners/discover", { body }),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Tuner discovery failed");
     },
@@ -48,11 +31,8 @@ export function useDiscoverLiveTVTuners() {
 export function useAddLiveTVTuner() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { url?: string; discover_url?: string; device_id?: string }) =>
-      api<LiveTVTuner>("/livetv/tuners", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+    mutationFn: (body: V2Body<"POST /api/v2/admin/livetv/tuners">) =>
+      v2("POST /api/v2/admin/livetv/tuners", { body }),
     onSuccess: () => {
       toast.success("Tuner added");
       void queryClient.invalidateQueries({
@@ -72,9 +52,7 @@ export function useScanLiveTVTuner() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tunerId: string) =>
-      api<LiveTVTuner>(`/livetv/tuners/${encodeURIComponent(tunerId)}/scan`, {
-        method: "POST",
-      }),
+      v2("POST /api/v2/admin/livetv/tuners/{tuner_id}/scan", { path: { tuner_id: tunerId } }),
     onSuccess: () => {
       toast.success("Channel lineup rescanned");
       void queryClient.invalidateQueries({
@@ -94,9 +72,7 @@ export function useDeleteLiveTVTuner() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tunerId: string) =>
-      api(`/livetv/tuners/${encodeURIComponent(tunerId)}`, {
-        method: "DELETE",
-      }),
+      v2("DELETE /api/v2/admin/livetv/tuners/{tuner_id}", { path: { tuner_id: tunerId } }),
     onSuccess: () => {
       toast.success("Tuner removed");
       void queryClient.invalidateQueries({
@@ -113,14 +89,11 @@ export function useDeleteLiveTVTuner() {
 }
 
 export function useLiveTVChannels(tunerId?: string) {
-  const params = new URLSearchParams();
-  if (tunerId) params.set("tuner_id", tunerId);
-  const qs = params.toString();
   return useQuery({
     queryKey: adminKeys.liveTVChannels(tunerId),
     queryFn: () =>
-      api<LiveTVChannelsResponse>(`/livetv/channels${qs ? `?${qs}` : ""}`).then(
-        (data) => data.channels ?? [],
+      v2("GET /api/v2/livetv/channels", { query: tunerId ? { tuner_id: tunerId } : {} }).then(
+        (data) => data.items ?? [],
       ),
     staleTime: LIVETV_STALE_TIME,
     placeholderData: keepPreviousData,
@@ -135,15 +108,11 @@ export function usePatchLiveTVChannel() {
       body,
     }: {
       channelId: string;
-      body: {
-        enabled?: boolean;
-        number_override?: string | null;
-        guide_station_id?: string;
-      };
+      body: V2Body<"PATCH /api/v2/admin/livetv/channels/{channel_id}">;
     }) =>
-      api<LiveTVChannel>(`/livetv/channels/${encodeURIComponent(channelId)}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
+      v2("PATCH /api/v2/admin/livetv/channels/{channel_id}", {
+        path: { channel_id: channelId },
+        body,
       }),
     onSuccess: () => {
       toast.success("Channel updated");
@@ -160,10 +129,7 @@ export function usePatchLiveTVChannel() {
 export function useLiveTVGuideSources() {
   return useQuery({
     queryKey: adminKeys.liveTVGuideSources(),
-    queryFn: () =>
-      api<LiveTVGuideSourcesResponse>("/livetv/guide-sources").then(
-        (data) => data.guide_sources ?? [],
-      ),
+    queryFn: () => v2("GET /api/v2/admin/livetv/guide-sources").then((data) => data.items ?? []),
     staleTime: LIVETV_STALE_TIME,
   });
 }
@@ -171,11 +137,8 @@ export function useLiveTVGuideSources() {
 export function useCreateLiveTVGuideSource() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: Partial<LiveTVGuideSource>) =>
-      api<LiveTVGuideSource>("/livetv/guide-sources", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+    mutationFn: (body: V2Body<"POST /api/v2/admin/livetv/guide-sources">) =>
+      v2("POST /api/v2/admin/livetv/guide-sources", { body }),
     onSuccess: () => {
       toast.success("Guide source added");
       void queryClient.invalidateQueries({
@@ -191,10 +154,16 @@ export function useCreateLiveTVGuideSource() {
 export function useUpdateLiveTVGuideSource() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<LiveTVGuideSource> }) =>
-      api<LiveTVGuideSource>(`/livetv/guide-sources/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: V2Body<"PATCH /api/v2/admin/livetv/guide-sources/{source_id}">;
+    }) =>
+      v2("PATCH /api/v2/admin/livetv/guide-sources/{source_id}", {
+        path: { source_id: id },
+        body,
       }),
     onSuccess: () => {
       toast.success("Guide source updated");
@@ -212,9 +181,7 @@ export function useDeleteLiveTVGuideSource() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      api(`/livetv/guide-sources/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      }),
+      v2("DELETE /api/v2/admin/livetv/guide-sources/{source_id}", { path: { source_id: id } }),
     onSuccess: () => {
       toast.success("Guide source removed");
       void queryClient.invalidateQueries({
@@ -231,9 +198,7 @@ export function useSyncLiveTVGuideSource() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      api<LiveTVGuideSource>(`/livetv/guide-sources/${encodeURIComponent(id)}/sync`, {
-        method: "POST",
-      }),
+      v2("POST /api/v2/admin/livetv/guide-sources/{source_id}/sync", { path: { source_id: id } }),
     onSuccess: () => {
       toast.success("Guide sync finished");
       void queryClient.invalidateQueries({
@@ -255,16 +220,10 @@ export function useSyncLiveTVGuideSource() {
 
 export function useLookupSchedulesDirectLineups() {
   return useMutation({
-    mutationFn: (body: {
-      username: string;
-      password: string;
-      country?: string;
-      postalcode: string;
-    }) =>
-      api<SchedulesDirectLineupsResponse>("/livetv/guide-sources/schedules-direct/lineups", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }).then((data) => data.lineups ?? []),
+    mutationFn: (body: V2Body<"POST /api/v2/admin/livetv/schedules-direct/lineups">) =>
+      v2("POST /api/v2/admin/livetv/schedules-direct/lineups", { body }).then(
+        (data) => data.items ?? [],
+      ),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to look up lineups");
     },
@@ -273,11 +232,8 @@ export function useLookupSchedulesDirectLineups() {
 
 export function useLookupXMLSyncLineups() {
   return useMutation({
-    mutationFn: (body: { country?: string; postalcode: string; lang?: string }) =>
-      api<XMLSyncLineupsResponse>("/livetv/guide-sources/xml-sync/lineups", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }).then((data) => data.lineups ?? []),
+    mutationFn: (body: V2Body<"POST /api/v2/admin/livetv/xml-sync/lineups">) =>
+      v2("POST /api/v2/admin/livetv/xml-sync/lineups", { body }).then((data) => data.items ?? []),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to look up XML sync lineups");
     },
@@ -291,11 +247,6 @@ export type LiveTVGuideParams = {
 };
 
 export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
-  const search = new URLSearchParams();
-  if (params.channelIds?.length) search.set("channels", params.channelIds.join(","));
-  if (params.start) search.set("start", params.start);
-  if (params.end) search.set("end", params.end);
-  const qs = search.toString();
   return useQuery({
     queryKey: adminKeys.liveTVGuide({
       channels: params.channelIds?.join(",") ?? "",
@@ -303,8 +254,14 @@ export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
       end: params.end ?? "",
     }),
     queryFn: () =>
-      api<LiveTVGuideResponse>(`/livetv/guide${qs ? `?${qs}` : ""}`).then((data) => ({
-        programs: data.programs ?? [],
+      v2("GET /api/v2/livetv/guide", {
+        query: {
+          channel_id: params.channelIds?.length ? params.channelIds : undefined,
+          start: params.start || undefined,
+          end: params.end || undefined,
+        },
+      }).then((data) => ({
+        programs: data.items ?? [],
         start: data.start,
         end: data.end,
       })),
@@ -320,11 +277,7 @@ export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
  * audio, neither of which Media Source Extensions decode — without this the
  * bridge copies them and playback is a black screen with no sound.
  */
-export type LiveTVClientCapabilities = {
-  codecs_video: string[];
-  codecs_audio: string[];
-  max_resolution?: string;
-};
+export type LiveTVClientCapabilities = components["schemas"]["LiveTVClientCapabilities"];
 
 export function useStartLiveTVSession() {
   return useMutation({
@@ -335,10 +288,9 @@ export function useStartLiveTVSession() {
       channelId: string;
       capabilities?: LiveTVClientCapabilities;
     }) =>
-      api<LiveTVSessionStartResponse>(`/livetv/channels/${encodeURIComponent(channelId)}/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(capabilities ?? {}),
+      v2("POST /api/v2/livetv/channels/{channel_id}/sessions", {
+        path: { channel_id: channelId },
+        body: capabilities ? { client_capabilities: capabilities } : {},
       }),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start Live TV session");
@@ -355,8 +307,8 @@ export function useLiveTVSessionHeartbeat(sessionId: string | null, enabled = tr
   useEffect(() => {
     if (!sessionId || !enabled) return;
     const send = () => {
-      void api(`/livetv/sessions/${encodeURIComponent(sessionId)}/heartbeat`, {
-        method: "POST",
+      void v2("POST /api/v2/livetv/sessions/{session_id}/heartbeat", {
+        path: { session_id: sessionId },
       }).catch(() => undefined);
     };
     send();
@@ -368,24 +320,21 @@ export function useLiveTVSessionHeartbeat(sessionId: string | null, enabled = tr
 export function useReleaseLiveTVSession() {
   return useMutation({
     mutationFn: (sessionId: string) =>
-      api(`/livetv/sessions/${encodeURIComponent(sessionId)}`, {
-        method: "DELETE",
-      }),
+      v2("DELETE /api/v2/livetv/sessions/{session_id}", { path: { session_id: sessionId } }),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to release Live TV session");
     },
   });
 }
 
-export function useLiveTVRecordings(status?: string) {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  const qs = params.toString();
+export function useLiveTVRecordings(
+  status?: NonNullable<V2Query<"GET /api/v2/livetv/recordings">>["status"],
+) {
   return useQuery({
     queryKey: adminKeys.liveTVRecordings(status),
     queryFn: () =>
-      api<LiveTVRecordingsResponse>(`/livetv/recordings${qs ? `?${qs}` : ""}`).then(
-        (data) => data.recordings ?? [],
+      v2("GET /api/v2/livetv/recordings", { query: status ? { status } : {} }).then(
+        (data) => data.items ?? [],
       ),
     staleTime: LIVETV_STALE_TIME,
   });
@@ -394,17 +343,8 @@ export function useLiveTVRecordings(status?: string) {
 export function useScheduleLiveTVRecording() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
-      program_id?: string;
-      channel_id?: string;
-      start?: string;
-      stop?: string;
-      title?: string;
-    }) =>
-      api<LiveTVRecording>("/livetv/recordings", {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+    mutationFn: (body: V2Body<"POST /api/v2/livetv/recordings">) =>
+      v2("POST /api/v2/livetv/recordings", { body }),
     onSuccess: () => {
       toast.success("Recording scheduled");
       void queryClient.invalidateQueries({
@@ -421,8 +361,8 @@ export function useCancelLiveTVRecording() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (recordingId: string) =>
-      api<LiveTVRecording>(`/livetv/recordings/${encodeURIComponent(recordingId)}`, {
-        method: "DELETE",
+      v2("DELETE /api/v2/livetv/recordings/{recording_id}", {
+        path: { recording_id: recordingId },
       }),
     onSuccess: () => {
       toast.success("Recording cancelled");

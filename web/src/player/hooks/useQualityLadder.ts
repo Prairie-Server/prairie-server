@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
-import { playerFetch } from "../player-fetch";
+import { playerV2 } from "../player-v2";
 
 /** One rung of the server's transcode ladder. */
 export interface QualityLadderRung {
@@ -9,12 +9,6 @@ export interface QualityLadderRung {
   resolution: string;
   height: number;
   bitrate_kbps: number;
-}
-
-interface QualityLadderResponse {
-  rungs: QualityLadderRung[];
-  modes: string[];
-  source_height?: number;
 }
 
 /**
@@ -87,9 +81,7 @@ async function loadLadder(
   config: ReturnType<typeof usePlayerConfig>,
 ): Promise<QualityLadderRung[]> {
   if (cachedLadder) return cachedLadder;
-  inFlight ??= playerFetch<QualityLadderResponse>(config, "/playback/quality-ladder", {
-    method: "GET",
-  })
+  inFlight ??= playerV2(config, "GET /api/v2/playback/quality-ladder", {})
     .then((resp) => {
       // An empty or malformed ladder is a failure, and failures are not cached:
       // caching the fallback here would make every later mount skip the server

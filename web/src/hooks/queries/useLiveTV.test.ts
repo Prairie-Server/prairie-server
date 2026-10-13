@@ -18,8 +18,8 @@ vi.mock("@tanstack/react-query", async () => {
   };
 });
 
-vi.mock("@/api/client", () => ({
-  api: (...args: unknown[]) => mockApi(...args),
+vi.mock("@/api/v2/request", () => ({
+  v2: (...args: unknown[]) => mockApi(...args),
 }));
 
 vi.mock("sonner", () => ({
@@ -33,7 +33,7 @@ describe("useLiveTV guide and recordings", () => {
     mockUseQuery.mockReset();
     mockApi.mockReset();
     mockUseQuery.mockImplementation((options: unknown) => options);
-    mockApi.mockResolvedValue({ programs: [], recordings: [] });
+    mockApi.mockResolvedValue({ items: [] });
   });
 
   it("requests guide with channel and window params", async () => {
@@ -46,9 +46,13 @@ describe("useLiveTV guide and recordings", () => {
       queryFn: () => Promise<unknown>;
     };
     await queryOptions.queryFn();
-    expect(mockApi).toHaveBeenCalledWith(
-      "/livetv/guide?channels=ch1%2Cch2&start=2026-07-25T18%3A00%3A00Z&end=2026-07-26T00%3A00%3A00Z",
-    );
+    expect(mockApi).toHaveBeenCalledWith("GET /api/v2/livetv/guide", {
+      query: {
+        channel_id: ["ch1", "ch2"],
+        start: "2026-07-25T18:00:00Z",
+        end: "2026-07-26T00:00:00Z",
+      },
+    });
   });
 
   it("requests recordings with optional status", async () => {
@@ -57,6 +61,8 @@ describe("useLiveTV guide and recordings", () => {
       queryFn: () => Promise<unknown>;
     };
     await queryOptions.queryFn();
-    expect(mockApi).toHaveBeenCalledWith("/livetv/recordings?status=scheduled");
+    expect(mockApi).toHaveBeenCalledWith("GET /api/v2/livetv/recordings", {
+      query: { status: "scheduled" },
+    });
   });
 });

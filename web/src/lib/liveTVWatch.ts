@@ -1,4 +1,4 @@
-import { getAccessToken, getProfileId, getProfileToken } from "@/api/client";
+import { v2 } from "@/api/v2/request";
 
 /**
  * Releases a live session during page teardown, where React cleanup and normal
@@ -7,17 +7,10 @@ import { getAccessToken, getProfileId, getProfileToken } from "@/api/client";
  */
 export function releaseLiveTVSessionOnUnload(sessionId: string): void {
   if (!sessionId || typeof fetch !== "function") return;
-  const headers: Record<string, string> = {};
-  const token = getAccessToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const profileId = getProfileId();
-  if (profileId) headers["X-Profile-Id"] = profileId;
-  const profileToken = getProfileToken();
-  if (profileToken) headers["X-Profile-Token"] = profileToken;
-  void fetch(`/api/v1/livetv/sessions/${encodeURIComponent(sessionId)}`, {
-    method: "DELETE",
-    headers,
+  void v2("DELETE /api/v2/livetv/sessions/{session_id}", {
+    path: { session_id: sessionId },
     keepalive: true,
+    retryAuthentication: false,
   }).catch(() => undefined);
 }
 
