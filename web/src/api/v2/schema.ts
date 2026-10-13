@@ -19682,7 +19682,7 @@ export interface components {
       apns_environment: "production" | "sandbox";
       apns_token: string;
       /** @enum {string} */
-      apns_topic: "org.siloserver.prairie";
+      apns_topic: "org.siloserver.silo";
       device_id: string;
       /** @enum {string} */
       push_mode?: "off" | "in_app_only" | "private_push";
@@ -88914,12 +88914,12 @@ export interface operations {
         library_id?: string;
       };
       header: {
+        /** @description The stable device identifier used to resolve device-scoped playback preferences; absent resolves the profile's preferences */
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The stable device identifier used to resolve device-scoped playback preferences; absent resolves the profile's preferences */
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         /** @description Content id */
@@ -89938,12 +89938,12 @@ export interface operations {
         library_id?: string;
       };
       header: {
+        /** @description The stable device identifier used to resolve device-scoped playback preferences; absent resolves the profile's preferences */
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The stable device identifier used to resolve device-scoped playback preferences; absent resolves the profile's preferences */
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         /** @description Content id */
@@ -95785,11 +95785,11 @@ export interface operations {
         scope?: "profile" | "household";
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path?: never;
       cookie?: never;
@@ -98231,11 +98231,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path?: never;
       cookie?: never;
@@ -98341,13 +98341,13 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
+        "X-Prairie-Device-Name"?: string;
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
-        "X-Prairie-Device-Name"?: string;
-        "X-Prairie-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -98499,11 +98499,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -98606,11 +98606,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -98755,11 +98755,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -98881,11 +98881,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -99074,11 +99074,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -99257,11 +99257,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -99467,11 +99467,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -99659,11 +99659,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -99786,11 +99786,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -99914,11 +99914,11 @@ export interface operations {
       query?: never;
       header: {
         "If-None-Match"?: string;
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -100056,11 +100056,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         batch_id: string;
@@ -100168,11 +100168,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path?: never;
       cookie?: never;
@@ -100276,13 +100276,13 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
+        "X-Prairie-Device-Name"?: string;
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
-        "X-Prairie-Device-Name"?: string;
-        "X-Prairie-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -100418,11 +100418,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -100533,11 +100533,11 @@ export interface operations {
         "If-Match": string;
         /** @description Optional second precondition, evaluated after If-Match succeeds: "*" or any tag matching the current representation is 412 precondition_failed with the current ETag. */
         "If-None-Match"?: string;
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -100664,11 +100664,11 @@ export interface operations {
         "If-Match": string;
         /** @description Optional second precondition, evaluated after If-Match succeeds: "*" or any tag matching the current representation is 412 precondition_failed with the current ETag. */
         "If-None-Match"?: string;
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path: {
         id: string;
@@ -100830,11 +100830,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Prairie-Device-Id": string;
       };
       path?: never;
       cookie?: never;
@@ -115745,10 +115745,6 @@ export interface operations {
         "X-Client-Platform"?: string;
         "X-Client-Version"?: string;
         "X-Device-ID"?: string;
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity */
         "X-Prairie-Client"?: string;
         /** @description Opaque build identifier paired with X-Prairie-Client */
@@ -115757,6 +115753,10 @@ export interface operations {
         "X-Prairie-Client-Channel"?: string;
         /** @description Marketing version paired with X-Prairie-Client */
         "X-Prairie-Client-Version"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description Opaque identifier */
@@ -115912,10 +115912,6 @@ export interface operations {
         "X-Client-Platform"?: string;
         "X-Client-Version"?: string;
         "X-Device-ID"?: string;
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity */
         "X-Prairie-Client"?: string;
         /** @description Opaque build identifier paired with X-Prairie-Client */
@@ -115924,6 +115920,10 @@ export interface operations {
         "X-Prairie-Client-Channel"?: string;
         /** @description Marketing version paired with X-Prairie-Client */
         "X-Prairie-Client-Version"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description Opaque identifier */
@@ -116079,10 +116079,6 @@ export interface operations {
         "X-Client-Platform"?: string;
         "X-Client-Version"?: string;
         "X-Device-ID"?: string;
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity */
         "X-Prairie-Client"?: string;
         /** @description Opaque build identifier paired with X-Prairie-Client */
@@ -116091,6 +116087,10 @@ export interface operations {
         "X-Prairie-Client-Channel"?: string;
         /** @description Marketing version paired with X-Prairie-Client */
         "X-Prairie-Client-Version"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description Opaque identifier */
@@ -116378,10 +116378,6 @@ export interface operations {
         "X-Client-Platform"?: string;
         "X-Client-Version"?: string;
         "X-Device-ID"?: string;
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity */
         "X-Prairie-Client"?: string;
         /** @description Opaque build identifier paired with X-Prairie-Client */
@@ -116390,6 +116386,10 @@ export interface operations {
         "X-Prairie-Client-Channel"?: string;
         /** @description Marketing version paired with X-Prairie-Client */
         "X-Prairie-Client-Version"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -116902,10 +116902,6 @@ export interface operations {
         "X-Client-Platform"?: string;
         "X-Client-Version"?: string;
         "X-Device-ID"?: string;
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description App name the first-party clients send on every request; when non-blank and X-Client-Name is absent or blank, the X-Prairie-Client* headers supply the client identity */
         "X-Prairie-Client"?: string;
         /** @description Opaque build identifier paired with X-Prairie-Client */
@@ -116920,6 +116916,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry (first 40 characters) */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -117061,6 +117061,8 @@ export interface operations {
   getPlaybackManifest: {
     parameters: {
       query?: {
+        /** @description 1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query. */
+        hls_vars?: string;
         /** @description Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required. */
         st?: string;
         /** @description Media-element fallback for the account bearer token when an Authorization header cannot be set. Header-authenticated media requires the Authorization header and the profile selector. */
@@ -117185,6 +117187,8 @@ export interface operations {
   getPlaybackSegment: {
     parameters: {
       query?: {
+        /** @description 1 on a plan URL whose client advertised hls_variable_substitution_v1: a large synthetic manifest may carry its query once through EXT-X-DEFINE instead of on every segment link. Not a credential; segment links repeat the manifest query. */
+        hls_vars?: string;
         /** @description Signed stream reference the plan URL carries; it reconstructs the session after a restart. Omitted for header-authenticated media. Account and viewer authorization are always required. */
         st?: string;
         /** @description Media-element fallback for the account bearer token when an Authorization header cannot be set. Header-authenticated media requires the Authorization header and the profile selector. */
@@ -124303,16 +124307,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client's stable device identifier */
         "X-Prairie-Device-Id": string;
         /** @description Optional display name recorded on the device registry */
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -124446,16 +124450,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client's stable device identifier */
         "X-Prairie-Device-Id": string;
         /** @description Optional display name recorded on the device registry */
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -125018,16 +125022,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client's stable device identifier; absent resolves the profile-wide value */
         "X-Prairie-Device-Id"?: string;
         /** @description Optional display name recorded on the device registry */
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -125149,10 +125153,6 @@ export interface operations {
         series_id?: string;
       };
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family a profile_client value belongs to */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
@@ -125161,6 +125161,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -125280,10 +125284,6 @@ export interface operations {
         series_id?: string;
       };
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family a profile_client value belongs to */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
@@ -125292,6 +125292,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -125414,10 +125418,6 @@ export interface operations {
         series_id?: string;
       };
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family a profile_client value belongs to */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
@@ -125426,6 +125426,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -125579,10 +125583,6 @@ export interface operations {
         series_id?: string;
       };
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family a profile_client value belongs to */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
@@ -125591,6 +125591,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -125705,10 +125709,6 @@ export interface operations {
         series_ids?: string[];
       };
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family whose profile_client values take part; required when a requested key has that scope */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; its profile_device values take part */
@@ -125717,6 +125717,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -125819,10 +125823,6 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The household profile acting for this request; it must belong to the authenticated account. */
-        "X-Profile-Id": string;
-        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
-        "X-Profile-Token"?: string;
         /** @description The client family whose profile_client values take part; required when a requested key has that scope */
         "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
         /** @description The client's stable device identifier; its profile_device values take part */
@@ -125831,6 +125831,10 @@ export interface operations {
         "X-Prairie-Device-Name"?: string;
         /** @description Optional platform recorded on the device registry */
         "X-Prairie-Device-Platform"?: string;
+        /** @description The household profile acting for this request; it must belong to the authenticated account. */
+        "X-Profile-Id": string;
+        /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
+        "X-Profile-Token"?: string;
       };
       path?: never;
       cookie?: never;
@@ -136274,12 +136278,12 @@ export interface operations {
         library_id?: string;
       };
       header?: {
+        /** @description The stable device identifier used to resolve playback preferences */
+        "X-Prairie-Device-Id"?: string;
         /** @description Optional while no profile on the authenticated account is PIN-protected or access-restricted (content-rating, advisory-age or library limits). Otherwise it is required: a request without it, or with an empty value, is refused with 422 validation_failed at header.x-profile-id; API keys are exempt. When present, it must name a profile of the authenticated account. */
         "X-Profile-Id"?: string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The stable device identifier used to resolve playback preferences */
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         /** @description A movie, episode, audiobook or ebook; a series is not directly playable */
@@ -136388,12 +136392,12 @@ export interface operations {
         file_id: string;
       };
       header?: {
+        /** @description The stable device identifier used to resolve playback preferences */
+        "X-Prairie-Device-Id"?: string;
         /** @description Optional while no profile on the authenticated account is PIN-protected or access-restricted (content-rating, advisory-age or library limits). Otherwise it is required: a request without it, or with an empty value, is refused with 422 validation_failed at header.x-profile-id; API keys are exempt. When present, it must name a profile of the authenticated account. */
         "X-Profile-Id"?: string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The stable device identifier used to resolve playback preferences */
-        "X-Prairie-Device-Id"?: string;
       };
       path: {
         /** @description A movie or episode */
