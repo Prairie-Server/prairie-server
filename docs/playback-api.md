@@ -17,6 +17,7 @@ unavailable store is `503`.
 | `stopPlayback` | DELETE `/api/v2/playback/{session_id}` | 200 mutation receipt |
 | `replanPlayback` | POST `/api/v2/playback/{session_id}/replan` | 200 v3 decision |
 | `reportPlaybackRouteEvent` | POST `/api/v2/playback/route-events` | 202 `{event_id, outcome: "accepted"}` |
+| `getPlaybackQualityLadder` | GET `/api/v2/playback/quality-ladder` | 200 `{rungs, modes, source_height}` |
 
 ## Capabilities
 
@@ -264,6 +265,17 @@ Route events take the v3 event plus `installation_id` and a client-minted
 `event_id`. `202` acknowledges queueing, not a durable write. A retry with the
 same `event_id` is recorded once (partial unique index on attempt and event
 id); clients never retry automatically and treat `429` as drop.
+
+## Quality ladder
+
+`getPlaybackQualityLadder` returns the server's transcode ladder so every
+client renders the same quality picker. It needs an account but no profile and
+replaces `GET /api/v1/playback/quality-ladder`. Optional query
+`source_height` (0 to 8640) drops rungs above the source; absent or 0 lists the
+whole ladder. The body is `{rungs: [{id, label, resolution, height,
+bitrate_kbps}], modes: ["auto", "original"], source_height}`, highest rung
+first, with `Cache-Control: no-store`. Clients send a rung `id` or a mode as
+the start request's quality preference.
 
 ## Delivery
 

@@ -3174,6 +3174,11 @@ installation, 409 for the reserved built-in host row, 422 for a blank key or cap
 authority before each submission and ignores a completion that arrives under a replaced
 authority.
 
+## Live TV
+
+Tuner, channel and guide-source administration lives under
+`/api/v2/admin/livetv`; see the [Live TV API](livetv-api.md#administrator-operations).
+
 ## Bridge note
 
 The frozen alpha surface serves the same administration features under `/api/v1/admin`

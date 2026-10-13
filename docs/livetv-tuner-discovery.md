@@ -62,6 +62,8 @@ No Dispatcharr API key is required for HDHR emulation; protect it with network A
 
 ## API
 
+The native equivalents are `POST /api/v2/admin/livetv/tuners` and `POST /api/v2/admin/livetv/tuners/discover`; see the [Live TV API](livetv-api.md). The v1 routes below keep working.
+
 `POST /api/v1/livetv/tuners` accepts:
 
 ```json
