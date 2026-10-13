@@ -137,13 +137,19 @@ describe("personal lists on the v2 contract", () => {
       await remove.result.current.mutateAsync();
     });
 
-    const setCall = callOf(fetchMock, 0);
+    // A successful write also refreshes the community rating with a catalog
+    // read; only the rating writes matter here.
+    const ratingCalls = fetchMock.mock.calls
+      .map((_, index) => callOf(fetchMock, index))
+      .filter((call) => call.url.startsWith("/api/v2/ratings/"));
+    const setCall = ratingCalls[0];
     expect(setCall).toMatchObject({ url: "/api/v2/ratings/movie%3Ac", method: "PUT" });
-    expect(JSON.parse(String(setCall.body))).toEqual({ rating: 4 });
-    expect(callOf(fetchMock, 1)).toMatchObject({
+    expect(JSON.parse(String(setCall?.body))).toEqual({ rating: 4 });
+    expect(ratingCalls[1]).toMatchObject({
       url: "/api/v2/ratings/movie%3Ac",
       method: "DELETE",
     });
+    expect(ratingCalls).toHaveLength(2);
 
     const detailKeys = [catalogKeys.itemDetail("movie:c"), itemKeys.detail("movie:c")];
     const otherKey = catalogKeys.itemDetail("movie:other");
