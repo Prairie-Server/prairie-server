@@ -62,6 +62,8 @@ jobs:
               - '.github/workflows/ci.yml'
             web:
               - 'web/**'
+              - 'contracts/api/v2/openapi.json'
+              - 'Makefile'
               - '.github/workflows/ci.yml'
             rust_imageutil:
               - 'tools/imageutil-wasm/**'
@@ -281,6 +283,12 @@ jobs:
 
       - name: Typecheck (tsc -b)
         run: pnpm exec tsc -b --pretty false
+
+      # web/src/api/v2 is generated from contracts/api/v2/openapi.json; a
+      # contract change that does not regenerate leaves the web typed against
+      # a stale API. This byte-compares a fresh generation.
+      - name: Verify the v2 web types are current
+        run: make -C .. verify-apiv2-web-types
 
   # jellycompat is the heavy suite (~17k test LOC). Run it in parallel with the
   # coverage-gated packages and imageutil WASM smoke so wall clock is ~max(suite)

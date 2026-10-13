@@ -20,7 +20,7 @@ type ApplePushRegistrationBody struct {
 	DeviceID        string `json:"device_id" minLength:"1" maxLength:"128"`
 	APNsToken       string `json:"apns_token" minLength:"64" maxLength:"512" writeOnly:"true"`
 	APNsEnvironment string `json:"apns_environment" enum:"production,sandbox"`
-	APNsTopic       string `json:"apns_topic" enum:"org.siloserver.silo"`
+	APNsTopic       string `json:"apns_topic" enum:"org.prairieserver.prairie,org.siloserver.silo"`
 	PushMode        string `json:"push_mode,omitempty" enum:"off,in_app_only,private_push"`
 }
 type ApplePushRegistrationInput struct {

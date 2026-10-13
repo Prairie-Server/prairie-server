@@ -20354,6 +20354,7 @@
           },
           "apns_topic": {
             "enum": [
+              "org.prairieserver.prairie",
               "org.siloserver.silo"
             ],
             "type": "string"
