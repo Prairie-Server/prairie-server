@@ -89,10 +89,11 @@ type EventsHandler struct {
 	sessionCheckInterval time.Duration
 }
 
-// sessionRoleChecker reports whether a login session is still active and the
-// current role of its account; auth.SessionRepository implements it.
+// sessionRoleChecker reports whether a login session is still active and its
+// authority, including the current role of its account;
+// auth.SessionRepository implements it.
 type sessionRoleChecker interface {
-	ActiveSessionRole(ctx context.Context, sessionID string) (role string, active bool, err error)
+	ActiveSession(ctx context.Context, sessionID string) (authority auth.SessionAuthority, active bool, err error)
 }
 
 // SetSessionRoles makes the v1 events socket recheck its login session. The
@@ -237,8 +238,9 @@ func (h *EventsHandler) closeOnSessionChange(ctx context.Context, cancel context
 // failed acting-admin decision counts as lost, so a connection holding the
 // administrator channels fails closed like the HTTP routes and reconnects.
 func (h *EventsHandler) sessionChanged(ctx context.Context, claims *auth.Claims, stillActingAdmin func(context.Context) (bool, error)) bool {
-	role, active, err := h.sessionRoles.ActiveSessionRole(ctx, claims.SessionID)
-	if err == nil && (!active || role != claims.Role) {
+	authority, active, err := h.sessionRoles.ActiveSession(ctx, claims.SessionID)
+	// A remote-playback handoff never holds a v1 socket.
+	if err == nil && (!active || authority.Role != claims.Role || authority.IsRemotePlayback()) {
 		return true
 	}
 	if stillActingAdmin == nil {
@@ -286,7 +288,7 @@ func (h *EventsHandler) serveWebSocket(w http.ResponseWriter, r *http.Request, c
 		return writeWebSocketControl(conn, websocket.PingMessage, nil)
 	})
 
-	allowedChannels := allowedChannelsForRole(claims.Role)
+	allowedChannels := allowedChannelsForClaims(claims)
 
 	// A connection may declare its channels on the URL instead of sending a
 	// subscribe frame. That is all an observer needs — subscribe is the only
@@ -634,6 +636,16 @@ func parseDeclaredChannels(query url.Values) ([]evt.EventChannel, bool) {
 	return channels, true
 }
 
+// allowedChannelsForClaims is allowedChannelsForRole, less the household
+// channels a remote-playback handoff may not see: history imports cover every
+// profile on the account.
+func allowedChannelsForClaims(claims *auth.Claims) []evt.EventChannel {
+	if claims.IsRemotePlayback() {
+		return []evt.EventChannel{evt.ChannelCatalog, evt.ChannelUserState, evt.ChannelUserSettings, evt.ChannelNotifications}
+	}
+	return allowedChannelsForRole(claims.Role)
+}
+
 func allowedChannelsForRole(role string) []evt.EventChannel {
 	channels := []evt.EventChannel{
 		evt.ChannelCatalog,
@@ -670,6 +682,11 @@ func allowsEventForClaims(claims *auth.Claims, boundProfileID string, env evt.En
 			env.ProfileID == boundProfileID
 	}
 	if env.UserID > 0 && claims.Role != "admin" && env.UserID != claims.UserID {
+		return false
+	}
+	// A remote-playback handoff sees its bound profile's events, not those
+	// of the account's other profiles.
+	if claims.IsRemotePlayback() && env.ProfileID != "" && env.ProfileID != claims.ProfileID {
 		return false
 	}
 	return true

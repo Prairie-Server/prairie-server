@@ -11,13 +11,15 @@ import (
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/cache"
 	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
-// sessionRoleFixture answers ActiveSessionRole from values a test changes
+// sessionRoleFixture answers ActiveSession from values a test changes
 // while the connection is open.
 type sessionRoleFixture struct {
 	role    atomic.Value
 	revoked atomic.Bool
+	handoff atomic.Bool
 	checks  atomic.Int64
 	// notActingAdmin flips the acting-admin decision, as when the household
 	// gains a PIN under a profile-less connection; decisionDown makes the
@@ -26,9 +28,13 @@ type sessionRoleFixture struct {
 	decisionDown   atomic.Bool
 }
 
-func (f *sessionRoleFixture) ActiveSessionRole(context.Context, string) (string, bool, error) {
+func (f *sessionRoleFixture) ActiveSession(context.Context, string) (auth.SessionAuthority, bool, error) {
 	f.checks.Add(1)
-	return f.role.Load().(string), !f.revoked.Load(), nil
+	authority := auth.SessionAuthority{Role: f.role.Load().(string), Purpose: models.SessionPurposeAccount}
+	if f.handoff.Load() {
+		authority.Purpose, authority.BoundProfileID = models.SessionPurposeRemotePlayback, "profile"
+	}
+	return authority, !f.revoked.Load(), nil
 }
 
 // TestEventsWebSocketV1ClosesWhenSessionChanges covers the v1 socket, which
@@ -42,6 +48,8 @@ func TestEventsWebSocketV1ClosesWhenSessionChanges(t *testing.T) {
 	}{
 		{"role changed", func(f *sessionRoleFixture) { f.role.Store("user") }},
 		{"session revoked", func(f *sessionRoleFixture) { f.revoked.Store(true) }},
+		// The role is left alone so only the handoff binding ends it.
+		{"session bound as a remote-playback handoff", func(f *sessionRoleFixture) { f.handoff.Store(true) }},
 		{"no longer acting admin", func(f *sessionRoleFixture) { f.notActingAdmin.Store(true) }},
 		{"acting-admin decision fails", func(f *sessionRoleFixture) { f.decisionDown.Store(true) }},
 	} {
