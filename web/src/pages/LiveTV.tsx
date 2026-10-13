@@ -382,8 +382,9 @@ function RecordingsSection({
                   </div>
                   <p className="text-muted-foreground text-xs">
                     {channel ? channelLabel(channel) : rec.channel_id}
-                    {" · "}
-                    {formatGuideTime(rec.start)} – {formatGuideTime(rec.stop)}
+                    {rec.start && rec.stop
+                      ? ` · ${formatGuideTime(rec.start)} – ${formatGuideTime(rec.stop)}`
+                      : null}
                   </p>
                   {rec.last_error ? (
                     <p className="text-destructive mt-1 text-xs">{rec.last_error}</p>

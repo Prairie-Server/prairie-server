@@ -46,6 +46,6 @@ describe("buildLiveTVCapabilities", () => {
     const payload = buildLiveTVCapabilities(caps({ codecs_audio: ["ac3"] }));
 
     expect(payload.codecs_audio).toEqual([]);
-    expect(payload.codecs_video.length).toBeGreaterThan(0);
+    expect(payload.codecs_video?.length).toBeGreaterThan(0);
   });
 });

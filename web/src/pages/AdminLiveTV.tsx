@@ -26,7 +26,7 @@ import {
   useSyncLiveTVGuideSource,
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
-import type { SchedulesDirectLineupOption, XMLSyncLineupOption } from "@/api/types";
+import type { LiveTVLineup } from "@/api/types";
 import { LiveTVTranscodingTab } from "@/pages/livetv/LiveTVTranscodingTab";
 
 const LIVETV_TABS = ["tuners", "channels", "guide", "recordings", "transcoding"] as const;
@@ -74,7 +74,7 @@ function TunersTab() {
       },
       {
         onSuccess: (data) => {
-          setCandidates(data.candidates ?? []);
+          setCandidates(data.items ?? []);
           setDiscoverNotes(data.notes ?? []);
         },
       },
@@ -418,7 +418,7 @@ function GuideTab() {
   const [sdCountry, setSDCountry] = useState("USA");
   const [sdPostalCode, setSDPostalCode] = useState("");
   const [sdLineup, setSDLineup] = useState("");
-  const [sdLineups, setSDLineups] = useState<SchedulesDirectLineupOption[]>([]);
+  const [sdLineups, setSDLineups] = useState<LiveTVLineup[]>([]);
 
   const [xmlDisplayName, setXMLDisplayName] = useState("XML sync");
   const [xmlCountry, setXMLCountry] = useState("USA");
@@ -426,7 +426,7 @@ function GuideTab() {
   const [xmlLineup, setXMLLineup] = useState("");
   const [xmlHeadend, setXMLHeadend] = useState("");
   const [xmlDevice, setXMLDevice] = useState("-");
-  const [xmlLineups, setXMLLineups] = useState<XMLSyncLineupOption[]>([]);
+  const [xmlLineups, setXMLLineups] = useState<LiveTVLineup[]>([]);
 
   const enabledCount = sources.data?.filter((s) => s.enabled).length ?? 0;
 
@@ -436,7 +436,7 @@ function GuideTab() {
         username: username.trim(),
         password,
         country: sdCountry.trim() || "USA",
-        postalcode: sdPostalCode.trim(),
+        postal_code: sdPostalCode.trim(),
       },
       {
         onSuccess: (found) => {
@@ -453,7 +453,7 @@ function GuideTab() {
     lookupXMLLineups.mutate(
       {
         country: xmlCountry.trim() || "USA",
-        postalcode: xmlPostalCode.trim(),
+        postal_code: xmlPostalCode.trim(),
       },
       {
         onSuccess: (found) => {
@@ -836,7 +836,9 @@ function RecordingsTab() {
               <Badge variant="secondary">{rec.status}</Badge>
             </div>
             <p className="text-muted-foreground text-xs">
-              {new Date(rec.start).toLocaleString()} – {new Date(rec.stop).toLocaleString()}
+              {rec.start && rec.stop
+                ? `${new Date(rec.start).toLocaleString()} – ${new Date(rec.stop).toLocaleString()}`
+                : null}
               {rec.last_error ? ` · ${rec.last_error}` : ""}
             </p>
           </div>

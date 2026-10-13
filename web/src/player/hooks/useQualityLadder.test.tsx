@@ -5,9 +5,8 @@ import { PlayerConfigProvider } from "../context/PlayerConfigContext";
 import { __resetQualityLadderCache, useQualityLadder } from "./useQualityLadder";
 
 const playerFetch = vi.fn();
-vi.mock("../player-fetch", () => ({
-  PlayerFetchError: class extends Error {},
-  playerFetch: (...args: unknown[]) => playerFetch(...args),
+vi.mock("../player-v2", () => ({
+  playerV2: (...args: unknown[]) => playerFetch(...args),
 }));
 
 const config = {
@@ -27,6 +26,13 @@ describe("useQualityLadder", () => {
   beforeEach(() => {
     playerFetch.mockReset();
     __resetQualityLadderCache();
+  });
+
+  it("requests the v2 quality ladder", async () => {
+    playerFetch.mockResolvedValue({ rungs: [], modes: [] });
+    render();
+    await waitFor(() => expect(playerFetch).toHaveBeenCalled());
+    expect(playerFetch.mock.calls[0]?.[1]).toBe("GET /api/v2/playback/quality-ladder");
   });
 
   it("serves the server ladder once loaded", async () => {
