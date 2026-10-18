@@ -87,6 +87,14 @@ services:
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/artwork:/var/lib/prairie/artwork
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/compat:/var/lib/prairie/compat
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/transcode:/tmp/silo-transcode
+      # Prepared downloads. With "Prepared file directory" (download.artifact_dir)
+      # blank, Prairie keeps them beside the transcode directory, not inside it, so
+      # they need their own mount to survive image updates. This path assumes the
+      # default playback.transcode_dir; with another one, mount the
+      # silo-download-artifacts directory beside it instead. No storage
+      # budget applies until one is set ("Default storage budget per location",
+      # download.artifact_max_bytes, in Settings > Downloads).
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/download-artifacts:/tmp/silo-download-artifacts
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/catalog-seeds:/catalog-seeds:ro
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/audiobook-covers:/var/lib/prairie/audiobook-covers
       # Only load-bearing when the Docker host is itself an LXC container, where

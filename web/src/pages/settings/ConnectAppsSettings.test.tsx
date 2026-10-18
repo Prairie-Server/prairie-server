@@ -128,16 +128,33 @@ describe("ConnectAppsSettings", () => {
     vi.restoreAllMocks();
   });
 
-  function render() {
+  // The page opens on the Prairie tab; most cases here are about the Jellyfin one.
+  function render(tab: "prairie" | "jellyfin" = "jellyfin") {
     act(() => {
       root.render(<ConnectAppsSettings />);
     });
+    if (tab === "jellyfin") {
+      act(() => {
+        findButton(container, "Jellyfin-compatible app")?.click();
+      });
+    }
   }
 
-  it("shows the plain account name and the Prairie origin on the Prairie tab", async () => {
-    render();
+  it("opens on the Prairie tab, listed first", () => {
+    render("prairie");
 
-    await click(findButton(container, "Prairie app or website"));
+    const tabs = Array.from(
+      container.querySelectorAll('[aria-label="App type"] button'),
+    ) as HTMLButtonElement[];
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+      "Prairie app or website",
+      "Jellyfin-compatible app",
+    ]);
+    expect(tabs[0]?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("shows the plain account name and the Prairie origin on the Prairie tab", () => {
+    render("prairie");
 
     expect(container.textContent).toContain("For Prairie's own apps");
     expect(container.textContent).toContain("Don't add a # to either field here.");

@@ -31,7 +31,8 @@ import (
 const AdminLogsSocketProtocol = "prairie.admin-logs.v2"
 
 // ErrAdminLogsSocketForbidden reports a login session whose effective role is
-// not administrator (a secondary profile on an admin account included).
+// not administrator: a secondary profile on an admin account, or a
+// profile-less session on a household that requires a profile, included.
 var ErrAdminLogsSocketForbidden = errors.New("administrator authority required for the log stream")
 
 type AdminLogsSocketV2 struct {
@@ -47,8 +48,8 @@ type AdminLogsSocketV2 struct {
 
 // NewAdminLogsSocketV2 reuses the events socket's ticket store shape and the
 // current account, session and viewer authorities.
-func NewAdminLogsSocketV2(logs *AdminLogsHandler, tickets *evt.SocketTicketStore, sessions eventsSessionValidator, users access.UserRepository, resolver apimw.ViewerResolver, primary apimw.PrimaryProfileChecker, publicURL string) *AdminLogsSocketV2 {
-	return &AdminLogsSocketV2{Logs: logs, Tickets: tickets, Validate: newSocketAuthorityValidator(sessions, users, resolver, primary), PublicOrigin: publicURL}
+func NewAdminLogsSocketV2(logs *AdminLogsHandler, tickets *evt.SocketTicketStore, sessions eventsSessionValidator, users access.UserRepository, resolver apimw.ViewerResolver, actingAdmin apimw.ActingAdminDecider, publicURL string) *AdminLogsSocketV2 {
+	return &AdminLogsSocketV2{Logs: logs, Tickets: tickets, Validate: newSocketAuthorityValidator(sessions, users, resolver, actingAdmin), PublicOrigin: publicURL}
 }
 
 // Available reports whether the handshake is served on this process.

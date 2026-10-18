@@ -127,6 +127,7 @@ services:
       - prairie-dev-artwork:/var/lib/prairie/artwork
       - prairie-dev-compat:/var/lib/prairie/compat
       - prairie-dev-transcode:/tmp/silo-transcode
+      - prairie-dev-download-artifacts:/tmp/silo-download-artifacts
       - ${MEDIA_ROOT:-/tmp/prairie-dev-media}:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
     depends_on:
       postgres:
@@ -173,6 +174,7 @@ services:
 volumes:
   prairie-dev-air-tmp:
   prairie-dev-compat:
+  prairie-dev-download-artifacts:
   prairie-dev-go-build:
   prairie-dev-go-mod:
   prairie-dev-plugins:

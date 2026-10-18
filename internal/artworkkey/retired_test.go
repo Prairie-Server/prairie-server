@@ -18,8 +18,8 @@ func TestVariantWidthsStillHasNoTVRung(t *testing.T) {
 			t.Errorf("VariantWidths(%s) = %v, want the w200 TV rung retained", imageType, got)
 		}
 	}
-	if got := VariantWidths("backdrop"); !reflect.DeepEqual(got, []int{1920, 1280, 300}) {
-		t.Errorf("VariantWidths(backdrop) = %v, want [1920 1280 300]", got)
+	if got := VariantWidths("backdrop"); !reflect.DeepEqual(got, []int{2560, 1920, 1280, 300}) {
+		t.Errorf("VariantWidths(backdrop) = %v, want [2560 1920 1280 300]", got)
 	}
 	if got := VariantWidths("logo"); !reflect.DeepEqual(got, []int{500}) {
 		t.Errorf("VariantWidths(logo) = %v, want [500]", got)

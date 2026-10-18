@@ -23,6 +23,8 @@ interface PlaybackInfoOverlayProps {
   hlsRef?: React.RefObject<HlsType | null>;
   /** Recent player events, recorded whether or not the overlay is open. */
   eventLog?: PlaybackEventLog;
+  /** True while the browser decode engine plays the stream. */
+  browserEngine?: boolean;
   onClose: () => void;
 }
 
@@ -37,6 +39,7 @@ export function PlaybackInfoOverlay({
   qualityPreference,
   hlsRef,
   eventLog,
+  browserEngine = false,
   onClose,
 }: PlaybackInfoOverlayProps) {
   const [runtimeStats, setRuntimeStats] = useState<RuntimePlaybackStats>({});
@@ -87,6 +90,7 @@ export function PlaybackInfoOverlay({
         runtimeStats,
         activeAudioTrack,
         qualityPreference,
+        browserEngine,
       }),
     [
       streamUrl,
@@ -96,6 +100,7 @@ export function PlaybackInfoOverlay({
       runtimeStats,
       activeAudioTrack,
       qualityPreference,
+      browserEngine,
     ],
   );
 

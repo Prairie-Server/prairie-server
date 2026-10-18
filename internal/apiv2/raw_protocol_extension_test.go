@@ -156,6 +156,7 @@ func TestRawProtocolWebSocketRealUpgradeAndAuthorization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { _ = response.Body.Close() }()
 	defer conn.Close()
 	if response.StatusCode != 101 || response.Header.Get("Upgrade") != "websocket" || response.Header.Get("Sec-WebSocket-Accept") == "" {
 		t.Fatal(response.StatusCode, response.Header)

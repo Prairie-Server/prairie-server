@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/noderouting"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
@@ -35,7 +36,7 @@ func nodeMediaRequest(t *testing.T, server *httptest.Server, path, token string)
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("Authorization", "Bearer "+testSecret)
+	nodeauthtest.Sign(t, req, testSecret)
 	if token != "" {
 		req.Header.Set("X-Prairie-Stream-Token", token)
 	}

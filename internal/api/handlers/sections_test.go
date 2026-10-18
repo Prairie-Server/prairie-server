@@ -57,16 +57,16 @@ func TestSectionBackdropPathUsesExpectedVariants(t *testing.T) {
 			want:        "/tmdb/shows/1399/backdrop/w1920.jpg",
 		},
 		{
-			name:        "continue watching episode still clamps to w500",
+			name:        "continue watching episode still gets its w1280 rung",
 			sectionType: sections.SectionContinueWatching,
 			path:        "tvdb/series/73141/seasons/22/episodes/9/still/original.webp",
-			want:        "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp",
+			want:        "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp",
 		},
 		{
-			name:        "featured section episode still clamps to w500",
+			name:        "featured section episode still clamps to its widest rung",
 			sectionType: sections.SectionRecentlyAdded,
 			path:        "tvdb/series/73141/seasons/22/episodes/9/still/original.webp",
-			want:        "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp",
+			want:        "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp",
 		},
 		{
 			name:        "http paths pass through",
@@ -893,5 +893,20 @@ func TestToSectionOverridesPropagatesUserAddedFields(t *testing.T) {
 	// Admin-section customization should leave the user-added fields zero.
 	if got[1].IsUserAdded || got[1].UserSectionType != "" || len(got[1].UserConfig) != 0 || got[1].UserTitle != "" {
 		t.Errorf("legacy customization leaked user-added fields: %+v", got[1])
+	}
+}
+
+func TestSectionLocalizationAccessScopesLibraryRows(t *testing.T) {
+	viewer := catalog.AccessFilter{ProfilePreferredLanguage: ""}
+	libraryID := 7
+	scoped := sectionLocalizationAccess(viewer, &libraryID)
+	if scoped.PresentationLibraryID == nil || *scoped.PresentationLibraryID != 7 {
+		t.Fatalf("library rows: PresentationLibraryID = %v, want 7", scoped.PresentationLibraryID)
+	}
+	if viewer.PresentationLibraryID != nil {
+		t.Fatal("the viewer's filter was modified")
+	}
+	if home := sectionLocalizationAccess(viewer, nil); home.PresentationLibraryID != nil {
+		t.Fatalf("home rows: PresentationLibraryID = %v, want nil", *home.PresentationLibraryID)
 	}
 }

@@ -34,6 +34,8 @@ need_env_file() {
 # Run a shell command on whichever host Prairie runs on.
 on_host() {
 	if [[ -n "$PRAIRIE_SSH" ]]; then
+		# The caller builds one escaped remote command; expand its arguments locally.
+		# shellcheck disable=SC2029
 		ssh "$PRAIRIE_SSH" "$@"
 	else
 		bash -lc "$@"

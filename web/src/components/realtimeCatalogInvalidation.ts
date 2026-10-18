@@ -36,9 +36,11 @@ export function invalidateCatalogState(
       refetchType: "none",
     });
   }
-  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId }).then(() => {
-    bumpHomeRefreshSignal(queryClient);
-  });
+  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId, itemMayBeNew: true }).then(
+    () => {
+      bumpHomeRefreshSignal(queryClient);
+    },
+  );
   if (includeLibraryLists) {
     void queryClient.invalidateQueries({
       queryKey: adminKeys.libraries(),
@@ -93,6 +95,7 @@ interface PendingCatalogInvalidation {
   itemIds: Set<string>;
   libraryIds: Set<number>;
   hasUnscopedEvent: boolean;
+  hasItemUnscopedEvent: boolean;
   allowDashboardRefetch: boolean;
   includeLibraryLists: boolean;
 }
@@ -156,11 +159,13 @@ function mergeCatalogInvalidation(
     itemIds: new Set(),
     libraryIds: new Set(),
     hasUnscopedEvent: false,
+    hasItemUnscopedEvent: false,
     allowDashboardRefetch: false,
     includeLibraryLists: false,
   };
 
   if (options.itemId) next.itemIds.add(options.itemId);
+  else next.hasItemUnscopedEvent = true;
   if (options.libraryId === undefined) {
     next.hasUnscopedEvent = true;
   } else {
@@ -176,7 +181,7 @@ function resolveBatch(batch: PendingCatalogInvalidation): CatalogInvalidationOpt
   const [onlyItemId] = batch.itemIds;
   const [onlyLibraryId] = batch.libraryIds;
   return {
-    itemId: batch.itemIds.size === 1 ? onlyItemId : undefined,
+    itemId: !batch.hasItemUnscopedEvent && batch.itemIds.size === 1 ? onlyItemId : undefined,
     libraryId: !batch.hasUnscopedEvent && batch.libraryIds.size === 1 ? onlyLibraryId : undefined,
     allowDashboardRefetch: batch.allowDashboardRefetch,
     includeLibraryLists: batch.includeLibraryLists,

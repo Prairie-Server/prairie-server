@@ -12,7 +12,7 @@ import (
 
 // An explicit size overrides every per-context default uniformly, including the
 // Continue Watching w1280 backdrop. Widths follow Prairie's TV-tuned ladder
-// (posters w500/w300/w200, stills w500/w300; no w780 rung).
+// (posters w500/w300/w200, stills w1280/w500/w300; no w780 rung).
 func TestExplicitImageSizeOverridesContextDefaults(t *testing.T) {
 	const poster = "tmdb/movies/550/poster/original.abc123.webp"
 	const backdrop = "tmdb/movies/550/backdrop/original.abc123.webp"
@@ -38,7 +38,7 @@ func TestExplicitImageSizeOverridesContextDefaults(t *testing.T) {
 
 	// An episode still standing in for a backdrop rides the still ladder, so a
 	// backdrop-only width would name a key that was never generated.
-	if got := sizedBackdropPath(still, imagesize.Large); got != "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp" {
+	if got := sizedBackdropPath(still, imagesize.Large); got != "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp" {
 		t.Errorf("episode still as backdrop at large = %q", got)
 	}
 }
@@ -59,7 +59,7 @@ func TestExplicitImageSizeLeavesNonCachedPathsAlone(t *testing.T) {
 }
 
 // An episode row puts its still in the card's backdrop slot. The still ladder
-// has no w1920, so resolving that slot against the backdrop ladder would name a
+// has no w2560, so resolving that slot against the backdrop ladder would name a
 // key the cache never generated — the URL would 404 rather than look wrong.
 func TestSizedCardBackdropPathFollowsTheStillLadder(t *testing.T) {
 	const still = "tvdb/series/73141/seasons/22/episodes/9/still/original.webp"
@@ -72,7 +72,7 @@ func TestSizedCardBackdropPathFollowsTheStillLadder(t *testing.T) {
 	}{
 		{imagesize.Small, "still/w300.webp", "backdrop/w300.abc123.webp"},
 		{imagesize.Medium, "still/w500.webp", "backdrop/w1920.abc123.webp"},
-		{imagesize.Large, "still/w500.webp", "backdrop/w1920.abc123.webp"},
+		{imagesize.Large, "still/w1280.webp", "backdrop/w2560.abc123.webp"},
 		{imagesize.Original, "still/original.webp", "backdrop/original.abc123.webp"},
 	}
 	for _, tt := range tests {

@@ -86,7 +86,7 @@ func TestVariantMatrix(t *testing.T) {
 		"backdrop": {
 			Small:    "w300",
 			Medium:   "w1920",
-			Large:    "w1920",
+			Large:    "w2560",
 			Original: "original",
 		},
 		"logo": {
@@ -182,6 +182,7 @@ func TestNextLower(t *testing.T) {
 		{"still", "w500", "w300", true},
 		{"still", "w300", "", false},
 		{"logo", "w500", "", false},
+		{"backdrop", "w2560", "w1920", true},
 		{"backdrop", "w1920", "w1280", true},
 		{"backdrop", "w1280", "w300", true},
 		{"backdrop", "w300", "", false},

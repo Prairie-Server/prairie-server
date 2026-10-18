@@ -16,6 +16,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/proxy"
@@ -111,7 +112,7 @@ func TestWorkerStatusSchemasMatchRealListeners(t *testing.T) {
 		}
 		schemas[read.Listener] = schema
 		request := httptest.NewRequest(http.MethodGet, read.Path, nil)
-		request.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+		nodeauthtest.Sign(t, request, cfg.Auth.JWTSecret)
 		response := httptest.NewRecorder()
 		handlers[read.Listener].ServeHTTP(response, request)
 		if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "application/json" {
@@ -248,7 +249,7 @@ func TestWorkerChapterExtractionProtocol(t *testing.T) {
 	} {
 		request := httptest.NewRequest(op.Method, op.Path, strings.NewReader(tc.body))
 		if tc.auth {
-			request.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+			nodeauthtest.Sign(t, request, cfg.Auth.JWTSecret)
 		}
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -306,7 +307,7 @@ func TestWorkerArtifactConditionalProtocol(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		req.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+		nodeauthtest.Sign(t, req, cfg.Auth.JWTSecret)
 		if tc.header != "" {
 			req.Header.Set(tc.header, tc.value)
 		}
@@ -414,7 +415,7 @@ func TestWorkerSegmentAcknowledgementRefusals(t *testing.T) {
 	} {
 		req := httptest.NewRequest(http.MethodPost, "/transcode/missing/segment/"+tc.name+"/downloaded", nil)
 		if tc.auth {
-			req.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+			nodeauthtest.Sign(t, req, cfg.Auth.JWTSecret)
 		}
 		req.Header.Set(transcodeproxy.GenerationHeader, tc.generation)
 		response := httptest.NewRecorder()

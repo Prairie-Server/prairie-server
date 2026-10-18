@@ -627,7 +627,7 @@ func (a *Analyzer) analyzeEpisode(ctx context.Context, episodeID string, kinds E
 	} else {
 		summary.ChromaprintSupported = false
 		summary.ChromaprintSupportMessage = err.Error()
-		return summary, nil
+		return summary, nil //nolint:nilerr // missing Chromaprint support is reported in the summary, as the library-wide run does
 	}
 
 	countGroupJobs(&summary, jobs)

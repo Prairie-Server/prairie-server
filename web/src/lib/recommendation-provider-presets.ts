@@ -26,10 +26,10 @@ export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
     id: "ollama",
     label: "Ollama",
     tag: "Local",
-    description: "Free, self-hosted. Needs Ollama running. Uses Qwen3 Embedding 0.6B (~640MB).",
+    description: "Free, self-hosted. Needs Ollama running. About 640 MB; 1024-dimension vectors.",
     baseUrl: "http://ollama:11434",
-    // Prefer the 0.6B tag: :latest is the 8B (~4.7GB) model and emits 4096-d
-    // vectors, which exceed Prairie's 3072 canonical storage width.
+    // The :latest tag is the 8B model, whose 4096-dimension vectors Prairie
+    // cannot store.
     model: "qwen3-embedding:0.6b",
     needsToken: false,
   },

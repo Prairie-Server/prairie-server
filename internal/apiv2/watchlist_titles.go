@@ -11,6 +11,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 	"github.com/prairie-server/prairie-server/internal/watchlist"
@@ -159,7 +160,7 @@ func (reg *Registry) watchlistTitleViewer(ctx context.Context) (handlers.Persona
 	if reg.deps.WatchlistRequests == nil {
 		return handlers.PersonalListViewer{}, mediarequests.Viewer{}, "", unavailable("requests")
 	}
-	viewer, p := personalListViewer(ctx, "")
+	viewer, p := personalListViewer(ctx, imagesize.Request{})
 	if p != nil {
 		return handlers.PersonalListViewer{}, mediarequests.Viewer{}, "", p
 	}
@@ -424,7 +425,7 @@ func (reg *Registry) markInWatchlist(ctx context.Context, marks []watchlistMark)
 	if reg.deps.WatchlistTitles == nil || len(marks) == 0 {
 		return
 	}
-	viewer, p := personalListViewer(ctx, "")
+	viewer, p := personalListViewer(ctx, imagesize.Request{})
 	if p != nil {
 		return
 	}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
@@ -82,8 +83,8 @@ func TestProxyDownloadRelaysNodeLocalArtifactRange(t *testing.T) {
 			http.Error(w, "unexpected path", http.StatusBadRequest)
 			return
 		}
-		if auth := r.Header.Get("Authorization"); auth != "Bearer "+secret {
-			t.Errorf("origin Authorization = %q", auth)
+		if !nodeauthtest.Signed(r, secret) {
+			t.Errorf("origin request is not signed: Authorization = %q", r.Header.Get("Authorization"))
 			http.Error(w, "unexpected authorization", http.StatusBadRequest)
 			return
 		}

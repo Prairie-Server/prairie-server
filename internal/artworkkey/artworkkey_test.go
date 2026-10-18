@@ -199,11 +199,12 @@ func TestWiderVariantKeys(t *testing.T) {
 }
 
 func TestWiderVariantKeysUsesImageTypeLadder(t *testing.T) {
-	// Backdrops have their own ladder (1920/1280/300).
+	// Backdrops have their own ladder (2560/1920/1280/300).
 	got := WiderVariantKeys("tmdb/movies/550/backdrop/w300.rev.webp")
 	want := []string{
 		"tmdb/movies/550/backdrop/w1280.rev.webp",
 		"tmdb/movies/550/backdrop/w1920.rev.webp",
+		"tmdb/movies/550/backdrop/w2560.rev.webp",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
@@ -280,6 +281,25 @@ func TestVariantWidthsExtendedArtworkTypes(t *testing.T) {
 			if got[i] != want[i] {
 				t.Fatalf("VariantWidths(%q) = %v, want %v", imageType, got, want)
 			}
+		}
+	}
+}
+
+func TestImageTypeOf(t *testing.T) {
+	tests := []struct {
+		key, fallback, want string
+	}{
+		{"tvdb/series/1/seasons/2/episodes/3/still/original.webp", ImagePoster, ImageStill},
+		{"/tmdb/movies/550/backdrop/original.abc.jpg", ImageThumb, ImageBackdrop},
+		{"local/movies/m/aa/clearart/original.r1.webp", "", ImageClearArt},
+		{"collections/7/cover/original.webp", ImagePoster, ImagePoster},
+		{"plugin://tmdb/still/original.webp", ImagePoster, ImagePoster},
+		{"original.webp", ImageLogo, ImageLogo},
+		{"", ImageBackdrop, ImageBackdrop},
+	}
+	for _, tt := range tests {
+		if got := ImageTypeOf(tt.key, tt.fallback); got != tt.want {
+			t.Errorf("ImageTypeOf(%q, %q) = %q, want %q", tt.key, tt.fallback, got, tt.want)
 		}
 	}
 }

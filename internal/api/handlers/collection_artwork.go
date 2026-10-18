@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/collage"
@@ -473,15 +474,15 @@ func (c collectionCollageComposer) CollectionCollagePath(collectionID, key strin
 }
 
 // fetchImage downloads an image from a resolved URL. The URL is a catalog
-// title's poster as the server resolved it, usually from its own artwork
-// storage, which may be on the local network; no request supplies it. The
-// fetch is therefore trusted with the local network, and netguard still
-// refuses blocked addresses.
+// title's poster as the server resolved it: a direct URL to the artwork
+// store, which may be on the local network, or a metadata provider's URL that
+// was not cached, which is untrusted. artworkurl.FetchContext tells them
+// apart, and netguard refuses blocked addresses either way.
 func (c collectionCollageComposer) fetchImage(ctx context.Context, imageURL string) ([]byte, error) {
 	if c.httpClient == nil {
 		return nil, errors.New("collage downloads have no HTTP client")
 	}
-	req, err := http.NewRequestWithContext(netguard.WithPrivateAccess(ctx), http.MethodGet, imageURL, nil)
+	req, err := http.NewRequestWithContext(artworkurl.FetchContext(ctx, c.store, imageURL), http.MethodGet, imageURL, nil)
 	if err != nil {
 		return nil, err
 	}

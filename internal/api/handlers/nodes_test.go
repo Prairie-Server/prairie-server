@@ -15,6 +15,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/netaccess"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 )
 
@@ -258,12 +259,12 @@ func equalStringPointer(a, b *string) bool {
 // The nudge targets /admin/reload-config, never /admin/force-reload: the latter
 // tears down every live playback session on a transcode node.
 func TestHandleUpdateNodeReloadsTheNodeAfterAnOverrideChange(t *testing.T) {
-	reloaded := make(chan string, 4)
+	reloaded := make(chan bool, 4)
 	var destructive atomic.Bool
 	node := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/admin/reload-config":
-			reloaded <- r.Header.Get("Authorization")
+			reloaded <- nodeauthtest.Signed(r, "secret")
 		case "/admin/force-reload":
 			destructive.Store(true)
 		}
@@ -287,9 +288,9 @@ func TestHandleUpdateNodeReloadsTheNodeAfterAnOverrideChange(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 	select {
-	case authorization := <-reloaded:
-		if authorization != "Bearer secret" {
-			t.Fatalf("node saw authorization %q, want the bearer secret", authorization)
+	case signed := <-reloaded:
+		if !signed {
+			t.Fatal("reload request was not signed with the shared secret")
 		}
 	default:
 		t.Fatal("the node was not asked to reload after its overrides changed")

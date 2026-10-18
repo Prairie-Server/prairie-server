@@ -380,6 +380,7 @@ export function useWatchedStateMutation(item: WatchedMutationItem) {
         ...detail,
         user_data: { ...detail.user_data, played: nextPlayed },
         user_state: {
+          ...detail.user_state,
           played: nextPlayed,
           is_favorite: detail.user_state?.is_favorite ?? false,
           in_watchlist: detail.user_state?.in_watchlist ?? false,
@@ -393,6 +394,7 @@ export function useWatchedStateMutation(item: WatchedMutationItem) {
         ...detail,
         user_data: { ...detail.user_data, played: !nextPlayed },
         user_state: {
+          ...detail.user_state,
           played: !nextPlayed,
           is_favorite: detail.user_state?.is_favorite ?? false,
           in_watchlist: detail.user_state?.in_watchlist ?? false,

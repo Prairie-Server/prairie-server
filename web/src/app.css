@@ -400,6 +400,28 @@ html[data-navigation-direction]::view-transition-new(main-content) {
   animation: var(--duration-sidebar-collapse) var(--ease-sidebar-collapse) both nav-slide-in;
 }
 
+/* Entering or leaving personal settings swaps what the app's sidebar column
+   holds (useSidebarSwap). The column's background and border never move; only
+   its contents slide in, from the side the reader is heading toward.
+   `backwards` rather than `both`: once it ends the entrance lets go of
+   transform, which the app sidebar's own collapse motion drives on some of
+   these same children.                                                       */
+@keyframes sidebar-entrance {
+  from {
+    opacity: 0;
+    transform: translateX(var(--sidebar-entrance-shift));
+  }
+}
+[data-sidebar-entrance="forward"] {
+  --sidebar-entrance-shift: 16px;
+}
+[data-sidebar-entrance="back"] {
+  --sidebar-entrance-shift: -16px;
+}
+[data-sidebar-entrance] > * {
+  animation: var(--duration-normal) var(--ease-out) backwards sidebar-entrance;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* The directional selectors carry their own specificity — (0,1,2) against the
      bare pseudo-elements' (0,0,1) — so they have to be suppressed by name here
@@ -465,10 +487,9 @@ html[data-navigation-direction]::view-transition-new(main-content) {
 /* ================================================================
    § 3  THEME DEFINITIONS
    ================================================================
-   Silo ships one base theme, Cinema Dark, which sets ALL semantic
+   Prairie ships one theme, Cinema Dark, which sets ALL semantic
    tokens. It is activated by the static data-theme attribute on
-   <html> (index.html); the admin's token overrides and custom CSS
-   layer on top of it (contexts/CustomThemeProvider.tsx).
+   <html> (index.html).
 
    Token naming conventions:
      --background       Page background (darkest main surface)
@@ -630,8 +651,9 @@ html[data-navigation-direction]::view-transition-new(main-content) {
   }
   /* Every token here pushes toward --contrast-boost, never toward white
      directly. Hard-coded white raises contrast on a dark page and destroys it
-     on a light one, which admin CSS can still produce; mixing toward the boost
-     keeps high contrast readable either way. */
+     on a light one; mixing toward the boost keeps high contrast readable
+     either way. The brand accent restores this --ring after its own
+     (contexts/BrandingProvider.tsx). */
   html[data-high-contrast="true"] {
     --foreground: var(--contrast-boost);
     --ring: var(--contrast-boost);
@@ -2318,17 +2340,13 @@ html[data-navigation-direction]::view-transition-new(main-content) {
     animation: brand-reveal 650ms var(--ease-gentle) both;
   }
 
-  .admin-shell {
-    width: 100%;
-    min-width: 0;
-    max-width: 1560px;
-    margin-inline: auto;
-  }
-
-  /* AdminLayout owns the outer gutter. Older admin pages still use page-shell
-     for their max-width, so remove its second horizontal gutter when nested. */
+  /* .admin-shell marks AdminLayout's PageFrame, which sets the width. Shared
+     components that also render in the app (the collection editor) carry
+     page-shell, so drop its own gutter, cap, and centering here. */
   .admin-shell > .page-shell,
   .admin-shell > .page-shell-wide {
+    max-width: none;
+    margin-inline: 0;
     padding-inline: 0;
   }
 
@@ -2787,8 +2805,16 @@ html[data-navigation-direction]::view-transition-new(main-content) {
       padding-inline: 0;
     }
 
-    .player-controls[data-compact="true"][data-touch="false"] .player-quality-trigger > span {
+    .player-controls[data-compact="true"][data-touch="false"]
+      .player-quality-trigger
+      > .player-quality-label {
       display: none;
+    }
+
+    .player-controls[data-compact="true"][data-touch="false"]
+      .player-quality-trigger
+      > .player-speed-badge {
+      position: absolute;
     }
   }
 
@@ -2821,5 +2847,26 @@ html[data-navigation-direction]::view-transition-new(main-content) {
     border-radius: 0.75rem;
     background: rgb(12 12 12 / 0.98);
     box-shadow: 0 12px 40px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* A settings section: no surface of its own, a hairline above it. Outside any
+   layer on purpose, so it also wins over a page's `space-y-*` margin and every
+   section is spaced the same on every page. A section nested in another keeps
+   to its parent's rule. */
+.settings-section {
+  margin-block: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  padding-block: 1.5rem;
+}
+
+.settings-section .settings-section {
+  border-top: 0;
+  padding-block: 0.75rem 0;
+}
+
+@media (min-width: 64rem) {
+  .settings-section {
+    padding-block: 1.75rem;
   }
 }

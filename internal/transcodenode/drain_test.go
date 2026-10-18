@@ -20,6 +20,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
 	"github.com/prairie-server/prairie-server/internal/downloadprepare"
 	"github.com/prairie-server/prairie-server/internal/mediasample"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/noderouting"
 	"github.com/prairie-server/prairie-server/internal/nodesessions"
@@ -84,14 +85,15 @@ func stopSession(t *testing.T, s *Server, sessionID string) {
 	}
 	r := httptest.NewRequest(http.MethodDelete, "/transcode/"+sessionID, nil)
 	rr := httptest.NewRecorder()
-	s.Handler().ServeHTTP(rr, withBearer(r))
+	s.Handler().ServeHTTP(rr, signed(t, r))
 	if rr.Code >= 300 {
 		t.Fatalf("stop %s: status %d %s", sessionID, rr.Code, rr.Body.String())
 	}
 }
 
-func withBearer(r *http.Request) *http.Request {
-	r.Header.Set("Authorization", "Bearer "+testSecret)
+func signed(t *testing.T, r *http.Request) *http.Request {
+	t.Helper()
+	nodeauthtest.Sign(t, r, testSecret)
 	return r
 }
 
@@ -294,7 +296,7 @@ func TestDrainingNodeRefusesNewJobs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
-			handler.ServeHTTP(rr, withBearer(httptest.NewRequest(http.MethodPost, test.path, strings.NewReader(test.body))))
+			handler.ServeHTTP(rr, signed(t, httptest.NewRequest(http.MethodPost, test.path, strings.NewReader(test.body))))
 			if rr.Code != http.StatusServiceUnavailable || !strings.Contains(rr.Body.String(), test.reason) {
 				t.Fatalf("status %d body %q, want 503 carrying %q", rr.Code, rr.Body.String(), test.reason)
 			}

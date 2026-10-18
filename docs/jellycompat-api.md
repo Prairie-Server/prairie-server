@@ -154,7 +154,10 @@ When `Limit` is omitted, episode listings on this route and series/season
 `/Items?ParentId=` requests use a 1,000-row page. Explicit limits retain their
 requested page size, subject to the 1,000-row cap; `Limit=0` requests only the
 count. Longer lists still require paging using `TotalRecordCount` and
-`StartIndex`. Other `/Items` browsing retains the 24-row default.
+`StartIndex`. An `/Items?Ids=` request without `Limit` returns every named
+item the viewer can see, as in Jellyfin. When it names no collection and also
+filters, searches, or sorts, that list is capped at 1,000 rows. Other `/Items`
+browsing retains the 24-row default.
 
 `/Items?ParentId={boxSetId}` lists a collection's members (movies, series, and
 the episodes of episode-scoped smart collections) in collection order unless
@@ -193,13 +196,21 @@ can show quality across a library without fetching each item. `IsHD` means
 carry none of the three. Similar and Suggestions ignore `Fields`.
 
 Global `/Shows/NextUp` and the Resume lists leave out series the profile dropped,
-as Silo's Home does; `/Shows/NextUp?SeriesId=` still answers for a dropped series.
-See [dropped-shows.md](architecture/dropped-shows.md).
+as Prairie's Home does; `/Shows/NextUp?SeriesId=` still answers for a dropped series.
+See [dropped-shows.md](architecture/dropped-shows.md). It orders series as
+Prairie's Home does: by when the profile finished the previous episode, the order
+Jellyfin uses. A profile that turns on `ui.next_up_new_releases_first` instead
+gets a caught-up series back at the front when its next episode is released to
+the server. `nextUpDateCutoff` still filters on last played.
 
 Items carry Jellyfin 12's `OriginalLanguage` (movies and series). Episodes set
 `ParentPrimaryImageItemId` and `ParentPrimaryImageTag` to their season's poster,
 or to the series poster when the season has none; both are removed when the
-request disables Primary images.
+request disables Primary images. Episodes also set `ParentLogoItemId` and
+`ParentLogoImageTag` to their series' logo when it has one, as Jellyfin does,
+since clients read an episode's show logo there; both are removed when a list
+request disables Logo images. `/Shows/Upcoming` episodes carry no series
+artwork, so they have neither these nor the parent poster and backdrop.
 
 ### Extended artwork
 
@@ -228,6 +239,8 @@ An episode's `ParentThumbImageTag` still names its series' backdrop; the series'
 | `GET /Shows/Upcoming` | Scoped episodes dated from yesterday in UTC onward, with paging. |
 | `GET /Items/{id}/ThemeMedia` | `ThemeSongsResult` and `ThemeVideosResult` envelopes after validating the owner. |
 | `GET /Items/{id}/ThemeSongs`, `/ThemeVideos` | Local theme songs for a visible owner; theme videos remain empty. |
+| `GET /Movies/Recommendations` | The profile's cached recommendation rows, filtered for the session and kept to movies, in Jellyfin's category shape. Only rows a Jellyfin heading describes truthfully are sent: up to two Because You Watched rows anchored on a movie as `SimilarToRecentlyPlayed` with the watched title as `BaselineItemName`, then taste-cluster rows as `SimilarToLikedItem` with the cluster's genre label (jellyfin-web shows "Because you watched {0}" and "Because you like {0}"). A library `ParentId` (jellyfin-web sends the movie library it shows suggestions for) keeps the titles and watched titles to that library; a library the session cannot browse, or any other parent, gets `[]`. A row whose watched title is a series or one the session cannot see, the main For You row, an unlabeled cluster, Similar Users and the server-wide rows are left out; a profile without such rows gets `[]`. A title appears in the first category that holds it, each category has its own `CategoryId`, and `categoryLimit` (default 5) and `itemLimit` (default 8) apply. |
+| `GET /Items/{id}/Similar`, `/Movies/{id}/Similar`, `/Shows/{id}/Similar` | With recommendations enabled, the item's nearest titles by embedding and co-watch, in that order, keeping those the session may see; otherwise, or when none is left, the top-rated titles of the same type in the item's first genre. An item the session cannot see answers an empty list. |
 | `GET /Persons`, `/Persons/{name}` | People with a credit on a movie, series, or episode visible to the current profile, under the native person-detail rule: an episode credit counts when the profile can see the parent series. `/Persons` accepts Jellyfin 12's `StartIndex`, `NameStartsWith`, `NameLessThan`, and `NameStartsWithOrGreater` (lowercased name comparisons) and a library, movie, series, or episode `ParentId`; a series parent includes its episodes' guest stars, a library parent includes the guest stars of its series, and other parents match nobody. Pages without `SearchTerm` hold up to 100 people; searches stay capped at 20. Person photo tags are signed and appear only in responses that passed this visibility check. `GET /Items/{personId}/Images/Primary` accepts a matching signed `tag` without authentication, as Jellyfin Web sends image requests without credentials; otherwise the session must see a credit for the person. Either check runs before cached artwork is used. |
 
 `/Library/VirtualFolders` reports `LibraryOptions.EnableRealtimeMonitor` from

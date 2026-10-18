@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
@@ -162,6 +163,9 @@ func startCompatRemoteAutoTranscode(t *testing.T, report string, response transc
 		if r.Method != http.MethodPost || r.URL.Path != "/transcode/start" {
 			w.WriteHeader(http.StatusNotFound)
 			return
+		}
+		if !nodeauthtest.Signed(r, "secret") {
+			t.Error("remote transcode start was not signed with the shared secret")
 		}
 		if err := json.NewDecoder(r.Body).Decode(&remoteReq); err != nil {
 			t.Errorf("decode remote request: %v", err)
