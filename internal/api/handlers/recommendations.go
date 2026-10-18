@@ -230,7 +230,8 @@ func (h *RecommendationsHandler) hydrateScoredCards(
 		return nil
 	}
 
-	return h.buildSectionItems(r.Context(), items, enrichment, nil)
+	artwork := h.featuredCardArtwork(r.Context(), enrichment.items, requestAccessFilter(r).Artwork())
+	return h.buildSectionItems(r.Context(), items, enrichment, nil, artwork)
 }
 
 // v1RecommendationRowLimit keeps a frozen v1 row read at the 20 items a row

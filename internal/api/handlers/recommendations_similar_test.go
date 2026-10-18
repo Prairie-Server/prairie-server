@@ -21,11 +21,11 @@ type stubSimilarEngine struct {
 	err   error
 }
 
-func (s *stubSimilarEngine) SimilarItems(context.Context, string, int) ([]recommendations.ScoredItem, error) {
+func (s *stubSimilarEngine) SimilarItems(context.Context, int, string, string, int, catalog.AccessFilter) ([]recommendations.ScoredItem, error) {
 	return s.items, s.err
 }
 
-func (s *stubSimilarEngine) BecauseYouWatched(context.Context, int, string, string, int) ([]recommendations.ScoredItem, error) {
+func (s *stubSimilarEngine) BecauseYouWatched(context.Context, int, string, string, int, catalog.AccessFilter) ([]recommendations.ScoredItem, error) {
 	return nil, nil
 }
 
@@ -60,6 +60,16 @@ func (stubPresigner) PresignURL(_ context.Context, path string, _ string) string
 		return ""
 	}
 	return "https://cdn.example.com/" + path
+}
+
+func (p stubPresigner) PresignURLsWithExpiry(ctx context.Context, paths []string, variant string) map[string]catalog.ResolvedImageURL {
+	out := make(map[string]catalog.ResolvedImageURL, len(paths))
+	for _, path := range paths {
+		if url := p.PresignURL(ctx, path, variant); url != "" {
+			out[path] = catalog.ResolvedImageURL{URL: url}
+		}
+	}
+	return out
 }
 
 func similarRequest(itemID string) *http.Request {
