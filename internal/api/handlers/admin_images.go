@@ -84,9 +84,6 @@ func NewAdminImageHandler(
 	}
 }
 
-// itemTypeSeries is the media item type for a series.
-const itemTypeSeries = "series"
-
 // offersLocalImages reports whether the picker offers local sidecar artwork
 // for an item type: the NFO provider serves movies and series only.
 func offersLocalImages(itemType string) bool {
