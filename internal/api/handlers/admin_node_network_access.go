@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -102,7 +103,7 @@ func (h *NodeHandler) nodeNetworkAccessCall(ctx context.Context, node plugins.Ne
 	case http.StatusNotFound:
 		return plugins.ErrNetworkAccessProviderNotFound
 	case http.StatusUnauthorized:
-		return fmt.Errorf("proxy node refused the signed request; check that it shares this server's secret, runs this Prairie version, and keeps the correct time")
+		return errors.New("proxy node refused the signed request; check that it shares this server's secret, runs this Prairie version, and keeps the correct time")
 	case http.StatusServiceUnavailable:
 		return fmt.Errorf("proxy node does not host network access providers: %s", trimNodeReason(body))
 	default:
