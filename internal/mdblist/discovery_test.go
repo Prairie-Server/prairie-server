@@ -161,9 +161,10 @@ func TestTransportErrorRedactsAPIKeyInWrappedError(t *testing.T) {
 
 	_, err := c.Search(context.Background(), "test")
 	assertErrorOmitsAPIKey(t, err, secretKey)
-	// The transport quoted the URL in its own text, so the key is masked there.
-	if !strings.Contains(err.Error(), "REDACTED") {
-		t.Fatalf("expected REDACTED in the sanitized error: %q", strings.ReplaceAll(err.Error(), secretKey, "[KEY]"))
+	// The transport quoted the URL in its own text; Prairie's logredact drops
+	// the apikey parameter there rather than printing a REDACTED marker.
+	if strings.Contains(err.Error(), "apikey=") {
+		t.Fatalf("expected the apikey parameter gone from the sanitized error: %q", strings.ReplaceAll(err.Error(), secretKey, "[KEY]"))
 	}
 	if !errors.Is(err, cause) {
 		t.Fatalf("sanitized error no longer matches its cause: %q", strings.ReplaceAll(err.Error(), secretKey, "[KEY]"))

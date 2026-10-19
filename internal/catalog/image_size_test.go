@@ -57,14 +57,13 @@ func TestCachedImageVariantKeyMatchesPreImageSizeBehavior(t *testing.T) {
 	}
 }
 
-// "large" must reach the widest cached rung short of the original. Prairie's
-// ladder has no w780/w1280 rung, so posters, stills and logos stop at w500.
+// "large" must reach the widest cached rung short of the original.
 func TestCachedImageVariantKeyLarge(t *testing.T) {
 	want := map[string]string{
-		"backdrop": "w1920",
-		"logo":     "w500",
-		"poster":   "w500",
-		"still":    "w500",
+		"backdrop": "w2560",
+		"logo":     "w1280",
+		"poster":   "w1000",
+		"still":    "w1280",
 		"profile":  "w500",
 	}
 	for imageType, wantVariant := range want {
@@ -104,7 +103,7 @@ func TestCachedImageVariantPathRewritesKey(t *testing.T) {
 		"":         "tmdb/movies/550/poster/w500.abc123.webp",
 		"small":    "tmdb/movies/550/poster/w200.abc123.webp",
 		"medium":   "tmdb/movies/550/poster/w500.abc123.webp",
-		"large":    "tmdb/movies/550/poster/w500.abc123.webp",
+		"large":    "tmdb/movies/550/poster/w1000.abc123.webp",
 		"original": original,
 	}
 	for size, wantPath := range tests {
@@ -116,8 +115,8 @@ func TestCachedImageVariantPathRewritesKey(t *testing.T) {
 	// The key's own image type picks the ladder: an episode still passed in a
 	// poster slot resolves to still rungs, not a poster rung it never had.
 	const still = "tvdb/series/73141/seasons/22/episodes/9/still/original.webp"
-	if got := cachedImageVariantPath(context.Background(), still, "poster", "large"); got != "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp" {
-		t.Errorf("cachedImageVariantPath(context.Background(), still, poster, large) = %q, want the still ladder's w500", got)
+	if got := cachedImageVariantPath(context.Background(), still, "poster", "large"); got != "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp" {
+		t.Errorf("cachedImageVariantPath(context.Background(), still, poster, large) = %q, want the still ladder's w1280", got)
 	}
 	if got := cachedImageVariantPath(context.Background(), still, "backdrop", ""); got != "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp" {
 		t.Errorf("cachedImageVariantPath(context.Background(), still, backdrop, \"\") = %q, want the still default w500", got)

@@ -11,14 +11,14 @@ import (
 )
 
 // An explicit size overrides every per-context default uniformly, including the
-// Continue Watching w1280 backdrop. Widths follow Prairie's TV-tuned ladder
-// (posters w500/w300/w200, stills w1280/w500/w300; no w780 rung).
+// Continue Watching w1280 backdrop. Widths follow upstream's ladder plus
+// Prairie's w200 TV rung on posters and profiles.
 func TestExplicitImageSizeOverridesContextDefaults(t *testing.T) {
 	const poster = "tmdb/movies/550/poster/original.abc123.webp"
 	const backdrop = "tmdb/movies/550/backdrop/original.abc123.webp"
 	const still = "tvdb/series/73141/seasons/22/episodes/9/still/original.webp"
 
-	if got := sizedCardPath(poster, "poster", imagesize.Large); got != "tmdb/movies/550/poster/w500.abc123.webp" {
+	if got := sizedCardPath(poster, "poster", imagesize.Large); got != "tmdb/movies/550/poster/w1000.abc123.webp" {
 		t.Errorf("card poster at large = %q", got)
 	}
 	if got := sizedPosterPath(poster, imagesize.Small); got != "tmdb/movies/550/poster/w200.abc123.webp" {
@@ -105,7 +105,7 @@ func TestSizedLogoPathMatchesItemDetail(t *testing.T) {
 		{imagesize.Unset, "tmdb/movies/550/logo/w500.png"},
 		{imagesize.Small, "tmdb/movies/550/logo/w500.png"},
 		{imagesize.Medium, "tmdb/movies/550/logo/w500.png"},
-		{imagesize.Large, "tmdb/movies/550/logo/w500.png"},
+		{imagesize.Large, "tmdb/movies/550/logo/w1280.png"},
 		{imagesize.Original, logo},
 	}
 	if got := sizedFeaturedLogoPath(logo, imagesize.Unset); got != logo {

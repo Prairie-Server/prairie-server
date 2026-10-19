@@ -155,6 +155,7 @@ func TestStoreBundledCollectionPosterIfS3Configured_UploadsTemplatePoster(t *tes
 
 	want := map[string]bool{
 		"/public-assets/" + base + "original." + revision + ".webp": true,
+		"/public-assets/" + base + "w1000." + revision + ".webp":    true,
 		"/public-assets/" + base + "w500." + revision + ".webp":     true,
 		"/public-assets/" + base + "w300." + revision + ".webp":     true,
 		"/public-assets/" + base + "w200." + revision + ".webp":     true,

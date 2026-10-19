@@ -67,9 +67,9 @@ func TestHandleImagesCapability(t *testing.T) {
 		}
 	}
 
-	// Prairie's TV-tuned ladder: posters w500/w300/w200, a single w500 logo.
-	if w := got.Widths["poster"]; w.Large != 500 || w.Small != 200 {
-		t.Errorf("poster widths = %+v, want large 500 / small 200", w)
+	// Upstream's ladder plus Prairie's w200 TV rung on posters.
+	if w := got.Widths["poster"]; w.Large != 1000 || w.Small != 200 {
+		t.Errorf("poster widths = %+v, want large 1000 / small 200", w)
 	}
 	if got.Widths["still"].Large != 1280 {
 		t.Errorf("still large width = %d, want 1280", got.Widths["still"].Large)
@@ -77,7 +77,7 @@ func TestHandleImagesCapability(t *testing.T) {
 	if got.Widths["backdrop"].Large != 2560 {
 		t.Errorf("backdrop large width = %d, want 2560", got.Widths["backdrop"].Large)
 	}
-	if got.Widths["logo"].Large != 500 {
-		t.Errorf("logo large width = %d, want 500", got.Widths["logo"].Large)
+	if got.Widths["logo"].Large != 1280 {
+		t.Errorf("logo large width = %d, want 1280", got.Widths["logo"].Large)
 	}
 }

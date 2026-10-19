@@ -20,9 +20,9 @@ func TestCompatRequestImageSize(t *testing.T) {
 		{"no dimensions", "/Items/1/Images/Primary", "Primary", "small"},
 		{"no dimensions backdrop", "/Items/1/Images/Backdrop", "Backdrop", "medium"},
 		{"thumbnail width", "/Items/1/Images/Primary?MaxWidth=200", "Primary", "small"},
-		{"card boundary", "/Items/1/Images/Primary?FillWidth=320", "Primary", "small"},
+		{"card boundary", "/Items/1/Images/Primary?FillWidth=320", "Primary", "medium"},
 		// A rung up to a fifth narrower than the request still serves it.
-		{"small within tolerance", "/Items/1/Images/Primary?FillWidth=375", "Primary", "small"},
+		{"small within tolerance", "/Items/1/Images/Primary?FillWidth=375", "Primary", "medium"},
 		{"past small", "/Items/1/Images/Primary?FillWidth=376", "Primary", "medium"},
 		{"between small and large", "/Items/1/Images/Primary?MaxWidth=600", "Primary", "medium"},
 		{"medium within tolerance", "/Items/1/Images/Primary?MaxWidth=625", "Primary", "medium"},
@@ -81,8 +81,8 @@ func TestCompatRequestImageSizePerLadder(t *testing.T) {
 		{"no dimensions", "Primary", "", map[string]string{"poster": "small", "still": "small", "profile": "small", "backdrop": "small"}},
 		// A portrait card box bounds a 16:9 image by its width, but one
 		// covering it must be as wide as the box is tall at 16:9.
-		{"bounded by a portrait box", "Primary", "?MaxWidth=298&MaxHeight=446", map[string]string{"poster": "small", "still": "small", "profile": "small", "backdrop": "small"}},
-		{"covering a portrait box", "Primary", "?FillWidth=298&FillHeight=446", map[string]string{"poster": "small", "still": "large", "profile": "small", "backdrop": "medium"}},
+		{"bounded by a portrait box", "Primary", "?MaxWidth=298&MaxHeight=446", map[string]string{"poster": "medium", "still": "small", "profile": "medium", "backdrop": "small"}},
+		{"covering a portrait box", "Primary", "?FillWidth=298&FillHeight=446", map[string]string{"poster": "medium", "still": "large", "profile": "medium", "backdrop": "medium"}},
 		// A backdrop request served by the item's poster sizes it as a poster.
 		{"backdrop falling back to a poster", "Backdrop", "?MaxWidth=1200", map[string]string{"backdrop": "medium", "poster": "large", "logo": "large"}},
 	}

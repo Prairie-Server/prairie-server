@@ -2580,28 +2580,6 @@ func (h *AdminHandler) environmentRefusesSave(key, value string) bool {
 	return key != config.RedisDBSettingKey || strings.TrimSpace(value) != ""
 }
 
-// ensureRedisReachableBeforeSave rejects persisting a non-empty redis.url that
-// cannot be pinged (Prairie: an unreachable URL used to restart-loop the server
-// under Docker). Clearing Redis (empty URL) is always allowed. Env-managed
-// Redis is never written through these endpoints.
-func (h *AdminHandler) ensureRedisReachableBeforeSave(ctx context.Context, changed map[string]string) error {
-	raw, ok := changed["redis.url"]
-	if !ok {
-		return nil
-	}
-	normalized, err := config.NormalizeRedisURL(raw)
-	if err != nil {
-		return err
-	}
-	if normalized == "" {
-		return nil
-	}
-	if err := probeRedisConfig(ctx, config.RedisConfig{URL: normalized}); err != nil {
-		return fmt.Errorf("redis.url is unreachable; fix the URL or leave Redis disabled: %w", err)
-	}
-	return nil
-}
-
 func shouldPersistAdminSetting(stored map[string]string, key, normalized string, effectiveChanged bool) bool {
 	current, exists := stored[key]
 	if exists {
@@ -2706,12 +2684,6 @@ func (h *AdminHandler) UpdateAdminSettings(ctx context.Context, values map[strin
 		return AdminSettingsUpdateResult{}, err
 	}
 
-	// checkRedisSave already probed a changed connection; only probe here when it did not.
-	if checkedRedis.URL == "" {
-		if err := h.ensureRedisReachableBeforeSave(ctx, normalized); err != nil {
-			return AdminSettingsUpdateResult{}, &APIError{Status: http.StatusBadRequest, Code: "invalid_settings", Message: err.Error()}
-		}
-	}
 
 	modelValidation, err := h.prepareAIModelValidation(ctx, normalized)
 	if err != nil {
@@ -3101,11 +3073,6 @@ func (h *AdminHandler) UpdateAdminSetting(ctx context.Context, key, value string
 		return AdminSettingUpdateResult{}, err
 	}
 
-	if checkedRedis.URL == "" {
-		if err := h.ensureRedisReachableBeforeSave(ctx, change); err != nil {
-			return AdminSettingUpdateResult{}, &APIError{Status: http.StatusBadRequest, Code: "invalid_settings", Message: err.Error()}
-		}
-	}
 
 	modelValidation, err := h.prepareAIModelValidation(ctx, map[string]string{key: req.Value})
 	if err != nil {

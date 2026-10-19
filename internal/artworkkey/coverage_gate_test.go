@@ -27,7 +27,7 @@ func TestArtworkKeyEdgeCases(t *testing.T) {
 	if Revision("noext") != "" || Revision("original.") != "" {
 		t.Fatal("revision empty")
 	}
-	if len(VariantWidths("backdrop")) != 4 || len(VariantWidths("logo")) != 1 || len(VariantWidths("poster")) != 3 {
+	if len(VariantWidths("backdrop")) != 4 || len(VariantWidths("logo")) != 2 || len(VariantWidths("poster")) != 4 {
 		t.Fatal("widths")
 	}
 	if ObjectKeys("", "poster") != nil || ObjectKeys("https://x/y.webp", "poster") != nil {

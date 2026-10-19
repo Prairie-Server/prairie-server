@@ -61,7 +61,7 @@ type aiSettingsCheckClient interface {
 	Transcribe(ctx context.Context, req llm.TranscribeRequest) (*llm.Transcription, error)
 }
 
-// redisSettingsCheckClient is the Prairie seam probeRedisConfig pings through,
+// redisSettingsCheckClient is the Prairie seam connection check pings through,
 // so tests can stand in for Redis when exercising the reject-unreachable save.
 type redisSettingsCheckClient interface {
 	Ping(ctx context.Context) error
@@ -639,26 +639,6 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 		Success: true,
 		Message: "Redis connection successful.",
 	}
-}
-
-// probeRedisConfig pings Redis so unreachable URLs cannot be persisted and later
-// brick startup under a process supervisor.
-func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
-	if strings.TrimSpace(redisCfg.URL) == "" {
-		return errors.New("redis URL is required")
-	}
-	client, err := newAdminRedisSettingsCheckClient(redisCfg)
-	if err != nil {
-		return err
-	}
-	if client == nil {
-		return errors.New("redis URL is required")
-	}
-	defer func() { _ = client.Close() }()
-
-	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	return client.Ping(checkCtx)
 }
 
 // errRedisChannelsRefused wraps the error Redis answers a subscription to the

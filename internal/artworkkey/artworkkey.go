@@ -244,26 +244,27 @@ func VariantWidths(imageType string) []int {
 		// sending the 4K original.
 		return []int{2560, 1920, 1280, 300}
 	case ImageStill:
-		// No w200 rung, and no w1280 hero rung: an episode still renders ~140 CSS-px
-		// in the browser and ~358 px on a UHD television, so w500 and w300 cover both.
-		// cachedImageVariantKeyFor keeps stills at w500 for TV clients and the
-		// smart-TV client pins STILL_WIDTH to 500. Nothing asks for a w200 still.
-		return []int{500, 300}
-	case ImageLogo:
-		return []int{500}
+		// Episode stills are 16:9 like backdrops; w1280 is a TV-sized hero.
+		return []int{1280, 500, 300}
 	case ImageThumb:
 		// Landscape thumbs are 16:9 cards, shown smaller than backdrops.
 		return []int{1280, 500, 300}
+	case ImageLogo:
+		return []int{1280, 500}
 	case ImageBanner, ImageClearArt:
 		// Kodi banners (1000x185) and clear art (1000x562) top out at 1000.
 		return []int{1000, 500}
 	case ImageDisc:
 		return []int{1000, 500, 300}
-	default: // poster, profile
-		// w200 is the TV rung: poster cards render ~155 CSS-px, so w300 decodes
-		// ~4x the pixels shown. w200 roughly halves decoded surface (and bytes)
-		// for the smart-TV clients without visibly softening the card.
+	case ImageProfile:
+		// Cast/crew headshots are only ever rendered at card size; they do not
+		// get the wide rung posters and stills carry.
+		// w200 is the Prairie TV rung (cachedImageVariantKeyFor): poster cards render
+		// ~155 CSS-px, so w300 decodes ~4x the pixels shown on a smart TV.
 		return []int{500, 300, 200}
+	default: // poster
+		// w200 is the Prairie TV rung: see ImageProfile.
+		return []int{1000, 500, 300, 200}
 	}
 }
 

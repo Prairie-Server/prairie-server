@@ -106,7 +106,7 @@ func TestPersonCreditPhotoFollowsPhotoWidth(t *testing.T) {
 		[]models.ItemPerson{{Person: models.Person{ID: 287, Name: "Brad Pitt", PhotoPath: testPhotoPath}}},
 		AccessFilter{ImageSize: imagesize.Large, ImageWidths: imagesize.Widths{Photo: 200, Backdrop: 2688}},
 	)
-	if want := "tmdb/people/287/profile/w300.abc123.webp"; resolver.path != want {
+	if want := "tmdb/people/287/profile/w200.abc123.webp"; resolver.path != want {
 		t.Errorf("resolved path = %q, want %q", resolver.path, want)
 	}
 	// A plugin's card headshot is softer than a cast card, so a width short of

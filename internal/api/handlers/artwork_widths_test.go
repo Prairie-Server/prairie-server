@@ -73,7 +73,7 @@ func TestFeaturedArtworkPicksNarrowestCoveringRung(t *testing.T) {
 	}
 	got := featuredItemArtworkPaths(item, "", imagesize.Request{Widths: imagesize.Widths{Poster: 176, Backdrop: 1344, Logo: 880}})
 	want := featuredArtworkPaths{
-		posterPath:   "tmdb/movies/1/poster/w300.r1.webp",
+		posterPath:   "tmdb/movies/1/poster/w200.r1.webp",
 		backdropPath: "tmdb/movies/1/backdrop/w1920.r1.webp",
 		logoPath:     "tmdb/movies/1/logo/w1280.r1.webp",
 	}
@@ -218,7 +218,7 @@ func TestWatchTonightCastPhotosResolveOnProfileLadder(t *testing.T) {
 	}
 
 	h.resolveCastPhotos(t.Context(), cards, imagesize.Width(200))
-	if got, want := cards[0].Cast[0].PhotoURL, "resolved:tmdb/people/1/profile/w300.r1.webp"; got != want {
+	if got, want := cards[0].Cast[0].PhotoURL, "resolved:tmdb/people/1/profile/w200.r1.webp"; got != want {
 		t.Errorf("photo at 200px = %q, want %q", got, want)
 	}
 	// A plugin's narrower headshots are softer than a cast card, so a width

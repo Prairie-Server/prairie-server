@@ -101,6 +101,7 @@ func TestHandleSimilar_ReturnsHydratedCards(t *testing.T) {
 	}}
 
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = fetcher
 	h.DetailSvc = stubPresigner{}
 
@@ -147,6 +148,7 @@ func TestHandleSimilar_DropsItemsTheProfileCannotSee(t *testing.T) {
 	}}
 
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = fetcher
 	h.DetailSvc = stubPresigner{}
 
@@ -167,6 +169,7 @@ func TestHandleSimilar_OmitsCardsWhenHydrationUnavailable(t *testing.T) {
 
 	engine := &stubSimilarEngine{items: []recommendations.ScoredItem{{MediaItemID: "movie-a"}}}
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	// No Fetcher configured.
 
 	rec := httptest.NewRecorder()
@@ -186,6 +189,7 @@ func TestHandleSimilar_DegradesWhenHydrationFails(t *testing.T) {
 
 	engine := &stubSimilarEngine{items: []recommendations.ScoredItem{{MediaItemID: "movie-a"}}}
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = &stubCardFetcher{err: errors.New("db down")}
 	h.DetailSvc = stubPresigner{}
 

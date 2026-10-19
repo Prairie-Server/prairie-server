@@ -69,6 +69,9 @@ func TestFormatSiblingAndObjectKeysIncludeAVIFAndPNG(t *testing.T) {
 		"tmdb/movies/550/poster/original.abc123.webp": true,
 		"tmdb/movies/550/poster/original.abc123.avif": true,
 		"tmdb/movies/550/poster/original.abc123.png":  true,
+		"tmdb/movies/550/poster/w1000.abc123.webp":    true,
+		"tmdb/movies/550/poster/w1000.abc123.avif":    true,
+		"tmdb/movies/550/poster/w1000.abc123.png":     true,
 		"tmdb/movies/550/poster/w500.abc123.webp":     true,
 		"tmdb/movies/550/poster/w500.abc123.avif":     true,
 		"tmdb/movies/550/poster/w500.abc123.png":      true,
@@ -187,6 +190,7 @@ func TestWiderVariantKeys(t *testing.T) {
 	want := []string{
 		"tmdb/movies/550/poster/w300.rev.webp",
 		"tmdb/movies/550/poster/w500.rev.webp",
+		"tmdb/movies/550/poster/w1000.rev.webp",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
@@ -219,7 +223,7 @@ func TestWiderVariantKeysUsesImageTypeLadder(t *testing.T) {
 func TestWiderVariantKeysEdgeCases(t *testing.T) {
 	// Top of the ladder, "original", unrecognized names and URLs have no wider rung.
 	for _, input := range []string{
-		"tmdb/movies/550/poster/w500.rev.webp",
+		"tmdb/movies/550/poster/w1000.rev.webp",
 		"tmdb/movies/550/poster/original.rev.webp",
 		"tmdb/movies/550/poster/thumb.rev.webp",
 		"https://cdn.example.com/poster/w200.webp",
@@ -234,7 +238,7 @@ func TestWiderVariantKeysEdgeCases(t *testing.T) {
 
 func TestWiderVariantKeysPreservesLegacyUnrevisionedKeys(t *testing.T) {
 	got := WiderVariantKeys("tmdb/movies/550/poster/w200.webp")
-	if len(got) != 2 || got[0] != "tmdb/movies/550/poster/w300.webp" {
+	if len(got) != 3 || got[0] != "tmdb/movies/550/poster/w300.webp" {
 		t.Fatalf("got %v, want legacy keys without a revision segment", got)
 	}
 }

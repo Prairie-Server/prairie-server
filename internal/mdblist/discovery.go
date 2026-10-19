@@ -174,8 +174,11 @@ func maskAPIKeyError(err error, apiKey string) error {
 	if err == nil {
 		return nil
 	}
-	if msg := err.Error(); redactAPIKey(msg, apiKey) != msg {
-		masked := redactedError{message: redactAPIKey(msg, apiKey), cause: err, apiKey: apiKey}
+	// Prairie: logredact.SanitizeURLError scrubs the outer message of a raw URL
+	// the transport quoted, so the key can survive only in a deeper cause. Mask
+	// whenever any link of the chain holds it, not just the outermost message.
+	if chainHoldsKey(err, apiKey) {
+		masked := redactedError{message: redactAPIKey(err.Error(), apiKey), cause: err, apiKey: apiKey}
 		// A *url.Error asks its Err directly whether it timed out, so a masked
 		// net.Error has to answer too.
 		if ne, ok := err.(net.Error); ok { //nolint:errorlint // url.Error asserts its Err directly, so only err itself counts.
@@ -184,6 +187,16 @@ func maskAPIKeyError(err error, apiKey string) error {
 		return masked
 	}
 	return err
+}
+
+// chainHoldsKey reports whether err or any error it wraps quotes the key.
+func chainHoldsKey(err error, apiKey string) bool {
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if msg := e.Error(); redactAPIKey(msg, apiKey) != msg {
+			return true
+		}
+	}
+	return false
 }
 
 // redactedError carries a masked message. It has no Unwrap, so walking the

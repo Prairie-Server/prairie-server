@@ -233,11 +233,10 @@ func TestLadderRungLiteralMatchesBothKeyForms(t *testing.T) {
 		imageType string
 		want      string
 	}{
-		// Prairie's ladder tops out at w500 for posters, stills and logos; backdrops add w2560.
-		{ImageCacheImagePoster, "'%/w500.%'"},
-		{ImageCacheImageStill, "'%/w500.%'"},
-		{ImageCacheImageLogo, "'%/w500.%'"},
+		{ImageCacheImagePoster, "'%/w1000.%'"},
+		{ImageCacheImageStill, "'%/w1280.%'"},
 		{ImageCacheImageBackdrop, "'%/w2560.%'"},
+		{ImageCacheImageLogo, "'%/w1280.%'"},
 	}
 	for _, tt := range tests {
 		if got := ladderRungLiteral(tt.imageType); got != tt.want {
