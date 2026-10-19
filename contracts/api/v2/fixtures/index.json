@@ -3971,7 +3971,7 @@
           "X-Push-Generation": "3",
           "X-Push-Installation-Key": "a2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2s"
         },
-        "body": "{\"device_id\":\"install\",\"apns_token\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"apns_environment\":\"production\",\"apns_topic\":\"org.siloserver.prairie\",\"push_mode\":\"private_push\"}"
+        "body": "{\"device_id\":\"install\",\"apns_token\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"apns_environment\":\"production\",\"apns_topic\":\"org.prairieserver.prairie\",\"push_mode\":\"private_push\"}"
       },
       "expected_status": 200,
       "response_headers": {
@@ -13924,7 +13924,7 @@
       "response_headers": {
         "Cache-Control": "private, no-cache",
         "Content-Type": "application/json",
-        "ETag": "\"f02d0bc389d7b11796f920283bb52592f5dd2c549318452808ce0f4fe3dfee6e\""
+        "ETag": "\"477940d56c15a378ad29473fb403139b11e5e9d18bbbaf9a50c9a060b9843095\""
       },
       "response_media_type": "application/json",
       "schema": "#/components/schemas/ServerConnectionsDocument",
