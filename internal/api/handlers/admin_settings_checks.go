@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/prairie-server/prairie-server/internal/ai/chatgpt"
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
@@ -59,36 +58,6 @@ type mdblistSettingsCheckClient interface {
 type aiSettingsCheckClient interface {
 	Chat(ctx context.Context, messages []llm.Message, jsonObject bool) (string, error)
 	Transcribe(ctx context.Context, req llm.TranscribeRequest) (*llm.Transcription, error)
-}
-
-// redisSettingsCheckClient is the Prairie seam connection check pings through,
-// so tests can stand in for Redis when exercising the reject-unreachable save.
-type redisSettingsCheckClient interface {
-	Ping(ctx context.Context) error
-	Close() error
-}
-
-type redisSettingsCheckAdapter struct {
-	client *redis.Client
-}
-
-func (a *redisSettingsCheckAdapter) Ping(ctx context.Context) error {
-	return a.client.Ping(ctx).Err()
-}
-
-func (a *redisSettingsCheckAdapter) Close() error {
-	return cache.CloseRedisClient(a.client)
-}
-
-var newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-	client, err := cache.NewRedisClientForRole(cfg, "checks")
-	if err != nil {
-		return nil, err
-	}
-	if client == nil {
-		return nil, nil
-	}
-	return &redisSettingsCheckAdapter{client: client}, nil
 }
 
 var newAdminS3SettingsCheckClient = func(cfg s3client.BucketConfig) s3SettingsCheckClient {

@@ -1055,21 +1055,6 @@ func TestCheckS3ObjectPermissionsSurfacesCleanupFailure(t *testing.T) {
 	}
 }
 
-type fakeRedisSettingsCheckClient struct {
-	ping func(ctx context.Context) error
-}
-
-func (f *fakeRedisSettingsCheckClient) Ping(ctx context.Context) error {
-	if f.ping != nil {
-		return f.ping(ctx)
-	}
-	return nil
-}
-
-func (f *fakeRedisSettingsCheckClient) Close() error {
-	return nil
-}
-
 type fakeMDBListSettingsCheckClient struct {
 	check func(context.Context) error
 }
@@ -1514,15 +1499,6 @@ func TestHandleCheckSettingsConnectionRejectsInvalidDraftValues(t *testing.T) {
 }
 
 func TestSettingsCheckRouteIsNotShadowedByKeyRoute(t *testing.T) {
-	originalFactory := newAdminRedisSettingsCheckClient
-	t.Cleanup(func() {
-		newAdminRedisSettingsCheckClient = originalFactory
-	})
-
-	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-		return &fakeRedisSettingsCheckClient{}, nil
-	}
-
 	handler := &AdminHandler{
 		SettingsRepo: &fakeServerSettingsStore{
 			values: map[string]string{

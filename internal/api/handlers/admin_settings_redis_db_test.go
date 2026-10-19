@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -99,13 +98,6 @@ type redisDBSaveResponse struct {
 
 func saveSettings(t *testing.T, handler *AdminHandler, body string) (*httptest.ResponseRecorder, redisDBSaveResponse) {
 	t.Helper()
-	// Prairie rejects an unreachable redis.url on save; these cases use
-	// placeholder hosts, so stand in a reachable Redis.
-	originalFactory := newAdminRedisSettingsCheckClient
-	t.Cleanup(func() { newAdminRedisSettingsCheckClient = originalFactory })
-	newAdminRedisSettingsCheckClient = func(config.RedisConfig) (redisSettingsCheckClient, error) {
-		return &fakeRedisSettingsCheckClient{ping: func(context.Context) error { return nil }}, nil
-	}
 	rec := httptest.NewRecorder()
 	handler.HandleUpdateSettings(rec, httptest.NewRequest(http.MethodPut, "/admin/settings", strings.NewReader(body)))
 	var response redisDBSaveResponse
