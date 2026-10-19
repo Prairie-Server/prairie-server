@@ -128,7 +128,7 @@ func TestFetchPackageResourceAllowsSlowProgressingBody(t *testing.T) {
 		for range chunks {
 			_, _ = w.Write([]byte("x"))
 			w.(http.Flusher).Flush()
-			time.Sleep(gap)
+			time.Sleep(gap) //nolint:forbidigo // ponytail: synced upstream code, paces a fake slow response; lint backlog
 		}
 	})
 	client := newPackageFetchClient(shortPackageFetchTimeouts)
@@ -206,7 +206,7 @@ func TestFetchPackageResourceAllowsSlowSingleChunkBody(t *testing.T) {
 			if _, err := conn.Write(data); err != nil {
 				return
 			}
-			time.Sleep(gap)
+			time.Sleep(gap) //nolint:forbidigo // ponytail: synced upstream code, paces a fake slow response; lint backlog
 		}
 		_, _ = io.WriteString(conn, "\r\n0\r\n\r\n")
 	}()

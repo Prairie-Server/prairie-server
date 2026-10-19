@@ -43,7 +43,7 @@ func TestLogLevelNeedsTheCallerGone(t *testing.T) {
 	defer cancelExpired()
 	for _, tc := range []struct {
 		name string
-		ctx  context.Context
+		ctx  context.Context //nolint:containedctx // ponytail: synced upstream code, table-test case carries its context; lint backlog
 		err  error
 		want slog.Level
 	}{

@@ -58,7 +58,7 @@ func TestTopGenreServesExpiredGenreWhileRefreshing(t *testing.T) {
 		if time.Now().After(deadline) {
 			t.Fatal("the background read did not store Comedy")
 		}
-		time.Sleep(time.Millisecond)
+		time.Sleep(time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
 	}
 }
 

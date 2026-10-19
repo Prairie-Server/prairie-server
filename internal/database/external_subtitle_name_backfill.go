@@ -180,7 +180,7 @@ func repairExternalSubtitleNames(videoPath string, stored []byte) ([]byte, bool,
 		if !ok || (tags.Language == current.Language && tags.HearingImpaired == current.HearingImpaired) {
 			continue
 		}
-		language, err := json.Marshal(tags.Language)
+		language, err := json.Marshal(tags.Language) //nolint:errchkjson // ponytail: synced upstream code, upstream keeps the error branch; lint backlog
 		if err != nil {
 			return nil, false, err
 		}

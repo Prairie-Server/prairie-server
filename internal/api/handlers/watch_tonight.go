@@ -77,7 +77,7 @@ func (h *RecommendationsHandler) WatchTonight(ctx context.Context, userID int, p
 // watchTonight is WatchTonight. With emptyOnFetchError, a failed item lookup
 // answers the list without items instead of an error, as the frozen v1 route
 // always has.
-func (h *RecommendationsHandler) watchTonight(ctx context.Context, userID int, profileID string, filter catalog.AccessFilter, limit int, emptyOnFetchError bool) (WatchTonightView, error) {
+func (h *RecommendationsHandler) watchTonight(ctx context.Context, userID int, profileID string, filter catalog.AccessFilter, limit int, emptyOnFetchError bool) (WatchTonightView, error) { //nolint:funlen // ponytail: synced upstream code, upstream assembly function; lint backlog
 	// The reader and the filter below each leave out what the profile
 	// watched; read that once.
 	ctx = recommendations.WithWatchedSetMemo(ctx)

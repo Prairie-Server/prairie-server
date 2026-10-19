@@ -465,16 +465,16 @@ func TestBackfillStopsWhenFallbackItemsKeepFailing(t *testing.T) {
 	})
 }
 
-var testRefusal = &embeddings.StatusError{API: "embedding", StatusCode: 400, Body: "invalid input"}
+var errTestRefusal = &embeddings.StatusError{API: "embedding", StatusCode: 400, Body: "invalid input"}
 
-// refusingEmbedder answers a call with testRefusal when bad reports one of
+// refusingEmbedder answers a call with errTestRefusal when bad reports one of
 // its texts, and counts its calls.
 func refusingEmbedder(bad func(text string) bool, calls *int) quotaTestEmbedder {
 	return func(_ context.Context, texts []string) ([][]float32, error) {
 		*calls++
 		for _, text := range texts {
 			if bad(text) {
-				return nil, testRefusal
+				return nil, errTestRefusal
 			}
 		}
 		out := make([][]float32, len(texts))
@@ -520,7 +520,7 @@ func TestBackfillSkipsRefusedInputs(t *testing.T) {
 		b := newTestBackfill(newFakeEmbeddingStore(testIDs("item-", 30)...), refusingEmbedder(func(string) bool { return true }, &calls), nil)
 		err := b.run(context.Background(), false)
 		// The batch, the first item, and the probe.
-		if calls != 3 || b.counts.Failed != 1 || b.counts.Skipped != 0 || !errors.Is(err, testRefusal) || !strings.HasPrefix(err.Error(), "embedding provider unavailable: ") {
+		if calls != 3 || b.counts.Failed != 1 || b.counts.Skipped != 0 || !errors.Is(err, errTestRefusal) || !strings.HasPrefix(err.Error(), "embedding provider unavailable: ") {
 			t.Fatalf("calls=%d counts=%+v error=%v", calls, b.counts, err)
 		}
 		// The item is not recorded as refused, so the next run tries it again.
@@ -536,7 +536,7 @@ func TestBackfillSkipsRefusedInputs(t *testing.T) {
 		err := b.run(context.Background(), false)
 		// The first batch, the second batch, three items refused one at a
 		// time, then the probe.
-		if calls != 6 || !errors.Is(err, testRefusal) || !strings.HasPrefix(err.Error(), "embedding provider unavailable: ") {
+		if calls != 6 || !errors.Is(err, errTestRefusal) || !strings.HasPrefix(err.Error(), "embedding provider unavailable: ") {
 			t.Fatalf("calls=%d error=%v", calls, err)
 		}
 		// The three items the provider refused while it was down are

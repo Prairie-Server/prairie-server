@@ -24,7 +24,7 @@ import (
 // out after a rescan writes its file and item again and syncs the queue, and
 // comes back, queued for matching, once the mark is cleared. A match clears
 // the mark.
-func TestIgnoredUnmatchedItemStaysIgnoredAcrossRescanDB(t *testing.T) {
+func TestIgnoredUnmatchedItemStaysIgnoredAcrossRescanDB(t *testing.T) { //nolint:funlen // ponytail: synced upstream code, single end-to-end DB scenario; lint backlog
 	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")

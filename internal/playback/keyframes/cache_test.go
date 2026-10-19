@@ -81,7 +81,7 @@ func TestLoadVerifiesInTheBackground(t *testing.T) {
 		if time.Now().After(deadline) {
 			t.Fatal("the background check didn't finish")
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
 	}
 }
 

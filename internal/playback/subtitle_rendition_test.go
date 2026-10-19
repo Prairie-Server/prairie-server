@@ -125,7 +125,7 @@ func TestBuildPlaybackManifestPublishesSubtitleRendition(t *testing.T) {
 		"#EXT-X-VERSION:3",
 		"#EXT-X-TARGETDURATION:2",
 		"#EXT-X-MEDIA-SEQUENCE:0",
-		"#EXT-X-PLAYLIST-TYPE:VOD",
+		// No PLAYLIST-TYPE:VOD line: Prairie drops it for Tizen (see transcode.go).
 		"#EXTINF:2.000000,", "segment/sub_00000.vtt?st=abc",
 		"#EXTINF:2.000000,", "segment/sub_00001.vtt?st=abc",
 		"#EXTINF:2.000000,", "segment/sub_00002.vtt?st=abc",
