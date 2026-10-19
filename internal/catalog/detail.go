@@ -4750,6 +4750,9 @@ func cachedImageVariantPath(ctx context.Context, path, imageType, size string) s
 // an explicit size always wins because it encodes display context the device
 // class cannot infer (rail thumbnails, downloads, etc.).
 func cachedImageVariantKeyFor(ctx context.Context, imageType, size string) string {
+	if _, ok := imagesize.Size(size).TargetWidth(); ok {
+		return cachedImageVariantKey(imageType, size)
+	}
 	if parsed, err := imagesize.Parse(size); err == nil && parsed != imagesize.Unset {
 		return cachedImageVariantKey(imageType, size)
 	}

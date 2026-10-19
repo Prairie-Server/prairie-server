@@ -46,10 +46,12 @@ func TestCatalogArtworkColdReadsNeverProbe(t *testing.T) {
 		manifest := manifestReader{}
 		var paths []string
 		for i := range 37 {
-			key := fmt.Sprintf("tmdb/series/1/seasons/%d/poster/w1000.rev.webp", i)
+			// Prairie's widest poster rung is the long-established w500, so an
+			// unverified external manifest still serves it (no step-down).
+			key := fmt.Sprintf("tmdb/series/1/seasons/%d/poster/w500.rev.webp", i)
 			paths = append(paths, key)
 			original := variantKey(key, "original")
-			manifest[original] = ArtworkAvailability{Published: []string{key, variantKey(key, "w500"), original}, External: true}
+			manifest[original] = ArtworkAvailability{Published: []string{key, variantKey(key, "w300"), original}, External: true}
 		}
 		resolver.SetArtworkAvailabilityReader(manifest)
 		urls := resolver.ResolveImageURLs(t.Context(), paths, "large")
@@ -57,28 +59,30 @@ func TestCatalogArtworkColdReadsNeverProbe(t *testing.T) {
 			t.Fatalf("got %d URLs", len(urls))
 		}
 		for _, key := range paths {
-			if !strings.HasSuffix(urls[key], variantKey(key, "w500")) {
-				t.Fatalf("unverified variant advertised: %s", urls[key])
+			if !strings.HasSuffix(urls[key], key) {
+				t.Fatalf("published established rung not served: %s", urls[key])
 			}
 		}
 	}
 }
 
 func TestSelectPublishedVariant(t *testing.T) {
-	key := "tmdb/series/1/poster/" + posterLargeRung + ".rev.webp"
-	medium, small, original := variantKey(key, "w500"), variantKey(key, "w300"), variantKey(key, "original")
+	// Prairie's poster ladder is w500/w300/w200; w500 is the widest rung and
+	// has always been generated, so legacy artwork keeps the requested key.
+	const key = "tmdb/series/1/poster/w500.rev.webp"
+	medium, small, original := variantKey(key, "w300"), variantKey(key, "w200"), variantKey(key, "original")
 	for _, tc := range []struct {
 		name  string
 		state ArtworkAvailability
 		known bool
 		want  string
 	}{
-		{"legacy", ArtworkAvailability{}, false, medium},
+		{"legacy", ArtworkAvailability{}, false, key},
 		{"published", ArtworkAvailability{Published: []string{key, original}}, true, key},
 		{"missing large", ArtworkAvailability{Published: []string{small, original}}, true, small},
-		// A revision cached under an earlier ladder serves its own widest rung
-		// that fits, not just the current ladder's.
-		{"previous ladder's rung", ArtworkAvailability{Published: []string{variantKey(key, "w780"), medium, small, original}}, true, variantKey(key, "w780")},
+		// A revision's widest published rung that fits serves, even one the
+		// current ladder no longer generates.
+		{"retired rung that fits", ArtworkAvailability{Published: []string{variantKey(key, "w400"), small, original}}, true, variantKey(key, "w400")},
 		{"previous ladder's rung too wide", ArtworkAvailability{Published: []string{variantKey(key, "w1280"), medium, original}}, true, medium},
 		{"original only", ArtworkAvailability{Published: []string{original}}, true, original},
 		{"delivery verified", ArtworkAvailability{Published: []string{key, medium, original}, External: true, Verified: true, Deliverable: []string{key}}, true, key},
@@ -95,16 +99,16 @@ func TestSelectPublishedVariant(t *testing.T) {
 }
 
 // Artwork without a manifest was cached before the ladder grew, so any rung
-// above the type's medium clamps to medium however many rungs were added.
+// above the type's medium clamps to medium. On Prairie only the backdrop ladder
+// grew (w2560); posters, stills and logos top out at the w500 they always had.
 func TestLegacyArtworkClampsToEstablishedRung(t *testing.T) {
 	for _, tc := range []struct{ key, want string }{
-		{"tmdb/movies/1/poster/w1000.webp", "tmdb/movies/1/poster/w500.webp"},
-		{"tmdb/movies/1/poster/w780.webp", "tmdb/movies/1/poster/w500.webp"},
+		{"tmdb/movies/1/poster/w500.webp", "tmdb/movies/1/poster/w500.webp"},
 		{"tmdb/movies/1/poster/w300.webp", "tmdb/movies/1/poster/w300.webp"},
-		{"tmdb/series/1/seasons/1/episodes/1/still/w1280.webp", "tmdb/series/1/seasons/1/episodes/1/still/w500.webp"},
+		{"tmdb/series/1/seasons/1/episodes/1/still/w500.webp", "tmdb/series/1/seasons/1/episodes/1/still/w500.webp"},
 		{"tmdb/movies/1/backdrop/w2560.webp", "tmdb/movies/1/backdrop/w1920.webp"},
 		{"tmdb/movies/1/backdrop/w1280.webp", "tmdb/movies/1/backdrop/w1280.webp"},
-		{"tmdb/movies/1/logo/w1280.webp", "tmdb/movies/1/logo/w500.webp"},
+		{"tmdb/movies/1/logo/w500.webp", "tmdb/movies/1/logo/w500.webp"},
 		{"tmdb/movies/1/backdrop/original.webp", "tmdb/movies/1/backdrop/original.webp"},
 		{"tmdb/movies/1/profile/w500.webp", "tmdb/movies/1/profile/w500.webp"},
 	} {
@@ -134,7 +138,8 @@ func TestVariantKeyRebuild(t *testing.T) {
 
 func TestOriginalArtworkFallsBackToResizedVariant(t *testing.T) {
 	original := "tmdb/movies/550/poster/original.abc123.webp"
-	large, medium := variantKey(original, "w1000"), variantKey(original, "w500")
+	// Prairie's widest poster rung is w500.
+	large, medium := variantKey(original, "w500"), variantKey(original, "w300")
 	for _, tc := range []struct {
 		name string
 		keys []string
@@ -188,10 +193,11 @@ func (r *recordingAvailability) ExternalDelivery() bool { return r.external }
 // can be missing from a published revision, so established rungs resolve
 // without a lookup and only the added rung consults the manifest.
 func TestNonExternalReaderLooksUpOnlyAddedRungs(t *testing.T) {
-	medium := "tmdb/movies/1/poster/w500.rev.webp"
-	large := "tmdb/movies/2/poster/" + posterLargeRung + ".rev.webp"
+	// Prairie's only grown ladder is the backdrop's (w2560).
+	medium := "tmdb/movies/1/backdrop/w1920.rev.webp"
+	large := "tmdb/movies/2/backdrop/w2560.rev.webp"
 	reader := &recordingAvailability{states: map[string]ArtworkAvailability{
-		variantKey(large, "original"): {Published: []string{variantKey(large, "w500"), variantKey(large, "original")}},
+		variantKey(large, "original"): {Published: []string{variantKey(large, "w1920"), variantKey(large, "original")}},
 	}}
 	got := resolvePublishedLadderKeys(t.Context(), reader, []resolveEntry{{originalPath: medium}, {originalPath: large}})
 	if !slices.Equal(reader.asked, []string{variantKey(large, "original")}) {
@@ -200,7 +206,7 @@ func TestNonExternalReaderLooksUpOnlyAddedRungs(t *testing.T) {
 	if got[medium] != medium {
 		t.Errorf("established rung resolved to %q, want itself", got[medium])
 	}
-	if want := variantKey(large, "w500"); got[large] != want {
+	if want := variantKey(large, "w1920"); got[large] != want {
 		t.Errorf("added rung resolved to %q, want the published %q", got[large], want)
 	}
 

@@ -100,7 +100,7 @@ func TestPersonalListsHonorImageSize(t *testing.T) {
 	}{
 		{"small", ":card:", "/poster/w200.", "/backdrop/w300."},
 		{"medium", ":featured:", "/poster/w500.", "/backdrop/w1920."},
-		{"large", ":large:", "/poster/w1000.", "/backdrop/w2560."},
+		{"large", ":large:", "/poster/w500.", "/backdrop/w2560."},
 		{"original", ":original:", "/poster/original.", "/backdrop/original."},
 	}
 
@@ -177,7 +177,7 @@ func TestPersonalListsLogoMatchesItemDetail(t *testing.T) {
 		want string
 	}{
 		{"unset", imagesize.Unset, ":featured:tmdb/movies/550/logo/w500.png"},
-		{"large", imagesize.Large, ":large:tmdb/movies/550/logo/w1280.png"},
+		{"large", imagesize.Large, ":large:tmdb/movies/550/logo/w500.png"}, // Prairie: logos top out at w500
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := newPersonalDataImageHandler(t, newProfileTestStore(t))

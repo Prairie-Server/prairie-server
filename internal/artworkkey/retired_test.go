@@ -10,8 +10,8 @@ import (
 // keeps stills at w500 for televisions and no caller passes size="small" for a
 // still. Posters and profiles keep it — that is the TV rung.
 func TestVariantWidthsStillHasNoTVRung(t *testing.T) {
-	if got := VariantWidths("still"); !reflect.DeepEqual(got, []int{1280, 500, 300}) {
-		t.Errorf("VariantWidths(still) = %v, want [1280 500 300]", got)
+	if got := VariantWidths("still"); !reflect.DeepEqual(got, []int{500, 300}) {
+		t.Errorf("VariantWidths(still) = %v, want [500 300]", got)
 	}
 	for _, imageType := range []string{"poster", "profile"} {
 		if got := VariantWidths(imageType); !slices.Contains(got, 200) {
@@ -21,8 +21,8 @@ func TestVariantWidthsStillHasNoTVRung(t *testing.T) {
 	if got := VariantWidths("backdrop"); !reflect.DeepEqual(got, []int{2560, 1920, 1280, 300}) {
 		t.Errorf("VariantWidths(backdrop) = %v, want [2560 1920 1280 300]", got)
 	}
-	if got := VariantWidths("logo"); !reflect.DeepEqual(got, []int{1280, 500}) {
-		t.Errorf("VariantWidths(logo) = %v, want [1280 500]", got)
+	if got := VariantWidths("logo"); !reflect.DeepEqual(got, []int{500}) {
+		t.Errorf("VariantWidths(logo) = %v, want [500]", got)
 	}
 }
 
@@ -100,7 +100,7 @@ func TestVariantNamesForStillOmitsRetiredRung(t *testing.T) {
 			t.Fatal("VariantNames(still) still names w200, so it would be regenerated")
 		}
 	}
-	if got := VariantNames("still"); !reflect.DeepEqual(got, []string{OriginalVariant, "w1280", "w500", "w300"}) {
+	if got := VariantNames("still"); !reflect.DeepEqual(got, []string{OriginalVariant, "w500", "w300"}) {
 		t.Errorf("VariantNames(still) = %v", got)
 	}
 }

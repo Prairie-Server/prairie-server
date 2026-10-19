@@ -63,19 +63,19 @@ func TestFeaturedArtworkResolvesEachSlotAtItsWidth(t *testing.T) {
 	}
 }
 
-// Android TV's 1080p hero is 1344px of backdrop: the w1920 rung covers it, and
-// the logo's w1280 covers its 880px.
+// Android TV's 1080p hero is 1344px of backdrop: the w1920 rung covers it, the
+// w200 TV poster rung covers a 176px card, and the logo's w500 covers 480px.
 func TestFeaturedArtworkPicksNarrowestCoveringRung(t *testing.T) {
 	item := &models.MediaItem{
 		PosterPath:   "tmdb/movies/1/poster/original.r1.webp",
 		BackdropPath: "tmdb/movies/1/backdrop/original.r1.webp",
 		LogoPath:     "tmdb/movies/1/logo/original.r1.webp",
 	}
-	got := featuredItemArtworkPaths(item, "", imagesize.Request{Widths: imagesize.Widths{Poster: 176, Backdrop: 1344, Logo: 880}})
+	got := featuredItemArtworkPaths(item, "", imagesize.Request{Widths: imagesize.Widths{Poster: 176, Backdrop: 1344, Logo: 480}})
 	want := featuredArtworkPaths{
 		posterPath:   "tmdb/movies/1/poster/w200.r1.webp",
 		backdropPath: "tmdb/movies/1/backdrop/w1920.r1.webp",
-		logoPath:     "tmdb/movies/1/logo/w1280.r1.webp",
+		logoPath:     "tmdb/movies/1/logo/w500.r1.webp",
 	}
 	if got != want {
 		t.Fatalf("paths = %+v, want %+v", got, want)

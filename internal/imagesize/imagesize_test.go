@@ -66,20 +66,21 @@ func TestFromRequest(t *testing.T) {
 }
 
 func TestVariantMatrix(t *testing.T) {
-	// Prairie keeps upstream's ladder plus a w200 poster/profile TV rung
-	// (artworkkey.VariantWidths); Large is the widest cached rung short of the
-	// original.
+	// Prairie's ladder (artworkkey.VariantWidths): posters and profiles carry
+	// a w200 TV rung and top out at w500; stills stop at w300; logos have a
+	// single w500 rung. There is no w780/w1280 rung, so Large resolves to the
+	// widest rung that exists.
 	want := map[string]map[Size]string{
 		"poster": {
 			Small:    "w200",
 			Medium:   "w500",
-			Large:    "w1000",
+			Large:    "w500",
 			Original: "original",
 		},
 		"still": {
 			Small:    "w300",
 			Medium:   "w500",
-			Large:    "w1280",
+			Large:    "w500",
 			Original: "original",
 		},
 		"backdrop": {
@@ -91,7 +92,7 @@ func TestVariantMatrix(t *testing.T) {
 		"logo": {
 			Small:    "w500",
 			Medium:   "w500",
-			Large:    "w1280",
+			Large:    "w500",
 			Original: "original",
 		},
 		"profile": {

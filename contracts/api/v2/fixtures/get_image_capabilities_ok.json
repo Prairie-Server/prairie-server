@@ -1,5 +1,5 @@
 {
-  "revision": "0176a2b0f52adf831b2111fbce2bf214e70d00d6bcf9e7cd25d28439d4c9e505",
+  "revision": "9b056d77a083a4cdd2737681cfece78887272a600ab70debf5a4ececc3dc845c",
   "state": "available",
   "allowed": true,
   "episode_still_provenance": true,
@@ -43,12 +43,12 @@
     "logo": {
       "small": 500,
       "medium": 500,
-      "large": 1280
+      "large": 500
     },
     "poster": {
       "small": 200,
       "medium": 500,
-      "large": 1000
+      "large": 500
     },
     "profile": {
       "small": 200,
@@ -58,7 +58,7 @@
     "still": {
       "small": 300,
       "medium": 500,
-      "large": 1280
+      "large": 500
     },
     "thumb": {
       "small": 300,

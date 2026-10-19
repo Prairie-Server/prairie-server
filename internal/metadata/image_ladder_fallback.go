@@ -30,16 +30,20 @@ type ArtworkAvailabilityReader interface {
 	ArtworkAvailability(context.Context, []string) (map[string]ArtworkAvailability, error)
 }
 
-// These types' ladders have grown since revision manifests were introduced.
-// Before external delivery is verified, their widest rung (the one the latest
-// ladder version added) steps down one rung. Legacy artwork without a manifest
-// was cached before any of that growth, so it may only use the rungs every
-// ladder version has generated: up to the type's medium rung, which is pinned
-// to the pre-image_size default.
+// These types gained their widest rung in the current ladder version. Legacy
+// artwork without a manifest can safely use only an established lower rung.
+//
+// Prairie keeps its TV-tuned ladder (artworkkey.VariantWidths): posters top
+// out at w500, stills at w500 and logos at w500, all rungs every cached item
+// has always carried. Upstream's w780/w1280 rungs do not exist here, so no
+// widest rung is new, and stepping an unverified w500 down to w300 would only
+// serve every default-size poster smaller than it needs to be. Prairie's own
+// added rung (the w200 TV poster) sits at the bottom of the ladder, which this
+// step-down never concerns.
+//
+// Backdrops did gain a widest rung (w2560, adopted from upstream), so only
+// they step down.
 var ladderTypesWithAddedRung = map[string]bool{
-	ImageCacheImagePoster:   true,
-	ImageCacheImageStill:    true,
-	ImageCacheImageLogo:     true,
 	ImageCacheImageBackdrop: true,
 }
 

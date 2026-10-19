@@ -45,16 +45,16 @@ func TestBackdropVariantPath(t *testing.T) {
 			want:    "/tmdb/shows/1399/backdrop/w1920.jpg",
 		},
 		{
-			name:    "episode still in a w1280 slot gets its w1280 rung",
+			name:    "episode still in a w1280 slot gets its widest rung (w500)",
 			path:    "tvdb/series/73141/seasons/22/episodes/9/still/original.webp",
 			desired: "w1280",
-			want:    "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp",
+			want:    "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp",
 		},
 		{
 			name:    "episode still in a w1920 slot gets its widest rung",
 			path:    "tvdb/series/73141/seasons/22/episodes/9/still/original.webp",
 			desired: "w1920",
-			want:    "tvdb/series/73141/seasons/22/episodes/9/still/w1280.webp",
+			want:    "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp",
 		},
 		{
 			name:    "episode still in a card slot keeps the card rung",
@@ -66,7 +66,7 @@ func TestBackdropVariantPath(t *testing.T) {
 			name:    "poster in a w1920 slot gets its widest rung",
 			path:    "tmdb/shows/1399/poster/original.webp",
 			desired: "w1920",
-			want:    "tmdb/shows/1399/poster/w1000.webp",
+			want:    "tmdb/shows/1399/poster/w500.webp",
 		},
 		{
 			name:    "http url passes through",

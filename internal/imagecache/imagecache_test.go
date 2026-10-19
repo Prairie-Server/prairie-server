@@ -389,8 +389,8 @@ func TestCacheFetchesLocalNetworkSourceWithPrivateAccess(t *testing.T) {
 	if result.BasePath != "tmdb/movies/550/poster" {
 		t.Fatalf("BasePath = %q, want tmdb/movies/550/poster", result.BasePath)
 	}
-	if got := s3.keys(); len(got) != 5 {
-		t.Fatalf("uploaded keys = %v, want 5 variants", got)
+	if got := s3.keys(); len(got) != 4 {
+		t.Fatalf("uploaded keys = %v, want 4 variants", got)
 	}
 }
 
@@ -441,17 +441,17 @@ func TestCache_Poster(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 5 WebP variants + 4 AVIF siblings (w1000, w500, w300, w200). original stays WebP-only.
-	if len(keys) != 9 {
-		t.Errorf("expected 9 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
+	// Expect 4 WebP variants + 3 AVIF siblings (w500, w300, w200). original stays WebP-only.
+	if len(keys) != 7 {
+		t.Errorf("expected 7 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w1000", "w500", "w300", "w200"} {
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
 	}
-	for _, variant := range []string{"w1000", "w500", "w300", "w200"} {
+	for _, variant := range []string{"w500", "w300", "w200"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
@@ -482,8 +482,8 @@ func TestCacheSkipsVariantsThatAlreadyExist(t *testing.T) {
 		t.Fatalf("prime immutable variants: %v", err)
 	}
 	c.WaitAVIFBackfill()
-	existing := make([]string, 0, 9)
-	for _, variant := range []string{"original", "w1000", "w500", "w300", "w200"} {
+	existing := make([]string, 0, 7)
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		key := first.VariantPaths[variant]
 		existing = append(existing, key)
 		if variant == "original" {
@@ -505,8 +505,8 @@ func TestCacheSkipsVariantsThatAlreadyExist(t *testing.T) {
 		t.Fatalf("uploaded keys = %v, want no writes", got)
 	}
 	// Sync return counts WebP phase only; AVIF backfill also finds existing objects.
-	if result.UploadedVariants != 0 || result.ExistingVariants != 5 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 5", result.UploadedVariants, result.ExistingVariants)
+	if result.UploadedVariants != 0 || result.ExistingVariants != 4 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 4", result.UploadedVariants, result.ExistingVariants)
 	}
 }
 
@@ -529,8 +529,8 @@ func TestCacheDifferentContentCreatesDifferentImmutableRevision(t *testing.T) {
 	if first.Revision == second.Revision || first.OriginalPath == second.OriginalPath {
 		t.Fatalf("different content reused revision: first=%q second=%q", first.OriginalPath, second.OriginalPath)
 	}
-	// Two revisions × (5 WebP + 4 display AVIF) = 18 objects.
-	if got := s3.keys(); len(got) != 18 {
+	// Two revisions × (4 WebP + 3 display AVIF) = 14 objects.
+	if got := s3.keys(); len(got) != 14 {
 		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with display AVIF siblings", got)
 	}
 }
@@ -566,8 +566,6 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	}
 	c.WaitAVIFBackfill()
 	wantUploads := []string{
-		result.VariantPaths["w1000"],
-		artworkkey.WebPAVIFSibling(result.VariantPaths["w1000"]),
 		result.VariantPaths["w300"],
 		artworkkey.WebPAVIFSibling(result.VariantPaths["w300"]),
 		result.VariantPaths["w200"],
@@ -579,9 +577,9 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	if !slices.Equal(got, wantUploads) {
 		t.Fatalf("uploaded keys = %v, want %v", got, wantUploads)
 	}
-	// Sync return counts WebP phase only (w1000+w300+w200 upload, original/w500 existing).
-	if result.UploadedVariants != 3 || result.ExistingVariants != 2 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 3 existing 2", result.UploadedVariants, result.ExistingVariants)
+	// Sync return counts WebP phase only (w300+w200 upload, original/w500 existing).
+	if result.UploadedVariants != 2 || result.ExistingVariants != 2 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 2 existing 2", result.UploadedVariants, result.ExistingVariants)
 	}
 }
 
@@ -598,10 +596,8 @@ func TestEnsureAVIFSiblingsBackfillsNewWidthRung(t *testing.T) {
 	if err := s3.PutObject(context.Background(), "media", original, jpeg); err != nil {
 		t.Fatalf("seed original: %v", err)
 	}
-	// Pre-w200 art already has the w1000/w500/w300 rungs (WebP + AVIF).
+	// Pre-w200 art already has the w500/w300 rungs (WebP + AVIF).
 	s3.setExisting(
-		artworkkey.Variant(original, "w1000"),
-		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w1000")),
 		artworkkey.Variant(original, "w500"),
 		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w500")),
 		artworkkey.Variant(original, "w300"),
@@ -703,25 +699,23 @@ func TestCache_Logo(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 3 WebP variants + 2 AVIF siblings (w1280, w500) — NO w300
-	if len(keys) != 5 {
+	// Expect 2 WebP variants + 1 AVIF sibling (w500 only) — NO w300 or w1280
+	if len(keys) != 3 {
 		t.Errorf("expected 3 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w1280", "w500"} {
+	for _, variant := range []string{"original", "w500"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
 	}
-	for _, variant := range []string{"w1280", "w500"} {
-		if !hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths[variant])) {
-			t.Errorf("missing AVIF sibling for %s in %v", variant, keys)
-		}
+	if !hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["w500"])) {
+		t.Errorf("missing AVIF sibling for w500 in %v", keys)
 	}
 	if hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["original"])) {
 		t.Errorf("unexpected original.avif in %v", keys)
 	}
-	for _, forbidden := range []string{"w300"} {
+	for _, forbidden := range []string{"w300", "w1280"} {
 		if _, ok := result.VariantPaths[forbidden]; ok {
 			t.Errorf("logo should not have %s variant", forbidden)
 		}
@@ -756,11 +750,11 @@ func TestCache_ConvertsSVGLogo(t *testing.T) {
 	if result.BasePath != "tmdb/series/1396/logo" {
 		t.Errorf("BasePath = %q, want tmdb/series/1396/logo", result.BasePath)
 	}
-	// original + w1280/w500 WebP, plus their AVIF siblings.
-	if keys := s3.keys(); len(keys) != 5 {
-		t.Errorf("expected 5 uploaded objects, got %d: %v", len(keys), keys)
+	// Prairie: original + w500 WebP, plus the w500 AVIF sibling.
+	if keys := s3.keys(); len(keys) != 3 {
+		t.Errorf("expected 3 uploaded objects, got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w1280", "w500"} {
+	for _, variant := range []string{"original", "w500"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(s3.keys(), want) {
 			t.Errorf("missing S3 key %q in %v", want, s3.keys())
@@ -1068,17 +1062,17 @@ func TestCache_ResolvesPluginURL(t *testing.T) {
 		t.Error("Thumbhash is empty")
 	}
 	keys := s3.keys()
-	// Ladder: original plus w1000/w500/w300/w200 WebP, with an AVIF
+	// Prairie's ladder: original plus w500/w300/w200 WebP, with an AVIF
 	// sibling for each resized rung (the original has none).
-	if len(keys) != 9 {
-		t.Errorf("expected 9 uploaded objects, got %d: %v", len(keys), keys)
+	if len(keys) != 7 {
+		t.Errorf("expected 7 uploaded objects, got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w1000", "w500", "w300", "w200"} {
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		if want := result.VariantPaths[variant]; !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
 	}
-	for _, variant := range []string{"w1000", "w500", "w300", "w200"} {
+	for _, variant := range []string{"w500", "w300", "w200"} {
 		if want := artworkkey.WebPAVIFSibling(result.VariantPaths[variant]); !hasKey(keys, want) {
 			t.Errorf("missing AVIF sibling %q in %v", want, keys)
 		}

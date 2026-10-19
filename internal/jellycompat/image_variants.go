@@ -121,14 +121,29 @@ func compatTargetWidth(box compatImageBox, aspect float64) int {
 	return slices.Max([]int{fit, box.fillWidth, implied(box.fillHeight)})
 }
 
-// compatSizeOnLadder is the narrowest of small, medium and large on ladderType
-// that is at least compatRungTolerance of the width box asks for, else the
-// original.
+// compatCardRung is the card rung Jellyfin card boxes (~300px) are served
+// from. Prairie's poster and profile ladders (w500/w300/w200) end in a w200 TV
+// rung, so small names w200 there and the next named size, medium, is w500:
+// without this a 298x446 card would jump to w500.
+const compatCardRung = 300
+
+// compatSizeOnLadder is the narrowest of small, the card rung, medium and large
+// on ladderType that is at least compatRungTolerance of the width box asks
+// for, else the original. The card rung is only a candidate on a ladder whose
+// small rung is narrower than it.
 func compatSizeOnLadder(ladderType string, box compatImageBox) string {
 	width := compatTargetWidth(box, compatImageAspect(ladderType))
-	for _, size := range []imagesize.Size{imagesize.Small, imagesize.Medium, imagesize.Large} {
+	covers := func(rung int) bool { return float64(rung) >= compatRungTolerance*float64(width) }
+	small, ok := imagesize.VariantWidthPx(imagesize.Variant(ladderType, imagesize.Small))
+	if ok && covers(small) {
+		return string(imagesize.Small)
+	}
+	if ok && small < compatCardRung && slices.Contains(artworkkey.VariantWidths(ladderType), compatCardRung) && covers(compatCardRung) {
+		return string(imagesize.Width(compatCardRung))
+	}
+	for _, size := range []imagesize.Size{imagesize.Medium, imagesize.Large} {
 		rung, ok := imagesize.VariantWidthPx(imagesize.Variant(ladderType, size))
-		if ok && float64(rung) >= compatRungTolerance*float64(width) {
+		if ok && covers(rung) {
 			return string(size)
 		}
 	}
