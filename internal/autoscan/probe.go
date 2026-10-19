@@ -34,14 +34,14 @@ func (s *Service) TestConnection(ctx context.Context, c Connection) (ConnectionT
 		return ConnectionTestResult{}, fmt.Errorf("autoscan: connection probe not configured")
 	}
 	resolved, err := s.connres.Resolve(ctx, c)
-	if err == nil {
-		version, err := probe.SystemStatus(ctx, resolved.BaseURL, resolved.APIKey)
-		if err == nil {
-			return ConnectionTestResult{OK: true, Version: version}, nil
-		}
-		return ConnectionTestResult{OK: false, Err: err.Error()}, nil
+	if err != nil {
+		return ConnectionTestResult{OK: false, Err: err.Error()}, nil //nolint:nilerr // a resolve failure is a probe outcome reported in the payload, per the contract above
 	}
-	return ConnectionTestResult{OK: false, Err: err.Error()}, nil
+	version, err := probe.SystemStatus(ctx, resolved.BaseURL, resolved.APIKey)
+	if err != nil {
+		return ConnectionTestResult{OK: false, Err: err.Error()}, nil //nolint:nilerr // an unreachable or rejected endpoint is a probe outcome reported in the payload
+	}
+	return ConnectionTestResult{OK: true, Version: version}, nil
 }
 
 // TestConnectionByID loads a stored connection by id and tests it.

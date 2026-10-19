@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	catalogpkg "github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/themedelivery"
 	"github.com/prairie-server/prairie-server/internal/themesongs"
 )
@@ -106,7 +107,7 @@ func registerThemeSongs(reg *Registry) {
 		if !capabilityLoginAllowed(ctx) {
 			return nil, NewProblem(TypeAuthenticationRequired, "A current login session is required.")
 		}
-		viewer, p := reg.itemViewer(ctx, "", "", "")
+		viewer, p := reg.itemViewer(ctx, imagesize.Request{}, "", "")
 		if p != nil {
 			return nil, p
 		}

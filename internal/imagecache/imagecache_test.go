@@ -24,6 +24,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/netguard"
 	"github.com/prairie-server/prairie-server/internal/s3client"
@@ -308,8 +309,62 @@ func TestCacheRefusesLocalNetworkSourceWithoutPrivateAccess(t *testing.T) {
 		ContentID:   "550",
 		ImageType:   metadata.ImagePoster,
 	})
-	if err == nil || !strings.Contains(err.Error(), "private image host") {
-		t.Fatalf("Cache error = %v, want private image host refusal", err)
+	if !errors.Is(err, netguard.ErrPrivateDestination) {
+		t.Fatalf("Cache error = %v, want netguard.ErrPrivateDestination", err)
+	}
+	if got := s3.keys(); len(got) != 0 {
+		t.Fatalf("uploaded keys = %v, want none", got)
+	}
+}
+
+// Provider artwork URLs are untrusted, so the cache refuses every address
+// netguard does not class as Public: CGNAT (Tailscale), cloud metadata, and
+// NAT64 forms of either. The context is already canceled, so an address the
+// check misses fails with context.Canceled instead of being dialed.
+func TestCacheRefusesNonPublicSourcesWithoutPrivateAccess(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	for _, host := range []string{
+		"100.64.1.1",
+		"100.101.102.103",
+		"100.100.100.200",
+		"198.18.0.1",
+		"0.1.2.3",
+		"[64:ff9b::a9fe:a9fe]",
+		"[64:ff9b::a00:5]",
+		"[::ffff:100.64.1.1]",
+	} {
+		t.Run(host, func(t *testing.T) {
+			s3 := &mockS3{bucket: "media"}
+			_, err := New(s3).Cache(ctx, CacheRequest{
+				SourceURL:   "http://" + host + "/poster.jpg",
+				ProviderID:  "tmdb",
+				ContentType: "movies",
+				ContentID:   "550",
+				ImageType:   metadata.ImagePoster,
+			})
+			if !errors.Is(err, netguard.ErrPrivateDestination) && !errors.Is(err, netguard.ErrBlockedDestination) {
+				t.Fatalf("Cache error = %v, want a netguard refusal", err)
+			}
+		})
+	}
+}
+
+// A host name passes the early literal-IP check, so the transport has to
+// refuse the private address it resolves to when it dials.
+func TestCacheRefusesHostResolvingToLocalNetworkWithoutPrivateAccess(t *testing.T) {
+	srv := startImageServer(t, makeTestJPEG(t), http.StatusOK)
+	s3 := &mockS3{bucket: "media"}
+
+	_, err := New(s3).Cache(context.Background(), CacheRequest{
+		SourceURL:   strings.Replace(srv.URL, "127.0.0.1", "localhost", 1) + "/poster.jpg",
+		ProviderID:  "tmdb",
+		ContentType: "movies",
+		ContentID:   "550",
+		ImageType:   metadata.ImagePoster,
+	})
+	if !errors.Is(err, netguard.ErrPrivateDestination) {
+		t.Fatalf("Cache error = %v, want netguard.ErrPrivateDestination", err)
 	}
 	if got := s3.keys(); len(got) != 0 {
 		t.Fatalf("uploaded keys = %v, want none", got)
@@ -594,17 +649,17 @@ func TestCache_Backdrop(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 4 WebP variants + 3 AVIF siblings (display ladder only).
-	if len(keys) != 7 {
-		t.Errorf("expected 7 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
+	// Expect 5 WebP variants + 4 AVIF siblings (display ladder only).
+	if len(keys) != 9 {
+		t.Errorf("expected 9 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w1920", "w1280", "w300"} {
+	for _, variant := range []string{"original", "w2560", "w1920", "w1280", "w300"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
 	}
-	for _, variant := range []string{"w1920", "w1280", "w300"} {
+	for _, variant := range []string{"w2560", "w1920", "w1280", "w300"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
@@ -708,7 +763,7 @@ func TestCache_ConvertsSVGLogo(t *testing.T) {
 }
 
 func TestCache_CapsLargeOriginalVariant(t *testing.T) {
-	pngData := makeTestPNG(t, 2600, 900)
+	pngData := makeTestPNG(t, 4200, 900)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		_, _ = w.Write(pngData)
@@ -737,8 +792,8 @@ func TestCache_CapsLargeOriginalVariant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading original.webp size: %v", err)
 	}
-	if cfg.Width > 1920 {
-		t.Fatalf("original.webp width = %d, want <= 1920", cfg.Width)
+	if cfg.Width != imageutil.MaxCachedOriginalDimension {
+		t.Fatalf("original.webp width = %d, want %d", cfg.Width, imageutil.MaxCachedOriginalDimension)
 	}
 	if len(original) >= 10*1024*1024 {
 		t.Fatalf("original.webp size = %d bytes, want < 10 MiB", len(original))

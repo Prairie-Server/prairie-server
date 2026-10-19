@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/database/queryattr"
 	"github.com/prairie-server/prairie-server/internal/mediaartifact"
 	"github.com/prairie-server/prairie-server/internal/mediasample"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -293,7 +294,7 @@ func (s *Service) SubtitlePlayed(ctx context.Context, target subtitles.SyncTarge
 		s.syncPlayed(ctx, target)
 		return
 	}
-	go s.syncPlayed(context.WithoutCancel(ctx), target)
+	go s.syncPlayed(queryattr.Detach(context.WithoutCancel(ctx)), target)
 }
 
 // firstPlay reports whether target was not considered within playedTTL, and
@@ -387,7 +388,7 @@ func (s *Service) start(ctx context.Context, job *Job, target subtitles.SyncTarg
 		s.updated(ctx, target, timing, queued)
 		return
 	}
-	go s.updated(context.WithoutCancel(ctx), target, timing, queued)
+	go s.updated(queryattr.Detach(context.WithoutCancel(ctx)), target, timing, queued)
 }
 
 func (s *Service) dispatch(job *Job) {

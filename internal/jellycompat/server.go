@@ -11,6 +11,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/activitylog"
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
@@ -84,7 +85,13 @@ type Dependencies struct {
 	// used to serve app-relative artwork such as bundled collection-template
 	// posters that have no remote origin. Optional.
 	FrontendFS fs.FS
+	// HTTPClient fetches images the compat image routes proxy. The default
+	// uses a netguard transport; see ArtworkStore.
 	HTTPClient *http.Client
+	// ArtworkStore is the artwork blob store. A proxied image URL may reach
+	// the server's local network only when it is a direct URL to this store
+	// (artworkurl.FetchContext); every other URL reaches public addresses only.
+	ArtworkStore blobstore.Store
 
 	// Direct service dependencies (replaces Client)
 	ContentService  ContentService
@@ -146,6 +153,9 @@ type Dependencies struct {
 	JWTSecret              string
 	Recommender            recommendations.Recommender
 	RecWorker              *recommendations.Worker
+	// RecommendationReader serves /Movies/Recommendations from the cached
+	// rows the native API reads; nil answers an empty list.
+	RecommendationReader RecommendationRowReader
 
 	// LiveTV is the native Prairie Live TV / OTA / DVR service. When set,
 	// LiveTv/* jellyfin routes are registered and UserViews includes Live TV.

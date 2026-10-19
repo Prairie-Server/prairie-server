@@ -45,11 +45,33 @@ const (
 	ImageDisc     = "disc"
 )
 
+// ImageTypeOf returns the image type a cached key was generated under: its
+// image-type directory segment (".../{imageType}/{variant}.{ext}") when that
+// names one of the types above, else fallback. The segment is authoritative
+// because the cacher generates the ladder for the same type it writes there,
+// so a slot that carries another type's art (an episode still in a backdrop or
+// poster slot) still resolves to rungs that exist.
+func ImageTypeOf(objectPath, fallback string) string {
+	dir := Directory(objectPath)
+	if dir == "" {
+		return fallback
+	}
+	switch segment := path.Base(dir); segment {
+	case ImagePoster, ImageBackdrop, ImageStill, ImageLogo, ImageProfile,
+		ImageBanner, ImageThumb, ImageClearArt, ImageDisc:
+		return segment
+	default:
+		return fallback
+	}
+}
+
 // LadderVersion identifies the current shape of the variant ladder returned by
 // VariantWidths. It MUST be bumped whenever an existing type's widths change so
 // the one-shot ladder backfill re-enqueues already-cached artwork and generates
-// the newly-added rungs. Adding a type does not need a bump.
-const LadderVersion = 2
+// the newly-added rungs. Adding a type does not need a bump. Existing deployments compare their recorded
+// backfilled_version against this value; leaving it stale means clients asking
+// for a new rung keep falling back to the next lower one forever.
+const LadderVersion = 3
 
 // Build returns an object key for a variant under basePath.
 func Build(basePath, variant, revision, ext string) string {
@@ -217,9 +239,17 @@ func WiderVariantKeys(objectPath string) []string {
 // needs no bump: nothing cached under it predates its ladder.
 func VariantWidths(imageType string) []int {
 	switch strings.ToLower(strings.TrimSpace(imageType)) {
-	case "backdrop":
-		return []int{1920, 1280, 300}
-	case "logo":
+	case ImageBackdrop:
+		// w2560 serves 1440p and high-density laptop and tablet heroes without
+		// sending the 4K original.
+		return []int{2560, 1920, 1280, 300}
+	case ImageStill:
+		// No w200 rung, and no w1280 hero rung: an episode still renders ~140 CSS-px
+		// in the browser and ~358 px on a UHD television, so w500 and w300 cover both.
+		// cachedImageVariantKeyFor keeps stills at w500 for TV clients and the
+		// smart-TV client pins STILL_WIDTH to 500. Nothing asks for a w200 still.
+		return []int{500, 300}
+	case ImageLogo:
 		return []int{500}
 	case ImageThumb:
 		// Landscape thumbs are 16:9 cards, shown smaller than backdrops.
@@ -229,15 +259,6 @@ func VariantWidths(imageType string) []int {
 		return []int{1000, 500}
 	case ImageDisc:
 		return []int{1000, 500, 300}
-	case "still":
-		// No w200 rung. An episode still renders ~140 CSS-px in the browser
-		// (EpisodeRow) and ~358 px on a UHD television, so w300 covers both
-		// while w200 would be upscaled on the larger one. Nothing asks for a
-		// w200 still: cachedImageVariantKeyFor keeps stills at w500 for TV
-		// clients, the smart-TV client pins STILL_WIDTH to 500, and no caller
-		// passes size="small" for a still. Generating it cost one encode plus
-		// an AVIF sibling per episode for an object only a sweeper would read.
-		return []int{500, 300}
 	default: // poster, profile
 		// w200 is the TV rung: poster cards render ~155 CSS-px, so w300 decodes
 		// ~4x the pixels shown. w200 roughly halves decoded surface (and bytes)

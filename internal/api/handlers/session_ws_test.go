@@ -46,12 +46,10 @@ func TestHandleSessionWebSocket_RequiresHelloBeforeRealtimeReady(t *testing.T) {
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/playback/ws/" + session.ID
 	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
 	if err != nil {
 		t.Fatalf("Dial websocket: %v", err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	defer conn.Close()
 
 	got, err := sessionMgr.GetSession(session.ID)

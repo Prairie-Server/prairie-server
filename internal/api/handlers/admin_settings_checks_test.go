@@ -235,15 +235,15 @@ func TestAdminSettingsWritesRejectMachineManagedCheckpoint(t *testing.T) {
 func TestAdminSettingsValidationIncludesEnvironmentManagedValues(t *testing.T) {
 	newHandler := func() (*AdminHandler, *fakeServerSettingsStore) {
 		settings := &fakeServerSettingsStore{values: map[string]string{
-			"watchsync.trakt.client_id": "configured-client-id",
+			"watchsync.simkl.client_id": "configured-client-id",
 		}}
 		return &AdminHandler{
 			SettingsRepo: settings,
 			BootstrapSensitiveConfigured: map[string]bool{
-				"watchsync.trakt.client_secret": true,
+				"watchsync.simkl.client_secret": true,
 			},
 			BootstrapSensitiveValues: map[string]string{
-				"watchsync.trakt.client_secret": "clawrouter-e2e-secret",
+				"watchsync.simkl.client_secret": "clawrouter-e2e-secret",
 			},
 		}, settings
 	}
@@ -898,10 +898,10 @@ func TestAdminUpdateSettingPreservesLegacyPairedWriteFlow(t *testing.T) {
 		{
 			name: "clear first half of pair",
 			initial: map[string]string{
-				"watchsync.trakt.client_id":     "configured-client-id",
-				"watchsync.trakt.client_secret": "clawrouter-e2e-secret",
+				"watchsync.simkl.client_id":     "configured-client-id",
+				"watchsync.simkl.client_secret": "clawrouter-e2e-secret",
 			},
-			key:   "watchsync.trakt.client_id",
+			key:   "watchsync.simkl.client_id",
 			value: "",
 		},
 	} {
@@ -1055,21 +1055,6 @@ func TestCheckS3ObjectPermissionsSurfacesCleanupFailure(t *testing.T) {
 	}
 }
 
-type fakeRedisSettingsCheckClient struct {
-	ping func(ctx context.Context) error
-}
-
-func (f *fakeRedisSettingsCheckClient) Ping(ctx context.Context) error {
-	if f.ping != nil {
-		return f.ping(ctx)
-	}
-	return nil
-}
-
-func (f *fakeRedisSettingsCheckClient) Close() error {
-	return nil
-}
-
 type fakeMDBListSettingsCheckClient struct {
 	check func(context.Context) error
 }
@@ -1079,6 +1064,20 @@ func (f *fakeMDBListSettingsCheckClient) Check(ctx context.Context) error {
 		return f.check(ctx)
 	}
 	return nil
+}
+
+type fakeEmbeddingsSettingsCheckClient struct {
+	embed func(ctx context.Context, texts []string) ([][]float32, error)
+}
+
+func (f *fakeEmbeddingsSettingsCheckClient) Embed(
+	ctx context.Context,
+	texts []string,
+) ([][]float32, error) {
+	if f.embed != nil {
+		return f.embed(ctx, texts)
+	}
+	return [][]float32{{0.1, 0.2}}, nil
 }
 
 type fakeAISettingsCheckClient struct {
@@ -1499,102 +1498,7 @@ func TestHandleCheckSettingsConnectionRejectsInvalidDraftValues(t *testing.T) {
 	}
 }
 
-func TestAdminSettingsRejectUnreachableRedisURL(t *testing.T) {
-	originalFactory := newAdminRedisSettingsCheckClient
-	t.Cleanup(func() {
-		newAdminRedisSettingsCheckClient = originalFactory
-	})
-	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-		return &fakeRedisSettingsCheckClient{
-			ping: func(context.Context) error {
-				return errors.New("dial tcp: connection refused")
-			},
-		}, nil
-	}
-
-	for _, tc := range []struct {
-		name   string
-		target string
-		body   string
-		single bool
-	}{
-		{
-			name:   "batch",
-			target: "/admin/settings",
-			body:   `{"values":{"redis.url":"redis://unreachable.example.invalid:6379"}}`,
-		},
-		{
-			name:   "single",
-			target: "/admin/settings/redis.url",
-			body:   `{"value":"redis://unreachable.example.invalid:6379"}`,
-			single: true,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			settings := &fakeServerSettingsStore{values: map[string]string{}}
-			handler := &AdminHandler{SettingsRepo: settings}
-			req := httptest.NewRequest(http.MethodPut, tc.target, strings.NewReader(tc.body))
-			if tc.single {
-				req = withChiParam(req, "key", "redis.url")
-			}
-			rec := httptest.NewRecorder()
-
-			if tc.single {
-				handler.HandleUpdateSetting(rec, req)
-			} else {
-				handler.HandleUpdateSettings(rec, req)
-			}
-
-			if rec.Code != http.StatusBadRequest {
-				t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
-			}
-			if settings.setManyCalls != 0 || settings.setCalls != 0 {
-				t.Fatalf("unreachable redis.url was persisted: SetMany=%d Set=%d", settings.setManyCalls, settings.setCalls)
-			}
-			if !strings.Contains(rec.Body.String(), "unreachable") {
-				t.Fatalf("body = %q, want unreachable message", rec.Body.String())
-			}
-		})
-	}
-}
-
-func TestAdminSettingsAcceptReachableRedisURL(t *testing.T) {
-	originalFactory := newAdminRedisSettingsCheckClient
-	t.Cleanup(func() {
-		newAdminRedisSettingsCheckClient = originalFactory
-	})
-	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-		return &fakeRedisSettingsCheckClient{}, nil
-	}
-
-	settings := &fakeServerSettingsStore{values: map[string]string{}}
-	handler := &AdminHandler{SettingsRepo: settings}
-	req := httptest.NewRequest(
-		http.MethodPut,
-		"/admin/settings",
-		strings.NewReader(`{"values":{"redis.url":"redis://cache.example:6379"}}`),
-	)
-	rec := httptest.NewRecorder()
-	handler.HandleUpdateSettings(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
-	}
-	if settings.values["redis.url"] != "redis://cache.example:6379" {
-		t.Fatalf("values=%#v, want redis.url persisted", settings.values)
-	}
-}
-
 func TestSettingsCheckRouteIsNotShadowedByKeyRoute(t *testing.T) {
-	originalFactory := newAdminRedisSettingsCheckClient
-	t.Cleanup(func() {
-		newAdminRedisSettingsCheckClient = originalFactory
-	})
-
-	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
-		return &fakeRedisSettingsCheckClient{}, nil
-	}
-
 	handler := &AdminHandler{
 		SettingsRepo: &fakeServerSettingsStore{
 			values: map[string]string{
@@ -1633,7 +1537,7 @@ func TestSettingsCheckRouteIsNotShadowedByKeyRoute(t *testing.T) {
 }
 
 func TestAdminGetSettingRedactsSensitiveSetting(t *testing.T) {
-	for _, key := range []string{"watchsync.trakt.client_secret", "watchsync.simkl.client_secret"} {
+	for _, key := range []string{"watchsync.simkl.client_secret"} {
 		t.Run(key, func(t *testing.T) {
 			const storedSecret = "stored-watch-provider-secret"
 			handler := &AdminHandler{
@@ -1661,7 +1565,7 @@ func TestAdminGetSettingRedactsSensitiveSetting(t *testing.T) {
 }
 
 func TestAdminUpdateSettingRedactsSensitiveSetting(t *testing.T) {
-	for _, key := range []string{"watchsync.trakt.client_secret", "watchsync.simkl.client_secret"} {
+	for _, key := range []string{"watchsync.simkl.client_secret"} {
 		t.Run(key, func(t *testing.T) {
 			const submittedSecret = "submitted-watch-provider-secret"
 			settings := &fakeServerSettingsStore{}

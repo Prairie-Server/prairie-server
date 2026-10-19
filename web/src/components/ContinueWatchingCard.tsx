@@ -381,6 +381,7 @@ function ContinueWatchingCardView({ spoilerPrefs, ...props }: ContinueWatchingCa
           showFavoriteShortcut={false}
           dismissAction={dismissAction}
           hasPartialProgress={hasPartialProgress}
+          hasResumePosition={card.positionSeconds > 0}
           quickActionMode={props.quickActionMode ?? "none"}
           longPressRef={cardRef}
           itemTitle={heading}

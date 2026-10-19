@@ -67,9 +67,15 @@ func TestHandleImagesCapability(t *testing.T) {
 		}
 	}
 
-	// Prairie's TV-tuned ladder: posters w500/w300/w200, a single w500 logo.
+	// Prairie's TV-tuned ladder: posters w500/w300/w200, stills w500/w300, a single w500 logo.
 	if w := got.Widths["poster"]; w.Large != 500 || w.Small != 200 {
 		t.Errorf("poster widths = %+v, want large 500 / small 200", w)
+	}
+	if got.Widths["still"].Large != 500 {
+		t.Errorf("still large width = %d, want 500", got.Widths["still"].Large)
+	}
+	if got.Widths["backdrop"].Large != 2560 {
+		t.Errorf("backdrop large width = %d, want 2560", got.Widths["backdrop"].Large)
 	}
 	if got.Widths["logo"].Large != 500 {
 		t.Errorf("logo large width = %d, want 500", got.Widths["logo"].Large)

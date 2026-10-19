@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/noderouting"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
@@ -159,7 +160,7 @@ func TestHWCapabilitiesAdvertisesThemeExecutionOnlyWithAuthority(t *testing.T) {
 	features := func() []string {
 		t.Helper()
 		request := httptest.NewRequest(http.MethodGet, "/hw-capabilities", nil)
-		request.Header.Set("Authorization", "Bearer "+testSecret)
+		nodeauthtest.Sign(t, request, testSecret)
 		recorder := httptest.NewRecorder()
 		server.Handler().ServeHTTP(recorder, request)
 		if recorder.Code == http.StatusServiceUnavailable {

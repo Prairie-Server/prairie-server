@@ -7,6 +7,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/database"
 	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
@@ -29,11 +31,12 @@ func newEngineTestPool(t *testing.T) *pgxpool.Pool {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, dsn)
+	// The application's pool, so queries run with its vector codecs.
+	pool, err := database.NewPool(ctx, config.DatabaseConfig{URL: dsn})
 	if err != nil {
 		t.Fatalf("connect test database: %v", err)
 	}
-	t.Cleanup(pool.Close)
+	t.Cleanup(func() { database.ClosePool(pool) })
 	var tableName *string
 	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.server_settings')::text`).Scan(&tableName); err != nil {
 		t.Fatalf("check server_settings table: %v", err)

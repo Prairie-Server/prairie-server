@@ -74,9 +74,6 @@ func (h *SectionHandler) CreateAdminSection(ctx context.Context, req AdminSectio
 	if !sections.ValidSectionTypes[sections.SectionType(req.SectionType)] {
 		return none, apiError(http.StatusBadRequest, "bad_request", "Invalid section_type")
 	}
-	if isTraktBackedSection(req.SectionType, req.Config) {
-		return none, apiError(http.StatusBadRequest, "unsupported_source", "new Trakt-backed sections are not supported")
-	}
 
 	scope := req.Scope
 	if scope == "" {
@@ -117,6 +114,9 @@ func (h *SectionHandler) CreateAdminSection(ctx context.Context, req AdminSectio
 	created, err := h.repo.Create(ctx, sec)
 	if err != nil {
 		return none, err
+	}
+	if created.SectionType == sections.SectionSeasonalThemed && created.Enabled {
+		h.refreshSeasonalLists(ctx, created.Config)
 	}
 
 	return toSectionResponse(created), nil
@@ -204,9 +204,6 @@ func (h *SectionBulkHandler) BulkCreateAdminSections(ctx context.Context, req Ad
 	rec, ok := recipes.Get(req.SectionType)
 	if !ok {
 		return none, apiError(http.StatusBadRequest, "bad_request", "unknown section_type")
-	}
-	if isTraktBackedSection(req.SectionType, req.Config) {
-		return none, apiError(http.StatusBadRequest, "unsupported_source", "new Trakt-backed sections are not supported")
 	}
 	if err := rec.Validate(req.Config); err != nil {
 		return none, apiError(http.StatusBadRequest, "bad_request", err.Error())
@@ -442,8 +439,6 @@ func (h *SectionHandler) UpdateAdminSection(ctx context.Context, id string, req 
 		}
 		originalConfig := append(json.RawMessage(nil), existing.Config...)
 		originalType := existing.SectionType
-		originalEnabled := existing.Enabled
-		wasTraktBacked := isTraktBackedSection(string(existing.SectionType), existing.Config)
 		if req.Position != nil {
 			existing.Position = *req.Position
 		}
@@ -486,13 +481,6 @@ func (h *SectionHandler) UpdateAdminSection(ctx context.Context, id string, req 
 				return none, apiError(400, "bad_request", msg)
 			}
 		}
-		willBeTraktBacked := isTraktBackedSection(string(existing.SectionType), existing.Config)
-		if !wasTraktBacked && willBeTraktBacked {
-			return none, apiError(http.StatusBadRequest, "unsupported_source", "new Trakt-backed sections are not supported")
-		}
-		if wasTraktBacked && (definitionChanged || (!originalEnabled && existing.Enabled)) {
-			return none, apiError(http.StatusBadRequest, "legacy_source_immutable", "legacy Trakt section sources cannot be changed or reactivated")
-		}
 
 		// PATCH merges into the same version passed to SQL, including wildcard
 		// requests. A wildcard may reread and remerge, never replay a stale full row.
@@ -506,6 +494,9 @@ func (h *SectionHandler) UpdateAdminSection(ctx context.Context, id string, req 
 		updated, err := h.repo.GetByID(ctx, id)
 		if err != nil {
 			return none, err
+		}
+		if updated.SectionType == sections.SectionSeasonalThemed && updated.Enabled {
+			h.refreshSeasonalLists(ctx, updated.Config)
 		}
 		return toSectionResponse(updated), nil
 	}

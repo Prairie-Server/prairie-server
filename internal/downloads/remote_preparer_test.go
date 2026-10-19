@@ -16,6 +16,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/downloadprepare"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
@@ -790,8 +791,8 @@ func TestNodeAwarePreparerUsesTargetNodeProbeBudget(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if got, want := request.Header.Get("Authorization"), "Bearer secret"; got != want {
-			t.Errorf("Authorization = %q, want %q", got, want)
+		if !nodeauthtest.Signed(request, "secret") {
+			t.Errorf("request is not signed: Authorization = %q", request.Header.Get("Authorization"))
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}

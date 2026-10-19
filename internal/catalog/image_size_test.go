@@ -3,6 +3,9 @@ package catalog
 import (
 	"context"
 	"testing"
+
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 )
 
 // The literals below are the variants this package returned before the
@@ -59,7 +62,7 @@ func TestCachedImageVariantKeyMatchesPreImageSizeBehavior(t *testing.T) {
 // ladder has no w780/w1280 rung, so posters, stills and logos stop at w500.
 func TestCachedImageVariantKeyLarge(t *testing.T) {
 	want := map[string]string{
-		"backdrop": "w1920",
+		"backdrop": "w2560",
 		"logo":     "w500",
 		"poster":   "w500",
 		"still":    "w500",
@@ -111,8 +114,54 @@ func TestCachedImageVariantPathRewritesKey(t *testing.T) {
 		}
 	}
 
+	// The key's own image type picks the ladder: an episode still passed in a
+	// poster slot resolves to still rungs, not a poster rung it never had.
+	const still = "tvdb/series/73141/seasons/22/episodes/9/still/original.webp"
+	if got := cachedImageVariantPath(context.Background(), still, "poster", "large"); got != "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp" {
+		t.Errorf("cachedImageVariantPath(context.Background(), still, poster, large) = %q, want the still ladder's w500", got)
+	}
+	if got := cachedImageVariantPath(context.Background(), still, "backdrop", ""); got != "tvdb/series/73141/seasons/22/episodes/9/still/w500.webp" {
+		t.Errorf("cachedImageVariantPath(context.Background(), still, backdrop, \"\") = %q, want the still default w500", got)
+	}
+
 	const pluginPath = "plugin://tmdb/poster/original.webp"
 	if got := cachedImageVariantPath(context.Background(), pluginPath, "poster", "large"); got != pluginPath {
 		t.Errorf("cachedImageVariantPath(plugin path) = %q, want it unchanged", got)
+	}
+}
+
+// A width size resolves on the key's own ladder: the narrowest rung at least
+// that wide, else the original.
+func TestCachedImageVariantPathForWidth(t *testing.T) {
+	for _, tc := range []struct {
+		path      string
+		imageType string
+		px        int
+		want      string
+	}{
+		{"tmdb/movies/1/backdrop/original.r1.webp", "backdrop", 2688, "tmdb/movies/1/backdrop/original.r1.webp"},
+		{"tmdb/movies/1/backdrop/original.r1.webp", "backdrop", 1344, "tmdb/movies/1/backdrop/w1920.r1.webp"},
+		{"tmdb/series/1/seasons/1/episodes/2/still/original.r1.webp", "backdrop", 1344, "tmdb/series/1/seasons/1/episodes/2/still/original.r1.webp"},
+		{"tmdb/series/1/seasons/1/episodes/2/still/original.r1.webp", "still", 480, "tmdb/series/1/seasons/1/episodes/2/still/w500.r1.webp"},
+		{"tmdb/series/1/seasons/1/episodes/2/still/original.r1.webp", "still", 720, "tmdb/series/1/seasons/1/episodes/2/still/original.r1.webp"},
+		{"tmdb/movies/1/poster/original.r1.webp", "poster", 352, "tmdb/movies/1/poster/w500.r1.webp"},
+		{"tmdb/movies/1/poster/original.r1.webp", "poster", 280, "tmdb/movies/1/poster/w300.r1.webp"},
+	} {
+		if got := cachedImageVariantPath(context.Background(), tc.path, tc.imageType, string(imagesize.Width(tc.px))); got != tc.want {
+			t.Errorf("cachedImageVariantPath(%q, %q, %dpx) = %q, want %q", tc.path, tc.imageType, tc.px, got, tc.want)
+		}
+	}
+}
+
+// An explicit width is a size hint, so the TV default (the w200 poster rung)
+// does not override it.
+func TestCachedImageVariantPathForWidthOnTV(t *testing.T) {
+	ctx := deviceclass.SetContext(context.Background(), deviceclass.TV)
+	const path = "tmdb/movies/1/poster/original.r1.webp"
+	if got := cachedImageVariantPath(ctx, path, "poster", string(imagesize.Width(280))); got != "tmdb/movies/1/poster/w300.r1.webp" {
+		t.Errorf("TV poster at 280px = %q, want w300", got)
+	}
+	if got := cachedImageVariantPath(ctx, path, "poster", ""); got != "tmdb/movies/1/poster/w200.r1.webp" {
+		t.Errorf("TV poster without a hint = %q, want w200", got)
 	}
 }

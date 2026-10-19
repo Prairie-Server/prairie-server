@@ -20,9 +20,11 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/database/queryattr"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/telemetry"
 )
@@ -106,6 +108,7 @@ func RecordV1Tombstone(method string) { v1TombstoneRequests.WithLabelValues(meth
 // request moves through the router, and the observe middleware reports once
 // the response is written.
 type observation struct {
+	db          *queryattr.Request
 	operationID string
 	pathPattern string
 	errorCode   string
@@ -135,26 +138,36 @@ func observe(next http.Handler) http.Handler {
 			span.SetAttributes(attribute.String("http.request.method", methodLabel(r.Method)))
 		}
 		defer span.End()
+		ctx, db := queryattr.StartRequest(ctx)
 		r = r.WithContext(ctx)
-		o := &observation{operationID: labelNone, errorCode: labelNone, authClass: authClassAnonymous}
+		o := &observation{db: db, operationID: labelNone, errorCode: labelNone, authClass: authClassAnonymous}
 		o.clientName, o.clientVersion = clientIdentity(r)
 		r = r.WithContext(context.WithValue(r.Context(), observationKey{}, o))
 		sw := &statusRecorder{ResponseWriter: w}
 		next.ServeHTTP(sw, r)
+		status := sw.status
+		if activitylog.RecordedStatus(r, status, status != 0) == activitylog.StatusClientClosedRequest {
+			// The client went away, and its server error is recorded as
+			// abandoned, as the activity log records it as 499. The error is
+			// still written: net/http also cancels the context of a client
+			// that only half-closed, and an unwritten response would reach
+			// that client as an empty 200.
+			status = 0
+		}
 		if span.IsRecording() {
 			span.SetAttributes(attribute.String("operation", o.operationID), attribute.String("error.type", o.errorCode))
-			if sw.status != 0 {
-				span.SetAttributes(attribute.Int("http.response.status_code", sw.status))
+			if status != 0 {
+				span.SetAttributes(attribute.Int("http.response.status_code", status))
 			} else if sw.hijacked {
 				span.SetAttributes(attribute.String("http.response.outcome", "hijacked"))
 			} else {
 				span.SetAttributes(attribute.String("http.response.outcome", "abandoned"))
 			}
-			if sw.status >= 500 {
+			if status >= 500 {
 				span.SetStatus(codes.Error, "server_error")
 			}
 		}
-		report(r, o, sw.status, sw.hijacked, sw.bytes, time.Since(start))
+		report(r, o, status, sw.hijacked, sw.bytes, time.Since(start))
 	})
 }
 
@@ -266,6 +279,7 @@ func report(r *http.Request, o *observation, status int, hijacked bool, bodyByte
 	if o.userID != nil {
 		attrs = append(attrs, "user_id", *o.userID)
 	}
+	attrs = append(attrs, o.db.LogAttrs()...)
 	slog.InfoContext(r.Context(), "apiv2 request", attrs...)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -74,7 +75,7 @@ func BenchmarkPlayableTargetReadQueries(b *testing.B) {
 	}
 	b.Cleanup(func() {
 		ctx := context.Background()
-		_, _ = pool.Exec(ctx, `DELETE FROM media_items WHERE content_id = ANY($1)`, append(movieIDs, seriesID))
+		_, _ = pool.Exec(ctx, `DELETE FROM media_items WHERE content_id = ANY($1)`, slices.Concat(movieIDs, []string{seriesID}))
 		_, _ = pool.Exec(ctx, `DELETE FROM media_folders WHERE id = $1`, folderID)
 		_, _ = pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, userID)
 	})

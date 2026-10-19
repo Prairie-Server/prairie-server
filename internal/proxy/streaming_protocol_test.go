@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
 	"github.com/prairie-server/prairie-server/internal/transcodeproxy"
 )
@@ -22,7 +23,7 @@ func TestStreamingProtocolOriginResponses(t *testing.T) {
 	} {
 		t.Run(tc.method+tc.suffix, func(t *testing.T) {
 			origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != tc.method || r.URL.Path != "/transcode/transport/"+tc.suffix || r.URL.RawQuery != "opaque=1" || r.Header.Get("Authorization") != "Bearer "+secret || r.Header.Get("X-Prairie-Stream-Token") == "" {
+				if r.Method != tc.method || r.URL.Path != "/transcode/transport/"+tc.suffix || r.URL.RawQuery != "opaque=1" || !nodeauthtest.Signed(r, secret) || r.Header.Get("X-Prairie-Stream-Token") == "" {
 					t.Error("relay identity/query lost")
 				}
 				segment := strings.HasPrefix(tc.suffix, "segment/")

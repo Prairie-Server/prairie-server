@@ -154,9 +154,14 @@ jobs:
           CI_GO_LINT_FULL: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           CI_GO_LINT_NEW_FROM_MERGE_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
           CI_GO_LINT_NEW_FROM_REV: ${{ github.event_name != 'pull_request' && 'HEAD~1' || '' }}
+          # Upstream sync PRs gate only lines new to both main and the merged
+          # Silo commit; upstream's own backlog was gated (per changed line)
+          # upstream. Every other PR keeps the merge-base gate.
+          CI_GO_LINT_SYNC: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'sync/upstream') && '1' || '0' }}
+          CI_GO_LINT_SYNC_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          chmod +x scripts/ci-go-lint.sh scripts/ci-go-lint-packages.sh
+          chmod +x scripts/ci-go-lint.sh scripts/ci-go-lint-packages.sh scripts/ci-go-lint-sync-patch.sh
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             ./scripts/ci-go-lint.sh "origin/${PR_BASE_REF}"
           else

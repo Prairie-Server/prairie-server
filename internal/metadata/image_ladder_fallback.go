@@ -40,10 +40,15 @@ type ArtworkAvailabilityReader interface {
 // serve every default-size poster smaller than it needs to be. Prairie's own
 // added rung (the w200 TV poster) sits at the bottom of the ladder, which this
 // step-down never concerns.
-var ladderTypesWithAddedRung = map[string]bool{}
+//
+// Backdrops did gain a widest rung (w2560, adopted from upstream), so only
+// they step down.
+var ladderTypesWithAddedRung = map[string]bool{
+	ImageCacheImageBackdrop: true,
+}
 
 // keyVariant extracts the variant name from a cached artwork key, e.g.
-// "tmdb/movies/550/poster/w780.abc123.webp" -> "w780".
+// "tmdb/movies/550/poster/w500.abc123.webp" -> "w500".
 func keyVariant(key string) string {
 	name := path.Base(strings.TrimSpace(key))
 	name = strings.TrimSuffix(name, path.Ext(name))
@@ -66,9 +71,12 @@ func variantKey(key, variant string) string {
 
 // resolvePublishedLadderKeys performs one catalog lookup and local selection.
 // Neither cold caches nor missing manifests cause storage or delivery probes.
-// Without a reader (local storage, direct S3) every key resolves to itself:
-// publication is atomic there, and a key that is nevertheless missing gets a
-// 404 that enqueues repair rather than a silently demoted rung.
+// Without a reader every key resolves to itself.
+//
+// Where delivery cannot lag behind a write (local storage, direct S3), a
+// published revision has every rung its ladder version generated, so only a
+// rung a later ladder version added can be missing; only those keys are
+// looked up, and everything else resolves to itself without a query.
 func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityReader, entries []resolveEntry) map[string]string {
 	if reader == nil {
 		resolved := make(map[string]string, len(entries))
@@ -77,9 +85,13 @@ func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityR
 		}
 		return resolved
 	}
+	lookupAll := readsExternalDelivery(reader)
 	originals := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if catalog.ImageTypeFromCachedPath(entry.originalPath) != "" {
+		if catalog.ImageTypeFromCachedPath(entry.originalPath) == "" {
+			continue
+		}
+		if lookupAll || isAddedRung(entry.originalPath) {
 			originals = append(originals, variantKey(entry.originalPath, artworkkey.OriginalVariant))
 		}
 	}
@@ -100,22 +112,45 @@ func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityR
 	return resolved
 }
 
+// readsExternalDelivery reports whether reader serves a backend whose delivery
+// can lag behind a write. A reader that cannot say is treated as external, so
+// every key is looked up.
+func readsExternalDelivery(reader ArtworkAvailabilityReader) bool {
+	if r, ok := reader.(interface{ ExternalDelivery() bool }); ok {
+		return r.ExternalDelivery()
+	}
+	return true
+}
+
+// isAddedRung reports whether key names a rung wider than its type's medium
+// rung on a type whose ladder grew: the rungs artwork cached under an earlier
+// ladder version may lack. Medium is pinned to the pre-image_size default, so
+// every ladder version generated it and everything narrower.
+func isAddedRung(key string) bool {
+	imageType := catalog.ImageTypeFromCachedPath(key)
+	if !ladderTypesWithAddedRung[imageType] {
+		return false
+	}
+	return clampToEstablishedRung(imageType, key) != key
+}
+
 func selectPublishedVariant(key string, state ArtworkAvailability, known bool) string {
 	imageType := catalog.ImageTypeFromCachedPath(key)
 	if imageType == "" {
 		return key
 	}
-	if !known || (state.External && !state.Verified) {
-		// An unverified external path is not proof the newly added size works,
-		// unless an earlier verdict in this scope already delivered it.
-		if ladderTypesWithAddedRung[imageType] && keyVariant(key) == imagesize.Variant(imageType, imagesize.Large) &&
-			!slices.Contains(state.Deliverable, key) {
-			if lower, ok := imagesize.NextLower(imageType, keyVariant(key)); ok {
-				key = variantKey(key, lower)
-			}
+	if !known {
+		if ladderTypesWithAddedRung[imageType] {
+			key = clampToEstablishedRung(imageType, key)
 		}
-		if !known {
-			return key
+		return key
+	}
+	// An unverified external path is not proof the newly added size works,
+	// unless an earlier verdict in this scope already delivered it.
+	if state.External && !state.Verified && ladderTypesWithAddedRung[imageType] &&
+		keyVariant(key) == imagesize.Variant(imageType, imagesize.Large) && !slices.Contains(state.Deliverable, key) {
+		if lower, ok := imagesize.NextLower(imageType, keyVariant(key)); ok {
+			key = variantKey(key, lower)
 		}
 	}
 	keys := state.Published
@@ -126,15 +161,8 @@ func selectPublishedVariant(key string, state ArtworkAvailability, known bool) s
 	if keyVariant(key) == artworkkey.OriginalVariant && !slices.Contains(keys, key) {
 		candidate = variantKey(key, imagesize.Variant(imageType, imagesize.Large))
 	}
-	for {
-		if slices.Contains(keys, candidate) {
-			return candidate
-		}
-		lower, ok := imagesize.NextLower(imageType, keyVariant(candidate))
-		if !ok {
-			break
-		}
-		candidate = variantKey(key, lower)
+	if published := widestPublishedWithin(key, candidate, keys); published != "" {
+		return published
 	}
 	original := variantKey(key, artworkkey.OriginalVariant)
 	if slices.Contains(keys, original) {
@@ -142,6 +170,42 @@ func selectPublishedVariant(key string, state ArtworkAvailability, known bool) s
 	}
 	// A known empty manifest or failed delivery is a placeholder, not a guess.
 	return ""
+}
+
+// widestPublishedWithin is the widest width rung of key's revision in keys that
+// is no wider than candidate's. It can be a rung an earlier ladder version
+// generated, such as a w780 poster the backfill has not regenerated at w1000
+// yet. It is empty when keys hold no such rung.
+func widestPublishedWithin(key, candidate string, keys []string) string {
+	limit, ok := imagesize.VariantWidthPx(keyVariant(candidate))
+	if !ok {
+		return ""
+	}
+	best, bestWidth := "", 0
+	for _, published := range keys {
+		variant := keyVariant(published)
+		width, ok := imagesize.VariantWidthPx(variant)
+		if !ok || width > limit || width <= bestWidth || variantKey(key, variant) != published {
+			continue
+		}
+		best, bestWidth = published, width
+	}
+	return best
+}
+
+// clampToEstablishedRung rewrites a width rung wider than the type's medium
+// rung down to medium, the widest rung artwork cached before revision
+// manifests carries. The original and narrower rungs pass through.
+func clampToEstablishedRung(imageType, key string) string {
+	width, ok := imagesize.VariantWidthPx(keyVariant(key))
+	if !ok {
+		return key
+	}
+	medium := imagesize.Variant(imageType, imagesize.Medium)
+	if mediumWidth, ok := imagesize.VariantWidthPx(medium); ok && width > mediumWidth {
+		return variantKey(key, medium)
+	}
+	return key
 }
 
 func minURLExpiry(a, b time.Time) time.Time {

@@ -11,6 +11,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
@@ -85,7 +86,7 @@ func TestWorkerStartProtocol(t *testing.T) {
 	} {
 		req := httptest.NewRequest(http.MethodPost, op.Path, strings.NewReader(tc.body))
 		if tc.auth {
-			req.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+			nodeauthtest.Sign(t, req, cfg.Auth.JWTSecret)
 		}
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)

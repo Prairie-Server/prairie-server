@@ -9,6 +9,7 @@
 #   CI_GO_LINT_SHARD / CI_GO_LINT_SHARDS
 #   CI_GO_LINT_NEW_FROM_REV=…
 #   CI_GO_LINT_NEW_FROM_MERGE_BASE=…
+#   CI_GO_LINT_SYNC=1 (upstream sync PRs) / CI_GO_LINT_SYNC_HEAD=<PR head sha>
 
 set -euo pipefail
 
@@ -28,7 +29,22 @@ fi
 
 # A sync that touches every package needs more than the old 5m budget.
 args=(--timeout=20m)
-if [[ -n "${CI_GO_LINT_NEW_FROM_MERGE_BASE:-}" ]]; then
+sync_patch=""
+if [[ "${CI_GO_LINT_SYNC:-}" == "1" && -n "${CI_GO_LINT_NEW_FROM_MERGE_BASE:-}" ]]; then
+	# Upstream sync PRs: only lines new to both main and the merged upstream
+	# commit (see scripts/ci-go-lint-sync-patch.sh).
+	sync_patch="$(mktemp)"
+	if "$root/scripts/ci-go-lint-sync-patch.sh" "${CI_GO_LINT_NEW_FROM_MERGE_BASE}" "${CI_GO_LINT_SYNC_HEAD:-HEAD}" >"$sync_patch"; then
+		:
+	else
+		status=$?
+		[[ "$status" == 3 ]] || exit "$status"
+		sync_patch=""
+	fi
+fi
+if [[ -n "$sync_patch" ]]; then
+	args+=(--new-from-patch="$sync_patch")
+elif [[ -n "${CI_GO_LINT_NEW_FROM_MERGE_BASE:-}" ]]; then
 	args+=(--new-from-merge-base="${CI_GO_LINT_NEW_FROM_MERGE_BASE}")
 elif [[ -n "${CI_GO_LINT_NEW_FROM_REV:-}" ]]; then
 	args+=(--new-from-rev="${CI_GO_LINT_NEW_FROM_REV}")

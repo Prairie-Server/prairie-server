@@ -112,8 +112,7 @@ func (h *NotificationsHandler) HandleListWebhooks(w http.ResponseWriter, r *http
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "Webhooks are not available")
 		return
 	}
-	profileID := apimw.GetProfileID(r.Context())
-	hooks, err := service.List(r.Context(), profileID)
+	hooks, err := service.List(r.Context(), apimw.GetUserID(r.Context()), apimw.GetProfileID(r.Context()))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to list webhooks")
 		return
@@ -158,6 +157,7 @@ func (h *NotificationsHandler) HandleUpdateWebhook(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "Webhooks are not available")
 		return
 	}
+	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
 
 	var req webhookRequest
@@ -165,7 +165,7 @@ func (h *NotificationsHandler) HandleUpdateWebhook(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusBadRequest, "bad_request", "Invalid request body")
 		return
 	}
-	hook, err := service.Update(r.Context(), profileID, chi.URLParam(r, "id"), req.toInput())
+	hook, err := service.Update(r.Context(), userID, profileID, chi.URLParam(r, "id"), req.toInput())
 	if err != nil {
 		writeWebhookError(w, err)
 		return
@@ -180,8 +180,7 @@ func (h *NotificationsHandler) HandleDeleteWebhook(w http.ResponseWriter, r *htt
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "Webhooks are not available")
 		return
 	}
-	profileID := apimw.GetProfileID(r.Context())
-	if err := service.Delete(r.Context(), profileID, chi.URLParam(r, "id")); err != nil {
+	if err := service.Delete(r.Context(), apimw.GetUserID(r.Context()), apimw.GetProfileID(r.Context()), chi.URLParam(r, "id")); err != nil {
 		writeWebhookError(w, err)
 		return
 	}
@@ -195,8 +194,7 @@ func (h *NotificationsHandler) HandleRotateWebhookSecret(w http.ResponseWriter, 
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "Webhooks are not available")
 		return
 	}
-	profileID := apimw.GetProfileID(r.Context())
-	signingSecret, err := service.RotateSecret(r.Context(), profileID, chi.URLParam(r, "id"))
+	signingSecret, err := service.RotateSecret(r.Context(), apimw.GetUserID(r.Context()), apimw.GetProfileID(r.Context()), chi.URLParam(r, "id"))
 	if err != nil {
 		writeWebhookError(w, err)
 		return
@@ -212,8 +210,7 @@ func (h *NotificationsHandler) HandleTestWebhook(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "Webhooks are not available")
 		return
 	}
-	profileID := apimw.GetProfileID(r.Context())
-	result, err := service.Test(r.Context(), profileID, chi.URLParam(r, "id"))
+	result, err := service.Test(r.Context(), apimw.GetUserID(r.Context()), apimw.GetProfileID(r.Context()), chi.URLParam(r, "id"))
 	if err != nil {
 		writeWebhookError(w, err)
 		return

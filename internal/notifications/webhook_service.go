@@ -109,15 +109,15 @@ func newSigningSecret() (string, error) {
 	return base64.StdEncoding.EncodeToString(raw), nil
 }
 
-// List returns the profile's webhooks (ciphertext fields are for internal
-// use; the handler view must expose url_host only).
-func (s *WebhookService) List(ctx context.Context, profileID string) ([]Webhook, error) {
-	return s.repo.ListByProfile(ctx, profileID)
+// List returns the account profile's webhooks (ciphertext fields are for
+// internal use; the handler view must expose url_host only).
+func (s *WebhookService) List(ctx context.Context, userID int, profileID string) ([]Webhook, error) {
+	return s.repo.ListByProfile(ctx, userID, profileID)
 }
 
-// Get returns one webhook scoped to the profile.
-func (s *WebhookService) Get(ctx context.Context, profileID, id string) (*Webhook, error) {
-	return s.repo.GetByID(ctx, profileID, id)
+// Get returns one webhook scoped to the account profile.
+func (s *WebhookService) Get(ctx context.Context, userID int, profileID, id string) (*Webhook, error) {
+	return s.repo.GetByID(ctx, userID, profileID, id)
 }
 
 // Create validates and persists a new webhook. For generic webhooks the
@@ -198,8 +198,8 @@ func (s *WebhookService) Create(ctx context.Context, userID int, profileID strin
 // Update applies the provided fields. A URL change re-validates the
 // destination and resets the failure streak; re-enabling clears the
 // auto-disable reason.
-func (s *WebhookService) Update(ctx context.Context, profileID, id string, input WebhookInput) (*Webhook, error) {
-	hook, err := s.repo.GetByID(ctx, profileID, id)
+func (s *WebhookService) Update(ctx context.Context, userID int, profileID, id string, input WebhookInput) (*Webhook, error) {
+	hook, err := s.repo.GetByID(ctx, userID, profileID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -221,15 +221,15 @@ func (s *WebhookService) Update(ctx context.Context, profileID, id string, input
 }
 
 // Delete removes a webhook. Idempotent.
-func (s *WebhookService) Delete(ctx context.Context, profileID, id string) error {
-	return s.repo.Delete(ctx, profileID, id)
+func (s *WebhookService) Delete(ctx context.Context, userID int, profileID, id string) error {
+	return s.repo.Delete(ctx, userID, profileID, id)
 }
 
 // RotateSecret generates and stores a new signing secret for a generic
 // webhook, returning it exactly once. The previous secret is gone
 // immediately; there is no dual-acceptance window.
-func (s *WebhookService) RotateSecret(ctx context.Context, profileID, id string) (string, error) {
-	hook, err := s.repo.GetByID(ctx, profileID, id)
+func (s *WebhookService) RotateSecret(ctx context.Context, userID int, profileID, id string) (string, error) {
+	hook, err := s.repo.GetByID(ctx, userID, profileID, id)
 	if err != nil {
 		return "", err
 	}
@@ -274,13 +274,13 @@ func (r webhookSendResult) testResult() *WebhookTestResult {
 
 // Test synchronously POSTs a clearly marked sample payload. Test sends never
 // touch webhook_delivery_attempts or the failure counters.
-func (s *WebhookService) Test(ctx context.Context, profileID, id string) (*WebhookTestResult, error) {
+func (s *WebhookService) Test(ctx context.Context, userID int, profileID, id string) (*WebhookTestResult, error) {
 	// Test sends are outbound traffic; the channel gate covers them too
 	// (regular delivery is already gated at enqueue and dispatch).
 	if !s.settings.WebhooksEnabled(ctx) {
 		return nil, ErrWebhooksDisabled
 	}
-	hook, err := s.repo.GetByID(ctx, profileID, id)
+	hook, err := s.repo.GetByID(ctx, userID, profileID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -322,17 +322,17 @@ func boolOrDefault(value *bool, fallback bool) bool {
 	return *value
 }
 
-func (s *WebhookService) ListPage(ctx context.Context, profile string, limit int, after *Cursor) ([]Webhook, error) {
-	return s.repo.ListPage(ctx, profile, limit, after)
+func (s *WebhookService) ListPage(ctx context.Context, userID int, profile string, limit int, after *Cursor) ([]Webhook, error) {
+	return s.repo.ListPage(ctx, userID, profile, limit, after)
 }
 
-func (s *WebhookService) DeleteGuarded(ctx context.Context, profile, id string, check func(int64) error) error {
-	return s.repo.DeleteGuarded(ctx, profile, id, check)
+func (s *WebhookService) DeleteGuarded(ctx context.Context, userID int, profile, id string, check func(int64) error) error {
+	return s.repo.DeleteGuarded(ctx, userID, profile, id, check)
 }
 
 // RotateSecretV2 avoids copying a stale configuration snapshot back into storage.
-func (s *WebhookService) RotateSecretV2(ctx context.Context, profile, id string) (string, error) {
-	hook, err := s.repo.GetByID(ctx, profile, id)
+func (s *WebhookService) RotateSecretV2(ctx context.Context, userID int, profile, id string) (string, error) {
+	hook, err := s.repo.GetByID(ctx, userID, profile, id)
 	if err != nil {
 		return "", err
 	}
@@ -350,7 +350,7 @@ func (s *WebhookService) RotateSecretV2(ctx context.Context, profile, id string)
 	if err != nil {
 		return "", fmt.Errorf("encrypt signing secret: %w", err)
 	}
-	if err = s.repo.ReplaceSigningSecret(ctx, profile, id, ciphertext); err != nil {
+	if err = s.repo.ReplaceSigningSecret(ctx, userID, profile, id, ciphertext); err != nil {
 		return "", err
 	}
 	return value, nil
@@ -408,8 +408,8 @@ func (s *WebhookService) applyWebhookInput(ctx context.Context, hook *Webhook, i
 	return nil
 }
 
-func (s *WebhookService) UpdateGuarded(ctx context.Context, profile, id string, input WebhookInput, check func(int64) error) (*Webhook, error) {
-	row, err := s.repo.UpdateGuarded(ctx, profile, id, func(hook *Webhook) error {
+func (s *WebhookService) UpdateGuarded(ctx context.Context, userID int, profile, id string, input WebhookInput, check func(int64) error) (*Webhook, error) {
+	row, err := s.repo.UpdateGuarded(ctx, userID, profile, id, func(hook *Webhook) error {
 		if err := check(hook.Revision); err != nil {
 			return err
 		}

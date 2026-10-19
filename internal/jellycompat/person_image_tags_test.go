@@ -95,11 +95,12 @@ func TestJellyfinWebPersonPhotoUsesSignedTag(t *testing.T) {
 		return rec
 	}
 
-	assertImageRedirect(t, request(routeID, castTag, ""), "https://cdn.example.test/tmdb/people/287/profile/w200.abc123.webp")
-	assertImageRedirect(t, request(otherRouteID, crewTag, ""), "https://cdn.example.test/tmdb/people/288/profile/w200.def456.webp")
+	assertImageRedirect(t, request(routeID, castTag, ""), "https://cdn.example.test/tmdb/people/287/profile/w300.abc123.webp")
+	assertImageRedirect(t, request(otherRouteID, crewTag, ""), "https://cdn.example.test/tmdb/people/288/profile/w300.def456.webp")
 	// A tag authorizes by itself, matching the item and collection image routes.
-	assertImageRedirect(t, request(routeID, castTag, "hidden"), "https://cdn.example.test/tmdb/people/287/profile/w200.abc123.webp")
-	if _, ok := h.images.LookupSized(personImageCacheRouteID(routeID, people[287].PhotoPath), "Primary", "", compatCardImageSize); !ok {
+	assertImageRedirect(t, request(routeID, castTag, "hidden"), "https://cdn.example.test/tmdb/people/287/profile/w300.abc123.webp")
+	warmed := compatRequestImageSize(httptest.NewRequest(http.MethodGet, "/?fillHeight=446&fillWidth=298", nil), "Primary")
+	if _, ok := h.images.LookupSized(personImageCacheRouteID(routeID, people[287].PhotoPath), "Primary", "", warmed); !ok {
 		t.Fatal("signed request did not warm the shared cache")
 	}
 
@@ -128,8 +129,8 @@ func TestJellyfinWebPersonPhotoUsesSignedTag(t *testing.T) {
 	}
 	// The new photo's tag must not be served the old photo from the warm cache.
 	newTag := persons.personToDTO(*people[287]).ImageTags["Primary"]
-	assertImageRedirect(t, request(routeID, newTag, ""), "https://cdn.example.test/tmdb/people/287/profile/w200.new789.webp")
-	assertImageRedirect(t, request(routeID, "", "visible"), "https://cdn.example.test/tmdb/people/287/profile/w200.new789.webp")
+	assertImageRedirect(t, request(routeID, newTag, ""), "https://cdn.example.test/tmdb/people/287/profile/w300.new789.webp")
+	assertImageRedirect(t, request(routeID, "", "visible"), "https://cdn.example.test/tmdb/people/287/profile/w300.new789.webp")
 
 	// Without a thumbhash the photo path alone must still rotate the tag.
 	people[288] = &models.Person{ID: 288, PhotoPath: "tmdb/people/288/profile/original.def456.webp", PhotoThumbhash: "-"}

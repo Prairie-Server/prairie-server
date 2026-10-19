@@ -37,12 +37,15 @@ const SETTINGS_TITLES: Record<string, string> = {
   "history-import": "History Import Settings",
   "plex-webhooks": "Webhook Sync Settings",
   "webhook-sync": "Webhook Sync Settings",
-  "subtitle-appearance": "Subtitle Settings",
+  "subtitle-appearance": "Language & Subtitle Settings",
   "home-screen": "Home Screen Settings",
-  "card-overlays": "Card Overlay Settings",
+  "title-pages": "Title Page Settings",
   "connect-apps": "Connect Apps Settings",
   "quick-connect": "Quick Connect Settings",
-  notifications: "Notifications Settings",
+  devices: "Your Devices",
+  personalize: "Personalize",
+  "watch-providers": "Watch Provider Settings",
+  notifications: "Notification Settings",
 };
 
 const ADMIN_TITLES: Record<string, string> = {
@@ -52,7 +55,6 @@ const ADMIN_TITLES: Record<string, string> = {
   autoscan: "Admin Autoscan",
   collections: "Admin Collections",
   devices: "Admin Devices",
-  "settings/devices": "Your Devices",
   diagnostics: "Admin Client Diagnostics",
   downloads: "Admin Downloads",
   history: "Admin Playback History",
@@ -111,6 +113,10 @@ export function resolveAdminDocumentTitle(pathname: string): string {
 
   if (adminSegment === "users" && nestedSegment) {
     return "Admin User";
+  }
+
+  if (adminSegment === "autoscan" && nestedSegment === "activity") {
+    return "Admin Autoscan Activity";
   }
 
   if (adminSegment === "plugins" && nestedSegment) {

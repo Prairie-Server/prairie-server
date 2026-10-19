@@ -15,8 +15,11 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkurl"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/netguard"
 )
 
 // ImagesHandler serves Jellyfin-compatible image routes.
@@ -62,6 +65,9 @@ type ImagesHandler struct {
 	// served straight from the embedded frontend assets. Without it those paths
 	// have no fetchable origin on the compat surface.
 	frontendFS fs.FS
+	// artworkStore decides which proxied URLs may reach the local network;
+	// see Dependencies.ArtworkStore.
+	artworkStore blobstore.Store
 }
 
 type extraBackdropSource interface {
@@ -93,7 +99,7 @@ type imageFolderRepository interface {
 // NewImagesHandler creates a Jellyfin-compatible image route handler.
 func NewImagesHandler(content ContentService, codec *ResourceIDCodec, sessions *SessionStore, images *ImageCache, personRepo *catalog.PersonRepository, detailSvc *catalog.DetailService, itemRepo *catalog.ItemRepository, folderRepo *catalog.FolderRepository, seasonRepo *catalog.SeasonRepository, episodeRepo *catalog.EpisodeRepository, accessFilter AccessFilterResolver, posterSigner LibraryPosterPresigner, presignTTL time.Duration, imageTagSecret string, httpClient *http.Client) *ImagesHandler {
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = newCompatImageClient()
 	}
 	// A nil concrete repository has to stay nil in the interface field, or the
 	// nil checks guarding the person route would see a non-nil interface holding
@@ -272,8 +278,8 @@ func (h *ImagesHandler) handlePersonImage(w http.ResponseWriter, r *http.Request
 		return
 	}
 	// Headshots ride the profile ladder ({500, 300}), not the poster ladder,
-	// which now carries a w780 rung. Resolving them as posters would name a
-	// profile/w780 key that is never generated — and the server-side ladder
+	// which carries wider rungs. Resolving them as posters would name a
+	// profile/w1000 key that is never generated — and the server-side ladder
 	// fallback deliberately skips profile, so nothing would rescue it.
 	resolvedImage := compatPresignImageWithExpiry(h.detailSvc, r.Context(), person.PhotoPath, artworkkey.ImageProfile, imageSize)
 	imageURL := resolvedImage.URL
@@ -809,7 +815,8 @@ func (h *ImagesHandler) proxyImageURL(w http.ResponseWriter, r *http.Request, im
 		return
 	}
 
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, target.String(), nil)
+	ctx := artworkurl.FetchContext(r.Context(), h.artworkStore, target.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "UpstreamError", "Failed to load image")
 		return
@@ -818,7 +825,7 @@ func (h *ImagesHandler) proxyImageURL(w http.ResponseWriter, r *http.Request, im
 
 	client := h.httpClient
 	if client == nil {
-		client = http.DefaultClient
+		client = newCompatImageClient()
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -826,6 +833,14 @@ func (h *ImagesHandler) proxyImageURL(w http.ResponseWriter, r *http.Request, im
 		return
 	}
 	proxyImage(w, resp)
+}
+
+// newCompatImageClient returns the client proxied images are fetched with.
+// Its netguard transport checks every address it dials, redirect hops
+// included, so a stored metadata-provider URL cannot reach the server's own
+// network; artworkurl.FetchContext trusts the artwork store's direct URLs.
+func newCompatImageClient() *http.Client {
+	return netguard.NewClient(30 * time.Second)
 }
 
 func parseRemoteImageURL(imageURL string) (*url.URL, error) {

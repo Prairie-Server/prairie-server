@@ -21,11 +21,11 @@ type stubSimilarEngine struct {
 	err   error
 }
 
-func (s *stubSimilarEngine) SimilarItems(context.Context, string, int) ([]recommendations.ScoredItem, error) {
+func (s *stubSimilarEngine) SimilarItems(context.Context, int, string, string, int, catalog.AccessFilter) ([]recommendations.ScoredItem, error) {
 	return s.items, s.err
 }
 
-func (s *stubSimilarEngine) BecauseYouWatched(context.Context, int, string, string, int) ([]recommendations.ScoredItem, error) {
+func (s *stubSimilarEngine) BecauseYouWatched(context.Context, int, string, string, int, catalog.AccessFilter) ([]recommendations.ScoredItem, error) {
 	return nil, nil
 }
 
@@ -62,6 +62,16 @@ func (stubPresigner) PresignURL(_ context.Context, path string, _ string) string
 	return "https://cdn.example.com/" + path
 }
 
+func (p stubPresigner) PresignURLsWithExpiry(ctx context.Context, paths []string, variant string) map[string]catalog.ResolvedImageURL {
+	out := make(map[string]catalog.ResolvedImageURL, len(paths))
+	for _, path := range paths {
+		if url := p.PresignURL(ctx, path, variant); url != "" {
+			out[path] = catalog.ResolvedImageURL{URL: url}
+		}
+	}
+	return out
+}
+
 func similarRequest(itemID string) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "/recommendations/similar/"+itemID, nil)
 	routeCtx := chi.NewRouteContext()
@@ -91,6 +101,7 @@ func TestHandleSimilar_ReturnsHydratedCards(t *testing.T) {
 	}}
 
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = fetcher
 	h.DetailSvc = stubPresigner{}
 
@@ -137,6 +148,7 @@ func TestHandleSimilar_DropsItemsTheProfileCannotSee(t *testing.T) {
 	}}
 
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = fetcher
 	h.DetailSvc = stubPresigner{}
 
@@ -157,6 +169,7 @@ func TestHandleSimilar_OmitsCardsWhenHydrationUnavailable(t *testing.T) {
 
 	engine := &stubSimilarEngine{items: []recommendations.ScoredItem{{MediaItemID: "movie-a"}}}
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	// No Fetcher configured.
 
 	rec := httptest.NewRecorder()
@@ -176,6 +189,7 @@ func TestHandleSimilar_DegradesWhenHydrationFails(t *testing.T) {
 
 	engine := &stubSimilarEngine{items: []recommendations.ScoredItem{{MediaItemID: "movie-a"}}}
 	h := NewRecommendationsHandler(engine, nil, nil, nil, nil, true)
+	h.accessibleIDs = fakeAccessibleIDs{}
 	h.Fetcher = &stubCardFetcher{err: errors.New("db down")}
 	h.DetailSvc = stubPresigner{}
 

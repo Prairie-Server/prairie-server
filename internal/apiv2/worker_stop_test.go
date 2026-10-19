@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
@@ -34,7 +35,7 @@ func TestWorkerLegacyStopProtocol(t *testing.T) {
 		}
 		req := httptest.NewRequest(http.MethodDelete, "/transcode/missing", nil)
 		if tc.authenticated {
-			req.Header.Set("Authorization", "Bearer "+cfg.Auth.JWTSecret)
+			nodeauthtest.Sign(t, req, cfg.Auth.JWTSecret)
 		}
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
