@@ -20,6 +20,16 @@
   ],
   "packageRules": [
     {
+      "description": "Hold eslint-plugin-react-hooks below 7.1: 7.1 adds ~130 new set-state-in-effect/refs errors in web/. Tracking: https://github.com/Prairie-Server/prairie-server/issues/245. Lift once migrated.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "eslint-plugin-react-hooks"
+      ],
+      "allowedVersions": "<7.1.0"
+    },
+    {
       "description": "Hold chi below v5.3: chi v5.3 changes the route tree that the upstream route tooling (route inventory, offline-routes, jellycompat route manifest) reads, failing TestOfflineRouteSet and TestMediaRouteManifest. Lift together with the huma rule once upstream silo-server moves to chi v5.3.",
       "matchManagers": [
         "gomod"
