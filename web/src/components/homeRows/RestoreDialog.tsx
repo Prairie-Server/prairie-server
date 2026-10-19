@@ -183,8 +183,8 @@ export function RestoreDialog({
         <DialogHeader className="px-6 sm:pr-6 sm:pl-0">
           <DialogTitle>Restore {target} to the default rows?</DialogTitle>
           <DialogDescription>
-            {capitalize(target)} {all && page.kind === "home" ? "go" : "goes"} back to the rows Prairie
-            starts with.
+            {capitalize(target)} {all && page.kind === "home" ? "go" : "goes"} back to the rows
+            Prairie starts with.
           </DialogDescription>
         </DialogHeader>
         <ul

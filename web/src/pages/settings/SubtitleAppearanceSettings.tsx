@@ -362,7 +362,10 @@ export default function SubtitleAppearanceSettings() {
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Subtitles" description="Which subtitles Prairie picks for this profile.">
+      <SettingsGroup
+        title="Subtitles"
+        description="Which subtitles Prairie picks for this profile."
+      >
         <SettingRow
           label="Subtitle language"
           description="Pick a subtitle language or leave subtitles off by default."

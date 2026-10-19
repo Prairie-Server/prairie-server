@@ -141,19 +141,19 @@ export default function AdminPlaybackHistory() {
               </div>
             )}
 
-          <Select value={selectedUser} onValueChange={(value) => updateFilter("user_id", value)}>
-            <SelectTrigger className="w-full sm:w-[220px]">
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_USERS}>All users</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={String(user.id)}>
-                  {user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={selectedUser} onValueChange={(value) => updateFilter("user_id", value)}>
+              <SelectTrigger className="w-full sm:w-[220px]">
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_USERS}>All users</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={String(user.id)}>
+                    {user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select
               value={selectedProfile}

@@ -104,11 +104,6 @@ function CastCarousel({
 
   if (sections.length === 0) return null;
 
-  const visible = cast
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .slice(0, limit);
-
   return (
     <div className="group/carousel relative">
       {prefetchPeople && <PrefetchCastPeople personIds={prefetchIds} />}

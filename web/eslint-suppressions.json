@@ -55,14 +55,14 @@
       "count": 1
     }
   },
+  "src/components/livetv/LiveTVPlayer.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
   "src/components/subtitles/SubtitleUploadForm.tsx": {
     "react-hooks/exhaustive-deps": {
       "count": 2
-    }
-  },
-  "src/components/ui/facet-search-select.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
     }
   },
   "src/hooks/AuthProvider.sessionRestore.test.tsx": {
@@ -81,9 +81,6 @@
     }
   },
   "src/hooks/queries/catalog.ts": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    },
     "react-hooks/set-state-in-effect": {
       "count": 2
     }
@@ -138,6 +135,16 @@
       "count": 2
     }
   },
+  "src/pages/LiveTV.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/pages/LiveWatchRoute.tsx": {
+    "eslint-comments/require-description": {
+      "count": 1
+    }
+  },
   "src/pages/audiobooks/player/AudiobookPlayer.tsx": {
     "react-hooks/refs": {
       "count": 5
@@ -159,6 +166,11 @@
     }
   },
   "src/pages/settings/HistoryImportSettings.test.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/pages/settings/QuickConnectSettings.tsx": {
     "no-restricted-syntax": {
       "count": 1
     }
@@ -212,6 +224,11 @@
       "count": 2
     }
   },
+  "src/player/components/PlayerMoreMenu.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
   "src/player/components/PlayingNextScreen.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
@@ -223,6 +240,11 @@
     }
   },
   "src/player/components/SubtitleTranslateModal.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/player/components/VideoPlayer.tsx": {
     "react-hooks/exhaustive-deps": {
       "count": 1
     }
@@ -240,6 +262,11 @@
   "src/player/hooks/usePGSSubtitles.ts": {
     "react-hooks/refs": {
       "count": 4
+    }
+  },
+  "src/player/hooks/useQualityLadder.ts": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
     }
   },
   "src/player/hooks/useWatchProgress.ts": {

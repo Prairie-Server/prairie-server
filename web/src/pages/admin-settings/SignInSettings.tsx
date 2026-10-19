@@ -262,11 +262,11 @@ export default function SignInSettings() {
               onChange={(value) => form.setValue(EMAIL_MATCH_KEY, value)}
               status={
                 <SettingFieldStatus tone={emailMatchOn ? "warn" : "muted"}>
-                  Whoever controls that email at the provider takes over the Prairie account. Prairie
-                  doesn't verify account emails, so the account matched is whichever one registered
-                  or set the address first; matching signs it out everywhere and deletes its API
-                  keys. Turn this on only if the provider verifies every email and people can't
-                  change their own.
+                  Whoever controls that email at the provider takes over the Prairie account.
+                  Prairie doesn't verify account emails, so the account matched is whichever one
+                  registered or set the address first; matching signs it out everywhere and deletes
+                  its API keys. Turn this on only if the provider verifies every email and people
+                  can't change their own.
                 </SettingFieldStatus>
               }
             />

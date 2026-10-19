@@ -442,7 +442,12 @@ export const USER_SETTINGS_GROUPS: UserSettingsNavGroup[] = [
           "code",
           "qr",
         ],
-        settings: settingIndex("Enter device code", "Approve sign-in", "Match code", "How it works"),
+        settings: settingIndex(
+          "Enter device code",
+          "Approve sign-in",
+          "Match code",
+          "How it works",
+        ),
       },
       {
         path: "watch-providers",

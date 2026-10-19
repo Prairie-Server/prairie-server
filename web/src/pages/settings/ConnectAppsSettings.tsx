@@ -298,8 +298,8 @@ export default function ConnectAppsSettings() {
         subtitle={
           <>
             Exactly what to type on a sign-in screen. Pick the kind of app you're using — the
-            credentials are different for each. To approve a TV or other device without a
-            password, use{" "}
+            credentials are different for each. To approve a TV or other device without a password,
+            use{" "}
             <a
               className="text-foreground underline underline-offset-2"
               href="/settings/quick-connect"

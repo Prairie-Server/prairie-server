@@ -109,8 +109,7 @@ const PAGES = {
   },
   liveTv: {
     label: "Live TV",
-    description:
-      "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
+    description: "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
     keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
     icon: Radio,
     href: "/admin/livetv",
