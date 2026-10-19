@@ -264,7 +264,7 @@ describe("StorageSettings", () => {
         key === "artwork.storage_backend"
           ? "s3"
           : key === "artwork.local_path"
-            ? "/srv/silo/artwork"
+            ? "/srv/prairie/artwork"
             : "",
     });
     createStorageTransitionMock.mockResolvedValueOnce({ job: { id: "transition-1" } });
@@ -285,7 +285,7 @@ describe("StorageSettings", () => {
         policy: "start_fresh",
         values: {
           "artwork.storage_backend": "local",
-          "artwork.local_path": "/srv/silo/artwork",
+          "artwork.local_path": "/srv/prairie/artwork",
         },
       }),
     );
@@ -318,7 +318,7 @@ describe("StorageSettings", () => {
         key === "artwork.storage_backend"
           ? "s3"
           : key === "artwork.local_path"
-            ? "/srv/silo/artwork"
+            ? "/srv/prairie/artwork"
             : "",
     });
     render(<StorageSettings />);
@@ -737,10 +737,10 @@ describe("StorageSettings", () => {
       dirtyKeys: ["artwork.local_path"],
       isDirty: (key: string) => key === "artwork.local_path",
       getPersistedValue: (key: string) =>
-        key === "artwork.local_path" ? "/srv/silo/artwork-old" : "",
+        key === "artwork.local_path" ? "/srv/prairie/artwork-old" : "",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork-new";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork-new";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
       },
@@ -753,7 +753,7 @@ describe("StorageSettings", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Change artwork storage" });
     expect(within(dialog).getByLabelText("Local artwork path")).toHaveValue(
-      "/srv/silo/artwork-new",
+      "/srv/prairie/artwork-new",
     );
     await userEvent.click(within(dialog).getByRole("button", { name: "Queue transition" }));
     await waitFor(() =>
@@ -761,7 +761,7 @@ describe("StorageSettings", () => {
         policy: "preserve_uploads",
         values: {
           "artwork.storage_backend": "local",
-          "artwork.local_path": "/srv/silo/artwork-new",
+          "artwork.local_path": "/srv/prairie/artwork-new",
         },
       }),
     );
@@ -775,10 +775,10 @@ describe("StorageSettings", () => {
       dirtyKeys: ["artwork.local_path"],
       isDirty: (key: string) => key === "artwork.local_path",
       getPersistedValue: (key: string) =>
-        key === "artwork.local_path" ? "/srv/silo/artwork-old" : "",
+        key === "artwork.local_path" ? "/srv/prairie/artwork-old" : "",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork-new";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork-new";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
       },
@@ -810,7 +810,7 @@ describe("StorageSettings", () => {
     ).not.toBeInTheDocument();
   });
 
-  it.each(["/srv/silo/artwork/", "/srv//silo/./artwork/"])(
+  it.each(["/srv/prairie/artwork/", "/srv//prairie/./artwork/"])(
     "does not start a transition for a restyled local path %s",
     (path) => {
       serverStatus.current = { artwork_storage: { backend: "local", locked: true } };
@@ -819,7 +819,7 @@ describe("StorageSettings", () => {
         dirtyKeys: ["artwork.local_path"],
         isDirty: (key: string) => key === "artwork.local_path",
         getPersistedValue: (key: string) =>
-          key === "artwork.local_path" ? "/srv/silo/artwork" : "",
+          key === "artwork.local_path" ? "/srv/prairie/artwork" : "",
         getValue: (key: string) =>
           key === "artwork.local_path" ? path : key === "artwork.storage_backend" ? "local" : "",
       });
@@ -844,8 +844,8 @@ describe("StorageSettings", () => {
       dirtyKeys: ["artwork.local_path", "metadata.cache_images"],
       isDirty: (key: string) => key === "artwork.local_path" || key === "metadata.cache_images",
       getPersistedValue: (key: string) =>
-        key === "artwork.local_path" ? "/srv/silo/artwork-old" : "",
-      getValue: (key: string) => (key === "artwork.local_path" ? "/srv/silo/artwork-new" : ""),
+        key === "artwork.local_path" ? "/srv/prairie/artwork-old" : "",
+      getValue: (key: string) => (key === "artwork.local_path" ? "/srv/prairie/artwork-new" : ""),
     });
     render(<StorageSettings />);
 
@@ -887,7 +887,7 @@ describe("StorageSettings", () => {
       dirtyCount: 1,
       dirtyKeys: ["artwork.local_path"],
       isDirty: (key: string) => key === "artwork.local_path",
-      getValue: (key: string) => (key === "artwork.local_path" ? "/srv/silo/artwork-new" : ""),
+      getValue: (key: string) => (key === "artwork.local_path" ? "/srv/prairie/artwork-new" : ""),
     });
     render(<StorageSettings />);
 
@@ -1083,7 +1083,7 @@ describe("StorageSettings", () => {
         key === "artwork.storage_backend" ? "auto" : key === "s3.public_bucket" ? "artwork" : "",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "auto";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.public_bucket") return "";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
@@ -1103,7 +1103,7 @@ describe("StorageSettings", () => {
         policy: "start_fresh",
         values: {
           "artwork.storage_backend": "local",
-          "artwork.local_path": "/srv/silo/artwork",
+          "artwork.local_path": "/srv/prairie/artwork",
         },
       }),
     );
@@ -1169,7 +1169,7 @@ describe("StorageSettings", () => {
 
     finishSave?.();
     expect(await screen.findByRole("dialog", { name: "Change artwork storage" })).toBeVisible();
-    expect(screen.getByLabelText("Local artwork path")).toHaveValue("/srv/silo/artwork-new");
+    expect(screen.getByLabelText("Local artwork path")).toHaveValue("/srv/prairie/artwork-new");
   });
 
   it("keeps public bucket edits as settings on an explicit Local backend", () => {
@@ -1402,7 +1402,7 @@ describe("StorageSettings", () => {
       isDirty: (key: string) => key === "s3.private_endpoint" || key === "s3.private_bucket",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.private_endpoint") return "https://private.example";
         if (key === "s3.private_bucket") return "private-new";
         if (key === "s3.public_url_auth") return "presigned";
@@ -1428,7 +1428,7 @@ describe("StorageSettings", () => {
         policy: "migrate_all",
         values: {
           "artwork.storage_backend": "local",
-          "artwork.local_path": "/srv/silo/artwork",
+          "artwork.local_path": "/srv/prairie/artwork",
           "s3.private_endpoint": "https://private.example",
           "s3.private_bucket": "private-new",
         },
@@ -1446,7 +1446,7 @@ describe("StorageSettings", () => {
       getPersistedValue: (key: string) => (key === "s3.private_bucket" ? "private-old" : ""),
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
       },
@@ -1516,7 +1516,7 @@ describe("StorageSettings", () => {
       isDirty: (key: string) => key === "s3.private_bucket",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.private_bucket") return "private-new";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
@@ -1540,7 +1540,7 @@ describe("StorageSettings", () => {
       getPersistedValue: (key: string) => (key === "s3.private_bucket" ? "private" : ""),
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "s3";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.public_url_auth") return "presigned";
         return "";
       },
@@ -1608,7 +1608,7 @@ describe("StorageSettings", () => {
             : "",
       getValue: (key: string) => {
         if (key === "artwork.storage_backend") return "local";
-        if (key === "artwork.local_path") return "/srv/silo/artwork";
+        if (key === "artwork.local_path") return "/srv/prairie/artwork";
         if (key === "s3.private_endpoint") return "https://private.example";
         if (key === "s3.private_bucket") return "private-new";
         return "";

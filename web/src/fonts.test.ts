@@ -48,8 +48,8 @@ function sortFaces(faces: Face[]): Face[] {
   return [...faces].sort((a, b) => a.file.localeCompare(b.file));
 }
 
-/** The families fonts.css self-hosts: only Cinema Dark's UI font. */
-const UI_FONTS = ["Plus Jakarta Sans"];
+/** The families fonts.css self-hosts: Cinema Dark's UI font, plus Fraunces for the Prairie prairie-dusk display face. */
+const UI_FONTS = ["Fraunces", "Plus Jakarta Sans"];
 
 const localFaces = parseFaces(fontsCss);
 

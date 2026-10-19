@@ -94,7 +94,7 @@ function render(values: Record<string, string>, dirty: string[] = []) {
 
 /** Opens one group's Advanced disclosure via its persisted state. */
 function expand(id: string) {
-  localStorage.setItem(`prairie.admin.advanced.${id}`, "true");
+  localStorage.setItem(`silo.admin.advanced.${id}`, "true");
 }
 
 /** The static-markup group whose heading reads `name`. */

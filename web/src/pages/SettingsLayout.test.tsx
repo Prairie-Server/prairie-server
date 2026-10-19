@@ -84,14 +84,14 @@ describe("SettingsLayout", () => {
     expect(renderIndex()).not.toContain('href="/settings/requests"');
   });
 
-  it("places Quick Connect early in the settings nav", () => {
+  it("places Quick Connect in the Connections group, ahead of Notifications", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/settings/playback"]}>
-        <SettingsLayout />
+        <SettingsShell />
       </MemoryRouter>,
     );
 
-    const accountHeading = markup.indexOf('id="settings-nav-account"');
+    const accountHeading = markup.indexOf('id="settings-nav-connections"');
     const quickConnectHref = markup.indexOf("/settings/quick-connect");
     const notificationsHref = markup.indexOf("/settings/notifications");
 

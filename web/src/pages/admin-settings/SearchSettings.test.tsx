@@ -55,7 +55,7 @@ function render(values: Record<string, string>, dirty: string[] = []): HTMLEleme
 
 /** Opens the Advanced disclosure via its persisted state. */
 function expand() {
-  localStorage.setItem("prairie.admin.advanced.search", "true");
+  localStorage.setItem("silo.admin.advanced.search", "true");
 }
 
 /** The accessible names of a group's disclosure buttons. */

@@ -17,6 +17,7 @@ const TOOL_PAGES = [
   "/admin/logs",
   "/admin/diagnostics",
   "/admin/libraries",
+  "/admin/livetv",
   "/admin/autoscan",
   "/admin/autoscan/activity",
   "/admin/collections",

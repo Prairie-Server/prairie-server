@@ -139,7 +139,7 @@ function expandAdvanced() {
 
 /** Opens the Preview images group's disclosure via its persisted state. */
 function expandPreviewImages() {
-  localStorage.setItem("prairie.admin.advanced.playback.preview_images", "true");
+  localStorage.setItem("silo.admin.advanced.playback.preview_images", "true");
 }
 
 const TONE_MAP_LABEL = "Software HDR tone mapping";
