@@ -131,7 +131,7 @@ func (s *PostgresUserStore) updateSectionOverrides(ctx context.Context, scope, l
 		_, err = tx.Exec(ctx, "DELETE FROM user_settings WHERE user_id = $1 AND key = $2", s.userID, key)
 	} else {
 		var data []byte
-		if data, err = json.Marshal(next); err != nil { //nolint:errchkjson // ponytail: synced upstream code, upstream keeps the error branch; lint backlog
+		if data, err = json.Marshal(next); err != nil {
 			return fmt.Errorf("marshaling section overrides: %w", err)
 		}
 		_, err = tx.Exec(ctx,

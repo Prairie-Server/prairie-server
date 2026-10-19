@@ -2684,7 +2684,6 @@ func (h *AdminHandler) UpdateAdminSettings(ctx context.Context, values map[strin
 		return AdminSettingsUpdateResult{}, err
 	}
 
-
 	modelValidation, err := h.prepareAIModelValidation(ctx, normalized)
 	if err != nil {
 		return AdminSettingsUpdateResult{}, err
@@ -3072,7 +3071,6 @@ func (h *AdminHandler) UpdateAdminSetting(ctx context.Context, key, value string
 	if err != nil {
 		return AdminSettingUpdateResult{}, err
 	}
-
 
 	modelValidation, err := h.prepareAIModelValidation(ctx, map[string]string{key: req.Value})
 	if err != nil {

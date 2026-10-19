@@ -50,7 +50,7 @@ func TestProbeFileKillsTheWrappersChildWithIt(t *testing.T) {
 		if time.Now().After(deadline) {
 			t.Fatalf("the wrapper's child %d is still running (%s)", pid, strings.TrimSpace(string(state)))
 		}
-		time.Sleep(50 * time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 
@@ -69,6 +69,6 @@ func waitForPID(t *testing.T, path string) int {
 		if time.Now().After(deadline) {
 			t.Fatal("the fake wrapper never started its child")
 		}
-		time.Sleep(20 * time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
+		time.Sleep(20 * time.Millisecond)
 	}
 }

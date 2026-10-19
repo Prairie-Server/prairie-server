@@ -127,7 +127,7 @@ func transient(err error) bool {
 // contextReaderAt stops a full check once its caller has gone: every read
 // fails with the context's error.
 type contextReaderAt struct {
-	ctx context.Context //nolint:containedctx // ponytail: synced upstream code, upstream struct holds the request context; lint backlog
+	ctx context.Context
 	r   io.ReaderAt
 }
 

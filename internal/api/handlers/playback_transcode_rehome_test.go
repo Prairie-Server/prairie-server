@@ -331,7 +331,7 @@ func TestRelayMovesEachSessionOnceUnderConcurrentRequests(t *testing.T) {
 		if time.Now().After(deadline) {
 			t.Fatal("no start reached the healthy node")
 		}
-		time.Sleep(5 * time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
+		time.Sleep(5 * time.Millisecond)
 	}
 	close(healthy.release)
 	for range requests {
@@ -393,7 +393,7 @@ func waitForStoredRecipeNode(t *testing.T, store *sharedRecipeStore, nodeURL str
 		if time.Now().After(deadline) {
 			t.Fatalf("stored recipe = %+v (present %v), want one naming node %q (id %d)", card, ok, nodeURL, nodeID)
 		}
-		time.Sleep(5 * time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 

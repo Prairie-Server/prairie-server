@@ -13,12 +13,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-
-	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/envutil"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
+	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/database/queryattr"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestPostgresOperationPrivacy(t *testing.T) {

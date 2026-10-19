@@ -25,7 +25,7 @@ import (
 // position to clear (issue #2134): a movie or an episode clears and publishes
 // one progress change; a season, series or ebook is an invalid target; an
 // item without a resume position is a silent no-op.
-func TestClearResumePositionTargetsDB(t *testing.T) { //nolint:funlen // ponytail: synced upstream code, single end-to-end DB scenario; lint backlog
+func TestClearResumePositionTargetsDB(t *testing.T) {
 	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")

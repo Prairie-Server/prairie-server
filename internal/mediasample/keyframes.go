@@ -124,7 +124,7 @@ func matroskaKeyframes(ctx context.Context, path string) []float64 {
 
 // contextReaderAt stops reading once ctx ends.
 type contextReaderAt struct {
-	ctx context.Context //nolint:containedctx // ponytail: synced upstream code, upstream struct holds the request context; lint backlog
+	ctx context.Context
 	r   io.ReaderAt
 }
 

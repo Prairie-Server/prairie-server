@@ -19,7 +19,7 @@ import (
 // episode listings leave it out. Marking its series or season unwatched must
 // still clear it: its completed progress otherwise keeps anchoring Next Up on
 // the series. File-less episodes nobody watched stay out of the unwatch.
-func TestParentUnwatchClearsEpisodesWithoutLibraryFilePostgres(t *testing.T) { //nolint:funlen // ponytail: synced upstream code, single end-to-end DB scenario; lint backlog
+func TestParentUnwatchClearsEpisodesWithoutLibraryFilePostgres(t *testing.T) {
 	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")

@@ -99,6 +99,6 @@ func waitForCounts(t *testing.T, cache *titleCountCache, key [32]byte, want []in
 		if time.Now().After(deadline) {
 			t.Fatalf("stored counts = %v, want %v", counts, want)
 		}
-		time.Sleep(time.Millisecond) //nolint:forbidigo // ponytail: synced upstream code, bounded poll loop; lint backlog
+		time.Sleep(time.Millisecond)
 	}
 }

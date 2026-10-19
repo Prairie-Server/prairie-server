@@ -963,7 +963,7 @@ const createClearedTasteProfileQuery = `
 // profile its user store still lists, so the row a profile deletion purged
 // does not come back. updatedAt is as for UpsertTasteProfile.
 func (r *Repo) ClearTasteProfile(ctx context.Context, userID int, profileID string, signalCounts map[string]int, maxContentRating string, updatedAt time.Time, create bool) error {
-	countsJSON, err := json.Marshal(signalCounts) //nolint:errchkjson // ponytail: synced upstream code, upstream keeps the error branch; lint backlog
+	countsJSON, err := json.Marshal(signalCounts)
 	if err != nil {
 		return fmt.Errorf("marshaling signal counts: %w", err)
 	}
