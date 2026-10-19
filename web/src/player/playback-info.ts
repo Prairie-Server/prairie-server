@@ -232,7 +232,7 @@ export function qualityOptionsFromPlanV3(plan: PlanV3): QualityOption[] {
     .filter((quality) => quality.label !== QUALITY_ORIGINAL_V3)
     .map((quality) => ({
       id: quality.label,
-      label: quality.display_name || quality.label,
+      label: quality.display_name || qualityRungLabel(quality.label),
       sublabel: formatQualityBitrate(quality.bitrate_kbps),
       resolution: quality.height ? `${quality.height}p` : "",
       bitrateKbps: quality.bitrate_kbps ?? 0,
@@ -411,6 +411,10 @@ export function formatStreamPath(streamUrl: string): string {
   } catch {
     return "—";
   }
+}
+
+function qualityRungLabel(label: string): string {
+  return label === QUALITY_ORIGINAL_V3 ? "Original" : label;
 }
 
 export function formatQualityPreference(plan: PlanV3, preference: string): string {
