@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "license": "AGPL-3.0-or-later",
-  "packageManager": "pnpm@10.34.7",
+  "packageManager": "pnpm@10.34.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -98,9 +98,9 @@
       "flatted@<=3.4.1": "3.4.4",
       "js-yaml@<4.3.2": "4.3.2",
       "picomatch@>=4.0.0 <4.0.4": "4.0.7",
-      "postcss@<8.5.23": "8.5.31",
+      "postcss@<8.5.23": "8.5.32",
       "undici@<7.29.1": "7.30.1",
-      "vite@>=6.0.0 <6.4.2": "6.4.4"
+      "vite@>=6.0.0 <6.4.2": "6.4.5"
     }
   }
 }
