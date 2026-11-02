@@ -3216,13 +3216,13 @@ func manifestQueryAllowsVariableSubstitution(rawQuery string) bool {
 // the manifest URL's HLSVariableSubstitutionQueryParam). Without the opt-in
 // every URI keeps the literal query.
 func optedInSyntheticManifestQuery(opts TranscodeOpts, segmentCount int, rawQuery string) (definition, suffix string, minVersion int) {
-	if opts.HLSVariableSubstitution || manifestQueryAllowsVariableSubstitution(rawQuery) {
-		return syntheticManifestQuery(segmentCount, rawQuery)
+	if !opts.HLSVariableSubstitution && !manifestQueryAllowsVariableSubstitution(rawQuery) {
+		if rawQuery == "" {
+			return "", "", 0
+		}
+		return "", "?" + rawQuery, 0
 	}
-	if rawQuery == "" {
-		return "", "", 0
-	}
-	return "", "?" + rawQuery, 0
+	return syntheticManifestQuery(segmentCount, rawQuery)
 }
 
 // GetSegment returns the file path of a named segment if it exists.
