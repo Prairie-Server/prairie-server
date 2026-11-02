@@ -229,6 +229,33 @@ func TestCopySegmentPlanManifest(t *testing.T) {
 	}
 }
 
+// A long copy plan carries its query once only for a client that opted into
+// variable substitution, as synthetic transcode playlists do; Tizen AVPlay
+// ignores EXT-X-DEFINE.
+func TestCopySegmentPlanManifestSubstitutesQueryOnlyWithOptIn(t *testing.T) {
+	plan := &copySegmentPlan{durations: slices.Repeat([]float64{2}, 1000)}
+	query := "st=" + strings.Repeat("recipe", 80)
+	negotiated := plannedOpts()
+	negotiated.HLSVariableSubstitution = true
+	for name, tc := range map[string]struct {
+		opts   TranscodeOpts
+		query  string
+		define bool
+	}{
+		"no opt-in":  {plannedOpts(), query, false},
+		"negotiated": {negotiated, query, true},
+		"hls_vars=1": {plannedOpts(), query + "&" + HLSVariableSubstitutionQueryParam + "=1", true},
+	} {
+		got := string(plan.manifest(tc.opts, "segment/", tc.query))
+		if strings.Contains(got, "#EXT-X-DEFINE:") != tc.define {
+			t.Fatalf("%s: EXT-X-DEFINE present = %v, want %v", name, !tc.define, tc.define)
+		}
+		if !tc.define && strings.Count(got, ".m4s?"+tc.query) != len(plan.durations) {
+			t.Fatalf("%s: every segment URI should keep the literal query", name)
+		}
+	}
+}
+
 func TestPlannedSessionServesPlanForEveryManifest(t *testing.T) {
 	plan := &copySegmentPlan{durations: []float64{2, 2, 1}}
 	s := &TranscodeSession{opts: plannedOpts(), copyPlan: plan}

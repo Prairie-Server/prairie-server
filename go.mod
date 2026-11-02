@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.3
-	github.com/go-chi/chi/v5 v5.2.5
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
@@ -22,6 +22,7 @@ require (
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/abadojack/whatlanggo v1.0.1
+	github.com/andybalholm/brotli v1.2.6
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.23.14
 	github.com/danielgtaylor/huma/v2 v2.38.0
 	github.com/getkin/kin-openapi v0.149.0
@@ -30,6 +31,7 @@ require (
 	github.com/h2non/bimg v1.1.9
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/joho/godotenv v1.5.1
+	github.com/klauspost/compress v1.20.1
 	github.com/miekg/dns v1.1.73
 	github.com/mmcdole/gofeed v1.5.0
 	github.com/oasdiff/oasdiff v1.33.0
@@ -47,7 +49,8 @@ require (
 	go.n16f.net/thumbhash v1.1.0
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/image v0.47.0
-	golang.org/x/net v0.61.0
+	golang.org/x/mod v0.42.0
+	golang.org/x/net v0.62.0
 	golang.org/x/tools v0.52.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261012220534-4341edf3f941
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -57,7 +60,6 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	github.com/TwiN/go-color v1.4.1 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
-	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
@@ -71,7 +73,6 @@ require (
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
 	github.com/lestrrat-go/dsig v1.4.0 // indirect
@@ -119,7 +120,6 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/mod v0.42.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20261005182115-fad411399dd8 // indirect
 )
 
@@ -143,7 +143,7 @@ require (
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20261019002507-0aec7216afa6
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20261102160212-f1a0e3822112
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

@@ -324,14 +324,23 @@ func (r *PushDeviceRepository) UpsertApple(ctx context.Context, registration App
 	if generation > 0 {
 		return nil, ErrPushLegacyWriter
 	}
+	// An installation reset by its owner stays reserved for that account.
+	var reservedFor int
+	if err := tx.QueryRow(ctx, `SELECT user_id FROM apple_push_installations WHERE device_id=$1`, registration.DeviceID).Scan(&reservedFor); err != nil {
+		return nil, err
+	}
+	if reservedFor != 0 && reservedFor != registration.UserID {
+		return nil, ErrPushGenerationConflict
+	}
+	if err := checkPushInstallationOwner(ctx, tx, registration.DeviceID, PushPlatformApple, registration.UserID); err != nil {
+		return nil, err
+	}
 
-	// A device install registers for the account profile it is currently
-	// signed into. Purge the same install's registrations under other account
-	// profiles (attempts cascade with them) so a profile or account switch on a
-	// shared device doesn't leave the previous owner's notifications flowing to
-	// it. A same-ID profile on another account is another owner.
+	// A legacy install can switch profiles within its account. Account transfers
+	// require the ordered protocol's installation proof; a supplied device ID or
+	// provider token alone cannot retire another account's rows or attempts.
 	if _, err := tx.Exec(ctx,
-		`DELETE FROM push_devices WHERE device_id = $1 AND platform = $2 AND (user_id <> $3 OR profile_id <> $4)`,
+		`DELETE FROM push_devices WHERE device_id = $1 AND platform = $2 AND user_id = $3 AND profile_id <> $4`,
 		registration.DeviceID, PushPlatformApple, registration.UserID, registration.ProfileID); err != nil {
 		return nil, fmt.Errorf("purge reassigned push device: %w", err)
 	}
@@ -390,11 +399,14 @@ func (r *PushDeviceRepository) UpsertFCM(ctx context.Context, registration FCMPu
 	if generation > 0 {
 		return nil, ErrPushLegacyWriter
 	}
+	if err := checkPushInstallationOwner(ctx, tx, registration.DeviceID, PushPlatformAndroid, registration.UserID); err != nil {
+		return nil, err
+	}
 
 	// Same profile-switch cleanup as UpsertApple: one install notifies one
 	// account profile at a time.
 	if _, err := tx.Exec(ctx,
-		`DELETE FROM push_devices WHERE device_id = $1 AND platform = $2 AND (user_id <> $3 OR profile_id <> $4)`,
+		`DELETE FROM push_devices WHERE device_id = $1 AND platform = $2 AND user_id = $3 AND profile_id <> $4`,
 		registration.DeviceID, PushPlatformAndroid, registration.UserID, registration.ProfileID); err != nil {
 		return nil, fmt.Errorf("purge reassigned push device: %w", err)
 	}
@@ -433,6 +445,21 @@ func (r *PushDeviceRepository) UpsertFCM(ctx context.Context, registration FCMPu
 		return nil, fmt.Errorf("commit push device update: %w", err)
 	}
 	return device, nil
+}
+
+// checkPushInstallationOwner refuses a generation-zero write (bridge
+// registration or ordered bootstrap) when another account holds a destination
+// for this installation. Callers hold the platform's installation lock, so
+// ownership cannot change between this check and the write.
+func checkPushInstallationOwner(ctx context.Context, tx pgx.Tx, deviceID, platform string, userID int) error {
+	var foreign bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM push_devices WHERE device_id=$1 AND platform=$2 AND user_id<>$3)`, deviceID, platform, userID).Scan(&foreign); err != nil {
+		return fmt.Errorf("check push installation owner: %w", err)
+	}
+	if foreign {
+		return ErrPushGenerationConflict
+	}
+	return nil
 }
 
 // DeleteAllForProfile removes push registrations for a deleted account profile.

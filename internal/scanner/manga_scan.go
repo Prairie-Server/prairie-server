@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/fspath"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/titleutil"
@@ -228,7 +229,7 @@ func (s *Scanner) deleteOrphanedMangaSeries(ctx context.Context, folderID int) e
 // find-or-creates the single type='manga' series item for the chapter's series
 // folder and links the chapter to it with its parsed index/volume.
 func (s *Scanner) reconcileMangaFile(ctx context.Context, folder *models.MediaFolder, filePath string, skipped *int64, groupLocks *ebookGroupLocks) error {
-	info, err := os.Stat(filePath)
+	info, err := fspath.Stat(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -255,14 +256,14 @@ func (s *Scanner) reconcileMangaFile(ctx context.Context, folder *models.MediaFo
 		return fmt.Errorf("parse manga file %s: %w", filePath, err)
 	}
 	if parsed.Title == "" {
-		parsed.Title = ebookTitleFromPath(filePath)
+		parsed.Title = ebookDisplayTitleFromPath(filePath)
 	}
 
 	seriesName := mangaSeriesFromPath(filePath)
 	if seriesName == "" {
-		seriesName = ebookTitleFromPath(filePath)
+		seriesName = ebookDisplayTitleFromPath(filePath)
 	}
-	stem := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+	stem := fspath.Display(strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)))
 	vol, idx, has := mangaIndexForFile(stem, seriesName)
 
 	// 1. Keep the file as a readable type='ebook' chapter item, exactly as the

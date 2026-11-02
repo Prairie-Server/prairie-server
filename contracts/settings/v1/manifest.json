@@ -1,6 +1,6 @@
 {
   "api_version": 1,
-  "revision": 20,
+  "revision": 24,
   "option_sets": {
     "playback_audio_languages": {
       "type": "language_tag",
@@ -157,6 +157,42 @@
     }
   },
   "definitions": [
+    {
+      "key": "playback.buffering_quality_mode",
+      "introduced_in": 23,
+      "persistence": "remote",
+      "allowed_scopes": [
+        "profile",
+        "profile_device"
+      ],
+      "resolution_order": [
+        "profile_device",
+        "profile",
+        "default"
+      ],
+      "value_schema": {
+        "type": "enum",
+        "values": [
+          {
+            "value": "never",
+            "label": "Never"
+          },
+          {
+            "value": "ask",
+            "label": "Ask first"
+          },
+          {
+            "value": "always",
+            "label": "Automatically"
+          }
+        ]
+      },
+      "default_value": "always",
+      "category": "playback",
+      "label": "Lower quality when buffering",
+      "description": "What Prairie does on Auto when playback keeps buffering. Prairie always asks before lowering a quality you picked.",
+      "recommended_control": "select"
+    },
     {
       "key": "player.video_skip_back_seconds",
       "introduced_in": 9,
@@ -595,6 +631,36 @@
       "description": "What Prairie does when an intro starts: leave it alone, offer a Skip Intro button, or skip it and offer an undo.",
       "recommended_control": "select",
       "notes": "The replacement for playback.auto_skip_intro, which could only say \"prompt\" or \"count down then skip\" and had no way to turn the prompt off. The default is \"ask\", which is exactly what auto_skip_intro=false did, so an untouched profile behaves identically across the cutover. The schema has no segmented control, so this is a select; clients that have a segmented control should use it. See docs/design/2026-08-16-intro-skip-mode.md."
+    },
+    {
+      "key": "playback.show_marker_confidence",
+      "introduced_in": 24,
+      "persistence": "remote",
+      "allowed_scopes": ["profile", "profile_device"],
+      "resolution_order": ["profile_device", "profile", "default"],
+      "value_schema": {
+        "type": "boolean"
+      },
+      "default_value": false,
+      "category": "playback",
+      "label": "Show marker confidence",
+      "description": "Show how confident the source is above the Skip Intro button. Each source rates on its own scale, so the percentage is only comparable within one source; turn the source line on to see which one it is.",
+      "recommended_control": "switch"
+    },
+    {
+      "key": "playback.show_marker_source",
+      "introduced_in": 24,
+      "persistence": "remote",
+      "allowed_scopes": ["profile", "profile_device"],
+      "resolution_order": ["profile_device", "profile", "default"],
+      "value_schema": {
+        "type": "boolean"
+      },
+      "default_value": false,
+      "category": "playback",
+      "label": "Show marker source",
+      "description": "Show where the skip came from above the Skip Intro button: Prairie's own detection, a person, or the provider that supplied the marker.",
+      "recommended_control": "switch"
     },
     {
       "key": "playback.auto_skip_credits",
@@ -1282,7 +1348,8 @@
       "label": "Next up episodes",
       "description": "Whether upcoming episodes stay with Continue Watching or get their own row.",
       "recommended_control": "select",
-      "notes": "Registered from the legacy unprefixed key next_up_mode. The server reads it directly when assembling home sections, so it cannot be client-local; that read moves to the canonical resolver at cutover. The legacy value was untyped and absent meant combined, which is why combined is the default rather than a third \"unset\" member."
+      "admin_default": true,
+      "notes": "Registered from the legacy unprefixed key next_up_mode. The server reads it directly when assembling home sections, so it cannot be client-local; that read moves to the canonical resolver at cutover. The legacy value was untyped and absent meant combined, which is why combined is the default rather than a third \"unset\" member. The administrator can replace the default for the whole server; a profile with no stored value inherits it with source \"default\", and clearing the profile value returns to it."
     },
     {
       "key": "ui.next_up_new_releases_first",
@@ -1296,7 +1363,8 @@
       "label": "Show new episodes first",
       "description": "Move a show you've caught up on to the front of Continue Watching and Next Up when a new episode or season arrives.",
       "recommended_control": "switch",
-      "notes": "The server applies it when ordering next-up rows (Home Continue Watching, the separate Next Up row, and Jellyfin /Shows/NextUp), so it cannot be client-local. An episode counts as new when the availability detector recorded it as a release: it arrived after its library's first full scan and its file is new (episode_availability.released_at). Profile scope so the order follows the viewer across devices; default false keeps the last-watched order a profile has always had."
+      "admin_default": true,
+      "notes": "The server applies it when ordering next-up rows (Home Continue Watching, the separate Next Up row, and Jellyfin /Shows/NextUp), so it cannot be client-local. An episode counts as new when the availability detector recorded it as a release: it arrived after its library's first full scan and its file is new (episode_availability.released_at). Profile scope so the order follows the viewer across devices; default false keeps the last-watched order a profile has always had. The administrator can replace the default for the whole server; a profile with no stored value inherits it with source \"default\", and clearing the profile value returns to it."
     },
     {
       "key": "nav.primary_menu",
@@ -1347,9 +1415,9 @@
       "platforms": ["web", "ios", "tvos", "macos", "android", "android_tv"],
       "category": "appearance",
       "label": "Media cards",
-      "description": "Poster size and caption detail used by media cards.",
+      "description": "Poster size used by media cards.",
       "recommended_control": "panel",
-      "notes": "Semantic presets roam between like devices without forcing identical pixel dimensions across platforms. A profile fallback can opt into one presentation everywhere; family and exact-device values remain more specific."
+      "notes": "Semantic presets roam between like devices without forcing identical pixel dimensions across platforms. A profile fallback can opt into one presentation everywhere; family and exact-device values remain more specific. Revision 24 retires the caption choice: people hid titles and could no longer tell what a card was, so every card shows its title and details. caption stays required and keeps all three members so older clients can still write it, current clients send title_metadata and ignore the stored member, a migration rewrote stored values to title_metadata, and clients no longer offer it."
     },
     {
       "key": "ui.sidebar_pins",
@@ -1563,7 +1631,8 @@
       "label": "Show title art",
       "description": "Use a title's logo artwork as its name on detail pages when one is available. When off, the name is always shown as text.",
       "recommended_control": "switch",
-      "notes": "The profile scope deliberately resolves before profile_device: a profile value is the profile's \"apply to all devices\" choice and wins on every device, while with no profile value each device follows its own profile_device value. Clients show a second \"Apply to all devices\" switch whose state is the effective source being profile. Turning it on writes the current value at profile scope; while on, the main switch writes profile scope. Turning it off writes the current value at profile_device for the device doing it and then clears the profile value, so that device keeps its look and every other device returns to its own value or the default. Device values written earlier are kept while the profile value is set and apply again once it is cleared. Covers every surface that names a title with its logo (detail heroes, TV marquees); a client that turns it off also has no reason to prefetch logos."
+      "admin_default": true,
+      "notes": "The profile scope deliberately resolves before profile_device: a profile value is the profile's \"apply to all devices\" choice and wins on every device, while with no profile value each device follows its own profile_device value. Clients show a second \"Apply to all devices\" switch whose state is the effective source being profile. Turning it on writes the current value at profile scope; while on, the main switch writes profile scope. Turning it off writes the current value at profile_device for the device doing it and then clears the profile value, so that device keeps its look and every other device returns to its own value or the default. Device values written earlier are kept while the profile value is set and apply again once it is cleared. Covers every surface that names a title with its logo (detail heroes, TV marquees); a client that turns it off also has no reason to prefetch logos. The administrator can replace the default for the whole server; a profile or device with no stored value inherits it with source \"default\", and clearing both the profile value and this device's value returns a device to it."
     }
   ]
 }

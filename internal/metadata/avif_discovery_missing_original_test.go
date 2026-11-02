@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
@@ -138,4 +139,31 @@ func (f *fakeObjectChecker) ObjectExists(ctx context.Context, _ string, key stri
 	}
 	_ = info
 	return true, nil
+}
+
+// fakeObjectChecker treats every key as present unless listed in missing or
+// erroring. Defaulting to present keeps sweeps over rows seeded by other
+// tests in the shared test database side-effect free.
+type fakeObjectChecker struct {
+	mu       sync.Mutex
+	missing  map[string]bool
+	erroring map[string]bool
+	errorAll bool
+	checked  map[string]int
+}
+
+func (f *fakeObjectChecker) Stat(_ context.Context, key string) (blobstore.ObjectInfo, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.checked == nil {
+		f.checked = map[string]int{}
+	}
+	f.checked[key]++
+	if f.errorAll || f.erroring[key] {
+		return blobstore.ObjectInfo{}, errors.New("simulated storage error")
+	}
+	if f.missing[key] {
+		return blobstore.ObjectInfo{}, blobstore.ErrNotFound
+	}
+	return blobstore.ObjectInfo{Key: key}, nil
 }

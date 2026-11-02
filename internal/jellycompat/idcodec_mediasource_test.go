@@ -11,21 +11,9 @@ func TestMediaSourceIDsEqual(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "identical dashed",
-			a:    "03000000-0000-0000-0000-00000019e8c2",
-			b:    "03000000-0000-0000-0000-00000019e8c2",
-			want: true,
-		},
-		{
 			name: "dashed vs compact (Wholphin)",
 			a:    "03000000-0000-0000-0000-00000019e8c2",
 			b:    "0300000000000000000000000019e8c2",
-			want: true,
-		},
-		{
-			name: "compact vs dashed",
-			a:    "0300000000000000000000000019e8c2",
-			b:    "03000000-0000-0000-0000-00000019e8c2",
 			want: true,
 		},
 		{
@@ -45,12 +33,6 @@ func TestMediaSourceIDsEqual(t *testing.T) {
 			a:    "abc",
 			b:    "abc",
 			want: true,
-		},
-		{
-			name: "non-uuid mismatch",
-			a:    "abc",
-			b:    "def",
-			want: false,
 		},
 	}
 

@@ -12,16 +12,19 @@ import (
 	"github.com/prairie-server/prairie-server/internal/activitylog"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/netaccess"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
 	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
 	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -69,7 +72,11 @@ type Dependencies struct {
 	// control-plane recipe store (Redis) so a restarted transcode node can rebuild
 	// a jellycompat session. Optional; nil disables the handoff.
 	RecipeNodeStore recipeNodePutter
-	LoginResolver   loginResolver
+	// EventBus carries cluster events. The playback handler subscribes to
+	// proxies' requests to move a transcode off a node they cannot reach. Nil
+	// leaves proxy-egress transcodes without that failover.
+	EventBus      cache.EventBus
+	LoginResolver loginResolver
 	// ProfilePINAttempts is the native API's profile PIN limiter, shared so
 	// password#pin guesses count against the same per-profile budget. Nil
 	// gets a process-local limiter.
@@ -139,12 +146,16 @@ type Dependencies struct {
 	// admin live-session table right after compat playback starts/stops, so
 	// the activity dashboard doesn't wait for the periodic reconciler tick.
 	// Optional.
-	SessionSyncer          PlaybackSessionSyncer
-	MarkerPopulation       MarkerPopulationService
-	FileResolver           FilePathResolver
-	MediaSourceOwners      MediaSourceOwnerLookup // optional; resolves media-source ids sent as item ids
-	Downloads              DownloadServer         // serves /Items/{id}/Download; nil refuses every download
-	UserStoreProvider      userstore.UserStoreProvider
+	SessionSyncer     PlaybackSessionSyncer
+	MarkerPopulation  MarkerPopulationService
+	FileResolver      FilePathResolver
+	MediaSourceOwners MediaSourceOwnerLookup // optional; resolves media-source ids sent as item ids
+	Downloads         DownloadServer         // serves /Items/{id}/Download; nil refuses every download
+	UserStoreProvider userstore.UserStoreProvider
+	// AdminDefaults supplies the administrator's defaults for settings that
+	// declare admin_default, such as Next Up ordering (the node's shared
+	// *config.AdminDefaults). Nil uses the contract defaults.
+	AdminDefaults          settingsresolve.ServerSettings
 	WatchScrobbler         PlaybackWatchScrobbler
 	StableIdentityResolver watchsync.ScrobbleIdentityResolver
 	AccessFilterFn         AccessFilterResolver
@@ -171,6 +182,9 @@ type Dependencies struct {
 	// Subtitle support (optional)
 	SubtitleRepo  subtitles.Repository // optional; downloaded subtitle support
 	SubtitleBlobs subtitles.BlobStore  // optional; backs downloaded subtitle reads
+	// KeptSubtitles reads embedded tracks from kept copies or through the
+	// file's index before the subtitle cache demuxes a source; nil demuxes.
+	KeptSubtitles playback.EmbeddedSubtitleSource
 	// SubtitlePlaySync aligns a subtitle the first time a client is served
 	// it, when it was never synced; nil leaves that to a request.
 	SubtitlePlaySync subtitles.PlaySyncer

@@ -11,6 +11,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/lang"
 	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata/showstatus"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -306,7 +307,7 @@ func parseTVShowNFO(data []byte) (*parsedNFO, error) {
 	p := parsedFromCommon(&s.nfoCommon, typeSeries)
 	p.FirstAirDate = firstDate(s.Premiered, s.Aired)
 	deriveYear(p, s.Premiered, s.Aired)
-	p.ShowStatus = metadata.NormalizeShowStatus(s.Status)
+	p.ShowStatus = showstatus.Normalize(s.Status)
 	// Kodi has no network element: a show's <studio> is its network.
 	p.Networks = slices.Clone(p.Studios)
 	p.SeasonNames = namedSeasons(s.NamedSeasons)

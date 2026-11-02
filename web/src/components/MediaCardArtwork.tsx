@@ -128,6 +128,7 @@ export default function MediaCardArtwork({
           )}
           loading={priority ? "eager" : lazy ? "lazy" : undefined}
           fetchPriority={priority ? "high" : undefined}
+          decoding={priority ? undefined : "async"}
           onLoad={onLoad}
           onError={() => {
             onError();

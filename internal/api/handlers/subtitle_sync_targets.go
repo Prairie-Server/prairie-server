@@ -6,10 +6,10 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/fspath"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/prairie-server/prairie-server/internal/subtitles/subsync"
@@ -272,7 +272,7 @@ func (h *SubtitleSearchHandler) externalSyncState(ctx context.Context, fileID in
 	if h.external == nil || !subtitles.SupportsRetime(subtitles.SubtitleFormat(sidecar.Format)) {
 		return nil, nil
 	}
-	data, err := os.ReadFile(sidecar.Path)
+	data, err := fspath.ReadFile(sidecar.Path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}

@@ -246,12 +246,12 @@ func (r *PlayableTargetResolver) ResolveTargets(ctx context.Context, q PlayableT
 				)
 			  ) OR (
 				requested.media_type = 'episode'
-				AND EXISTS (
+				AND (EXISTS (
 					SELECT 1
 					FROM media_files mf
 					WHERE mf.episode_id = requested.content_id
 					  AND %s
-				)
+				) OR `+SpanningEpisodeFileExistsSQL("requested.content_id", "%s")+`)
 			  )
 		),
 		candidate_episodes AS (
@@ -332,7 +332,7 @@ func (r *PlayableTargetResolver) ResolveTargets(ctx context.Context, q PlayableT
 		         season_number,
 		         episode_number,
 		         play_content_id
-	`, strings.Join(fileConditions, " AND "), strings.Join(fileConditions, " AND "), strings.Join(fileConditions, " AND "))
+	`, strings.Join(fileConditions, " AND "), strings.Join(fileConditions, " AND "), strings.Join(fileConditions, " AND "), strings.Join(fileConditions, " AND "))
 
 	candidates := make(map[string][]string, len(ids))
 	hints := make(map[string]string, len(ids))

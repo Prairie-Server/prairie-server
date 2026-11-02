@@ -65,7 +65,13 @@
         },
         "platform": {
           "type": "string",
-          "enum": ["android", "android-tv", "ios", "tvos"],
+          "enum": [
+            "android",
+            "android-tv",
+            "ios",
+            "tvos",
+            "roku"
+          ],
           "maxLength": 32
         },
         "os_version": {
