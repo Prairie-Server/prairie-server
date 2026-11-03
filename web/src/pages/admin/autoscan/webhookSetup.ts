@@ -85,7 +85,8 @@ export function triggersFor(provider: AutoscanWebhookProvider | "auto"): Webhook
     },
     {
       label: "On Series Delete / On Movie Delete",
-      reason: "Whichever your service offers — lets Prairie drop titles you deleted with their files.",
+      reason:
+        "Whichever your service offers — lets Prairie drop titles you deleted with their files.",
       required: false,
     },
   ];

@@ -487,8 +487,8 @@ function InstalledPluginPage({
           }
         >
           <p>
-            <strong className="font-semibold">Update checks are paused.</strong> {pausedBy}, so Prairie
-            doesn't look for new versions of {name}.{" "}
+            <strong className="font-semibold">Update checks are paused.</strong> {pausedBy}, so
+            Prairie doesn't look for new versions of {name}.{" "}
             <ViewTransitionLink
               to="/admin/plugins?tab=catalog"
               className="underline underline-offset-4"

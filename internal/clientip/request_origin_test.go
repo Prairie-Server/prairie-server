@@ -50,7 +50,7 @@ func TestRequestOrigin(t *testing.T) {
 func TestSerializeOrigin(t *testing.T) {
 	for _, tc := range []struct{ scheme, host, want string }{
 		{"https", "silo.test", "https://silo.test"},
-		{"HTTPS", "Prairie.Example.TEST:443", "https://silo.example.test"},
+		{"HTTPS", "Silo.Example.TEST:443", "https://silo.example.test"},
 		{"http", "10.0.0.5:80", "http://10.0.0.5"},
 		{"http", "10.0.0.5:8096", "http://10.0.0.5:8096"},
 		{"https", "silo.test:80", "https://silo.test:80"},

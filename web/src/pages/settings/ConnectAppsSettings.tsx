@@ -460,15 +460,15 @@ export default function ConnectAppsSettings() {
             <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
               {passwordLoginAvailable ? (
                 <>
-                  Password sign-in is off on this server, so Prairie's apps and TVs hide the password
-                  form. As a recovery account, this one can still use its password on this website
-                  at{" "}
+                  Password sign-in is off on this server, so Prairie's apps and TVs hide the
+                  password form. As a recovery account, this one can still use its password on this
+                  website at{" "}
                   <span className="text-foreground font-mono break-all">
                     {prairieURL}/login?local=1
                   </span>
                   . On Apple TV or Android TV, sign in there, then approve the code the TV shows at{" "}
-                  <span className="text-foreground font-mono break-all">{prairieURL}/activate</span>.
-                  To sign in on a phone, connect a sign-in provider in Settings → Account.
+                  <span className="text-foreground font-mono break-all">{prairieURL}/activate</span>
+                  . To sign in on a phone, connect a sign-in provider in Settings → Account.
                 </>
               ) : (
                 "Prairie's sign-in screens don't offer a password sign-in it can use, and it isn't connected to a sign-in provider. Connect one in Settings → Account, or ask an administrator."

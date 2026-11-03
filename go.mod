@@ -1,6 +1,6 @@
 module github.com/prairie-server/prairie-server
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/DataDog/go-sqllexer v0.2.5

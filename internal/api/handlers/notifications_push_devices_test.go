@@ -153,7 +153,7 @@ func TestLegacyMobilePushOwnershipConflict(t *testing.T) {
 			}, nil)
 			rr := httptest.NewRecorder()
 			if platform == notifications.PushPlatformApple {
-				body := `{"device_id":"fixture-phone","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.siloserver.prairie"}`
+				body := `{"device_id":"fixture-phone","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.prairieserver.prairie"}`
 				handler.HandleRegisterApplePushDevice(rr, newApplePushRequest(body))
 			} else {
 				body := `{"device_id":"fixture-phone","platform":"android","token":"` + strings.Repeat("a", 64) + `"}`

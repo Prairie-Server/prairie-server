@@ -131,8 +131,8 @@ func TestCheckEventBusChannels(t *testing.T) {
 	}
 
 	for _, tc := range []struct{ path, want string }{
-		{"/3", "SUBSCRIBE prairie:catalog@db3 prairie:admin@db3 prairie:playback@db3 prairie:transcode-move@db3 prairie:logs@db3 prairie:events@db3"},
-		{"/0", "SUBSCRIBE prairie:catalog prairie:admin prairie:playback prairie:transcode-move prairie:logs prairie:events"},
+		{"/3", "SUBSCRIBE silo:catalog@db3 silo:admin@db3 silo:playback@db3 prairie:transcode-move@db3 silo:logs@db3 silo:events@db3"},
+		{"/0", "SUBSCRIBE silo:catalog silo:admin silo:playback prairie:transcode-move silo:logs silo:events"},
 	} {
 		server := startRESPTestServer(t, nil, respTestRedis)
 		if err := check(t, server, tc.path); err != nil {

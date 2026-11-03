@@ -179,7 +179,7 @@ func TestApplePushInstallationResetTransport(t *testing.T) {
 	h := NewHandler(deps)
 	key := base64.RawURLEncoding.EncodeToString([]byte(strings.Repeat("k", 32)))
 	headers := with(profileOwner(), "X-Push-Installation-Key", key)
-	register := `{"device_id":"install","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.siloserver.prairie","push_mode":"private_push"}`
+	register := `{"device_id":"install","apns_token":"` + strings.Repeat("a", 64) + `","apns_environment":"production","apns_topic":"org.prairieserver.prairie","push_mode":"private_push"}`
 	for _, tc := range []struct {
 		err  error
 		code string

@@ -2,10 +2,11 @@ package literaryworks
 
 import (
 	"context"
-	"github.com/prairie-server/prairie-server/internal/envutil"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func newLiteraryWorksTestPool(t *testing.T) *pgxpool.Pool {

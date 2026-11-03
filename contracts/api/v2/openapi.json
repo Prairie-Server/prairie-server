@@ -160786,6 +160786,18 @@
             }
           },
           {
+            "description": "The client's stable device identifier; a successful start records it in the profile's device registry (first 128 characters)",
+            "in": "header",
+            "name": "X-Prairie-Device-Id",
+            "schema": {
+              "description": "The client's stable device identifier; a successful start records it in the profile's device registry (first 128 characters)",
+              "examples": [
+                "iphone-1"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "in": "header",
             "name": "User-Agent",
             "schema": {
@@ -160895,19 +160907,6 @@
               "examples": [
                 "release"
               ],
-              "type": "string"
-            }
-          },
-          {
-            "description": "The client's stable device identifier, logged with each event",
-            "in": "header",
-            "name": "X-Prairie-Device-Id",
-            "schema": {
-              "description": "The client's stable device identifier, logged with each event",
-              "examples": [
-                "shield-living-room"
-              ],
-              "maxLength": 128,
               "type": "string"
             }
           }
