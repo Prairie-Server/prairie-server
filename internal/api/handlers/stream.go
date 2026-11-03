@@ -944,8 +944,6 @@ func (h *StreamHandler) streamEmbeddedSubtitle(w http.ResponseWriter, r *http.Re
 		opts.TargetFormat = "vtt"
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	// Only complete successful extracts enter the cache; explicit windows
 	// remain streamed. Keep failures distinguishable from a clean subtitle EOF.
 	response := middleware.NewWrapResponseWriter(w, r.ProtoMajor)

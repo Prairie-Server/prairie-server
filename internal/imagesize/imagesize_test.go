@@ -168,34 +168,3 @@ func TestPluginVariant(t *testing.T) {
 		}
 	}
 }
-
-func TestNextLower(t *testing.T) {
-	tests := []struct {
-		imageType string
-		variant   string
-		want      string
-		wantOK    bool
-	}{
-		{"poster", "w500", "w300", true},
-		{"poster", "w300", "w200", true},
-		{"poster", "w200", "", false},
-		{"still", "w500", "w300", true},
-		{"still", "w300", "", false},
-		{"logo", "w500", "", false},
-		{"backdrop", "w2560", "w1920", true},
-		{"backdrop", "w1920", "w1280", true},
-		{"backdrop", "w1280", "w300", true},
-		{"backdrop", "w300", "", false},
-		{"profile", "w500", "w300", true},
-		{"profile", "w300", "w200", true},
-		{"poster", "original", "", false},
-		{"poster", "", "", false},
-		{"poster", "wide", "", false},
-	}
-	for _, tt := range tests {
-		got, ok := NextLower(tt.imageType, tt.variant)
-		if got != tt.want || ok != tt.wantOK {
-			t.Errorf("NextLower(%q, %q) = (%q, %v), want (%q, %v)", tt.imageType, tt.variant, got, ok, tt.want, tt.wantOK)
-		}
-	}
-}

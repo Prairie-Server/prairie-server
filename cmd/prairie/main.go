@@ -2194,15 +2194,11 @@ func main() {
 		}
 		if deps.Blobs.Assets != nil {
 			imageResolver.SetArtworkResolver(deps.ArtworkResolver)
-			// Every backend reads the publication manifest, because a key the
-			// catalog holds can name a rung its revision predates: after a
-			// ladder change, existing artwork lacks the new widest rung until
-			// the ladder backfill regenerates it. Only external delivery (a
-			// public or token-authenticated read endpoint in front of S3) can
-			// also lag behind a write, so only it runs the verifier.
-			imageResolver.SetArtworkAvailabilityReader(metadata.NewArtworkDeliveryStore(
-				deps.DB, deps.ArtworkDelivery.Scope, deps.ArtworkDelivery.External,
-			))
+			// The publication manifest answers for a key the catalog holds
+			// that names a rung its revision predates: after a ladder change,
+			// existing artwork lacks the new widest rung until the ladder
+			// backfill regenerates it.
+			imageResolver.SetArtworkAvailabilityReader(metadata.NewArtworkPublicationStore(deps.DB))
 		}
 		deps.ImageResolver = imageResolver
 		deps.PluginImageResolver = imageResolver
@@ -3410,10 +3406,17 @@ func main() {
 			}
 			trickplayExtractor := trickplay.NewNodeExtractor(trickplay.NewLocalExtractor(settingsRepo), deps.NodePlanner, settingsRepo)
 			if trickplayService := trickplay.NewService(deps.DB, deps.Blobs.Assets, settingsRepo, trickplayExtractor, deps.NodeID); trickplayService != nil {
+				trickplayReader := trickplay.NewReader(deps.DB, deps.Blobs.Assets, trickplayURLResolver(&deps))
+				if checker, ok := deps.Blobs.Assets.(trickplay.DeliveryChecker); ok && deps.ArtworkDelivery.External {
+					// Sheets confirmed fetchable through the external endpoint
+					// are read from it; the rest use the signed server route.
+					trickplayService.SetExternalDelivery(deps.ArtworkDelivery.Scope, checker)
+					trickplayReader.SetExternalDelivery(deps.ArtworkDelivery.Scope, deps.ArtworkResolver)
+				}
 				trickplayService.Start(appCtx)
 				taskMgr.Register(tasks.NewQueueSeekPreviewsTask(trickplayService))
 				deps.Trickplay = trickplayService
-				deps.TrickplayReader = trickplay.NewReader(deps.DB, deps.Blobs.Assets, trickplayURLResolver(&deps))
+				deps.TrickplayReader = trickplayReader
 				deps.TrickplayAdmin = trickplay.NewAdmin(deps.DB, deps.Blobs.Assets, trickplayService.Kick)
 			}
 		}
@@ -3612,12 +3615,6 @@ func main() {
 		}
 		if deps.Blobs.Assets != nil {
 			identity := deps.Blobs.Assets.Identity()
-			if deps.ArtworkDelivery.External {
-				taskMgr.Register(tasks.NewVerifyArtworkDeliveryTask(
-					metadata.NewArtworkDeliveryStore(deps.DB, deps.ArtworkDelivery.Scope, true),
-					deps.Blobs.Assets,
-				))
-			}
 			var brandingReconciler tasks.BrandingAssetReconciler
 			if brandingSvc != nil {
 				brandingReconciler = brandingSvc
@@ -4562,7 +4559,8 @@ func newS3ClientIfConfigured(cfg s3client.BucketConfig) *s3client.Client {
 func trickplayURLResolver(deps *api.Dependencies) artworkurl.Resolver {
 	if deps.ArtworkDelivery.External {
 		// An external read endpoint can lag behind the S3 write that published
-		// the manifest. The signed server route reads the storage API directly.
+		// the manifest. Until the service confirms the endpoint serves a
+		// revision, the signed server route reads the storage API directly.
 		return artworkurl.NewServerResolver(deps.ArtworkSigner)
 	}
 	return deps.ArtworkResolver
