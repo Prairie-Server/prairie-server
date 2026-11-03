@@ -13,36 +13,27 @@ import (
 	"github.com/prairie-server/prairie-server/internal/imagesize"
 )
 
-// ArtworkAvailability is durable knowledge about one immutable revision.
-// Verified distinguishes a completed delivery check (including no usable keys)
-// from publication that has not yet been checked through external delivery.
-// Deliverable holds the latest verdict for the current delivery scope; while
-// Verified is false it predates the current publication, so it proves which
-// variants delivered but not which are missing.
+// ArtworkAvailability is durable knowledge about one immutable revision:
+// Published holds the exact keys its publication uploaded. Prairie is the only
+// writer to the assets store and deletes a revision only after it is
+// retired, so every backend serves a published key as stored.
 type ArtworkAvailability struct {
-	Published   []string
-	Deliverable []string
-	External    bool
-	Verified    bool
+	Published []string
 }
 
 type ArtworkAvailabilityReader interface {
 	ArtworkAvailability(context.Context, []string) (map[string]ArtworkAvailability, error)
 }
 
-// These types gained their widest rung in the current ladder version. Legacy
-// artwork without a manifest can safely use only an established lower rung.
+// These types' ladders have grown since revision manifests were introduced.
+// Legacy artwork without a manifest was cached before any of that growth, so
+// it may only use the rungs every ladder version has generated: up to the
+// type's medium rung, which is pinned to the pre-image_size default.
 //
-// Prairie keeps its TV-tuned ladder (artworkkey.VariantWidths): posters top
-// out at w500, stills at w500 and logos at w500, all rungs every cached item
-// has always carried. Upstream's w780/w1280 rungs do not exist here, so no
-// widest rung is new, and stepping an unverified w500 down to w300 would only
-// serve every default-size poster smaller than it needs to be. Prairie's own
-// added rung (the w200 TV poster) sits at the bottom of the ladder, which this
-// step-down never concerns.
-//
-// Backdrops did gain a widest rung (w2560, adopted from upstream), so only
-// they step down.
+// Prairie keeps its TV-tuned ladder (artworkkey.VariantWidths): posters,
+// stills and logos top out at the w500 every cached item has always carried,
+// and Prairie's own added rung (the w200 TV poster) sits at the bottom of the
+// ladder. Only backdrops gained a widest rung (w2560, adopted from upstream).
 var ladderTypesWithAddedRung = map[string]bool{
 	ImageCacheImageBackdrop: true,
 }
@@ -73,8 +64,7 @@ func variantKey(key, variant string) string {
 // Neither cold caches nor missing manifests cause storage or delivery probes.
 // Without a reader every key resolves to itself.
 //
-// Where delivery cannot lag behind a write (local storage, direct S3), a
-// published revision has every rung its ladder version generated, so only a
+// A published revision has every rung its ladder version generated, so only a
 // rung a later ladder version added can be missing; only those keys are
 // looked up, and everything else resolves to itself without a query.
 func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityReader, entries []resolveEntry) map[string]string {
@@ -85,13 +75,12 @@ func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityR
 		}
 		return resolved
 	}
-	lookupAll := readsExternalDelivery(reader)
 	originals := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		if catalog.ImageTypeFromCachedPath(entry.originalPath) == "" {
 			continue
 		}
-		if lookupAll || isAddedRung(entry.originalPath) {
+		if isAddedRung(entry.originalPath) {
 			originals = append(originals, variantKey(entry.originalPath, artworkkey.OriginalVariant))
 		}
 	}
@@ -110,16 +99,6 @@ func resolvePublishedLadderKeys(ctx context.Context, reader ArtworkAvailabilityR
 		resolved[key] = selectPublishedVariant(key, state, known)
 	}
 	return resolved
-}
-
-// readsExternalDelivery reports whether reader serves a backend whose delivery
-// can lag behind a write. A reader that cannot say is treated as external, so
-// every key is looked up.
-func readsExternalDelivery(reader ArtworkAvailabilityReader) bool {
-	if r, ok := reader.(interface{ ExternalDelivery() bool }); ok {
-		return r.ExternalDelivery()
-	}
-	return true
 }
 
 // isAddedRung reports whether key names a rung wider than its type's medium
@@ -145,18 +124,7 @@ func selectPublishedVariant(key string, state ArtworkAvailability, known bool) s
 		}
 		return key
 	}
-	// An unverified external path is not proof the newly added size works,
-	// unless an earlier verdict in this scope already delivered it.
-	if state.External && !state.Verified && ladderTypesWithAddedRung[imageType] &&
-		keyVariant(key) == imagesize.Variant(imageType, imagesize.Large) && !slices.Contains(state.Deliverable, key) {
-		if lower, ok := imagesize.NextLower(imageType, keyVariant(key)); ok {
-			key = variantKey(key, lower)
-		}
-	}
 	keys := state.Published
-	if state.External && state.Verified {
-		keys = state.Deliverable
-	}
 	candidate := key
 	if keyVariant(key) == artworkkey.OriginalVariant && !slices.Contains(keys, key) {
 		candidate = variantKey(key, imagesize.Variant(imageType, imagesize.Large))
@@ -168,7 +136,7 @@ func selectPublishedVariant(key string, state ArtworkAvailability, known bool) s
 	if slices.Contains(keys, original) {
 		return original
 	}
-	// A known empty manifest or failed delivery is a placeholder, not a guess.
+	// A known empty manifest is a placeholder, not a guess.
 	return ""
 }
 
