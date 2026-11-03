@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,6 +14,20 @@ import (
 
 	"github.com/redis/go-redis/v9"
 )
+
+// The admin sessions endpoint and ListAll scan with ScanPattern, so it must
+// match the keys the tracker writes, for every node and for one node.
+func TestScanPatternMatchesTrackerKeys(t *testing.T) {
+	key := NewTracker(nil, "http://proxy-a", "proxy-a", "proxy").redisKey("play-1")
+	for _, tc := range []struct {
+		nodeURL string
+		want    bool
+	}{{"", true}, {"http://proxy-a", true}, {"http://proxy-b", false}} {
+		if got, _ := path.Match(ScanPattern(tc.nodeURL), key); got != tc.want {
+			t.Errorf("ScanPattern(%q) matches %q = %v, want %v", tc.nodeURL, key, got, tc.want)
+		}
+	}
+}
 
 // Overlapping requests for one playback session (a HEAD probe or a second
 // range request while a GET plays) each hold the session. Only the last

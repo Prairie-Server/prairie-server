@@ -21,13 +21,13 @@ type ListResult struct {
 }
 
 // ListAll reads the live session records every proxy and transcode node
-// publishes under silo:sessions:{nodeHash}:{sessionID}.
+// publishes under prairie:sessions:{nodeHash}:{sessionID}.
 //
 // It exists here rather than in a handler because this package owns the key
 // format and the record shape. Note that internal/api/handlers/nodes.go
 // deliberately keeps its own scan: that endpoint passes the stored JSON through
 // opaquely so an older node's extra fields survive the round trip, which a
-// decode-and-re-encode reader would silently drop.
+// decode-and-re-encode reader would silently drop. It scans with ScanPattern.
 func ListAll(ctx context.Context, rdb *redis.Client, limit int) (ListResult, error) {
 	var result ListResult
 	if rdb == nil {
@@ -39,7 +39,7 @@ func ListAll(ctx context.Context, rdb *redis.Client, limit int) (ListResult, err
 
 	var cursor uint64
 	for {
-		keys, next, err := rdb.Scan(ctx, cursor, keyPrefix+"*", 200).Result()
+		keys, next, err := rdb.Scan(ctx, cursor, ScanPattern(""), 200).Result()
 		if err != nil {
 			return result, err
 		}
