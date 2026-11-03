@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +24,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/logredact"
 	"github.com/prairie-server/prairie-server/internal/netaccess"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
@@ -834,16 +833,14 @@ func (h *NodeHandler) HandleListSessions(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
-	pattern := "silo:sessions:*"
+	pattern := nodesessions.ScanPattern("")
 
 	if nodeIDStr := r.URL.Query().Get("node_id"); nodeIDStr != "" {
 		nodeID, err := strconv.Atoi(nodeIDStr)
 		if err == nil {
 			node, err := h.repo.GetByID(ctx, nodeID)
 			if err == nil {
-				hashBytes := sha256.Sum256([]byte(node.URL))
-				nodeHash := hex.EncodeToString(hashBytes[:4])
-				pattern = "silo:sessions:" + nodeHash + ":*"
+				pattern = nodesessions.ScanPattern(node.URL)
 			}
 		}
 	}
