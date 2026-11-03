@@ -4,8 +4,9 @@ import type { AutoscanPathRewrite, AutoscanWebhookProvider, Library } from "@/ap
  * The arr notification triggers Prairie actually consumes.
  *
  * Kept in sync with internal/autoscan/arrwebhook/parse.go: importEventTypes
- * ("Download"/"Import"/"Upgrade"/"DownloadComplete"), the "Rename" event, and
- * deleteEventTypes ("EpisodeFileDelete"/"MovieFileDelete"). Anything the host
+ * ("Download"/"Import"/"Upgrade"/"DownloadComplete"), the "Rename" event,
+ * deleteEventTypes ("EpisodeFileDelete"/"MovieFileDelete"), and
+ * folderDeleteEventTypes ("SeriesDelete"/"MovieDelete"). Anything the host
  * ignores is deliberately absent — telling an operator to tick a box that does
  * nothing is how "I followed the steps and it didn't work" starts.
  *
@@ -47,6 +48,11 @@ const SONARR_TRIGGERS: WebhookTrigger[] = [
     reason: "Lets Prairie drop episodes you removed, instead of leaving dead entries.",
     required: false,
   },
+  {
+    label: "On Series Delete",
+    reason: "Lets Prairie drop a series you deleted along with its files.",
+    required: false,
+  },
 ];
 
 const RADARR_TRIGGERS: WebhookTrigger[] = [
@@ -54,6 +60,11 @@ const RADARR_TRIGGERS: WebhookTrigger[] = [
   {
     label: "On Movie File Delete",
     reason: "Lets Prairie drop movies you removed, instead of leaving dead entries.",
+    required: false,
+  },
+  {
+    label: "On Movie Delete",
+    reason: "Lets Prairie drop a movie you deleted along with its files.",
     required: false,
   },
 ];
@@ -70,6 +81,12 @@ export function triggersFor(provider: AutoscanWebhookProvider | "auto"): Webhook
     {
       label: "On Episode File Delete / On Movie File Delete",
       reason: "Whichever your service offers — lets Prairie drop files you removed.",
+      required: false,
+    },
+    {
+      label: "On Series Delete / On Movie Delete",
+      reason:
+        "Whichever your service offers — lets Prairie drop titles you deleted with their files.",
       required: false,
     },
   ];

@@ -52,7 +52,7 @@ export function PickerRail({
       className={cn(
         vertical
           ? "grid content-start gap-0.5"
-          : "flex [scrollbar-width:none] gap-2 overflow-x-auto px-5 pb-1",
+          : "flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]",
       )}
     >
       {groups.map((group, index) => {

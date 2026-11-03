@@ -1,4 +1,6 @@
 import type { Profile } from "@/api/types";
+import type { AccountIdentity } from "@/hooks/queries/account";
+import type { AuthProviderOption } from "@/hooks/useAuth";
 
 export const PRAIRIE_APP_EXAMPLES =
   "Prairie for iPhone, Apple TV, Android, Android TV, and this website";
@@ -72,4 +74,64 @@ export function buildJellyfinPasswordHint(
   return profile.has_pin
     ? `${profile.name} has a PIN, so append # and the PIN to your account password.`
     : `${profile.name} has no PIN — just your account password, nothing appended.`;
+}
+
+/**
+ * How this account signs in on a Prairie app's sign-in screen.
+ *
+ * - `password`: the username and Prairie password form.
+ * - `directory`: the same form, with the linked directory's (LDAP) username
+ *   and password; the server routes a name without a Prairie password there.
+ * - `provider`: the linked OAuth (OIDC) provider's button, which opens the
+ *   provider in a browser. TVs show a code to approve instead.
+ * - `network`: the linked network provider's (such as Tailscale) "Continue
+ *   as" button, offered only on a device reaching the server through it.
+ * - `none`: nothing the sign-in screens offer works for this account.
+ */
+export type PrairieSignIn =
+  | { kind: "password" }
+  | { kind: "directory"; provider: AuthProviderOption; username: string }
+  | { kind: "provider"; provider: AuthProviderOption }
+  | { kind: "network"; providerName: string }
+  | { kind: "none" };
+
+/**
+ * Works out what a Prairie sign-in screen lets this account use.
+ *
+ * The account's password counts only while the server's sign-in screens show
+ * the password form (`passwordFormShown`, listAuthProviders' password_login):
+ * with local sign-in off, a break-glass password still works for recovery
+ * and Jellyfin apps, but the Prairie apps hide the form. Otherwise the account
+ * signs in through a linked identity whose provider is enabled; an identity
+ * at a disabled provider has an empty provider_id. A network provider is
+ * listed only to requests that come through its own network, so an enabled
+ * provider missing from the list is one of those.
+ */
+export function resolvePrairieSignIn(
+  accountPasswordWorks: boolean,
+  passwordFormShown: boolean,
+  providers: AuthProviderOption[],
+  identities: AccountIdentity[],
+): PrairieSignIn {
+  if (accountPasswordWorks && passwordFormShown) {
+    return { kind: "password" };
+  }
+  let network: PrairieSignIn | null = null;
+  for (const identity of identities) {
+    if (!identity.provider_id) continue;
+    const provider = providers.find((entry) => entry.id === identity.provider_id);
+    if (provider?.mode === "oauth") {
+      return { kind: "provider", provider };
+    }
+    if (provider?.mode === "credentials" && passwordFormShown) {
+      return { kind: "directory", provider, username: identity.username };
+    }
+    if (!provider || provider.mode === "network") {
+      network ??= {
+        kind: "network",
+        providerName: provider?.display_name ?? identity.provider_name,
+      };
+    }
+  }
+  return network ?? { kind: "none" };
 }

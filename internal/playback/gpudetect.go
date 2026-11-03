@@ -21,6 +21,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/prairie-server/prairie-server/internal/nodemetrics"
+	"github.com/prairie-server/prairie-server/internal/procgroup"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
@@ -1598,7 +1599,7 @@ func runFFmpegProbe(ctx context.Context, timeout time.Duration, ffmpegPath strin
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return exec.CommandContext(ctx, ffmpegPath, args...).CombinedOutput()
+	return procgroup.CommandContext(ctx, ffmpegPath, args...).CombinedOutput()
 }
 
 func ffmpegOutputHasToken(output []byte, token string) bool {

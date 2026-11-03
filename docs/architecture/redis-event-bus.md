@@ -9,8 +9,11 @@ in the process.
 
 ## Channels and database numbers
 
-The bus has five channels: `prairie:catalog`, `prairie:admin`, `prairie:playback`,
-`prairie:logs` and `prairie:events`. Code, logs and other documents use these names.
+The bus has six channels: `prairie:catalog`, `prairie:admin`, `prairie:playback`,
+`prairie:logs`, `prairie:events` and `prairie:transcode-move`. Code, logs and other
+documents use these names. `prairie:transcode-move` carries only transcode move
+requests from proxy nodes, so subscribers that react to every `prairie:playback`
+message never see them.
 
 Redis scopes keys by database number but not pub/sub. A published message
 reaches every subscriber of the channel on that server, whichever database

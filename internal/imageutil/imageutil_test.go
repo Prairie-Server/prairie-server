@@ -343,7 +343,7 @@ func TestPixelDataUndecodable(t *testing.T) {
 		"unknown":        {[]byte("not an image"), false},
 		"huge header":    {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 100_000, 100_000), false},
 		"just over cap":  {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 2_001, 2_000), false},
-		"one tall row":   {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 1, maxPixelCheckPixels+1), false},
+		"one tall row":   {withPNGDimensions(t, fullPNG[:len(fullPNG)/2], 1, maxGoDecodePixels+1), false},
 	} {
 		if got := PixelDataUndecodable(tc.data); got != tc.want {
 			t.Errorf("%s: PixelDataUndecodable = %v, want %v", name, got, tc.want)

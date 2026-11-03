@@ -21,12 +21,12 @@ func TestInstallerInstallBinaryPersistsPackagedArchive(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
 
-	result, err := installer.installBinary(ctx, binaryData, manifest.GetChecksum(), manifest, nil)
+	result, err := installer.installBinary(ctx, binaryData, manifest.GetChecksum(), manifest, nil, nil)
 	if err != nil {
 		t.Fatalf("installBinary() returned error: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
@@ -65,7 +65,7 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 		Version:      "0.0.18",
 		InstallPath:  oldPath,
 		Enabled:      true,
-	}, binaryData, hex.EncodeToString(checksum[:]), manifest, nil)
+	}, binaryData, hex.EncodeToString(checksum[:]), manifest, nil, nil)
 	if err != nil {
 		t.Fatalf("replaceBinary() returned error: %v", err)
 	}

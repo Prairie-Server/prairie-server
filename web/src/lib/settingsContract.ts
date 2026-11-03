@@ -9,7 +9,7 @@
  */
 
 export const SETTINGS_API_VERSION = 1;
-export const SETTINGS_REVISION = 20;
+export const SETTINGS_REVISION = 24;
 
 export interface SettingSuggestedOption {
   value: string;
@@ -216,6 +216,8 @@ export const SETTING_KEYS = {
   PLAYBACK_AUTO_SKIP_INTRO: "playback.auto_skip_intro",
   /** Auto-skip recaps */
   PLAYBACK_AUTO_SKIP_RECAP: "playback.auto_skip_recap",
+  /** Lower quality when buffering */
+  PLAYBACK_BUFFERING_QUALITY_MODE: "playback.buffering_quality_mode",
   /** Cellular maximum bitrate */
   PLAYBACK_CELLULAR_MAX_BITRATE_KBPS: "playback.cellular_max_bitrate_kbps",
   /** Cellular quality */
@@ -230,6 +232,10 @@ export const SETTING_KEYS = {
   PLAYBACK_PREFERRED_QUALITY: "playback.preferred_quality",
   /** Show forced subtitles */
   PLAYBACK_SHOW_FORCED_SUBTITLES: "playback.show_forced_subtitles",
+  /** Show marker confidence */
+  PLAYBACK_SHOW_MARKER_CONFIDENCE: "playback.show_marker_confidence",
+  /** Show marker source */
+  PLAYBACK_SHOW_MARKER_SOURCE: "playback.show_marker_source",
   /** Subtitle appearance */
   PLAYBACK_SUBTITLE_APPEARANCE: "playback.subtitle_appearance",
   /** Preferred subtitle language */
@@ -348,6 +354,9 @@ export interface SettingDefinition {
   scopeIntroducedIn: readonly number[];
   resolutionOrder: readonly string[];
   defaultValue: unknown;
+  /** The server administrator may replace defaultValue for the whole server,
+   * so a value with source "default" can differ from it. */
+  adminDefault?: boolean;
   label: string;
   description: string;
   category: string;
@@ -673,6 +682,27 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     category: "playback",
     control: "switch",
   },
+  "playback.buffering_quality_mode": {
+    key: "playback.buffering_quality_mode",
+    type: "enum",
+    nullable: false,
+    persistence: "remote",
+    introducedIn: 23,
+    scopes: ["profile", "profile_device"],
+    scopeIntroducedIn: [23, 23],
+    resolutionOrder: ["profile_device", "profile", "default"],
+    defaultValue: "always",
+    label: "Lower quality when buffering",
+    description:
+      "What Prairie does on Auto when playback keeps buffering. Prairie always asks before lowering a quality you picked.",
+    category: "playback",
+    control: "select",
+    values: [
+      { value: "never", label: "Never", introducedIn: 23 },
+      { value: "ask", label: "Ask first", introducedIn: 23 },
+      { value: "always", label: "Automatically", introducedIn: 23 },
+    ],
+  },
   "playback.cellular_max_bitrate_kbps": {
     key: "playback.cellular_max_bitrate_kbps",
     type: "integer",
@@ -812,6 +842,38 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     defaultValue: true,
     label: "Show forced subtitles",
     description: "Show subtitles for foreign-language dialogue even when subtitles are off.",
+    category: "playback",
+    control: "switch",
+  },
+  "playback.show_marker_confidence": {
+    key: "playback.show_marker_confidence",
+    type: "boolean",
+    nullable: false,
+    persistence: "remote",
+    introducedIn: 24,
+    scopes: ["profile", "profile_device"],
+    scopeIntroducedIn: [24, 24],
+    resolutionOrder: ["profile_device", "profile", "default"],
+    defaultValue: false,
+    label: "Show marker confidence",
+    description:
+      "Show how confident the source is above the Skip Intro button. Each source rates on its own scale, so the percentage is only comparable within one source; turn the source line on to see which one it is.",
+    category: "playback",
+    control: "switch",
+  },
+  "playback.show_marker_source": {
+    key: "playback.show_marker_source",
+    type: "boolean",
+    nullable: false,
+    persistence: "remote",
+    introducedIn: 24,
+    scopes: ["profile", "profile_device"],
+    scopeIntroducedIn: [24, 24],
+    resolutionOrder: ["profile_device", "profile", "default"],
+    defaultValue: false,
+    label: "Show marker source",
+    description:
+      "Show where the skip came from above the Skip Intro button: Prairie's own detection, a person, or the provider that supplied the marker.",
     category: "playback",
     control: "switch",
   },
@@ -1332,7 +1394,7 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     resolutionOrder: ["profile_device", "profile_client", "profile", "default"],
     defaultValue: { poster_size: "standard", caption: "title_metadata" },
     label: "Media cards",
-    description: "Poster size and caption detail used by media cards.",
+    description: "Poster size used by media cards.",
     category: "appearance",
     control: "panel",
     platforms: ["web", "ios", "tvos", "macos", "android", "android_tv"],
@@ -1498,6 +1560,7 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     scopeIntroducedIn: [1],
     resolutionOrder: ["profile", "default"],
     defaultValue: "combined",
+    adminDefault: true,
     label: "Next up episodes",
     description: "Whether upcoming episodes stay with Continue Watching or get their own row.",
     category: "navigation",
@@ -1517,6 +1580,7 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     scopeIntroducedIn: [18],
     resolutionOrder: ["profile", "default"],
     defaultValue: false,
+    adminDefault: true,
     label: "Show new episodes first",
     description:
       "Move a show you've caught up on to the front of Continue Watching and Next Up when a new episode or season arrives.",
@@ -1682,6 +1746,7 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     scopeIntroducedIn: [16, 16],
     resolutionOrder: ["profile", "profile_device", "default"],
     defaultValue: true,
+    adminDefault: true,
     label: "Show title art",
     description:
       "Use a title's logo artwork as its name on detail pages when one is available. When off, the name is always shown as text.",

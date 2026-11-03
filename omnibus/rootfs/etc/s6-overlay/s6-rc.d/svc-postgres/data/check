@@ -1,0 +1,4 @@
+#!/bin/sh
+# As the prairie user so peer authentication succeeds and the probe leaves no
+# failed-login lines in the log.
+exec s6-setuidgid prairie pg_isready -q -h /run/postgresql -U prairie -d postgres

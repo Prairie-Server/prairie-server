@@ -25,6 +25,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	"github.com/prairie-server/prairie-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
@@ -39,7 +40,15 @@ type SectionWithItems struct {
 // SectionItemMeta carries optional per-item metadata for richer section UIs.
 type SectionItemMeta struct {
 	// Raw still path, before image sizing or signing; nil means unavailable metadata.
-	EpisodeStillPath  *string
+	EpisodeStillPath *string
+	// ParentArtwork is the episode's season and series artwork, raw paths
+	// before sizing or signing; nil means unavailable metadata.
+	ParentArtwork *models.EpisodeParentArtwork
+	// EpisodeAirDate (YYYY-MM-DD) and RatingTMDB reach the v2 episode card
+	// only. They stay off the item because frozen v1 responses serialize it
+	// (the admin section preview) or its rating_tmdb (section cards).
+	EpisodeAirDate    *string
+	RatingTMDB        *float64
 	SeriesID          *string
 	SeriesTitle       string
 	SeasonNumber      *int
@@ -119,6 +128,11 @@ type Fetcher struct {
 	// now has onto the library watchlist before the watchlist section reads
 	// it. Nil skips promotion.
 	WatchlistPromoter catalog.WatchlistPromoter
+
+	// AdminDefaults supplies the administrator's defaults for the Next Up
+	// settings when a request carries no resolved access scope (the node's
+	// shared *config.AdminDefaults). Nil uses the contract defaults.
+	AdminDefaults settingsresolve.ServerSettings
 
 	// CollectionOwners limits a row of another profile's shared personal
 	// collection to its owner's access. Without it such a row fails.
@@ -540,7 +554,7 @@ func (f *Fetcher) fetchContinueWatchingSection(ctx context.Context, resolved Res
 	}
 
 	combined := ContinueTypeAllowsNextUp(continueType) && !resolved.SuppressNextUp &&
-		NextUpMode(ctx, store, profileID) == NextUpModeCombined
+		NextUpMode(ctx, store, f.AdminDefaults, profileID) == NextUpModeCombined
 
 	dropped := f.activeDroppedSeries(ctx, userID, profileID)
 	orderedItems, err = f.collectContinueProgressItems(ctx, store, profileID, dismissals, dropped, continueType, effectiveLibID, effectiveLibraryIDs, filter, limit, combined, orderedItems, itemMeta, completedCache,
@@ -563,7 +577,7 @@ func (f *Fetcher) fetchContinueWatchingSection(ctx context.Context, resolved Res
 	// leads the row when its next episode was just released, so the lookup is
 	// not bounded.
 	if combined {
-		newReleasesFirst := NextUpNewReleasesFirst(ctx, store, profileID)
+		newReleasesFirst := NextUpNewReleasesFirst(ctx, store, f.AdminDefaults, profileID)
 		var since *time.Time
 		if !newReleasesFirst {
 			since = continueNextUpCutoff(orderedItems, itemMeta, limit)
@@ -864,7 +878,7 @@ func (f *Fetcher) fetchNextUpSection(ctx context.Context, resolved ResolvedSecti
 	}
 
 	// Only resolve if the profile's preference is "separate"
-	if NextUpMode(ctx, store, profileID) != NextUpModeSeparate {
+	if NextUpMode(ctx, store, f.AdminDefaults, profileID) != NextUpModeSeparate {
 		return emptyResult, nil
 	}
 
@@ -873,7 +887,7 @@ func (f *Fetcher) fetchNextUpSection(ctx context.Context, resolved ResolvedSecti
 		limit = 20
 	}
 
-	items, meta, err := f.fetchNextUpItems(ctx, userID, profileID, libraryID, libraryIDs, filter, limit, nil, NextUpNewReleasesFirst(ctx, store, profileID))
+	items, meta, err := f.fetchNextUpItems(ctx, userID, profileID, libraryID, libraryIDs, filter, limit, nil, NextUpNewReleasesFirst(ctx, store, f.AdminDefaults, profileID))
 	if err != nil {
 		return SectionWithItems{}, err
 	}
@@ -904,7 +918,7 @@ func (f *Fetcher) FetchNextUpItems(ctx context.Context, userID int, profileID st
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting user store: %w", err)
 	}
-	return f.fetchNextUpItems(ctx, userID, profileID, libraryID, libraryIDs, filter, limit, nil, NextUpNewReleasesFirst(ctx, store, profileID))
+	return f.fetchNextUpItems(ctx, userID, profileID, libraryID, libraryIDs, filter, limit, nil, NextUpNewReleasesFirst(ctx, store, f.AdminDefaults, profileID))
 }
 
 // fetchNextUpItems is FetchNextUpItems with the profile's new-releases-first
@@ -1187,8 +1201,11 @@ func (f *Fetcher) filterNextUpDismissals(ctx context.Context, userID int, profil
 }
 
 // FetchAll runs all section queries in parallel and returns sections with items.
+// The sections share one read of the profile's watched set, which For You and
+// Because You Watched would otherwise each make.
 func (f *Fetcher) FetchAll(ctx context.Context, resolved []ResolvedSection, libraryID *int, libraryIDs []int, userID int, profileID string, filter catalog.AccessFilter) []SectionWithItems {
 	start := time.Now()
+	ctx = recommendations.WithWatchedSetMemo(ctx)
 	results := fetchAllWithRunner(ctx, resolved, fetchAllMaxConcurrency, func(ctx context.Context, sec ResolvedSection) (SectionWithItems, error) {
 		return f.FetchOne(ctx, sec, libraryID, libraryIDs, userID, profileID, filter)
 	})
@@ -1247,7 +1264,7 @@ func fetchAllWithRunner(ctx context.Context, resolved []ResolvedSection, maxConc
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			result, err := runner(ctx, sec)
+			result, err := runSectionFetch(ctx, sec, runner)
 			if err != nil {
 				LogFetchError(ctx, "sections", sec, err)
 				result = SectionWithItems{
@@ -1261,6 +1278,20 @@ func fetchAllWithRunner(ctx context.Context, resolved []ResolvedSection, maxConc
 
 	wg.Wait()
 	return results
+}
+
+// runSectionFetch runs runner for one section of fetchAllWithRunner. It runs
+// on its own goroutine, out of reach of the request's panic recovery, so a
+// panic becomes the section's error.
+func runSectionFetch(ctx context.Context, sec ResolvedSection, runner sectionFetchRunner) (result SectionWithItems, err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			slog.ErrorContext(ctx, "section fetch panicked", "component", "sections", "section_id", sec.ID, "type", sec.SectionType,
+				"panic", logredact.SanitizeText(fmt.Sprint(rec)), "stack", string(debug.Stack()))
+			result, err = SectionWithItems{}, errors.New("section fetch panicked")
+		}
+	}()
+	return runner(ctx, sec)
 }
 
 // FetchItemsByContentIDs resolves content IDs to full MediaItem objects,
@@ -1345,7 +1376,7 @@ func (f *Fetcher) fetchSection(ctx context.Context, s ResolvedSection, libraryID
 	}
 	switch s.SectionType {
 	case SectionGenre, SectionCustomFilter:
-		return f.fetchFiltered(ctx, s, libraryID, libraryIDs, filter)
+		return f.fetchFiltered(ctx, s, libraryID, libraryIDs, userID, profileID, filter)
 	case SectionRandom:
 		return f.fetchRandom(ctx, s, libraryID, libraryIDs, filter)
 	case SectionCollection:
@@ -1525,7 +1556,7 @@ func (f *Fetcher) fetchUserCollection(ctx context.Context, s ResolvedSection, li
 				Config:      cfgBytes,
 				Position:    s.Position,
 			}
-			return f.fetchFiltered(ctx, synth, libraryID, libraryIDs, filter)
+			return f.fetchFiltered(ctx, synth, libraryID, libraryIDs, userID, profileID, filter)
 		}
 
 		qd, ok := applySectionLibraryScopeToQuery(qd.Normalize(), libraryID, libraryIDs)
@@ -2854,10 +2885,16 @@ func (f *Fetcher) fetchRecentlyReleased(ctx context.Context, s ResolvedSection, 
 	return items, len(items), err
 }
 
-func (f *Fetcher) fetchFiltered(ctx context.Context, s ResolvedSection, libraryID *int, libraryIDs []int, filter catalog.AccessFilter) ([]*models.MediaItem, int, error) {
+func (f *Fetcher) fetchFiltered(ctx context.Context, s ResolvedSection, libraryID *int, libraryIDs []int, userID int, profileID string, filter catalog.AccessFilter) ([]*models.MediaItem, int, error) {
 	def, err := ParseQueryDefinition(s.Config)
 	if err != nil {
 		return nil, 0, fmt.Errorf("parsing query definition: %w", err)
+	}
+	// Rules and sorts on the viewer's own state (watched, favorited, progress,
+	// ...) read it for the requesting profile. Such a row is never served from
+	// the shared cache (isCacheableSectionType), so the scope stays per profile.
+	if def.IsPersonalized() {
+		filter.UserID, filter.ProfileID = userID, profileID
 	}
 
 	def, ok := applySectionLibraryScopeToQuery(def, libraryID, libraryIDs)
@@ -3007,17 +3044,11 @@ func (f *Fetcher) fetchItemsByContentIDsFiltered(ctx context.Context, contentIDs
 		return []*models.MediaItem{}, nil
 	}
 
-	var conditions []string
-	var args []any
-	argIdx := 1
-
-	placeholders := make([]string, len(contentIDs))
-	for i, contentID := range contentIDs {
-		placeholders[i] = fmt.Sprintf("$%d", argIdx)
-		args = append(args, contentID)
-		argIdx++
-	}
-	conditions = append(conditions, fmt.Sprintf("mi.content_id IN (%s)", strings.Join(placeholders, ", ")))
+	// One array parameter keeps one statement shape for every list size; a
+	// placeholder per ID made each count new SQL to prepare.
+	conditions := []string{"mi.content_id = ANY($1::text[])"}
+	args := []any{contentIDs}
+	argIdx := 2
 
 	applyConfigTypeFilter("mi", cfgFilters.FilterType, &conditions, &args, &argIdx)
 
@@ -3050,22 +3081,24 @@ func markEpisodeStillProvenance(item *models.MediaItem, stillPath string) {
 	item.BackdropIsEpisodeStill = new(stillPath != "" && item.BackdropPath == stillPath)
 }
 
+// episodeAirDate is an episode card's release date: its air date, as in the
+// episode catalog scope.
+func episodeAirDate(airDate *time.Time) *string {
+	if airDate == nil {
+		return nil
+	}
+	return new(airDate.Format(time.DateOnly))
+}
+
 func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentIDs []string, libraryID *int, libraryIDs []int, filter catalog.AccessFilter) ([]*models.MediaItem, map[string]SectionItemMeta, error) {
 	if len(contentIDs) == 0 {
 		return []*models.MediaItem{}, map[string]SectionItemMeta{}, nil
 	}
 
-	var conditions []string
-	var args []any
-	argIdx := 1
-
-	placeholders := make([]string, len(contentIDs))
-	for i, contentID := range contentIDs {
-		placeholders[i] = fmt.Sprintf("$%d", argIdx)
-		args = append(args, contentID)
-		argIdx++
-	}
-	conditions = append(conditions, fmt.Sprintf("e.content_id IN (%s)", strings.Join(placeholders, ", ")))
+	// One array parameter for every list size, as fetchItemsByContentIDsFiltered.
+	conditions := []string{"e.content_id = ANY($1::text[])"}
+	args := []any{contentIDs}
+	argIdx := 2
 
 	fromClause := "episodes e JOIN media_items si ON e.series_id = si.content_id LEFT JOIN seasons s ON s.content_id = e.season_id"
 	if !applyEpisodeTargetLibraryAccess(filter, libraryID, libraryIDs, &conditions, &args, &argIdx) {
@@ -3082,6 +3115,7 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 			e.overview,
 			e.runtime,
 			e.rating_imdb,
+			e.rating_tmdb,
 			COALESCE(NULLIF(s.poster_path, ''), NULLIF(si.poster_path, ''), NULLIF(e.still_path, ''), '') AS poster_path,
 			COALESCE(NULLIF(s.poster_thumbhash, ''), NULLIF(si.poster_thumbhash, ''), NULLIF(e.still_thumbhash, ''), '') AS poster_thumbhash,
 			e.season_number,
@@ -3094,7 +3128,15 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 			COALESCE(NULLIF(e.still_thumbhash, ''), NULLIF(si.backdrop_thumbhash, ''), '') AS backdrop_thumbhash,
 			si.logo_path,
 			si.status,
-			COALESCE(e.still_path, '')
+			COALESCE(e.still_path, ''),
+			COALESCE(si.poster_path, ''),
+			COALESCE(si.poster_thumbhash, ''),
+			COALESCE(si.backdrop_path, ''),
+			COALESCE(si.backdrop_thumbhash, ''),
+			COALESCE(s.poster_path, ''),
+			COALESCE(s.poster_thumbhash, ''),
+			COALESCE(s.backdrop_path, ''),
+			COALESCE(s.backdrop_thumbhash, '')
 		FROM %s
 		WHERE %s
 	`, fromClause, strings.Join(conditions, " AND "))
@@ -3116,6 +3158,8 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 			seriesTitle   string
 			airDate       *time.Time
 			stillPath     string
+			parent        models.EpisodeParentArtwork
+			ratingTMDB    *float64
 		)
 		item.Type = "episode"
 		err := rows.Scan(
@@ -3125,6 +3169,7 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 			&item.Overview,
 			&item.Runtime,
 			&item.RatingIMDB,
+			&ratingTMDB,
 			&item.PosterPath,
 			&item.PosterThumbhash,
 			&seasonNumber,
@@ -3138,14 +3183,26 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 			&item.LogoPath,
 			&item.Status,
 			&stillPath,
+			&parent.SeriesPosterPath,
+			&parent.SeriesPosterThumbhash,
+			&parent.SeriesBackdropPath,
+			&parent.SeriesBackdropThumbhash,
+			&parent.SeasonPosterPath,
+			&parent.SeasonPosterThumbhash,
+			&parent.SeasonBackdropPath,
+			&parent.SeasonBackdropThumbhash,
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("scanning episode section item: %w", err)
 		}
 		markEpisodeStillProvenance(&item, stillPath)
+		item.ParentArtwork = &parent
 		items = append(items, &item)
 		itemMeta[item.ContentID] = SectionItemMeta{
 			EpisodeStillPath: new(stillPath),
+			ParentArtwork:    &parent,
+			EpisodeAirDate:   episodeAirDate(airDate),
+			RatingTMDB:       ratingTMDB,
 			SeriesID:         &seriesID,
 			SeriesTitle:      seriesTitle,
 			SeasonNumber:     &seasonNumber,
@@ -3518,6 +3575,7 @@ func watchActivityQuery(s ResolvedSection, libraryID *int, libraryIDs []int, fil
 	conditions = append(conditions, fmt.Sprintf("uwh.watched_at > NOW() - $%d::interval", argIdx))
 	args = append(args, scope.interval)
 	argIdx++
+	conditions = append(conditions, catalog.HistoryCountsAsWatchedSQL("uwh"))
 
 	if scope.userID > 0 {
 		conditions = append(conditions, fmt.Sprintf("uwh.user_id = $%d", argIdx))
@@ -3680,7 +3738,7 @@ func (f *Fetcher) fetchNewToLibrary(ctx context.Context, s ResolvedSection, libr
 	whereClause := "WHERE " + strings.Join(conditions, " AND ")
 
 	query := fmt.Sprintf(
-		`SELECT %s FROM %s %s ORDER BY mi.created_at DESC LIMIT $%d`,
+		`SELECT %s FROM %s %s ORDER BY mi.created_at DESC, mi.content_id ASC LIMIT $%d`,
 		itemColumns("mi"), fromClause, whereClause, argIdx,
 	)
 	args = append(args, limit)
@@ -3721,7 +3779,10 @@ func (f *Fetcher) fetchMostWatched(ctx context.Context, s ResolvedSection, libra
 // slots), and the deny check must be item-level — with a row join, an item
 // linked to both an allowed and a disabled library passes via the allowed
 // membership row (see catalog audit 2026-05-01 §3 Pattern D, the same reason
-// catalog's buildLibraryScopeJoin uses semi-joins).
+// catalog's buildLibraryScopeJoin uses semi-joins). With no library named, the
+// item must still belong to some library, so a stale or provisional
+// media_items row left without memberships (its files removed) never shows on
+// Home while its library pages already leave it out.
 func buildLibraryScope(libraryID *int, libraryIDs []int, configLibraryIDs []int, disabledLibraryIDs []int, argIdx int) (string, []string, []any, int) {
 	fromClause := "media_items mi"
 	var conditions []string
@@ -3752,16 +3813,13 @@ func buildLibraryScope(libraryID *int, libraryIDs []int, configLibraryIDs []int,
 		memberOfAny(libraryIDs)
 	}
 
+	if libraryID == nil && libraryIDs == nil && len(configLibraryIDs) == 0 {
+		conditions = append(conditions,
+			"EXISTS (SELECT 1 FROM media_item_libraries mil_scope_any WHERE mil_scope_any.content_id = mi.content_id)",
+		)
+	}
+
 	if len(disabledLibraryIDs) > 0 {
-		if libraryID == nil && libraryIDs == nil && len(configLibraryIDs) == 0 {
-			// Deny-only mode: still require at least one library membership so
-			// stale or provisional media_items rows with no membership don't
-			// become visible through a vacuous NOT EXISTS (mirrors
-			// appendDiscoveryLibraryScope in package catalog).
-			conditions = append(conditions,
-				"EXISTS (SELECT 1 FROM media_item_libraries mil_scope_any WHERE mil_scope_any.content_id = mi.content_id)",
-			)
-		}
 		conditions = append(conditions, fmt.Sprintf(
 			"NOT EXISTS (SELECT 1 FROM media_item_libraries mil_scope_out WHERE mil_scope_out.content_id = mi.content_id AND mil_scope_out.media_folder_id = ANY($%d))",
 			argIdx,
@@ -4118,6 +4176,7 @@ func (f *Fetcher) fetchReturningShows(ctx context.Context, s ResolvedSection, li
 			JOIN episodes we ON we.content_id = uwh.media_item_id
 			WHERE uwh.user_id = $1
 			  AND uwh.profile_id = $2
+			  AND `+catalog.HistoryCountsAsWatchedSQL("uwh")+`
 			GROUP BY we.series_id
 		)
 		SELECT %s FROM %s JOIN watched w ON w.series_id = mi.content_id WHERE %s

@@ -6,18 +6,30 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations, merge requ
 
 ## Prerequisites
 
-- **Go** 1.24+
-- **Bun** 1.0+
-- **PostgreSQL** 18+
-- **FFmpeg** (for transcoding support)
+- Git, Make, and OpenSSL
+- Docker Engine or Docker Desktop with Docker Compose 2.24+ (local services and testcontainers)
+- Go 1.26.4+
+- Node.js 24+ with pnpm 10.32.1. The managed Jellyfin Web installer (`make jellyfin-web`,
+  `prairie compat-web install`, or the admin settings) also needs Node.js 24+ for Jellyfin Web 12.x.
+- PostgreSQL 18 with pgvector
+- Redis
+- FFmpeg (transcoding). On macOS, install Homebrew's keg-only full build so
+  text-subtitle burn-in and the complete filter set are available alongside
+  VideoToolbox: `brew install ffmpeg-full`. Prairie discovers the Apple Silicon
+  and Intel keg paths automatically when the FFmpeg Path setting is blank; a
+  custom build can be selected explicitly in Admin Settings.
+- A C compiler and build toolchain (CGO dependencies)
+- pkg-config and the libvips development headers (image processing through bimg)
 
 ## Local Development
 
-Local development remains intentionally separate from the deploy-oriented compose setup. Use [docker-compose.yml](docker-compose.yml) for local services and the source-build workflow below.
+Source builds use only the PostgreSQL and Redis services of
+[dev/compose.yml](dev/compose.yml); the README's `docker-compose.yml`
+runs the published omnibus image instead.
 
 ```sh
 # Start local PostgreSQL and Redis
-docker compose up -d postgres redis
+docker compose -f dev/compose.yml up -d postgres redis
 
 # Run the frontend dev server (hot reload, proxies API to :8090)
 make dev-frontend
@@ -26,7 +38,12 @@ make dev-frontend
 make dev-backend
 ```
 
-The main compose file expects `MEDIA_ROOT` to be set even if you only want the bundled PostgreSQL and Redis services, so set that in `.env` first (`cp .env.example .env`).
+`dev/compose.yml` runs as the `prairie-dev` Compose project with named
+volumes, so it does not reuse a development database that the earlier
+`docker compose up -d postgres redis` kept under `PRAIRIE_DATA_ROOT/postgres`.
+Stop those containers first (`docker compose down` with the earlier file), since
+they hold ports 5432 and 6379, and restore a `pg_dump` of the old database into
+the new one if you need its data.
 
 If you are developing Prairie and `prairie-plugin-sdk` together, keep using the local [`go.work`](go.work) workspace. That workspace is a developer convenience only. CI and release builds run with `GOWORK=off`, so any new SDK helper used here must be pushed and tagged in `prairie-plugin-sdk` before this repo can merge or release the change.
 

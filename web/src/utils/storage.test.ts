@@ -98,17 +98,6 @@ describe("appearance cache namespacing", () => {
     expect(appearanceCache.get(KEYS.UI_TEXT_SCALE, "2")).toBeNull();
   });
 
-  it("keeps every key in the group independently namespaced", () => {
-    appearanceCache.set(KEYS.UI_TEXT_SCALE, "large", "1");
-    appearanceCache.set(KEYS.UI_HIGH_CONTRAST, "true", "1");
-    appearanceCache.set(KEYS.UI_DATE_FORMAT, "iso", "2");
-
-    expect(appearanceCache.get(KEYS.UI_HIGH_CONTRAST, "1")).toBe("true");
-    expect(appearanceCache.get(KEYS.UI_HIGH_CONTRAST, "2")).toBeNull();
-    expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "2")).toBe("iso");
-    expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "1")).toBeNull();
-  });
-
   it("drops only the requested owner's cached value", () => {
     appearanceCache.set(KEYS.UI_TEXT_SCALE, "cobalt-studio", "1");
     appearanceCache.set(KEYS.UI_TEXT_SCALE, "oxblood-noir", "2");

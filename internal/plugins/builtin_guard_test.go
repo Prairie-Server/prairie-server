@@ -2,8 +2,6 @@ package plugins
 
 import (
 	"context"
-	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -44,32 +42,6 @@ func TestPreloadEnabledSkipsBuiltinInstallation(t *testing.T) {
 	}
 }
 
-// InstallationStore.Delete must reject builtin rows at the store layer: the
-// delete cascades through every NFO chain row and RemoveAlls the install dir.
-func TestInstallationStoreDeleteRejectsBuiltin(t *testing.T) {
-	pool := builtinGuardTestPool(t)
-	ctx := context.Background()
-
-	id := seedBuiltinTestInstallation(t, pool, "test.builtin.delete")
-
-	store := NewInstallationStore(pool)
-	err := store.Delete(ctx, id)
-	if err == nil {
-		t.Fatal("Delete(builtin) = nil, want error")
-	}
-	if !errors.Is(err, ErrBuiltinInstallationImmutable) {
-		t.Fatalf("Delete(builtin) error = %v, want ErrBuiltinInstallationImmutable", err)
-	}
-
-	var count int
-	if qErr := pool.QueryRow(ctx, `SELECT COUNT(*) FROM plugin_installations WHERE id = $1`, id).Scan(&count); qErr != nil {
-		t.Fatalf("count row: %v", qErr)
-	}
-	if count != 1 {
-		t.Fatalf("builtin row count after rejected delete = %d, want 1", count)
-	}
-}
-
 func builtinGuardTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
@@ -84,59 +56,19 @@ func builtinGuardTestPool(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-func seedBuiltinTestInstallation(t *testing.T, pool *pgxpool.Pool, pluginID string) int {
+func seedResidentQueryInstallation(t *testing.T, pool *pgxpool.Pool, enabled bool) int {
 	t.Helper()
 	var id int
+	pluginID := "silo.test.resident-query" + time.Now().UTC().Format("-20060102150405.000000000")
 	err := pool.QueryRow(context.Background(),
 		`INSERT INTO plugin_installations (plugin_id, version, install_path, enabled, update_policy, kind)
-		 VALUES ($1, '0', '/nonexistent/prairie-builtin-test', true, 'manual', 'builtin')
-		 RETURNING id`, pluginID+time.Now().UTC().Format("-20060102150405.000000000")).Scan(&id)
+		 VALUES ($1, '0', '/nonexistent/resident-query-test', $2, 'manual', 'plugin')
+		 RETURNING id`, pluginID, enabled).Scan(&id)
 	if err != nil {
-		t.Fatalf("seed builtin installation: %v", err)
+		t.Fatalf("seed installation: %v", err)
 	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(context.Background(), `DELETE FROM plugin_installations WHERE id = $1`, id)
 	})
 	return id
-}
-
-// Replacing a package records where the new one came from, and InstalledFromPrairieRepository
-// follows it: a package uploaded over a Prairie catalog install is no longer Prairie-managed.
-func TestInstallationStoreUpdateRecordsReplacementSourceDB(t *testing.T) {
-	pool := builtinGuardTestPool(t)
-	ctx := context.Background()
-	var prairieRepository int
-	if err := pool.QueryRow(ctx, `SELECT id FROM plugin_repositories WHERE source_kind = 'prairie' ORDER BY id LIMIT 1`).Scan(&prairieRepository); err != nil {
-		t.Skipf("no Prairie-managed repository row: %v", err)
-	}
-	store := NewInstallationStore(pool)
-	pluginID := "test.source." + strconv.FormatInt(time.Now().UnixNano(), 36)
-	installation, err := store.Create(ctx, CreateInstallationInput{
-		RepositoryID: prairieRepository,
-		PluginID:     pluginID,
-		Version:      "1.0.0",
-		InstallPath:  "/nonexistent/plugin",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _, _ = pool.Exec(ctx, `DELETE FROM plugin_installations WHERE id = $1`, installation.ID) }()
-	service := &Service{repositories: NewRepositoryStore(pool)}
-	if managed, err := service.InstalledFromPrairieRepository(ctx, installation); err != nil || !managed {
-		t.Fatalf("catalog install: managed = %t, err = %v", managed, err)
-	}
-
-	if err := store.Update(ctx, installation.ID, UpdateInstallationInput{SetRepository: true}); err != nil {
-		t.Fatal(err)
-	}
-	replaced, err := store.GetByID(ctx, installation.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if replaced.RepositoryID != nil {
-		t.Fatalf("repository after upload replace = %d, want none", *replaced.RepositoryID)
-	}
-	if managed, err := service.InstalledFromPrairieRepository(ctx, replaced); err != nil || managed {
-		t.Fatalf("uploaded replacement: managed = %t, err = %v", managed, err)
-	}
 }

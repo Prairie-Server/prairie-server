@@ -8,8 +8,8 @@ type APIKey struct {
 	UserID int
 	Label  string
 	// Key is the full plaintext credential, only populated for key-creation
-	// responses. It is never stored at rest once api_key_hash backfill is
-	// enabled.
+	// responses; empty on authentication reads. Only its SHA-256 verifier
+	// (key_hash) is stored.
 	Key string
 	// KeyPrefix is a non-secret identifier for UI display (and cannot be used
 	// as a credential).

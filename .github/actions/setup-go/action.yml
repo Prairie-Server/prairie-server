@@ -37,8 +37,8 @@ runs:
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version: '<1.28'
-        # The runner image pins an older patch release; govulncheck needs the
-        # newest stdlib security fixes (net/http).
+        # Without check-latest, an older release cached on the runner image wins
+        # and govulncheck fails on standard library fixes it lacks.
         check-latest: true
         cache: false
 

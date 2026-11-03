@@ -34,11 +34,13 @@ func TestGetOverlayConfigDefaults(t *testing.T) {
 	}
 }
 
-func TestGetOverlayConfigReflectsAdminDefaults(t *testing.T) {
+func TestGetOverlayConfigIncludesQuickActionAdminDefaults(t *testing.T) {
 	handler := NewSettingsHandler(nil)
 	handler.SetServerSettings(&fakeServerSettingsStore{values: map[string]string{
-		"overlays.enabled":       "false",
-		"defaults.card_overlays": `{"preset":"classic"}`,
+		"overlays.enabled":                    "false",
+		"defaults.card_overlays":              `{"preset":"classic"}`,
+		"defaults.card_quick_actions_enabled": "false",
+		"defaults.card_quick_actions":         "favorites",
 	}})
 
 	response := readOverlayConfig(t, handler)
@@ -47,5 +49,11 @@ func TestGetOverlayConfigReflectsAdminDefaults(t *testing.T) {
 	}
 	if response.Defaults != `{"preset":"classic"}` {
 		t.Fatalf("defaults = %q", response.Defaults)
+	}
+	if response.QuickActionsEnabled {
+		t.Fatal("card quick actions enabled = true, want false")
+	}
+	if response.QuickActionsDefault != "favorites" {
+		t.Fatalf("card quick actions default = %q, want favorites", response.QuickActionsDefault)
 	}
 }

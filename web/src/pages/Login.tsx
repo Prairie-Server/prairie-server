@@ -576,12 +576,7 @@ export default function Login() {
             {oauthProviders.length > 0 && (
               <div className="space-y-2">
                 {oauthProviders.map((entry) => (
-                  <Button
-                    key={entry.id}
-                    asChild
-                    variant="outline"
-                    className="w-full justify-start gap-3"
-                  >
+                  <Button key={entry.id} asChild variant="outline" className="w-full gap-3">
                     <a
                       href={startHref(entry.installation_id ?? "")}
                       onClick={() => clearSignedOut()}

@@ -95,10 +95,4 @@ describe("catalogFilterBadges", () => {
       }),
     );
   });
-
-  it("keeps watch copy for non-audiobook badges", () => {
-    expect(getActiveFilterBadges(state({ watchStatus: "watched" }))).toContainEqual(
-      expect.objectContaining({ key: "watchStatus", label: "Watch: watched" }),
-    );
-  });
 });

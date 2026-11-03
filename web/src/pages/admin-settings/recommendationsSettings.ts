@@ -29,26 +29,16 @@ const RECOMMENDATIONS_GENERAL_SECTION: RecSectionDef = {
   ],
 };
 
+// The provider is chosen with its own control; the model is listed here so
+// the page seeds and saves it like every other field.
 const RECOMMENDATIONS_EMBEDDING_SECTION: RecSectionDef = {
-  title: "Embedding Configuration",
+  title: "Embedding Model",
   fields: [
-    {
-      key: "recommendations.embedding_base_url",
-      label: "Base URL",
-      type: "text",
-      hint: "e.g. http://ollama:11434",
-    },
     {
       key: "recommendations.embedding_model",
       label: "Model",
       type: "text",
       hint: "e.g. qwen3-embedding:0.6b",
-    },
-    {
-      key: "recommendations.embedding_auth_token",
-      label: "Auth Token",
-      type: "password",
-      hint: "Optional bearer token",
     },
   ],
 };
@@ -115,7 +105,7 @@ const RECOMMENDATIONS_SECTIONS: RecSectionDef[] = [
 ];
 
 const EMBEDDING_LOCK_NOTE =
-  "Switching the embedding base URL or model requires resetting embeddings, which deletes them all.";
+  "Switching to another model requires resetting embeddings, which deletes them all. Another provider serving the same model applies after a restart.";
 
 export function buildRecommendationSections(): RecSectionDef[] {
   return RECOMMENDATIONS_SECTIONS;

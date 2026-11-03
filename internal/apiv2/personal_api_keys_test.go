@@ -10,6 +10,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type fakePersonalAPIKeys struct {
@@ -36,7 +37,7 @@ func (f *fakePersonalAPIKeys) RevokePersonalAPIKey(_ context.Context, user int, 
 	}
 	return nil
 }
-func (f *fakePersonalAPIKeys) MayCreatePersonalAPIKey(context.Context, int, string, func(string) error) (bool, error) {
+func (f *fakePersonalAPIKeys) MayCreatePersonalAPIKey(context.Context, int, string, func(*userstore.Profile) error) (bool, error) {
 	return true, nil
 }
 func personalKeyHandler() (http.Handler, *fakePersonalAPIKeys) {
