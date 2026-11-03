@@ -36538,6 +36538,7 @@
             "type": "string"
           },
           "logo_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "name": {
@@ -36640,12 +36641,14 @@
             "type": "boolean"
           },
           "base_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "device_id": {
             "type": "string"
           },
           "discover_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "firmware": {
@@ -36914,6 +36917,7 @@
             "type": "string"
           },
           "image_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "is_live": {
@@ -37095,6 +37099,7 @@
         "additionalProperties": false,
         "properties": {
           "country": {
+            "description": "ISO 3166-1 alpha-3 country code; USA when empty",
             "maxLength": 8,
             "type": "string"
           },
@@ -37252,6 +37257,7 @@
           },
           "stream_url": {
             "description": "Opaque server-relative play URL; never an upstream tuner address",
+            "format": "uri-reference",
             "type": "string"
           },
           "transport": {
@@ -37288,6 +37294,7 @@
         "additionalProperties": false,
         "properties": {
           "base_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "channel_count": {
@@ -37298,6 +37305,7 @@
             "type": "string"
           },
           "discover_url": {
+            "format": "uri-reference",
             "type": "string"
           },
           "firmware": {
@@ -37362,7 +37370,7 @@
         "additionalProperties": false,
         "properties": {
           "url": {
-            "description": "Base URL, host, or discover.json URL of an HDHomeRun-compatible tuner",
+            "description": "Base URL, host, or discover.json URL of an HDHomeRun-compatible tuner; not validated as a URI",
             "maxLength": 2048,
             "minLength": 1,
             "type": "string"
@@ -37404,7 +37412,7 @@
             "type": "boolean"
           },
           "probe_urls": {
-            "description": "Dispatcharr or HDHomeRun base URLs to probe for discover.json",
+            "description": "Dispatcharr or HDHomeRun base URLs to probe for discover.json; a bare host is accepted, so they are not validated as a URI",
             "items": {
               "type": "string"
             },
@@ -37425,6 +37433,7 @@
         "additionalProperties": false,
         "properties": {
           "country": {
+            "description": "ISO 3166-1 alpha-3 country code; USA when empty",
             "maxLength": 8,
             "type": "string"
           },

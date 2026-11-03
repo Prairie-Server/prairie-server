@@ -21,7 +21,7 @@ func TestInstallerInstallBinaryPersistsPackagedArchive(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
@@ -52,7 +52,7 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	store := newRecordingInstallationStore()
 	installer := NewInstaller(store, InstallerOptions{BaseDir: t.TempDir()})
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])

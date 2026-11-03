@@ -98,7 +98,7 @@ type SessionHeader =
   | "x-profile-id"
   | "x-profile-token"
   | "x-device-id"
-  | "x-silo-device-id";
+  | "x-prairie-device-id";
 type CallerHeaders<H extends object> = {
   [Key in keyof H as Key extends string
     ? Lowercase<Key> extends SessionHeader

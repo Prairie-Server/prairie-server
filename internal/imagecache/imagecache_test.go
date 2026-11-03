@@ -1054,7 +1054,7 @@ func TestCacheBytesRepeatedS3ArtworkDoesNotWrite(t *testing.T) {
 						w.WriteHeader(500)
 						return
 					}
-					objects[r.URL.Path] = object{len(data), r.Header.Get("X-Amz-Meta-Prairie-Sha256")}
+					objects[r.URL.Path] = object{len(data), r.Header.Get("X-Amz-Meta-Silo-Sha256")}
 					writes++
 				case http.MethodHead:
 					obj, ok := objects[r.URL.Path]
@@ -1063,7 +1063,7 @@ func TestCacheBytesRepeatedS3ArtworkDoesNotWrite(t *testing.T) {
 						return
 					}
 					w.Header().Set("Content-Length", strconv.Itoa(obj.size))
-					w.Header().Set("X-Amz-Meta-Prairie-Sha256", obj.checksum)
+					w.Header().Set("X-Amz-Meta-Silo-Sha256", obj.checksum)
 				default:
 					w.WriteHeader(405)
 				}

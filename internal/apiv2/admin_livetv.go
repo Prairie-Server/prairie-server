@@ -35,8 +35,8 @@ type LiveTVTuner struct {
 	ID              ID       `json:"id"`
 	Type            string   `json:"type"`
 	DeviceID        string   `json:"device_id"`
-	DiscoverURL     string   `json:"discover_url"`
-	BaseURL         string   `json:"base_url"`
+	DiscoverURL     string   `json:"discover_url" format:"uri-reference"`
+	BaseURL         string   `json:"base_url" format:"uri-reference"`
 	Model           string   `json:"model"`
 	Firmware        string   `json:"firmware"`
 	TunerCount      int      `json:"tuner_count"`
@@ -54,8 +54,8 @@ type LiveTVDiscoveredTuner struct {
 	Model        string `json:"model"`
 	Firmware     string `json:"firmware"`
 	TunerCount   int    `json:"tuner_count"`
-	DiscoverURL  string `json:"discover_url"`
-	BaseURL      string `json:"base_url"`
+	DiscoverURL  string `json:"discover_url" format:"uri-reference"`
+	BaseURL      string `json:"base_url" format:"uri-reference"`
 	Source       string `json:"source" doc:"udp or probe"`
 	AlreadyAdded bool   `json:"already_added"`
 }
@@ -68,11 +68,11 @@ type LiveTVTunerDiscovery struct {
 type LiveTVTunerDiscoveryBody struct {
 	TimeoutMs  int      `json:"timeout_ms,omitempty" minimum:"0" maximum:"10000" doc:"UDP listen window; default 2000"`
 	IncludeUDP *bool    `json:"include_udp,omitempty" nullable:"false" doc:"HDHomeRun UDP broadcast discovery; default true"`
-	ProbeURLs  []string `json:"probe_urls,omitempty" maxItems:"16" doc:"Dispatcharr or HDHomeRun base URLs to probe for discover.json"`
+	ProbeURLs  []string `json:"probe_urls,omitempty" maxItems:"16" doc:"Dispatcharr or HDHomeRun base URLs to probe for discover.json; a bare host is accepted, so they are not validated as a URI"`
 }
 
 type LiveTVTunerBody struct {
-	URL string `json:"url" minLength:"1" maxLength:"2048" doc:"Base URL, host, or discover.json URL of an HDHomeRun-compatible tuner"`
+	URL string `json:"url" minLength:"1" maxLength:"2048" doc:"Base URL, host, or discover.json URL of an HDHomeRun-compatible tuner; not validated as a URI"`
 }
 
 type LiveTVChannelUpdate struct {
@@ -123,12 +123,12 @@ type LiveTVSchedulesDirectLineupsBody struct {
 	Username     string `json:"username" minLength:"1" maxLength:"256"`
 	Password     string `json:"password,omitempty" maxLength:"256"`
 	PasswordSHA1 string `json:"password_sha1,omitempty" maxLength:"64"`
-	Country      string `json:"country,omitempty" maxLength:"8"`
+	Country      string `json:"country,omitempty" maxLength:"8" doc:"ISO 3166-1 alpha-3 country code; USA when empty"`
 	PostalCode   string `json:"postal_code" minLength:"1" maxLength:"32"`
 }
 
 type LiveTVXMLSyncLineupsBody struct {
-	Country    string `json:"country,omitempty" maxLength:"8"`
+	Country    string `json:"country,omitempty" maxLength:"8" doc:"ISO 3166-1 alpha-3 country code; USA when empty"`
 	PostalCode string `json:"postal_code" minLength:"1" maxLength:"32"`
 	Lang       string `json:"lang,omitempty" maxLength:"16"`
 }

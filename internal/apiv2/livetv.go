@@ -59,7 +59,7 @@ type LiveTVChannel struct {
 	NumberOverride *string `json:"number_override,omitempty" doc:"Administrator override of the tuner's channel number"`
 	Callsign       string  `json:"callsign"`
 	Name           string  `json:"name"`
-	LogoURL        string  `json:"logo_url"`
+	LogoURL        string  `json:"logo_url" format:"uri-reference"`
 	HD             bool    `json:"hd"`
 	Enabled        bool    `json:"enabled"`
 	GuideStationID string  `json:"guide_station_id"`
@@ -79,7 +79,7 @@ type LiveTVProgram struct {
 	Season      *int     `json:"season,omitempty" nullable:"false"`
 	Episode     *int     `json:"episode,omitempty" nullable:"false"`
 	Genres      []string `json:"genres"`
-	ImageURL    string   `json:"image_url"`
+	ImageURL    string   `json:"image_url" format:"uri-reference"`
 	IsNew       bool     `json:"is_new"`
 	IsLive      bool     `json:"is_live"`
 }
@@ -121,7 +121,7 @@ type LiveTVSession struct {
 	SessionID         ID      `json:"session_id"`
 	ChannelID         ID      `json:"channel_id"`
 	PlaybackTicket    string  `json:"playback_ticket" doc:"Playback session the stream is delivered under; equals session_id when no bridge is in use"`
-	StreamURL         string  `json:"stream_url" doc:"Opaque server-relative play URL; never an upstream tuner address"`
+	StreamURL         string  `json:"stream_url" format:"uri-reference" doc:"Opaque server-relative play URL; never an upstream tuner address"`
 	Transport         string  `json:"transport" enum:"hls,mpegts" doc:"hls for a remuxed or transcoded live HLS playlist; mpegts for the raw transport-stream proxy"`
 	Note              string  `json:"note,omitempty"`
 	Status            string  `json:"status"`

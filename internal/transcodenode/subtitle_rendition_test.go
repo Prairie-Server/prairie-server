@@ -25,7 +25,8 @@ func TestNodeServesSubtitleRenditionThroughManifestAndSegmentRoutes(t *testing.T
 		name, videoCodec, subtitlePlaylistType string
 		copyVideoMPEGTS                        bool
 	}{
-		{"transcode", "h264", "VOD", false},
+		// Prairie drops EXT-X-PLAYLIST-TYPE:VOD, which Tizen rejects.
+		{"transcode", "h264", "", false},
 		// A copy remux without a keyframe plan follows FFmpeg's EVENT playlist.
 		{"copy remux", "copy", "EVENT", true},
 	} {
@@ -77,7 +78,8 @@ func TestNodeServesSubtitleRenditionThroughManifestAndSegmentRoutes(t *testing.T
 			if body := manifest(""); !strings.Contains(body, "#EXT-X-MEDIA:TYPE=SUBTITLES") {
 				t.Fatalf("multivariant playlist = %q", body)
 			}
-			if body := manifest("?prairie_rendition=subtitles"); !strings.Contains(body, "#EXT-X-PLAYLIST-TYPE:"+tc.subtitlePlaylistType+"\n") ||
+			if body := manifest("?prairie_rendition=subtitles"); (tc.subtitlePlaylistType == "") == strings.Contains(body, "#EXT-X-PLAYLIST-TYPE:") ||
+				tc.subtitlePlaylistType != "" && !strings.Contains(body, "#EXT-X-PLAYLIST-TYPE:"+tc.subtitlePlaylistType+"\n") ||
 				!strings.Contains(body, "segment/sub_00001.vtt") {
 				t.Fatalf("subtitle playlist = %q", body)
 			}

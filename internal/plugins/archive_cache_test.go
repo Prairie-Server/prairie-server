@@ -292,7 +292,7 @@ func (s *legacyArchiveStore) SaveArchive(
 func TestArchiveCacheAtOwnRootRehydratesUnderItAndPrunesOldReleases(t *testing.T) {
 	ctx := context.Background()
 	root := filepath.Join(t.TempDir(), "proxy-cache")
-	apiInstallRoot := filepath.Join(t.TempDir(), "api-machine", "plugins", "silo.metadb")
+	apiInstallRoot := filepath.Join(t.TempDir(), "api-machine", "plugins", "prairie.metadb")
 
 	release := func(version, dir, script string) (*Installation, *legacyArchiveStore) {
 		t.Helper()
@@ -302,7 +302,7 @@ func TestArchiveCacheAtOwnRootRehydratesUnderItAndPrunesOldReleases(t *testing.T
 		}}
 		return &Installation{
 			ID:          42,
-			PluginID:    "silo.metadb",
+			PluginID:    "prairie.metadb",
 			Version:     version,
 			InstallPath: filepath.Join(apiInstallRoot, version, dir, "plugin"),
 		}, store
@@ -343,7 +343,7 @@ func TestArchiveCacheAtOwnRootRehydratesUnderItAndPrunesOldReleases(t *testing.T
 	if _, err := cache.Ensure(ctx, second); err != nil {
 		t.Fatalf("Ensure(second) returned error: %v", err)
 	}
-	wantSecond := filepath.Join(root, "silo.metadb", "0.0.20", "install-bbbb", "plugin")
+	wantSecond := filepath.Join(root, "prairie.metadb", "0.0.20", "install-bbbb", "plugin")
 	if _, err := os.Stat(wantSecond); err != nil {
 		t.Fatalf("second release was not rehydrated: %v", err)
 	}
