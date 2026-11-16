@@ -10,8 +10,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
-const itemTypeSeason = "season"
-
 type availabilityCard struct {
 	contentID    string
 	itemType     string

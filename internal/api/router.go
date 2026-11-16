@@ -3479,6 +3479,27 @@ func newChiRouter(deps Dependencies) chi.Router {
 	}
 	r.Handle("/api/v2/*", apiv2.NewHandler(v2deps))
 
+	// Prairie Live TV delivery. The v2 session start hands out these play
+	// URLs (livetv.PublicSessionStreamPath, the live HLS bridge), so they
+	// stay live ahead of the /api/v1 tombstone with the auth chain they had
+	// inside the retired v1 group. Stream-token auth (mounted above) covers
+	// the live-hls playlist and segments for native players.
+	if liveTVHandler != nil && authMiddleware != nil {
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			if deps.RateLimitMW != nil {
+				r.Use(deps.RateLimitMW.Handler)
+			}
+			if viewerAccessMiddleware != nil {
+				r.Use(viewerAccessMiddleware.RequireViewerAccess)
+			}
+			r.Use(apimw.RequireProfile)
+			r.Get("/api/v1/livetv/sessions/{sessionId}/stream", liveTVHandler.HandleSessionStream)
+			r.Method(http.MethodHead, "/api/v1/livetv/sessions/{sessionId}/stream", http.HandlerFunc(liveTVHandler.HandleSessionStream))
+			r.Get("/api/v1/livetv/live-hls/{playbackId}/{name}", liveTVHandler.HandleLiveHLS)
+		})
+	}
+
 	// The retired /api/v1 namespace: the operational probes stay at their
 	// paths, and everything else answers the retirement tombstone.
 	r.Get("/api/v1/health", healthHandler.ServeHTTP)

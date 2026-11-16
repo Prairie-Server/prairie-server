@@ -135,7 +135,7 @@ func TestCheckS3ObjectPermissionsCleansUpAfterAmbiguousPutFailure(t *testing.T) 
 		return errors.New("response lost")
 	}
 
-	err := checkS3ObjectPermissions(context.Background(), client, "silo")
+	err := checkS3ObjectPermissions(context.Background(), client, "prairie")
 
 	if err == nil || !strings.Contains(err.Error(), "write probe object: response lost") {
 		t.Fatalf("error = %v, want ambiguous write failure", err)
@@ -161,7 +161,7 @@ func TestCheckS3ObjectPermissionsUsesFreshContextForFailureCleanup(t *testing.T)
 		},
 	}
 
-	err := checkS3ObjectPermissions(ctx, client, "silo")
+	err := checkS3ObjectPermissions(ctx, client, "prairie")
 
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("error = %v, want context cancellation", err)

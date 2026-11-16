@@ -1138,6 +1138,9 @@ POST /api/v1/invitations/{token}/*	non-media
 PUT /api/v1/invitations/{token}/*	non-media
 QUERY /api/v1/invitations/{token}/*	non-media
 TRACE /api/v1/invitations/{token}/*	non-media
+GET /api/v1/livetv/live-hls/{playbackId}/{name}	non-media
+GET /api/v1/livetv/sessions/{sessionId}/stream	non-media
+HEAD /api/v1/livetv/sessions/{sessionId}/stream	non-media
 CONNECT /api/v1/plex-sync/webhooks/{secret}	non-media
 DELETE /api/v1/plex-sync/webhooks/{secret}	non-media
 GET /api/v1/plex-sync/webhooks/{secret}	non-media

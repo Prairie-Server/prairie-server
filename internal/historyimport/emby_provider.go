@@ -203,7 +203,7 @@ func (p *EmbyProvider) streamFavorites(ctx context.Context, from *StreamPosition
 	if !stageReached(from, embyStages, embyStageFavorites) {
 		return nil
 	}
-	// Silo has no season favorites, so report them rather than drop them.
+	// Prairie has no season favorites, so report them rather than drop them.
 	seasonFavorites := 0
 	err := p.client.forEachItemsPage(ctx, p.auth, embyEndpointItems, "IsFavorite", embyFavoriteTypes, stageOffset(from, embyStageFavorites), func(page []embyItem, start int) error {
 		page = slices.DeleteFunc(page, func(item embyItem) bool {

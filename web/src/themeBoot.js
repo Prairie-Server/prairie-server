@@ -43,7 +43,7 @@
   );
   // A stored choice wins; with none, follow the system's increased-contrast
   // setting, as parseHighContrast does.
-  const highContrast = cached("prairie-ui-high-contrast");
+  const highContrast = cached("silo-ui-high-contrast");
   let prefersMore = false;
   try {
     prefersMore = matchMedia("(prefers-contrast: more)").matches;

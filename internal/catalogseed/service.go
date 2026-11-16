@@ -750,6 +750,19 @@ func itemToRecord(item *models.MediaItem) ItemRecord {
 	}
 }
 
+func encodeBundle(bundle Bundle) ([]byte, error) {
+	var raw bytes.Buffer
+	gz := gzip.NewWriter(&raw)
+	if err := json.NewEncoder(gz).Encode(bundle); err != nil {
+		_ = gz.Close()
+		return nil, fmt.Errorf("encoding catalog seed bundle: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return nil, fmt.Errorf("closing catalog seed bundle: %w", err)
+	}
+	return raw.Bytes(), nil
+}
+
 func decodeBundle(data []byte) (*Bundle, error) {
 	gz, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
