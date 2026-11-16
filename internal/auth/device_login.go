@@ -342,10 +342,7 @@ func (s *DeviceLoginService) reserveQuickConnectAttempt(ctx context.Context, acc
 
 // deviceLoginCodes are the secrets drawn for one request.
 type deviceLoginCodes struct {
-	deviceCode  string
-	browserCode string
-	userCode    string
-	matchCode   string
+	deviceCode, browserCode, userCode, matchCode string
 }
 
 // createWithFreshCodes stores a pending request built from record, drawing
