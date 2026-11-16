@@ -14,13 +14,14 @@ import (
 	"strings"
 	"time"
 
+	redisv9 "github.com/redis/go-redis/v9"
+	"github.com/robfig/cron/v3"
+
 	"github.com/prairie-server/prairie-server/internal/ai/reasoning"
 	"github.com/prairie-server/prairie-server/internal/lang"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
-	redisv9 "github.com/redis/go-redis/v9"
-	"github.com/robfig/cron/v3"
 )
 
 const (
