@@ -506,7 +506,6 @@ func TestLiveTVHandleChannelRoute(t *testing.T) {
 	}
 }
 
-
 func TestLiveTVClientCapabilitiesFromDeviceProfile(t *testing.T) {
 	profile := DeviceProfile{
 		DirectPlayProfiles: []DirectPlayProfile{

@@ -2112,7 +2112,7 @@ func (m *SessionManager) HasActiveSessions() bool {
 
 	now := time.Now()
 	for _, s := range m.sessions {
-		if m.countsTowardLimitsLocked(s, now) {
+		if m.countsTowardLimitsLocked(s, now, noPausedSlotCap) {
 			return true
 		}
 	}

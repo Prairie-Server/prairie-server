@@ -832,7 +832,7 @@ func TestDurableCompatPlaybackStoreRetireLeavesMovedPlay(t *testing.T) {
 // the meantime is left alone. The outage is a closed pool for that one call.
 func TestDurableCompatPlaybackStoreRetryAfterFailedStatement(t *testing.T) {
 	pool := newCompatTestPool(t)
-	closed, err := pgxpool.New(t.Context(), os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
+	closed, err := pgxpool.New(t.Context(), envutil.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -900,7 +900,7 @@ func TestDurableCompatPlaybackStoreRetryAfterFailedStatement(t *testing.T) {
 // after 200ms.
 func TestDurableCompatPlaybackStoreRetireHidesCopyWhenReplayFails(t *testing.T) {
 	pool := newCompatTestPool(t)
-	config, err := pgxpool.ParseConfig(os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
+	config, err := pgxpool.ParseConfig(envutil.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

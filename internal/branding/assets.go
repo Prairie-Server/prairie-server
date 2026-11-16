@@ -174,7 +174,7 @@ func CheckStoredAsset(key string, data []byte) error {
 	if served != "image/svg+xml" && http.DetectContentType(data) != served {
 		return fmt.Errorf("%w: the file is not %s", ErrUnsupportedImage, served)
 	}
-	if _, _, stored, err := spec.process(data, served); err != nil || stored != ext {
+	if _, _, _, _, stored, err := spec.process(data, served); err != nil || stored != ext {
 		return fmt.Errorf("%w: a %s upload is not stored as %s", ErrUnsupportedImage, spec.kind, ext)
 	}
 	return nil

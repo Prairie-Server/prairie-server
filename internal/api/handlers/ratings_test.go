@@ -40,6 +40,8 @@ func (m *memoryRatings) ListPage(context.Context, int, string, catalog.AccessFil
 	return nil, nil
 }
 
+func (m *memoryRatings) Aggregate(context.Context, string) (float64, int, error) { return 0, 0, nil }
+
 // idsFailingItemRepo is a markItemRepo whose batch access check fails.
 type idsFailingItemRepo struct {
 	markItemRepo

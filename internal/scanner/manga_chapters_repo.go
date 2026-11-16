@@ -3,8 +3,6 @@ package scanner
 import (
 	"context"
 	"fmt"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // mangaChapterWrite turns a parsed (volume, index, has) into the (index, volume)

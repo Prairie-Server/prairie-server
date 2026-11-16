@@ -3457,15 +3457,15 @@
             },
             "type": "array"
           },
+          "prairie_version": {
+            "type": "string"
+          },
           "restore_set_omitted": {
             "description": "Items the restore set left out; the dump still holds them",
             "items": {
               "$ref": "#/components/schemas/AdminBackupOmitted"
             },
             "type": "array"
-          },
-          "prairie_version": {
-            "type": "string"
           },
           "size_bytes": {
             "format": "int64",
@@ -5108,6 +5108,9 @@
             },
             "type": "array"
           },
+          "prairie_version": {
+            "type": "string"
+          },
           "same_server": {
             "type": "boolean"
           },
@@ -5122,9 +5125,6 @@
             "type": "string"
           },
           "server_name": {
-            "type": "string"
-          },
-          "prairie_version": {
             "type": "string"
           },
           "upload_id": {
@@ -5517,14 +5517,14 @@
             "format": "int64",
             "type": "integer"
           },
+          "prairie_version": {
+            "type": "string"
+          },
           "server_id": {
             "description": "The server the restore set was taken on",
             "type": "string"
           },
           "server_name": {
-            "type": "string"
-          },
-          "prairie_version": {
             "type": "string"
           }
         },
