@@ -22,7 +22,11 @@ appears in it exactly once.
 A topic that holds both tools and settings lists its own settings page last,
 as plain "Settings"; the topic already says whose. A topic's heading only
 opens and closes it (`SideNavTopic`); the topic holding the current page opens
-by itself, and the rest stay as the admin left them (`useAdminNavTopics`).
+by itself. The admin can open others beside it, but arriving in a different
+topic, or on another page outside every topic, folds the rest away. The
+desktop sidebar and the phone drawer share these choices for the life of the
+admin shell, and nothing persists across reloads or visits
+(`useAdminNavTopics`).
 
 Settings pages keep their own routes, `/admin/settings/:page`, and
 `ADMIN_SETTINGS_NAV` (`web/src/lib/adminSettingsSearch.ts`) remains their
@@ -178,7 +182,7 @@ reversible by adding UI back, not by a data migration.
 
 Reuse these instead of adding a bespoke variant per page:
 
-- `SettingField` / `FieldGroup` / `SaveBar` (`web/src/pages/admin-settings/`)
+- `SettingField` / `FieldGroup` (`web/src/pages/admin-settings/`), `SaveBar` (`web/src/components/`)
   and `useSettingsForm` (`web/src/hooks/`) — the one save model. Every page
   batches edits and commits them through one `SaveBar` with Discard; provider
   credentials are the only exception, and only because they need
@@ -236,8 +240,8 @@ not folded into this pass:
 - Key renames (e.g. un-namespaced `allow_4k_transcode`,
   `enable_transcode_throttle`, `transcode_throttle_seconds` moving under
   `playback.*`).
-- Introducing `server.public_url` as one canonical public URL that
-  `jellyfin_compat.public_url` and friends would derive from.
+- Deriving `jellyfin_compat.public_url` and friends from `server.public_url`,
+  which already exists.
 - Deleting the legacy `s3.operational_*` rows that a past migration copied and
   never removed.
 

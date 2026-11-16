@@ -17,7 +17,7 @@ import (
 // A bitrate cap that the requested 4K version cannot meet must still let the
 // start fall back to a version that fits the cap. The request's location
 // selects the local or remote cap.
-func TestHandleStartPlaybackV3BitrateCapTriesCompliantAlternate(t *testing.T) {
+func TestStartPlaybackV2BitrateCapTriesCompliantAlternate(t *testing.T) {
 	source := v3HandlerFixtureFile(t)
 	source.Resolution = "2160p"
 	source.Bitrate = 32_000
@@ -36,7 +36,7 @@ func TestHandleStartPlaybackV3BitrateCapTriesCompliantAlternate(t *testing.T) {
 	alternate.VideoTracks[0].Level = 41
 	alternate.VideoTracks[0].Bitrate = 7_800
 
-	handler := NewPlaybackHandler(playback.NewSessionManager(0, 0), testPlaybackFileResolver{file: source})
+	handler := newKeyedPlaybackHandler(playback.NewSessionManager(0, 0), testPlaybackFileResolver{file: source})
 	handler.FileVersionFetcher = testPlaybackFileVersionFetcher{byContent: map[string][]*models.MediaFile{source.ContentID: {source, alternate}}}
 	handler.SettingsRepo = &mutablePlaybackSettingsV3{values: map[string]string{"allow_4k_transcode": "false"}}
 	handler.PlaybackConfig = playbackTestConfig("", "")
@@ -62,7 +62,7 @@ func TestHandleStartPlaybackV3BitrateCapTriesCompliantAlternate(t *testing.T) {
 			scope.UserID, scope.ProfileID = 1, "profile-1"
 			ctx := clientip.SetContext(access.SetScope(newAuthorizedPlaybackContext(), scope), test.clientIP)
 			rr := httptest.NewRecorder()
-			handler.HandleStartPlayback(rr, httptest.NewRequest(http.MethodPost, "/api/v1/playback/start", strings.NewReader(marshalV3StartRequest(t, start))).WithContext(ctx))
+			serveStartPlaybackV2(t, handler, rr, httptest.NewRequest(http.MethodPost, "/api/v2/playback/start", strings.NewReader(marshalV3StartRequest(t, start))).WithContext(ctx))
 
 			var response playback.DecisionResponseV3
 			if rr.Code != http.StatusCreated || json.Unmarshal(rr.Body.Bytes(), &response) != nil {

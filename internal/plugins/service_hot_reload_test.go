@@ -496,3 +496,8 @@ func recordTestEvent(events *[]string, event string) {
 	}
 	*events = append(*events, event)
 }
+
+func (f *fakeServiceHost) Running(_ int) bool {
+	_, err := f.Client(0)
+	return err == nil
+}

@@ -27,10 +27,6 @@ vi.mock("@/hooks/useEpisodeSpoilerPrefs", () => ({
   useEpisodeSpoilerPrefs: () => spoilerPrefs,
 }));
 
-vi.mock("@/hooks/queries/catalogRead", () => ({
-  usePrefetchCatalogItemDetail: () => vi.fn(),
-}));
-
 describe("SeasonEpisodeGrid", () => {
   beforeEach(() => {
     capturedMenuProps.length = 0;
@@ -142,5 +138,46 @@ describe("SeasonEpisodeGrid", () => {
     expect(screen.getAllByRole("link", { name: /^Play / }).map((link) => link.textContent)).toEqual(
       ["Play Episode title 4", "Play Episode title 5"],
     );
+  });
+
+  it("keeps the page's library on episodes with a file in the list", () => {
+    const episode = (n: number, files: object[]) => ({
+      content_id: `ep-${n}`,
+      season_number: 1,
+      episode_number: n,
+      title: `Episode title ${n}`,
+      overview: "",
+      air_date: null,
+      runtime: 42,
+      still_url: "",
+      still_thumbhash: "",
+      files: files as never,
+    });
+    render(
+      <MemoryRouter>
+        <SeasonEpisodeGrid
+          isLoading={false}
+          libraryId={4}
+          episodes={[
+            episode(1, [{ file_id: 1, resolution: "720p" }]),
+            // No file in this library's list: opens with every version.
+            episode(3, []),
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href"))
+      .filter((href) => href?.startsWith("/item/"));
+    expect(hrefs).toEqual([
+      "/item/ep-1?libraryId=4",
+      "/item/ep-1?libraryId=4",
+      "/item/ep-3",
+      "/item/ep-3",
+    ]);
+    // The card menu builds Play links, and playback stays unscoped.
+    expect(capturedMenuProps[0]).not.toHaveProperty("libraryId");
   });
 });

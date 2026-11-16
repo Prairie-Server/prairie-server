@@ -1,8 +1,9 @@
 import { act, useRef, type ComponentProps } from "react";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, renderHook, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import type { ItemDetail, MediaItemUserState } from "@/api/types";
+import { useT } from "@/i18n";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MediaItemMenu, { buildMediaItemMenuModel, MetadataActionDialogHost } from "./MediaItemMenu";
 
@@ -118,8 +119,12 @@ beforeEach(() => {
 });
 
 describe("buildMediaItemMenuModel", () => {
+  // The model formats its labels with the caller's translator, as the component does.
+  const buildModel = (options: Omit<Parameters<typeof buildMediaItemMenuModel>[0], "t">) =>
+    buildMediaItemMenuModel({ ...options, t: renderHook(() => useT()).result.current });
+
   it("returns watched/favorite/watchlist removal labels for active state", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "movie",
       userState: {
         played: true,
@@ -152,7 +157,7 @@ describe("buildMediaItemMenuModel", () => {
       mediaType: "movie" | "series" | "episode" | "audiobook",
       notInterested = false,
     ) =>
-      buildMediaItemMenuModel({
+      buildModel({
         mediaType,
         userState: {
           played: false,
@@ -172,7 +177,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("omits favorites and watchlist when showCollectionActions is false", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "movie",
       userState: {
         played: false,
@@ -191,7 +196,7 @@ describe("buildMediaItemMenuModel", () => {
   it.each(["episode", "season"] as const)(
     "does not offer adding %s items to favorites or the watchlist",
     (mediaType) => {
-      const model = buildMediaItemMenuModel({
+      const model = buildModel({
         mediaType,
         userState: { played: false, is_favorite: false, in_watchlist: false },
         isAdmin: false,
@@ -204,8 +209,8 @@ describe("buildMediaItemMenuModel", () => {
 
   it("keeps Remove for an episode that is already on a list", () => {
     const labelsFor = (userState: MediaItemUserState) =>
-      buildMediaItemMenuModel({ mediaType: "episode", userState, isAdmin: false }).flatMap(
-        (item) => (item.kind === "action" ? [item.label] : []),
+      buildModel({ mediaType: "episode", userState, isAdmin: false }).flatMap((item) =>
+        item.kind === "action" ? [item.label] : [],
       );
 
     expect(labelsFor({ played: false, is_favorite: true, in_watchlist: false })).toEqual([
@@ -219,7 +224,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("omits admin actions for non-admin users", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "movie",
       userState: {
         played: false,
@@ -242,7 +247,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("shows metadata actions to a metadata curator without exposing play history", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "series",
       isAdmin: false,
       canCurateMetadata: true,
@@ -253,23 +258,23 @@ describe("buildMediaItemMenuModel", () => {
     expect(labels).not.toContain("View Play History");
   });
 
-  it("limits edit and match card actions to movies and series", () => {
-    const model = buildMediaItemMenuModel({
-      mediaType: "episode",
-      isAdmin: true,
-    });
-    const labels = model.filter((item) => item.kind === "action").map((item) => item.label);
+  it("limits edit and match card actions to movies, series and audiobooks", () => {
+    const labels = (mediaType: "episode" | "audiobook") =>
+      buildModel({ mediaType, isAdmin: true })
+        .filter((item) => item.kind === "action")
+        .map((item) => item.label);
 
-    expect(labels).toContain("Refresh Metadata");
-    expect(labels).not.toContain("Edit Metadata");
-    expect(labels).not.toContain("Match Item");
+    expect(labels("episode")).toContain("Refresh Metadata");
+    expect(labels("episode")).not.toContain("Edit Metadata");
+    expect(labels("episode")).not.toContain("Match Item");
+    expect(labels("audiobook")).toEqual(expect.arrayContaining(["Edit Metadata", "Match Item"]));
   });
 
   it("offers Mark Watched and Mark Unwatched for a partly watched movie or episode", () => {
     // A rewatch stays watched, but its resume position makes it in progress.
     for (const played of [false, true]) {
       for (const mediaType of ["movie", "episode"] as const) {
-        const model = buildMediaItemMenuModel({
+        const model = buildModel({
           mediaType,
           hasPartialProgress: true,
           userState: { played, is_favorite: false, in_watchlist: false },
@@ -292,7 +297,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("treats a rewatched episode as in progress in a list that hides its progress bar", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "episode",
       hasPartialProgress: false,
       hasResumePosition: true,
@@ -314,7 +319,7 @@ describe("buildMediaItemMenuModel", () => {
       { mediaType: "series", hasPartialProgress: true, played: false },
     ] as const;
     for (const { mediaType, hasPartialProgress, played } of cases) {
-      const keys = buildMediaItemMenuModel({
+      const keys = buildModel({
         mediaType,
         hasPartialProgress,
         userState: { played, is_favorite: false, in_watchlist: false },
@@ -328,7 +333,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("does not show play from beginning for non-leaf items", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "series",
       userState: {
         played: true,
@@ -344,7 +349,7 @@ describe("buildMediaItemMenuModel", () => {
   });
 
   it("uses reading labels for ebook state actions", () => {
-    const model = buildMediaItemMenuModel({
+    const model = buildModel({
       mediaType: "ebook",
       userState: {
         played: false,

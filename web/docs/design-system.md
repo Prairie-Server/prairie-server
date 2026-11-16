@@ -122,7 +122,7 @@ Examples:
 - Card hover uses subtle scale and brightness lift.
 - Sidebar collapse expands and contracts smoothly.
 - Hero transitions should crossfade rather than snap.
-- Hero backdrops use slow Ken Burns zoom (10-15 seconds, linear easing).
+- Hero backdrops use slow Ken Burns zoom (12-18 seconds, linear easing).
 - Ambient color shifts transition over 1-2 seconds with gentle easing.
 
 ### 8. Immersion Levels
@@ -148,7 +148,7 @@ Examples:
 
 ## Color Architecture
 
-Colors are organized as semantic layers. Theme files provide the actual values; components should reference tokens rather than raw colors.
+Colors are organized as semantic layers. `app.css` provides the actual values; components should reference tokens rather than raw colors.
 
 ### Surface Hierarchy
 
@@ -178,7 +178,7 @@ Colors are organized as semantic layers. Theme files provide the actual values; 
 ### Ambient Tokens
 
 - `--ambient`: dominant color extracted from the currently featured artwork. Set dynamically via JavaScript. Used for subtle background glow and atmosphere. Falls back to `--primary` when no artwork color is available.
-- `--ambient-glow`: a low-opacity radial gradient using `--ambient` placed behind hero sections and detail page headers. Should be barely perceptible — felt more than seen.
+- `--ambient-glow-opacity`: the opacity of the `.ambient-glow` class, a radial gradient using `--ambient` placed behind hero sections and detail page headers. The glow should be barely perceptible, felt more than seen.
 
 ### Border Tokens
 
@@ -233,9 +233,11 @@ Colors are organized as semantic layers. Theme files provide the actual values; 
 
 The hero should feel cinematic, not like a banner. On first load the hero should dominate the viewport, with content rows discoverable via scroll.
 
-- Mobile: `h-[60dvh]`, `min-h-[400px]` (prefer `dvh` over `vh` so mobile browser chrome does not leave dead space)
-- Desktop: `h-[75dvh]`, `min-h-[500px]`, `max-h-[900px]`
-- Detail page heroes can be taller since they are the entire context for the page
+Home heroes use `HERO_BANNER_SIZE` from `design-system.ts`:
+
+- Mobile: `h-[54vh]`, `min-h-[380px]`, `max-h-[760px]`
+- Desktop (`lg`): `h-[66vh]`, with the same minimum and maximum
+- Detail page heroes can be taller since they are the entire context for the page: `min-h-[60dvh]`, `lg:min-h-[72dvh]`
 - Fixed/sticky top and bottom chrome should clear notches and home indicators via `env(safe-area-inset-*)` (see `.pt-safe` / `.pb-safe-offset` utilities in `app.css`)
 
 ## Motion
@@ -323,7 +325,7 @@ Implementation cues:
 - Keep metadata compact and secondary (badges, small text).
 - Apply Ken Burns motion to the backdrop image for ambient life.
 - Set `--ambient` from the dominant backdrop color for atmosphere glow.
-- Height should be `75vh` on desktop — cinematic, not a banner.
+- Size it with `HERO_BANNER_SIZE` (`66vh` on desktop; the Library Recommended tab uses the taller `HERO_BANNER_SIZE_TALL`): cinematic, not a banner.
 
 ### Media Carousel Row
 
@@ -356,8 +358,7 @@ Implementation cues:
 The most important single page in the app. When a user selects a title, the page should feel like opening a collector's edition — fully immersive, cinematic, and dedicated to that content.
 
 Implementation cues:
-
-- Full-bleed backdrop hero, taller than home heroes (`75-85vh`).
+- Full-bleed backdrop hero, taller than home heroes (`min-h-[60dvh]`, `lg:min-h-[72dvh]`).
 - Set `--ambient` from the backdrop artwork to tint the page atmosphere.
 - Sidebar should auto-collapse or recede to maximize immersion.
 - Info architecture below the hero: tagline, metadata badges, overview text, action buttons, then supplementary sections (cast carousel, season/episode list, recommendations).
@@ -457,4 +458,3 @@ Implementation cues:
 
 - [../src/lib/design-system.ts](../src/lib/design-system.ts): code-backed constants and shared class strings
 - [../src/app.css](../src/app.css): CSS tokens and component utility classes
-- [../src/lib/themes.ts](../src/lib/themes.ts): theme definitions and metadata

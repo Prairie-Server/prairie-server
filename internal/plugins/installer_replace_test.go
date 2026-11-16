@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -26,7 +27,7 @@ func TestInstallerInstallBinaryPersistsPackagedArchive(t *testing.T) {
 	checksum := sha256.Sum256(binaryData)
 	manifest.Checksum = hex.EncodeToString(checksum[:])
 
-	result, err := installer.installBinary(ctx, binaryData, manifest.GetChecksum(), manifest, nil, nil)
+	result, err := installer.installBinary(ctx, binaryData, manifest.GetChecksum(), manifest, nil, nil, unsignedSignature)
 	if err != nil {
 		t.Fatalf("installBinary() returned error: %v", err)
 	}
@@ -58,16 +59,23 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	manifest.Checksum = hex.EncodeToString(checksum[:])
 
 	oldRepository := 7
-	result, err := installer.replaceBinary(ctx, &Installation{
-		ID:           15,
-		RepositoryID: &oldRepository,
-		PluginID:     "prairie.metadb",
-		Version:      "0.0.18",
-		InstallPath:  oldPath,
-		Enabled:      true,
-	}, binaryData, hex.EncodeToString(checksum[:]), manifest, nil, nil)
+	oldRepo, verifiedAt := "https://github.com/Prairie-Server/prairie-plugin-metadb", time.Now()
+	prepared, err := installer.prepareBinary(&Installation{
+		ID:            15,
+		RepositoryID:  &oldRepository,
+		PluginID:      "prairie.metadb",
+		Version:       "0.0.18",
+		InstallPath:   oldPath,
+		Enabled:       true,
+		UpdateFailure: &UpdateFailure{Version: "0.0.19", Reason: "refused earlier"},
+		Signature:     Signature{State: SignatureStateVerified, SourceRepo: &oldRepo, VerifiedAt: &verifiedAt},
+	}, binaryData, hex.EncodeToString(checksum[:]), manifest, nil, nil, unsignedSignature)
 	if err != nil {
-		t.Fatalf("replaceBinary() returned error: %v", err)
+		t.Fatalf("prepareBinary() returned error: %v", err)
+	}
+	result, err := prepared.Apply(ctx)
+	if err != nil {
+		t.Fatalf("Apply() returned error: %v", err)
 	}
 
 	if len(store.createInputs) != 0 {
@@ -86,8 +94,13 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	if result.Installation.Version != "0.0.19" {
 		t.Fatalf("result installation version = %q, want 0.0.19", result.Installation.Version)
 	}
+	// The version change cleared the stored refusal; the result must not
+	// report it as still pending.
+	if result.Installation.UpdateFailure != nil {
+		t.Fatalf("result update failure = %+v, want nil after a replacement", result.Installation.UpdateFailure)
+	}
 	if result.Installation.InstallPath == oldPath {
-		t.Fatal("expected replaceBinary() to move the installation to a new path")
+		t.Fatal("expected the replacement to move the installation to a new path")
 	}
 	if result.Installation.InstallPath != result.BinaryPath {
 		t.Fatalf("result install path = %q, want binary path %q", result.Installation.InstallPath, result.BinaryPath)
@@ -108,14 +121,20 @@ func TestInstallerReplaceBinaryPreservesInstallationID(t *testing.T) {
 	if !update.SetRepository || update.RepositoryID != nil || result.Installation.RepositoryID != nil {
 		t.Fatalf("update repository = %t/%v, result repository = %v; want cleared", update.SetRepository, update.RepositoryID, result.Installation.RepositoryID)
 	}
+	// Nor may it keep the verified signature of the package it replaced.
+	if update.Signature == nil || update.Signature.State != SignatureStateUnsigned || result.Installation.Signature.State != SignatureStateUnsigned {
+		t.Fatalf("update signature = %+v, result signature = %+v; want unsigned", update.Signature, result.Installation.Signature)
+	}
 	if update.Version == nil || *update.Version != "0.0.19" {
 		t.Fatalf("update version = %v, want 0.0.19", update.Version)
 	}
 	if update.InstallPath == nil || *update.InstallPath != result.BinaryPath {
 		t.Fatalf("update install_path = %v, want %q", update.InstallPath, result.BinaryPath)
 	}
-	if update.Enabled == nil || !*update.Enabled {
-		t.Fatalf("update enabled = %v, want true", update.Enabled)
+	// The enabled flag is the admin's, and may have changed while the
+	// package was prepared, so the replacement leaves it alone.
+	if update.Enabled != nil {
+		t.Fatalf("update enabled = %v, want unchanged", *update.Enabled)
 	}
 	if len(update.Capabilities) != 1 || update.Capabilities[0].ID != "metadb" {
 		t.Fatalf("update capabilities = %#v, want metadata_provider.v1/metadb", update.Capabilities)

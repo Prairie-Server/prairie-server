@@ -4,6 +4,7 @@ import type { CrewMember } from "@/api/types";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
 import { buildPersonCatalogHref } from "@/pages/catalogSearchParams";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 
 interface CrewListProps {
   crew: CrewMember[];
@@ -61,6 +62,7 @@ export default function CrewList({
   fullBleed = false,
   jobs = DISPLAY_JOBS,
 }: CrewListProps) {
+  const t = useT();
   const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   if (crew.length === 0) return null;
@@ -70,17 +72,17 @@ export default function CrewList({
 
   return (
     <div>
-      <h2 className="mb-5 text-xl font-semibold tracking-tight">Crew</h2>
+      <h2 className="mb-5 text-xl font-semibold tracking-tight">{t("web.detail.castCrew.crew")}</h2>
       <div className="group/carousel relative">
         {canScrollPrev && (
           <button
             type="button"
             onClick={scrollPrev}
             className={cn(
-              "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-r to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100",
-              fullBleed ? "left-4 sm:left-6 lg:left-10 xl:left-12" : "left-0",
+              "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-r to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100 rtl:bg-gradient-to-l",
+              fullBleed ? "start-4 sm:start-6 lg:start-10 xl:start-12" : "start-0",
             )}
-            aria-label="Scroll left"
+            aria-label={t("web.detail.castCrew.scrollLeft")}
           >
             <ChevronLeft className="text-foreground h-6 w-6" />
           </button>
@@ -90,14 +92,14 @@ export default function CrewList({
           ref={emblaRef}
           className={cn(
             "embla__viewport overflow-hidden",
-            fullBleed && "pr-4 sm:pr-6 lg:pr-10 xl:pr-12",
+            fullBleed && "pe-4 sm:pe-6 lg:pe-10 xl:pe-12",
           )}
         >
           <ul
             role="list"
             className={cn(
               "embla__container flex cursor-grab list-none gap-3",
-              fullBleed && "pl-4 sm:pl-6 lg:pl-10 xl:pl-12",
+              fullBleed && "ps-4 sm:ps-6 lg:ps-10 xl:ps-12",
             )}
           >
             {visible.map((member) => {
@@ -124,10 +126,10 @@ export default function CrewList({
             type="button"
             onClick={scrollNext}
             className={cn(
-              "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100",
-              fullBleed ? "right-4 sm:right-6 lg:right-10 xl:right-12" : "right-0",
+              "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100 rtl:bg-gradient-to-r",
+              fullBleed ? "end-4 sm:end-6 lg:end-10 xl:end-12" : "end-0",
             )}
-            aria-label="Scroll right"
+            aria-label={t("web.detail.castCrew.scrollRight")}
           >
             <ChevronRight className="text-foreground h-6 w-6" />
           </button>

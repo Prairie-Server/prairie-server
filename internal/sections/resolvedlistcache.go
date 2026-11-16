@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/contentid"
 	"github.com/prairie-server/prairie-server/internal/logredact"
@@ -517,6 +518,10 @@ func resolvedListCacheKey(resolved ResolvedSection, libraryID *int, libraryIDs [
 	if resolved.SectionType == SectionRecentlyAdded {
 		b.WriteString("|disable_tv_event_grouping=")
 		b.WriteString(strconv.FormatBool(resolved.DisableTVEventGrouping))
+		// TV arrival events count only episodes within the viewer's playback
+		// quality ceiling (catalog.RecentTVQuery), so rows differ per ceiling.
+		b.WriteString("|quality=")
+		b.WriteString(access.NormalizePlaybackQuality(filter.MaxPlaybackQuality))
 	}
 
 	b.WriteString("|config=")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,7 +54,8 @@ func TestRecentCompletedItemIDsSkipDeletedItemsPostgres(t *testing.T) {
 	seedCompletion(t, pool, userID, profile, movieA, base.Add(-4*time.Minute))
 
 	repo := NewRepo(pool)
-	storePath := NewSignalReader(repo, pgstore.NewPostgresProvider(pool))
+	// The walk the SQLite store takes, run over the same rows.
+	storePath := NewSignalReader(repo, pgstore.NewPostgresProvider(pool)).WithUserStoreOutsidePostgres(true)
 	before, err := storePath.RecentCompletedItemIDs(ctx, userID, profile, 3)
 	if err != nil {
 		t.Fatal(err)
@@ -224,17 +226,16 @@ func TestGetTasteClusterMetaOmitsOnlyEmbeddingsPostgres(t *testing.T) {
 	}
 }
 
-// The watched set is the same read with one query, as on the Postgres user
-// store, or walked from the store by keyset across pages, as on a store
-// outside Postgres: every title completed or at least half watched, episodes
-// for their series, and every book read at least half way, leaving out rows
-// hidden from the history since their last progress and other profiles' rows.
-func TestWatchedItemIDSetQueryMatchesStoreWalkPostgres(t *testing.T) {
-	pool := newEngineTestPool(t)
+// seedProgressAcrossPages seeds a profile's progress across several store
+// pages, with the edge cases around them, and returns its account and
+// profile, the watched set its reads must return, and the titles its progress
+// rows must cover.
+func seedProgressAcrossPages(t *testing.T, pool *pgxpool.Pool) (userID int, profile string, watched, progressed map[string]struct{}) {
+	t.Helper()
 	ctx := t.Context()
 	prefix := "twatched-keyset-" + uuid.NewString()[:8] + "-"
 	cleanupRecoMediaItems(t, pool, prefix)
-	userID, profile := newTasteTestAccount(t, pool, prefix)
+	userID, profile = newTasteTestAccount(t, pool, prefix)
 	series := prefix + "series"
 	seedRecoMediaItem(t, pool, series, "series", "matched")
 	episode := prefix + "episode"
@@ -275,6 +276,7 @@ func TestWatchedItemIDSetQueryMatchesStoreWalkPostgres(t *testing.T) {
 	progress(profile, prefix+"half", 50, 100, at)
 	progress(profile, prefix+"under-half", 49.99, 100, at)
 	progress(profile, prefix+"no-duration", 50, 0, at)
+	progress(profile, prefix+"sub-second", 30, 100, at.Add(700*time.Millisecond))
 	seedCompletion(t, pool, userID, profile, prefix+"hidden", at)
 	hide(prefix+"hidden", at.Add(time.Hour))
 	seedCompletion(t, pool, userID, profile, prefix+"rewatched", at.Add(2*time.Hour))
@@ -314,12 +316,35 @@ func TestWatchedItemIDSetQueryMatchesStoreWalkPostgres(t *testing.T) {
 	book(prefix+"book-hidden", 0.95)
 	hide(prefix+"book-hidden", at.Add(time.Hour))
 
-	want := map[string]struct{}{series: {}, prefix + "half": {}, prefix + "rewatched": {}, prefix + "book-half": {}}
+	watched = map[string]struct{}{series: {}, prefix + "half": {}, prefix + "rewatched": {}, prefix + "book-half": {}}
+	progressed = map[string]struct{}{episode: {}, prefix + "half": {}, prefix + "under-half": {}, prefix + "no-duration": {}, prefix + "sub-second": {}, prefix + "rewatched": {}, prefix + "book-half": {}, prefix + "book-under-half": {}}
 	for i := range rows {
+		progressed[fmt.Sprintf("%sitem-%05d", prefix, i)] = struct{}{}
 		if i%3 != 2 {
-			want[fmt.Sprintf("%sitem-%05d", prefix, i)] = struct{}{}
+			watched[fmt.Sprintf("%sitem-%05d", prefix, i)] = struct{}{}
 		}
 	}
+	return userID, profile, watched, progressed
+}
+
+// The watched set and the progress rows are the same reads with one query, as
+// on the Postgres user store, or walked from the store by keyset across
+// pages, as on a store outside Postgres. The watched set is every title
+// completed or at least half watched, episodes for their series, and every
+// book read at least half way; the progress rows are every title's and book's
+// progress. Both leave out rows hidden from the history since their last
+// progress and other profiles' rows.
+func TestProgressReadsMatchStoreWalkPostgres(t *testing.T) {
+	pool := newEngineTestPool(t)
+	ctx := t.Context()
+	userID, profile, want, wantProgress := seedProgressAcrossPages(t, pool)
+	type progressRow struct {
+		id                 string
+		position, duration float64
+		completed          bool
+		updatedAt          int64
+	}
+	progressRows := map[string][]progressRow{}
 	store := pgstore.NewPostgresProvider(pool)
 	for name, reader := range map[string]*SignalReader{
 		"query": NewSignalReader(NewRepo(pool), store),
@@ -331,6 +356,26 @@ func TestWatchedItemIDSetQueryMatchesStoreWalkPostgres(t *testing.T) {
 		}
 		if !maps.Equal(got, want) {
 			t.Fatalf("%s: watched set has %d items, want %d; extra %v, missing %v", name, len(got), len(want), setDifference(got, want), setDifference(want, got))
+		}
+
+		progress, err := reader.WatchProgressForUser(ctx, userID, profile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids := make(map[string]struct{}, len(progress))
+		for _, wp := range progress {
+			ids[wp.MediaItemID] = struct{}{}
+			progressRows[name] = append(progressRows[name], progressRow{wp.MediaItemID, wp.PositionSeconds, wp.DurationSeconds, wp.Completed, wp.UpdatedAt.UnixMicro()})
+		}
+		if len(progress) != len(wantProgress) || !maps.Equal(ids, wantProgress) {
+			t.Fatalf("%s: %d progress rows of %d titles, want %d; extra %v, missing %v", name, len(progress), len(ids), len(wantProgress), setDifference(ids, wantProgress), setDifference(wantProgress, ids))
+		}
+		slices.SortFunc(progressRows[name], func(a, b progressRow) int { return strings.Compare(a.id, b.id) })
+	}
+	// Both reads hold the same titles, so the sorted rows pair up.
+	for i, row := range progressRows["query"] {
+		if walked := progressRows["walk"][i]; row != walked {
+			t.Fatalf("progress row %s: query %+v, walk %+v", row.id, row, walked)
 		}
 	}
 }
@@ -345,4 +390,75 @@ func setDifference(a, b map[string]struct{}) []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// Rewatch counts take every visible completed play in the profile's history,
+// on the user store path as on the SQL path: rewatches recorded after more
+// plays than one page of completed history holds still count. A play hidden
+// from the history, an unfinished play and another profile's play do not.
+func TestRewatchCountsReadTheWholeHistoryPostgres(t *testing.T) {
+	pool := newEngineTestPool(t)
+	ctx := t.Context()
+	prefix := "trewatch-" + uuid.NewString()[:8] + "-"
+	userID, profile := newTasteTestAccount(t, pool, prefix)
+	sibling := uuid.NewString()
+	if _, err := pool.Exec(ctx, `INSERT INTO user_profiles(id, user_id, name) VALUES ($1, $2, 'sibling')`, sibling, userID); err != nil {
+		t.Fatal(err)
+	}
+	play := func(profile, itemID string, at time.Time, completed bool) {
+		t.Helper()
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO user_watch_history(id, user_id, profile_id, media_item_id, watched_at, duration_seconds, completed)
+			VALUES (gen_random_uuid()::text, $1, $2, $3, $4, 3600, $5)`, userID, profile, itemID, at, completed); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	split, late, hidden, unfinished, shared := prefix+"split", prefix+"late", prefix+"hidden", prefix+"unfinished", prefix+"shared"
+	first := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
+	play(profile, split, first, true)
+	play(profile, hidden, first, true)
+	// One play each of more titles than a page holds, between the first plays
+	// and the rewatches.
+	const singles = 600
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO user_watch_history(id, user_id, profile_id, media_item_id, watched_at, duration_seconds, completed)
+		SELECT gen_random_uuid()::text, $1, $2, $3 || lpad(i::text, 4, '0'), $4::timestamptz + i * INTERVAL '1 minute', 3600, true
+		FROM generate_series(1, $5) AS i`, userID, profile, prefix+"single-", first, singles); err != nil {
+		t.Fatal(err)
+	}
+	later := first.Add(singles * time.Minute)
+	play(profile, split, later.Add(time.Hour), true)
+	for i := range 3 {
+		play(profile, late, later.Add(time.Duration(i+1)*time.Hour), true)
+	}
+	play(profile, hidden, later.Add(time.Hour), true)
+	if _, err := pool.Exec(ctx, `INSERT INTO user_history_hidden_items(user_id, profile_id, media_item_id, hidden_before) VALUES ($1, $2, $3, $4)`, userID, profile, hidden, first.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	play(profile, unfinished, later, true)
+	play(profile, unfinished, later.Add(time.Hour), false)
+	play(profile, shared, later, true)
+	play(sibling, shared, later.Add(time.Hour), true)
+
+	want := []RewatchCount{
+		{MediaItemID: late, Count: 3, LastWatchedAt: later.Add(3 * time.Hour)},
+		{MediaItemID: split, Count: 2, LastWatchedAt: later.Add(time.Hour)},
+	}
+	repo := NewRepo(pool)
+	storePath := NewSignalReader(repo, pgstore.NewPostgresProvider(pool)).WithUserStoreOutsidePostgres(true)
+	for name, read := range map[string]func() ([]RewatchCount, error){
+		"SQL":   func() ([]RewatchCount, error) { return repo.GetRewatchCounts(ctx, userID, profile) },
+		"store": func() ([]RewatchCount, error) { return storePath.RewatchCounts(ctx, userID, profile) },
+	} {
+		got, err := read()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !slices.EqualFunc(got, want, func(a, b RewatchCount) bool {
+			return a.MediaItemID == b.MediaItemID && a.Count == b.Count && a.LastWatchedAt.Equal(b.LastWatchedAt)
+		}) {
+			t.Fatalf("%s path rewatch counts = %+v, want %+v", name, got, want)
+		}
+	}
 }

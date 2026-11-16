@@ -3,6 +3,7 @@ package recommendations
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -36,6 +37,40 @@ func TestClusterRowTitleComesFromTheCachedRow(t *testing.T) {
 	}
 	if row := clusterRow(horror, []ScoredItem{{MediaItemID: "m1", Reason: clusterTitle("")}}); row.Label != unlabeledClusterTitle || row.Subject != "" {
 		t.Fatalf("cached unlabeled title = %q (subject %q), want %q", row.Label, row.Subject, unlabeledClusterTitle)
+	}
+}
+
+// A row title carries its catalog key only while it is worded as titles.go
+// words it, for the row type that uses that wording.
+func TestRowTitleKeys(t *testing.T) {
+	const becauseYouEnjoy = "home.section.becauseYouEnjoy"
+	for _, tc := range []struct {
+		rowType, label, key string
+		args                map[string]string
+	}{
+		{clusterRowType, "For You", "home.section.forYou", nil},
+		{clusterRowType, "Because you enjoy Crime", becauseYouEnjoy, map[string]string{"genres": "Crime"}},
+		// renameClusterRow adds a genre to tell two rows apart.
+		{clusterRowType, "Because you enjoy Crime, Drama", becauseYouEnjoy, map[string]string{"genres": "Crime, Drama"}},
+		{clusterRowType, "Picked from your history", "home.section.pickedFromYourHistory", nil},
+		{RecTypeSimilarUsersLiked, "Profiles Like You Enjoyed", "home.section.profilesLikeYouEnjoyed", nil},
+		{RecTypePopular, "Popular on This Server", "home.section.popularOnServer", nil},
+		{RecTypeRecentlyAdded, "Recently Added", "home.section.recentlyAdded", nil},
+		{RecTypeTopRated, "Highly Rated in Your Library", "home.section.highlyRatedInLibrary", nil},
+		{genreSamplerRowType, "Top Drama", "home.section.topGenre", map[string]string{"genre": "Drama"}},
+		// Other wording, such as a title cached by an older build, and the
+		// right words on another row type carry no key.
+		{clusterRowType, "Because you enjoy ", "", nil},
+		{clusterRowType, "Because You Enjoy Crime", "", nil},
+		{genreSamplerRowType, "Top ", "", nil},
+		{genreSamplerRowType, "Popular in Crime", "", nil},
+		{RecTypePopular, "For You", "", nil},
+		{RecTypeBecauseWatched, "Because You Watched", "", nil},
+	} {
+		key, args := ForYouRow{Type: tc.rowType, Label: tc.label}.TitleKey()
+		if key != tc.key || !maps.Equal(args, tc.args) {
+			t.Errorf("%s %q: key %q %v, want %q %v", tc.rowType, tc.label, key, args, tc.key, tc.args)
+		}
 	}
 }
 
@@ -493,15 +528,15 @@ func (f fakeItemRatings) ListForItems(_ context.Context, _ int, _ string, itemID
 	return out, nil
 }
 
-// Anchors come from the latest ten completions, newest first, passing over
-// those rated two stars or lower; a 3-star title still anchors.
+// Anchors come from the latest recentAnchorLimit completions, newest first,
+// passing over those rated two stars or lower; a 3-star title still anchors.
 func TestAnchorItemIDsPassOverDislikedCompletions(t *testing.T) {
 	recent := []string{"one-star", "liked", "three-stars", "two-stars", "next"}
-	for i := len(recent); i < 12; i++ {
+	for i := len(recent); i < recentAnchorLimit+2; i++ {
 		recent = append(recent, fmt.Sprintf("older-%d", i))
 	}
 	allLow := fakeItemRatings{}
-	for _, id := range recent[:anchorCandidateLimit] {
+	for _, id := range recent[:recentAnchorLimit] {
 		allLow[id] = 1
 	}
 	signals := NewSignalReader(&fakeSignalRepo{fallbackRecentCompleted: recent}, nil)
@@ -512,9 +547,9 @@ func TestAnchorItemIDsPassOverDislikedCompletions(t *testing.T) {
 	}{
 		{"no ratings reader", nil, recent[:3]},
 		{"disliked passed over", fakeItemRatings{"one-star": 1, "two-stars": 2, "three-stars": 3, "liked": 5}, []string{"liked", "three-stars", "next"}},
-		// Only the latest ten are looked at, so older liked titles do not
-		// anchor a profile whose recent watching it disliked.
-		{"latest ten all disliked", allLow, []string{}},
+		// Only the latest completions are looked at, so older liked titles
+		// do not anchor a profile whose recent watching it disliked.
+		{"latest all disliked", allLow, []string{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := anchorItemIDs(t.Context(), signals, tc.ratings, 7, "p1", BecauseYouWatchedAnchors)

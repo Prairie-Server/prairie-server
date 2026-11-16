@@ -39,8 +39,9 @@ them:
   from the boot-time lifecycle hooks, so a plugin cannot proxy to a listener
   that does not exist yet.
 - Reconciled on every `OnLifecycleChange` (install, enable, disable, config
-  save, auto-update, uninstall). A config save or auto-update stops the
-  process; the next reconcile starts it again.
+  save, auto-update, uninstall). A config save, or an update whose new
+  package passed its checks, stops the process; the next reconcile starts it
+  again.
 - Restarted after a crash with exponential backoff from 1 s to 60 s plus
   jitter, reset after five minutes of stable running; parked as `failed`
   after ten consecutive failures until an admin restarts or reconfigures it.
@@ -184,7 +185,7 @@ to them.
   supervisor continues the restart and records the result.
 - The API reaches proxies over their backend URL with
   [signed worker requests](worker-http-protocol.md#authentication):
-  `GET /network-access/status`, `POST /network-access/{provider}/connect`
+  `GET /network-access/{provider}/status`, `POST /network-access/{provider}/connect`
   and `.../disconnect` on the proxy listener, ten seconds each, in parallel,
   like force-reload. Those routes carry `auth_url` and error text because
   they require a signed request; the public `/health` report carries only state,

@@ -35,6 +35,12 @@ type ReadOptions struct {
 	// (Priority.Raise) gives the rest of the read normal priority and
 	// Concurrency. Network filesystems ignore I/O priority.
 	Background *Priority
+	// SlowRead, when set, gives the read up with ErrSlowReads once its last
+	// slowReadSample reads took longer than this on average. Reads already
+	// sent finish, so a read that needs no more succeeds. On storage that
+	// fetches a large chunk for every small read, reading every cue takes
+	// minutes and starves any stream reading the same file.
+	SlowRead time.Duration
 }
 
 const (
@@ -45,6 +51,9 @@ const (
 	// BackgroundConcurrency is how many reads a background read keeps in
 	// flight until it is raised.
 	BackgroundConcurrency = 4
+	// slowReadSample is how many of its latest reads ReadOptions.SlowRead
+	// averages: a round of DefaultConcurrency.
+	slowReadSample = DefaultConcurrency
 	// DefaultLookback covers how long nearly every subtitle shows.
 	DefaultLookback = 30 * time.Second
 	maxLookback     = 10 * time.Minute
@@ -133,7 +142,10 @@ type Result struct {
 
 const maxPacketReads = 8
 
-var errPacketReadBusy = errors.New("embeddedsub: packet read limit reached")
+// ErrReadBusy means ReadPackets refused the call at once: the process
+// already runs as many packet reads as it allows, or the same read of the
+// same file version. A caller that needs the packets can retry shortly.
+var ErrReadBusy = errors.New("embeddedsub: packet read limit reached")
 
 type packetReadKey struct {
 	source   cacheKey
@@ -158,7 +170,7 @@ func runPacketRead(ctx context.Context, key packetReadKey, read func() (*Result,
 	_, running := packetReads.running[key]
 	if running || len(packetReads.running) >= maxPacketReads {
 		packetReads.Unlock()
-		return nil, errPacketReadBusy
+		return nil, ErrReadBusy
 	}
 	packetReads.running[key] = struct{}{}
 	packetReads.Unlock()
@@ -211,7 +223,8 @@ func runPacketRead(ctx context.Context, key packetReadKey, read func() (*Result,
 // When ctx ends ReadPackets returns at once; reads already issued finish in
 // the background and keep their slot until every worker exits. At most eight
 // packet operations run process-wide, with one per file version/track/window;
-// a saturated limit or an already running window fails the new call promptly.
+// a saturated limit or an already running window fails the new call promptly
+// with ErrReadBusy.
 func ReadPackets(ctx context.Context, path string, idx *Index, number uint64, from, to time.Duration, opts ReadOptions) (*Result, error) {
 	if idx == nil {
 		return nil, errors.New("embeddedsub: nil index")
@@ -252,6 +265,7 @@ func readPackets(ctx context.Context, path string, idx *Index, t *Track, from, t
 		src = idle
 	}
 	r := newFileReader(ctx, src, concurrency)
+	r.giveWayWhenSlow(opts.SlowRead)
 	if opts.Background.background() {
 		r.background(opts.Background, BackgroundConcurrency)
 	}

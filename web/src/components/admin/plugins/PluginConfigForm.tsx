@@ -9,6 +9,7 @@ import type {
 import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n";
 
 import {
   adminFormForConfigSchema,
@@ -16,7 +17,11 @@ import {
   humanizeConfigKey,
 } from "./configSchemaAdminForm";
 import { SchemaForm } from "./SchemaForm";
-import { buildSchemaValues, type BuildSchemaValuesOptions } from "./schemaFormUtils";
+import {
+  buildSchemaValues,
+  parseFieldTypes,
+  type BuildSchemaValuesOptions,
+} from "./schemaFormUtils";
 
 import { Loader2, RotateCcw, Save } from "lucide-react";
 type PluginConfigValue = Record<string, unknown>;
@@ -68,6 +73,7 @@ export function PluginConfigForm({
   bare = false,
   idPrefix,
 }: Props) {
+  const t = useT();
   const inferredDescriptor = useMemo(() => adminFormForConfigSchema(schema), [schema]);
   const fields = inferredDescriptor?.fields ?? EMPTY_FIELDS;
   const supported = inferredDescriptor != null;
@@ -79,11 +85,14 @@ export function PluginConfigForm({
       ...base,
       fields: base.fields.map((field) =>
         configured.has(field.key) && (field.secret || field.control === "PASSWORD")
-          ? { ...field, placeholder: "Saved secret — leave blank to keep" }
+          ? { ...field, placeholder: t("web.admin.plugins.configForm.savedSecretPlaceholder") }
           : field,
       ),
     };
-  }, [configuredSecrets, fields, inferredDescriptor]);
+  }, [configuredSecrets, fields, inferredDescriptor, t]);
+  const fieldTypes = useMemo(() => parseFieldTypes(schema.json_schema), [schema.json_schema]);
+  const stagedValue = (draft: PluginConfigValue) =>
+    buildSchemaValues(descriptor, draft, fieldTypes, SAVE_OPTIONS);
 
   const [values, setValues] = useState<PluginConfigValue>(() =>
     formValuesFromConfig(fields, value),
@@ -107,11 +116,7 @@ export function PluginConfigForm({
       }
     }
     setClearSecrets(updated);
-    onDraftChange?.(
-      schema.key,
-      buildSchemaValues(descriptor, next, undefined, SAVE_OPTIONS),
-      Array.from(updated),
-    );
+    onDraftChange?.(schema.key, stagedValue(next), Array.from(updated));
   }
 
   function toggleClearSecret(key: string) {
@@ -119,11 +124,7 @@ export function PluginConfigForm({
     if (updated.has(key)) updated.delete(key);
     else updated.add(key);
     setClearSecrets(updated);
-    onDraftChange?.(
-      schema.key,
-      buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
-      Array.from(updated),
-    );
+    onDraftChange?.(schema.key, stagedValue(values), Array.from(updated));
   }
 
   async function handleTest() {
@@ -132,17 +133,12 @@ export function PluginConfigForm({
     }
 
     try {
-      setTestResult(
-        await onTest(
-          schema.key,
-          buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
-          Array.from(clearSecrets),
-        ),
-      );
+      setTestResult(await onTest(schema.key, stagedValue(values), Array.from(clearSecrets)));
     } catch (error) {
       setTestResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : t("web.admin.plugins.configForm.checkFailed"),
       });
     }
   }
@@ -152,7 +148,7 @@ export function PluginConfigForm({
       <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
         <Label>{schema.title || schema.key}</Label>
         <p className="text-muted-foreground text-sm">
-          This plugin uses a configuration schema shape that the admin form does not support yet.
+          {t("web.admin.plugins.configForm.unsupportedSchema")}
         </p>
       </div>
     );
@@ -188,8 +184,11 @@ export function PluginConfigForm({
             return (
               <div key={key} className="flex items-center justify-between gap-3 text-xs">
                 <span className={clearing ? "text-destructive" : "text-muted-foreground"}>
-                  {field?.label || humanizeConfigKey(key)}: {clearing ? "will be cleared" : "saved"}
-                  {required ? " (required)" : ""}
+                  {t("web.admin.plugins.configForm.savedSecretStatus", {
+                    label: field?.label || humanizeConfigKey(key),
+                    state: clearing ? "cleared" : "saved",
+                    required: required ? "yes" : "no",
+                  })}
                 </span>
                 {!required ? (
                   <Button
@@ -199,7 +198,9 @@ export function PluginConfigForm({
                     onClick={() => toggleClearSecret(key)}
                   >
                     {clearing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-                    {clearing ? "Keep saved secret" : "Clear saved secret"}
+                    {clearing
+                      ? t("web.admin.plugins.configForm.keepSecret")
+                      : t("web.admin.plugins.configForm.clearSecret")}
                   </Button>
                 ) : null}
               </div>
@@ -221,16 +222,10 @@ export function PluginConfigForm({
           size="sm"
           variant="outline"
           disabled={isSaving || isTesting}
-          onClick={() =>
-            onSave(
-              schema.key,
-              buildSchemaValues(descriptor, values, undefined, SAVE_OPTIONS),
-              Array.from(clearSecrets),
-            )
-          }
+          onClick={() => onSave(schema.key, stagedValue(values), Array.from(clearSecrets))}
         >
           <Save />
-          {schema.admin_form?.submit_label || "Save config"}
+          {schema.admin_form?.submit_label || t("web.admin.plugins.configForm.save")}
         </Button>
       </div>
     </fieldset>

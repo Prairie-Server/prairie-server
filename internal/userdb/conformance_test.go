@@ -82,8 +82,16 @@ func TestSQLitePersonalListPage(t *testing.T) {
 	storetest.RunNotInterested(t, newConformanceStore)
 }
 
+func TestSQLiteCompletedHistoryPage(t *testing.T) {
+	storetest.RunCompletedHistoryPage(t, newConformanceStore)
+}
+
 func TestSQLiteHistoryEntryOnce(t *testing.T) {
 	storetest.RunHistoryEntryOnce(t, newConformanceStore(t))
+}
+
+func TestSQLiteJellycompatPlayedByDate(t *testing.T) {
+	storetest.RunJellycompatPlayedByDate(t, newConformanceStore(t))
 }
 
 func TestSQLiteDatedMarkWatchedBatchAtomic(t *testing.T) {

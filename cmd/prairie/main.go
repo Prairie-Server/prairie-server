@@ -5,8 +5,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -52,9 +50,11 @@ import (
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/artworkurl"
 	"github.com/prairie-server/prairie-server/internal/audiobooks"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/backup"
 	"github.com/prairie-server/prairie-server/internal/blobgc"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/boxsets"
@@ -99,17 +99,20 @@ import (
 	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 	"github.com/prairie-server/prairie-server/internal/netaccess"
 	"github.com/prairie-server/prairie-server/internal/netadmin"
+	"github.com/prairie-server/prairie-server/internal/overlays"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
 	// entries in-process (no gRPC).
 	_ "github.com/prairie-server/prairie-server/internal/metadata/nfo"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeauth"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/nodemetrics"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/noderecipe"
 	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/nodesource"
 	"github.com/prairie-server/prairie-server/internal/notifications"
 	"github.com/prairie-server/prairie-server/internal/opslog"
 	"github.com/prairie-server/prairie-server/internal/partman"
@@ -120,6 +123,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/prairie-server/prairie-server/internal/proxy"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/ratingsources"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 	"github.com/prairie-server/prairie-server/internal/requests/discoverrows"
@@ -140,7 +144,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/taskmanager/triggers"
 	"github.com/prairie-server/prairie-server/internal/tcpcongestion"
 	"github.com/prairie-server/prairie-server/internal/telemetry"
-	"github.com/prairie-server/prairie-server/internal/themesongs"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
 	"github.com/prairie-server/prairie-server/internal/trickplay"
 	"github.com/prairie-server/prairie-server/internal/tuning"
@@ -158,6 +161,9 @@ import (
 )
 
 const serverModeTranscode = "transcode"
+
+// serverModeProxy is MODE for a proxy node.
+const serverModeProxy = "proxy"
 
 // resolveNodeIdentity returns a stable node identifier used by the
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
@@ -198,7 +204,10 @@ func resolveNodeIdentity() string {
 // contract. budget takes the node because the device set is a per-node
 // property: an hw_device override is exactly a node that probes a different
 // matrix from the one the cluster setting describes.
-func nodeCapabilityFetcher(jwtSecret string, budget func(*nodepool.Node) time.Duration) nodepool.CapabilityFetcher {
+//
+// The node's row says which kind of worker it is, and so which key signs the
+// request: a transcode node's own, or the shared secret for a proxy.
+func nodeCapabilityFetcher(keys nodeauth.Keyring, budget func(*nodepool.Node) time.Duration) nodepool.CapabilityFetcher {
 	client := &http.Client{}
 	return func(ctx context.Context, node *nodepool.Node) ([]byte, string, error) {
 		if node == nil {
@@ -206,7 +215,7 @@ func nodeCapabilityFetcher(jwtSecret string, budget func(*nodepool.Node) time.Du
 		}
 		ctx, cancel := context.WithTimeout(ctx, budget(node))
 		defer cancel()
-		info, payload, status, err := transcodenode.FetchHWCapabilitiesPayload(ctx, client, node.URL, jwtSecret)
+		info, payload, status, err := transcodenode.FetchHWCapabilitiesPayload(ctx, client, node.URL, node.SignTarget(), keys)
 		if err != nil {
 			return nil, "", err
 		}
@@ -603,6 +612,7 @@ func maybeApplyPostgresTuning(ctx context.Context, pool *pgxpool.Pool, appMaxCon
 		"memory_source", opts.MemorySource,
 		"memory_budget_percent", opts.MemoryBudgetPercent,
 		"cpus", opts.CPUs,
+		"detected_cpus", opts.DetectedCPUs,
 		"connections", opts.Connections,
 		"storage", opts.Storage,
 		"db_size", result.DBSize,
@@ -660,6 +670,24 @@ func convertLegacyAIProviders(ctx context.Context, settings *catalog.EncryptedSe
 		slog.WarnContext(ctx, "AI endpoints not converted: provider addresses cannot carry credentials or a query; connect these providers again in AI Services",
 			"component", "app", "settings", unconverted)
 	}
+}
+
+// settingsLoadError formats a startup settings read failure. A SECRET_KEY
+// mismatch gets the fix and this key's check value, which the GCM error alone
+// does not point to.
+func settingsLoadError(err error, secretKey []byte) string {
+	if !errors.Is(err, catalog.ErrSecretKeyMismatch) {
+		return fmt.Sprintf("loading settings: %v", err)
+	}
+	check, cerr := secret.KeyCheckValue(secretKey)
+	if cerr != nil {
+		check = "unavailable"
+	}
+	return fmt.Sprintf("loading settings: %v\n"+
+		"This server's SECRET_KEY has check value %s. "+
+		"Every API server and proxy node that uses this database needs the SECRET_KEY it was encrypted with; "+
+		"a transcode node's node key is a different credential. Restore the original key and restart. "+
+		"To compare keys, run: printf %%s \"$SECRET_KEY\" | prairie secret check", err, check)
 }
 
 func runCredentialBackfills(ctx context.Context, pool *pgxpool.Pool, cipher *secret.Cipher, settings *catalog.EncryptedSettingsRepo) {
@@ -803,6 +831,27 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "postgres-tune-conf" {
+		if err := runPostgresTuneConfCommand(os.Args[2:], os.Stdout); err != nil {
+			log.Fatalf("postgres-tune-conf: %v", err)
+		}
+		return
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "backup" {
+		if err := runBackupMain(os.Args[2:], os.Stdout, os.Stderr); err != nil {
+			log.Fatalf("backup: %v", err)
+		}
+		return
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "secret" {
+		if err := runSecretCommand(os.Args[2:], os.Stdin, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	envFile := flag.String("env", ".env", "path to .env bootstrap file")
 	migrateOnly := flag.Bool("migrate-only", false, "apply database migrations and exit")
 	migrateStatus := flag.Bool("migrate-status", false, "show database migration status and exit")
@@ -829,6 +878,13 @@ func main() {
 		"revision", contract.Revision,
 		"definitions", len(contract.Definitions),
 		"etag", contractETag)
+
+	// A transcode node branches before the bootstrap: it has no DATABASE_URL
+	// or SECRET_KEY to load and takes everything else from the core.
+	if !*migrateOnly && !*migrateStatus && *migrateDownTo < 0 && transcodeNodeMode(*envFile) {
+		runTranscodeNode()
+		return
+	}
 
 	// Step 1: Bootstrap from .env
 	bc, err := config.LoadBootstrap(*envFile)
@@ -896,11 +952,17 @@ func main() {
 		return
 	}
 
+	// Every server that migrates runs the same sequence: wait for any other
+	// server's, back up the database when migrations are pending, then
+	// migrate (database.MigrateAtStartup, docs/architecture/backups.md).
+	migrationWait := database.MigrationWait()
+	startupMigrations := database.StartupOptions{
+		Wait:          migrationWait,
+		BeforeMigrate: beforeMigrateBackup(bc, pool, dataCipher, migrationWait),
+	}
+
 	if *migrateOnly {
-		migCtx, migCancel := database.MigrationContext(ctx)
-		migErr := database.MigrateOnly(migCtx, pool, migrations.FS, "sql")
-		migCancel()
-		if migErr != nil {
+		if migErr := database.MigrateAtStartup(ctx, pool, migrations.FS, "sql", startupMigrations); migErr != nil {
 			log.Fatalf("failed to run migrations: %v", migErr)
 		}
 		slog.Info("database migrations applied")
@@ -915,13 +977,9 @@ func main() {
 	// ciphertext; secondary nodes read whatever the primary encrypted.
 	isPrimaryNode := bc.Mode == postgresTuneModeIntegrated || bc.Mode == "api" || bc.Mode == ""
 	if isPrimaryNode {
-		migCtx, migCancel := database.MigrationContext(ctx)
-		migErr := database.MigrateOnly(migCtx, pool, migrations.FS, "sql")
-		if migErr != nil {
-			migCancel()
+		if migErr := database.MigrateAtStartup(ctx, pool, migrations.FS, "sql", startupMigrations); migErr != nil {
 			log.Fatalf("failed to run migrations: %v", migErr)
 		}
-		migCancel()
 		slog.Info("database migrations applied")
 	}
 
@@ -931,13 +989,19 @@ func main() {
 	// (run after migrations, before this GetAll) is wired further below.
 	settingsRepo := catalog.NewEncryptedSettingsRepo(catalog.NewServerSettingsRepo(pool), dataCipher)
 	if isPrimaryNode {
+		// Read once before the backfills: under a wrong SECRET_KEY they would
+		// encrypt plaintext credentials with that key, leaving rows the right
+		// key can no longer read.
+		if _, err := settingsRepo.GetAll(ctx); err != nil {
+			log.Fatal(settingsLoadError(err, bc.SecretKey))
+		}
 		runCredentialBackfills(ctx, pool, dataCipher, settingsRepo)
 
 		convertLegacyAIProviders(ctx, settingsRepo)
 	}
 	settings, err := settingsRepo.GetAll(ctx)
 	if err != nil {
-		log.Fatalf("loading settings: %v", err)
+		log.Fatal(settingsLoadError(err, bc.SecretKey))
 	}
 
 	// Step 4: YAML import (one-time)
@@ -984,19 +1048,16 @@ func main() {
 	}
 
 	// Step 5: Auto-generate secrets
-	if strings.TrimSpace(settings["auth.jwt_secret"]) == "" {
-		secret := make([]byte, 32)
-		if _, err := rand.Read(secret); err != nil {
-			log.Fatalf("generating jwt secret: %v", err)
-		}
-		encoded := base64.StdEncoding.EncodeToString(secret)
+	if strings.TrimSpace(settings[auth.JWTSecretSettingKey]) == "" {
 		// Fatal, not a warning: every process, this one too once its config
 		// watcher starts, reads the secret from the database, so a secret
-		// held only in memory would leave them with none.
-		if err := settingsRepo.Set(ctx, "auth.jwt_secret", encoded); err != nil {
-			log.Fatalf("persisting generated JWT secret: %v", err)
+		// held only in memory would leave them with none. Processes starting
+		// at once converge on the first secret stored (#3312).
+		jwtSecret, err := auth.EnsureJWTSecret(ctx, settingsRepo)
+		if err != nil {
+			log.Fatalf("provisioning JWT secret: %v", err)
 		}
-		settings["auth.jwt_secret"] = encoded
+		settings[auth.JWTSecretSettingKey] = jwtSecret
 	}
 	if settings["jellyfin_compat.server_id"] == "" {
 		serverID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://silo.local/jellycompat")).String()
@@ -1192,18 +1253,15 @@ func main() {
 	tuningCfg, adjustments := tuning.Parse(os.Getenv)
 	tuning.LogAdjustments(ctx, adjustments)
 	netadmin.LogState(ctx)
-	var limits tcpcongestion.Limits
-	if mode != serverModeTranscode {
-		limits = tcpcongestion.ReadLimits(ctx)
-	}
 	opts := tcpcongestion.Options{
 		Congestion: tuningCfg.TCPCongestion == tuning.TCPCongestionBBR,
 		SendBuffer: tuningCfg.TCPSendBuffer,
-		Limits:     limits,
+		Limits:     tcpcongestion.ReadLimits(ctx),
 	}
 
-	// Proxy and transcode modes run with DB + Redis for hot-reload.
-	if mode == "proxy" || mode == "transcode" {
+	// Proxy mode runs with DB + Redis for hot-reload. Transcode nodes never
+	// reach here: they branch before the bootstrap (runTranscodeNode).
+	if mode == serverModeProxy { //nolint:nestif // the proxy wiring predates this branch; splitting it out is a separate change
 		// Delivery writes run in the background with a short deadline. Honor it
 		// on the sockets too, so a stalled Redis cannot retain their connections.
 		redisClient, err := cache.NewDeadlineRedisClientForRole(cfg.Redis, "worker")
@@ -1217,7 +1275,7 @@ func main() {
 		// Resolved before the watcher starts: NODE_URL is this process's
 		// stream_nodes identity, and the watcher needs it on its very first
 		// load to overlay the node's own acceleration overrides.
-		// config.LoadBootstrap refuses these modes without it.
+		// config.LoadBootstrap refuses a proxy without it.
 		nodeURL := envutil.Getenv("NODE_URL")
 		nodeName := envutil.Getenv("NODE_NAME")
 		if nodeName == "" {
@@ -1255,93 +1313,61 @@ func main() {
 			}
 		}()
 
-		var handler http.Handler
-		var shutdownStandalone func(context.Context) error
-		var standaloneHooks standaloneServerHooks
-		if mode == "proxy" {
-			srv := proxy.NewServer(watcher, tracker)
-			srv.SetDownloadBandwidth(pool, redisClient)
-			proxyIPResolver, resolverErr := clientIPResolverFromConfig(watcher.Config())
-			if resolverErr != nil {
-				log.Fatalf("load trusted CIDRs: %v", resolverErr)
-			}
-			registerClientIPConfigReload(watcher, proxyIPResolver)
-			srv.SetClientIPResolver(proxyIPResolver)
-			srv.SetStreamTelemetry(streamTelemetryRegistry)
-			// Network access providers run on this proxy too, one instance per
-			// node with its own overlay identity; see newProxyPluginHost.
-			pluginCacheDir, cacheDirErr := resolvePluginCacheDir()
-			if cacheDirErr != nil {
-				log.Fatalf("plugin cache: %v", cacheDirErr)
-			}
-			proxyPlugins := newProxyPluginHost(appCtx, pool, dataCipher, eventBus, watcher, nodeName, cfg.Server.Listen, pluginCacheDir)
-			srv.SetIngressTokens(proxyPlugins.broker.Registry)
-			srv.SetNetworkAccessStatus(proxyPlugins.broker.Status)
-			srv.SetNetworkAccessProviderHost(proxyPlugins.service)
-			standaloneHooks = proxyPlugins.hooks()
-			// Serve header-authenticated sessions: the recipe comes from the
-			// shared grant store central wrote at plan time, and the caller's
-			// own access token is re-checked against the live login session in
-			// Postgres, so a revoked login stops streaming here immediately.
-			srv.SetMediaGrantAuthority(noderecipe.NewProxyGrantStore(redisClient, 0), auth.NewSessionRepository(pool))
-			// Consult the session-deny marker central writes on stop, expiry,
-			// and admin terminate before serving media, so a revoked stream
-			// token or grant stops here instead of at its 24h TTL.
-			srv.SetStreamDeny(playback.NewStreamDeny(redisClient))
-			// Follow a Jellyfin-compatible transcode that the API moved off a
-			// transcode node this proxy cannot reach: the shared recipe store
-			// names the node it runs on now, and the event bus carries the
-			// request to move it.
-			srv.SetTranscodeMoveFollower(noderecipe.NewStore(redisClient, 0), eventBus)
-			srv.SetRemoteArtifactMissReporter(downloads.NewArtifactManager(
-				downloads.NewArtifactRepository(pool),
-				downloads.NewRepository(pool),
-				nil,
-				downloads.NewPlaybackPreparer(),
-				nodeID,
-				watcher.Config,
-				nil,
-			))
-			// Keep the capability hash /health advertises current, so the API's
-			// sweep refetches this proxy's inventory only when it actually changed.
-			srv.StartCapabilitySnapshots(appCtx)
-			// Sample host and GPU resources so /health, /status and /metrics can
-			// report them without doing any work on the request.
-			srv.StartMetricsSampler(appCtx)
-			handler = srv.Handler()
-		} else {
-			srv := transcodenode.NewServer(watcher, tracker)
-			srv.SetInputPathAuthorizer(transcodenode.NewCatalogPathAuthorizer(scanner.NewFileRepository(pool)))
-			srv.SetThemeInputAuthorizer(transcodenode.NewThemeInputAuthorizer(themesongs.NewRepository(pool)))
-			// Consult the session-deny marker central writes on stop, expiry,
-			// and admin terminate before serving or reconstructing a session,
-			// so a revoked stream token stops here instead of at its 24h TTL.
-			srv.SetStreamDeny(playback.NewStreamDeny(redisClient))
-			srv.SetFFmpegLogSink(playback.NewSlogFFmpegLogSink(slog.Default(), nodeID))
-			// Read jellycompat reconstruction recipes central wrote at transcode
-			// start, so this node can rebuild a Jellyfin transcode after its own
-			// restart (the node hop token is recipe-less). Shares the offload Redis.
-			srv.SetRecipeStore(noderecipe.NewStore(redisClient, 0))
-			srv.SetStreamTelemetry(streamTelemetryRegistry)
-			// The first capability snapshot waits on warmup so it measures a
-			// primed encoder rather than racing it into a probe failure.
-			srv.StartCapabilitySnapshots(appCtx, srv.StartHardwareEncoderWarmup(appCtx))
-			// Sample host and GPU resources so /health, /status and /metrics can
-			// report them without doing any work on the request.
-			srv.StartMetricsSampler(appCtx)
-			// Reclaim orphaned transcode dirs at boot and hourly thereafter, bound
-			// to appCtx so it stops on shutdown.
-			srv.StartOrphanSweeper(appCtx)
-			// SIGTERM drains the node before it shuts down, and every drain
-			// change is announced so placement reacts before the next sweep.
-			srv.SetDrainAnnouncer(nodeDrainAnnouncer(appCtx, eventBus, watcher))
-			standaloneHooks.drain = newTranscodeNodeDrain(srv)
-			handler = srv.Handler()
-			shutdownStandalone = srv.Shutdown
+		srv := proxy.NewServer(watcher, tracker)
+		srv.SetDownloadBandwidth(pool, redisClient)
+		proxyIPResolver, resolverErr := clientIPResolverFromConfig(watcher.Config())
+		if resolverErr != nil {
+			log.Fatalf("load trusted CIDRs: %v", resolverErr)
 		}
-
+		registerClientIPConfigReload(watcher, proxyIPResolver)
+		srv.SetClientIPResolver(proxyIPResolver)
+		srv.SetStreamTelemetry(streamTelemetryRegistry)
+		// Network access providers run on this proxy too, one instance per
+		// node with its own overlay identity; see newProxyPluginHost.
+		pluginCacheDir, cacheDirErr := resolvePluginCacheDir()
+		if cacheDirErr != nil {
+			log.Fatalf("plugin cache: %v", cacheDirErr)
+		}
+		proxyPlugins := newProxyPluginHost(appCtx, pool, dataCipher, eventBus, watcher, nodeName, cfg.Server.Listen, pluginCacheDir)
+		srv.SetIngressTokens(proxyPlugins.broker.Registry)
+		srv.SetNetworkAccessStatus(proxyPlugins.broker.Status)
+		srv.SetNetworkAccessProviderHost(proxyPlugins.service)
+		// Serve header-authenticated sessions: the recipe comes from the
+		// shared grant store central wrote at plan time, and the caller's
+		// own access token is re-checked against the live login session in
+		// Postgres, so a revoked login stops streaming here immediately.
+		srv.SetMediaGrantAuthority(noderecipe.NewProxyGrantStore(redisClient, 0), auth.NewSessionRepository(pool))
+		// Consult the session-deny marker central writes on stop, expiry,
+		// and admin terminate before serving media, so a revoked stream
+		// token or grant stops here instead of at its 24h TTL.
+		srv.SetStreamDeny(playback.NewStreamDeny(redisClient))
+		// Proxies relay to transcode nodes, so they keep the same
+		// credential registry the API servers do and sign each relay
+		// with the node's own key.
+		proxyNodeKeys := startProxyNodeKeyRegistry(appCtx, pool, dataCipher, eventBus)
+		srv.SetNodeKeys(proxyNodeKeys.Keyring(func() string { return watcher.Config().Auth.JWTSecret }))
+		// Follow a Jellyfin-compatible transcode that the API moved off a
+		// transcode node this proxy cannot reach: the shared recipe store
+		// names the node it runs on now, and the event bus carries the
+		// request to move it.
+		srv.SetTranscodeMoveFollower(noderecipe.NewStore(redisClient, 0), eventBus)
+		srv.SetRemoteArtifactMissReporter(downloads.NewArtifactManager(
+			downloads.NewArtifactRepository(pool),
+			downloads.NewRepository(pool),
+			nil,
+			downloads.NewPlaybackPreparer(),
+			nodeID,
+			watcher.Config,
+			nil,
+		))
+		// Keep the capability hash /health advertises current, so the API's
+		// sweep refetches this proxy's inventory only when it actually changed.
+		srv.StartCapabilitySnapshots(appCtx)
+		// Sample host and GPU resources so /health, /status and /metrics can
+		// report them without doing any work on the request.
+		srv.StartMetricsSampler(appCtx)
 		_ = opsRepo
-		startStandaloneServer(mode, cfg.Server.Listen, handler, appCancel, shutdownStandalone, standaloneHooks, opts)
+		startStandaloneServer(mode, cfg.Server.Listen, srv.Handler(), appCancel, nil, proxyPlugins.hooks(), opts)
 		return
 	}
 
@@ -1438,6 +1464,19 @@ func main() {
 		ratelimit.NewOutboundLimiter(tmdbRedisClient, "outbound:tmdb", tmdb.RequestsPerSecond))
 	defer tmdbClient.Close()
 
+	// The playback control relay bounds each lane ownership read and write
+	// at one second; this client's sockets give up at that deadline.
+	var playbackControlRedisClient *redis.Client
+	if apiRedisClient != nil {
+		controlClient, controlErr := cache.NewDeadlineRedisClientForRole(cfg.Redis, "api")
+		if controlErr != nil {
+			slog.Warn("redis client init failed; administrator playback commands reach only sessions on this replica", "error", controlErr)
+		} else if controlClient != nil {
+			defer func() { _ = cache.CloseRedisClient(controlClient) }()
+			playbackControlRedisClient = controlClient
+		}
+	}
+
 	if mode == "" || mode == postgresTuneModeIntegrated || mode == "api" {
 		streamTelemetryRegistry = newStreamTelemetryRegistry(appCtx, nodeID, apiRedisClient)
 		streamTelemetryRegistry.Start(appCtx)
@@ -1483,6 +1522,7 @@ func main() {
 		SecretCipher:                 dataCipher,
 		EventBus:                     eventBus,
 		RedisClient:                  apiRedisClient,
+		PlaybackControlRedisClient:   playbackControlRedisClient,
 		TMDB:                         tmdbClient,
 		DownloadBandwidthRedis:       downloadBandwidthRedis,
 		LogStreamHub:                 logStreamHub,
@@ -1586,7 +1626,8 @@ func main() {
 		markerContributionStore := markers.NewContributionStore(deps.DB)
 		deps.MarkerContributionStore = markerContributionStore
 		deps.MarkerContributionService = markers.NewContributionService(
-			markerRegistry, markerResolver, markerProviderConfig, markerContributionStore, slog.Default(),
+			markerRegistry, markerResolver, markerProviderConfig, markerContributionStore,
+			slog.Default().With("component", "markers.contribute"),
 		)
 	}
 	var watchProviderService *watchsync.Service
@@ -1629,6 +1670,25 @@ func main() {
 
 		deps.ProxyPool = proxyPool
 		deps.TranscodePool = transcodePool
+
+		// Every stream node's credential, disabled nodes included: they keep
+		// serving the streams they already have.
+		nodeKeys := nodepool.NewKeyRegistry(nodeRepo, dataCipher)
+		if err := nodeKeys.Refresh(appCtx); err != nil {
+			log.Fatalf("load stream node credentials: %v", err)
+		}
+		nodeKeys.Start(appCtx)
+		deps.NodeKeyRegistry = nodeKeys
+		// Requests to a transcode node are signed with its own key, and only
+		// proxies get the shared secret. A transcode node without a usable key
+		// stays listed and health-checked but takes no work.
+		nodeKeyring := nodeKeys.Keyring(func() string { return configWatcher.Config().Auth.JWTSecret })
+		deps.NodeKeys = nodeKeyring
+		// Every piece of transcode-node work carries a source grant, signed
+		// with a key derived from the same secret as stream tokens.
+		deps.SourceGrants = nodesource.NewGrants(func() string { return configWatcher.Config().Auth.JWTSecret })
+		transcodePool.SetKeyCheck(nodeKeys.HasKey)
+
 		planner := nodepool.NewPlanner(proxyPool, transcodePool)
 		deps.NodePlanner = planner
 
@@ -1646,7 +1706,7 @@ func main() {
 			}()
 		})
 		capabilityBudget := nodeCapabilityProbeBudget(configWatcher.Config)
-		healthChecker.SetCapabilityFetcher(nodeCapabilityFetcher(cfg.Auth.JWTSecret, capabilityBudget))
+		healthChecker.SetCapabilityFetcher(nodeCapabilityFetcher(nodeKeyring, capabilityBudget))
 		// The sweep's backstop is derived from the same budget, so it can never
 		// be the deadline that fires first on a node with many devices.
 		healthChecker.SetCapabilityFetchBudget(capabilityBudget)
@@ -1686,6 +1746,7 @@ func main() {
 				return
 			}
 			if event.Type == cache.EventNodePoolChanged {
+				nodeKeys.Invalidate()
 				pNodes, pErr := nodeRepo.ListEnabled(context.Background(), nodepool.NodeTypeProxy)
 				tNodes, tErr := nodeRepo.ListEnabled(context.Background(), nodepool.NodeTypeTranscode)
 				if pErr != nil || tErr != nil {
@@ -1712,6 +1773,12 @@ func main() {
 	// Runs after configureS3Clients: an S3 backend takes both buckets from deps.
 	if err := configureBlobStorage(appCtx, mode, cfg, &deps, settingsRepo); err != nil {
 		log.Fatalf("configure blob storage: %v", err)
+	}
+	if needsWorkers && deps.DB != nil {
+		deps.Backups = newBackupService(pool, bc, settingsRepo, &deps)
+	}
+	if deps.DB != nil {
+		deps.ProfileTransfer = newProfileTransfer(pool, settingsRepo, cfg)
 	}
 	if storageAdmission != nil {
 		// While a failed admission session is replaced, no blob write may land:
@@ -1795,6 +1862,8 @@ func main() {
 			cfg.Playback.ChapterThumbnailWorkers,
 		)
 		if chapterThumbService != nil {
+			chapterThumbService.SetNodeKeys(deps.NodeKeys)
+			chapterThumbService.SetSourceGrants(deps.SourceGrants)
 			if queue := blobgc.NewQueue(deps.DB); queue != nil {
 				chapterThumbService.SetBlobQueue(queue)
 			}
@@ -1863,11 +1932,21 @@ func main() {
 			}
 			return info, nil
 		}
+		// Release signatures are checked and recorded for every catalog
+		// install, and a first-party plugin without a valid signature is
+		// refused before its binary runs
+		// (docs/architecture/plugin-trust.md#release-signatures).
+		pluginSignatures := plugins.NewSignatureChecker(plugins.SignatureCheckerOptions{
+			Enforce:   true,
+			CacheRoot: pluginCacheDir,
+		})
 		catalogService := plugins.NewCatalogService(repositoryStore, plugins.CatalogServiceOptions{
 			PrairieAPIVersion: plugins.DefaultPrairieAPIVersion,
+			Signatures:        pluginSignatures,
 		})
 		installer := plugins.NewInstaller(installationStore, plugins.InstallerOptions{
-			BaseDir: pluginCacheDir,
+			BaseDir:    pluginCacheDir,
+			Signatures: pluginSignatures,
 		})
 
 		libSource := pluginLibrarySource{groups: accessGroupStore}
@@ -1898,6 +1977,7 @@ func main() {
 			},
 		)
 		pluginHost = pluginhost.NewHost(pluginhost.Config{
+			IdleStopAfter:   pluginhost.IdleStopAfter,
 			EventPublisher:  eventsHub,
 			LibraryLister:   pluginhost.NewLibraryLister(libDataSource),
 			CatalogPresence: catalogPresence,
@@ -2558,6 +2638,9 @@ func main() {
 				deps.RealtimeHub,
 			)
 			libraryRefreshExecutor.SetLibraryLockPool(deps.DB)
+			if audiobookEnricher != nil {
+				libraryRefreshExecutor.SetAudiobookEnricher(audiobookEnricher)
+			}
 		}
 		if metadataService != nil && deps.FileRepo != nil {
 			itemRefreshExecutor = adminjob.NewItemRefreshExecutor(
@@ -2576,6 +2659,12 @@ func main() {
 			)
 			if metadataImageCacheProcessor != nil {
 				itemRefreshExecutor.SetArtworkCacher(metadataImageCacheProcessor)
+			}
+			if itemRepo != nil {
+				itemRefreshExecutor.SetItemStatusReader(itemRepo)
+			}
+			if audiobookEnricher != nil {
+				itemRefreshExecutor.SetAudiobookEnricher(audiobookEnricher)
 			}
 		}
 	}
@@ -2770,8 +2859,41 @@ func main() {
 	if watchProviderService != nil {
 		historyRepo := historyimport.NewRepository(deps.DB, deps.SecretCipher)
 		historyIdentity := watchstate.NewStableIdentityResolver(itemRepo, episodeRepo, catalog.NewProviderIDRepository(deps.DB))
+		// A sync's episodes follow what the profile may open, as any viewer
+		// read does, so it resolves scope the same way.
+		var watchProviderScopes interface {
+			Resolve(context.Context, access.ResolveInput) (access.Scope, error)
+		}
+		if policySystem != nil {
+			watchProviderScopes = policy.NewViewerResolver(auth.NewUserRepository(deps.DB), userStoreProvider, nil, policySystem.PDP(), accessGroupStore).WithUnratedContentPolicy(unratedContent)
+		} else {
+			// Legacy resolver: proxy/test wiring without a policy system. Production integrated/api modes always take the policy path.
+			watchProviderScopes = access.NewResolver(auth.NewUserRepository(deps.DB), userStoreProvider, nil, accessGroupStore).WithUnratedContentPolicy(unratedContent)
+		}
+		watchProviderLibrary := catalog.NewLibraryItemRepository(deps.DB)
 		watchProviderService.
 			WithMatcher(historyimport.NewMatcher(historyRepo)).
+			WithProfileAccess(func(ctx context.Context, userID int, profileID string) (watchsync.ProfileAccess, error) {
+				// A sync runs for the connection's profile without a viewer,
+				// so a PIN does not apply; the profile's hidden-library
+				// preference is not an access rule.
+				scope, err := watchProviderScopes.Resolve(ctx, access.ResolveInput{
+					UserID: userID, ProfileID: profileID, SkipPINVerification: true, ContentAccessOnly: true,
+				})
+				if err != nil {
+					return watchsync.ProfileAccess{}, err
+				}
+				allowed := scope.AllowedLibraryIDs
+				if scope.LibrariesRestricted && allowed == nil {
+					allowed = []int{}
+				}
+				return watchsync.ProfileAccess{
+					AllowedLibraryIDs: allowed,
+					Accessible: func(ctx context.Context, contentIDs []string) (map[string]bool, error) {
+						return watchProviderLibrary.FilterAccessibleContentIDs(ctx, contentIDs, allowed, scope.DisabledLibraryIDs, scope.MaturityLimits)
+					},
+				}, nil
+			}).
 			WithWatchState(watchstate.NewService(userStoreProvider).WithStableIdentityResolver(historyIdentity)).
 			WithUserStoreProvider(userStoreProvider).
 			WithRatingStore(catalog.NewRatingsRepo(deps.DB)).
@@ -3404,7 +3526,8 @@ func main() {
 			if sweeper := blobgc.NewSweeper(deps.DB, deps.Blobs.Assets, mediaImages...); sweeper != nil {
 				taskMgr.Register(tasks.NewSweepOrphanedMediaImagesTask(sweeper))
 			}
-			trickplayExtractor := trickplay.NewNodeExtractor(trickplay.NewLocalExtractor(settingsRepo), deps.NodePlanner, settingsRepo)
+			trickplayExtractor := trickplay.NewNodeExtractor(trickplay.NewLocalExtractor(settingsRepo), deps.NodePlanner, settingsRepo, deps.NodeKeys)
+			trickplayExtractor.SetSourceGrants(deps.SourceGrants)
 			if trickplayService := trickplay.NewService(deps.DB, deps.Blobs.Assets, settingsRepo, trickplayExtractor, deps.NodeID); trickplayService != nil {
 				trickplayReader := trickplay.NewReader(deps.DB, deps.Blobs.Assets, trickplayURLResolver(&deps))
 				if checker, ok := deps.Blobs.Assets.(trickplay.DeliveryChecker); ok && deps.ArtworkDelivery.External {
@@ -3456,7 +3579,6 @@ func main() {
 			// Wired outside the autoscan service so events left by a disabled
 			// or unconfigured autoscan still age out.
 			tasks.NewAutoscanEventCleanupTask(autoscan.NewRepository(deps.DB, deps.SecretCipher), settingsRepo),
-			tasks.NewAuthSessionCleanupTask(auth.NewSessionRepository(deps.DB)),
 			tasks.NewDeviceLoginCleanupTask(auth.NewDeviceLoginRetention(deps.DB)),
 			tasks.NewOAuthFlowCleanupTask(auth.NewPGOAuthStore(deps.DB)),
 		)
@@ -3489,6 +3611,8 @@ func main() {
 				downloadWorkPlanner = deps.NodePlanner
 			}
 			preparer := downloads.NewNodeAwarePreparer(downloads.NewPlaybackPreparer(), downloadWorkPlanner, liveDownloadConfig)
+			preparer.SetNodeKeys(deps.NodeKeys)
+			preparer.SetSourceGrants(deps.SourceGrants)
 			if deps.NodeRepo != nil {
 				preparer.SetOriginLookup(deps.NodeRepo)
 			}
@@ -3515,6 +3639,7 @@ func main() {
 					}, evt.PublishOptions{UserID: d.UserID, ProfileID: d.ProfileID})
 				},
 			)
+			artifactMgr.SetNodeKeys(deps.NodeKeys)
 			artifactMgr.SetSettingsReader(settingsRepo)
 			artifactMgr.SetFFmpegLogSink(playback.NewSlogFFmpegLogSink(slog.Default(), deps.NodeID))
 			artifactMgr.SetPreparationNotifier(func(ctx context.Context, event downloads.PreparationEvent) {
@@ -3551,6 +3676,9 @@ func main() {
 			taskMgr.Register(tasks.NewRebuildReleaseInterestTask(notificationSystem))
 			maintenanceSteps = append(maintenanceSteps, tasks.NewNotificationsRetentionTask(notificationSystem))
 		}
+		// After notification retention, which reads ended sessions to tell whether
+		// an older push registration's device still has a login.
+		maintenanceSteps = append(maintenanceSteps, tasks.NewAuthSessionCleanupTask(auth.NewSessionRepository(deps.DB)))
 		if userStoreProvider != nil {
 			taskMgr.Register(tasks.NewSettingMutationsRetentionTask(userstore.NewSettingMutationSweeper(
 				auth.NewUserRepository(deps.DB), userStoreProvider,
@@ -3771,9 +3899,17 @@ func main() {
 			}
 		}
 
+		if deps.Backups != nil {
+			taskMgr.Register(backup.NewTask(deps.Backups))
+			deps.Backups.SetTaskStarter(taskMgr)
+		}
+
 		taskMgr.Start(appCtx)
 		defer taskMgr.Stop()
 		deps.TaskManager = taskMgr
+		if deps.Backups != nil {
+			syncBackupSchedule(appCtx, deps.Backups, taskMgr, eventBus, configWatcher)
+		}
 		slog.Info("task manager started")
 	}
 
@@ -3781,6 +3917,7 @@ func main() {
 	// available. Routes are mounted at the root level by NewRouter (not under
 	// /api/v1/) so ABS clients resolve /login, /api/*, /abs/api/*, and
 	// /abs/socket.io/* without path prefix hacks.
+	var absH *abs.Handler
 	if absCompatEnabled && deps.DB != nil {
 		absUserRepo := auth.NewUserRepository(deps.DB)
 		absSessionRepo := auth.NewSessionRepository(deps.DB)
@@ -3840,7 +3977,7 @@ func main() {
 			SessionMgr:     sessionMgr,
 			SessionSyncer:  deps.SessionSyncer,
 		}
-		absH := audiobooksService.BuildABSHandler(absHDeps)
+		absH = audiobooksService.BuildABSHandler(absHDeps)
 		// Must precede Mount: Mount is what registers the observed handlers.
 		absH.SetStreamTelemetry(streamTelemetryRegistry)
 		deps.ABSHandler = absH
@@ -3875,11 +4012,16 @@ func main() {
 			slog.WarnContext(ctx, "publish session revocation failed", "user_id", userID, "error", err)
 		}
 	}
-	// Jellyfin-compatible downloads go through the router's download service,
-	// so they meet the same policy and share its bandwidth limiters. It stays
-	// a nil interface when the router builds no service, which refuses them.
+	// Jellyfin- and Audiobookshelf-compatible downloads go through the
+	// router's download service, so they meet the same policy and share its
+	// bandwidth limiters. Without a service both refuse them.
 	var compatDownloads jellycompat.DownloadServer
-	deps.OnDownloadService = func(svc *downloads.Service) { compatDownloads = svc }
+	deps.OnDownloadService = func(svc *downloads.Service) {
+		compatDownloads = svc
+		if absH != nil {
+			absH.SetDownloads(svc)
+		}
+	}
 
 	distFS, fsErr := fs.Sub(siloweb.DistFS, "dist")
 	if fsErr != nil {
@@ -3892,6 +4034,13 @@ func main() {
 	// API and the frontend handler.
 	deps.BrandingService = brandingSvc
 	server.Branding = brandingSvc
+	// Card overlay images share the assets store with branding; without one the
+	// library lists nothing new and uploads report storage as unconfigured.
+	var overlayImageStore overlays.ImageStore
+	if deps.Blobs.Assets != nil {
+		overlayImageStore = deps.Blobs.Assets
+	}
+	deps.OverlayImages = overlays.NewImageLibrary(deps.DB, overlayImageStore)
 	var transitionPrivate blobstore.Store
 	if deps.S3Private != nil {
 		transitionPrivate = deps.Blobs.Operational
@@ -4025,6 +4174,9 @@ func main() {
 		)
 		adminJobRunner.SetCancelRegistry(adminJobCancelRegistry)
 		adminJobRunner.SetStorageTransitionExecutor(storageTransitionSvc)
+		if deps.Backups != nil {
+			adminJobRunner.SetBackupRestoreExecutor(backupRestoreExecutor{svc: deps.Backups})
+		}
 		adminJobRunner.SetStorageTransitionCommitted(deps.RequestServerRestart)
 		adminJobRunner.Start()
 		defer adminJobRunner.Stop()
@@ -4075,12 +4227,18 @@ func main() {
 			NodePlanner:          deps.NodePlanner,
 			EventBus:             eventBus,
 			JWTSecret:            cfg.Auth.JWTSecret,
+			NodeKeys:             deps.NodeKeys,
+			SourceGrants:         deps.SourceGrants,
 			RecWorker:            recWorker,
 			FrontendFS:           deps.FrontendFS,
 			ArtworkStore:         deps.Blobs.Assets,
+			AvatarStore:          handlers.NewProfileAvatarStore(deps.Blobs),
 			// Hand remote-transcode recipes to the shared recipe store so a dedicated
 			// transcode node that restarts can rebuild a jellycompat session.
-			RecipeNodeStore:  noderecipe.NewStore(apiRedisClient, 0),
+			RecipeNodeStore: noderecipe.NewStore(apiRedisClient, 0),
+			// The relays to transcode nodes check the same deny markers the
+			// native API's stops write.
+			StreamDeny:       playback.NewStreamDeny(apiRedisClient),
 			SessionSyncer:    deps.SessionSyncer,
 			SubtitlePlaySync: subtitlePlaySync,
 			// One PIN budget per profile across the native and Jellyfin logins.
@@ -4124,7 +4282,23 @@ func main() {
 			if eventsHub != nil {
 				compatDeps.UserStateEvents = eventsHub
 			}
+			if userStoreProvider != nil {
+				// Tracks Jellyfin clients play are saved through the same writes
+				// as PUT /api/v2/audio-prefs and /api/v2/subtitle-prefs.
+				compatAudioPrefs := handlers.NewAudioPrefHandler(userStoreProvider)
+				compatAudioPrefs.EventsHub = eventsHub
+				compatSubtitlePrefs := handlers.NewSubtitlePrefHandler(userStoreProvider)
+				compatSubtitlePrefs.EventsHub = eventsHub
+				compatDeps.AudioPreferences = compatAudioPrefs
+				compatDeps.SubtitlePreferences = compatSubtitlePrefs
+			}
 			compatDeps.SettingsRepo = settingsRepo
+			// The administrator's rating-source choice, read as the native
+			// API reads it, so Jellyfin clients get the Rotten Tomatoes
+			// critic score only while that source is shown.
+			compatDeps.RatingSources = ratingsources.NewPolicy(settingsRepo, func(ctx context.Context) ([]ratingsources.DeclaredSource, error) {
+				return metadata.DeclaredRatingSources(ctx, deps.DB)
+			})
 			compatDeps.PersonRepo = personRepo
 			if deps.CollectionService != nil {
 				compatDeps.CollectionPosters = deps.CollectionService
@@ -4493,7 +4667,7 @@ func startStandaloneServer(mode, addr string, handler http.Handler, appCancel co
 	// that exists.
 	var listener net.Listener
 	var listenErr error
-	if mode == "proxy" {
+	if mode == serverModeProxy {
 		listener, _, listenErr = tcpcongestion.Listen(context.Background(), "tcp", addr, tcpcongestion.ListenerProxy, opts)
 	} else {
 		var config net.ListenConfig

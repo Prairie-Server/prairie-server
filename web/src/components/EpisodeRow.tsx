@@ -6,6 +6,8 @@ import UnreadableFileBadge, { episodeFilesUnreadable } from "@/components/Unread
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
 import { artworkSrcSet, STILL_WIDTHS } from "@/lib/artworkUrl";
 import { overlayDataFromEpisodeListItem } from "@/lib/overlays";
+import { useT } from "@/i18n";
+import WatchProgressBar from "@/components/WatchProgressBar";
 
 interface EpisodeRowProps {
   episode: EpisodeListItem;
@@ -15,6 +17,10 @@ interface EpisodeRowProps {
 }
 
 export default function EpisodeRow({ episode, rating, watched, progress }: EpisodeRowProps) {
+  const t = useT();
+  const fallbackTitle = t("web.detail.episodes.numbered", {
+    episode: episode.episode_number,
+  });
   const { prefs: overlayPrefs } = useOverlayPrefs();
   const watchedState = watched ?? episode.user_data?.played ?? false;
   const derivedProgress =
@@ -55,7 +61,7 @@ export default function EpisodeRow({ episode, rating, watched, progress }: Episo
             src={episode.still_url}
             srcSet={stillSrcSet || undefined}
             sizes={stillSrcSet ? "140px" : undefined}
-            alt={episode.title || `Episode ${episode.episode_number}`}
+            alt={episode.title || fallbackTitle}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"
             decoding="async"
@@ -73,24 +79,14 @@ export default function EpisodeRow({ episode, rating, watched, progress }: Episo
             hasProgressBar={hasProgress}
           />
         )}
-        {hasProgress && (
-          <div className="absolute inset-x-2 bottom-1.5 h-[3px] overflow-hidden rounded-full bg-black/40">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${derivedProgress}%`,
-                background: "var(--primary)",
-              }}
-            />
-          </div>
-        )}
+        {hasProgress && <WatchProgressBar percent={derivedProgress} />}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-2">
           <span className="text-foreground truncate text-sm font-semibold">
-            {episode.title || `Episode ${episode.episode_number}`}
+            {episode.title || fallbackTitle}
           </span>
           {watchedState && (
             <svg
@@ -108,12 +104,16 @@ export default function EpisodeRow({ episode, rating, watched, progress }: Episo
         </div>
         <div className="text-muted-foreground text-xs">
           {episode.air_date && <span>{episode.air_date}</span>}
-          {episode.air_date && episode.runtime > 0 && <span className="mx-1.5">&middot;</span>}
-          {episode.runtime > 0 && <span>{episode.runtime}m</span>}
+          {episode.air_date && episode.runtime > 0 && (
+            <span className="mx-1.5">{t("web.detail.separator.dot")}</span>
+          )}
+          {episode.runtime > 0 && (
+            <span>{t("web.detail.episodes.runtimeMinutes", { minutes: episode.runtime })}</span>
+          )}
           {episodeFilesUnreadable(episode) && (
             <>
               {(episode.air_date || episode.runtime > 0) && (
-                <span className="mx-1.5">&middot;</span>
+                <span className="mx-1.5">{t("web.detail.separator.dot")}</span>
               )}
               <UnreadableFileBadge />
             </>

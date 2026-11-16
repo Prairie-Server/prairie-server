@@ -13,7 +13,7 @@ import {
 } from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS, SETTINGS_API_VERSION, type SettingKey } from "@/lib/settingsContract";
-import { settingsKeys } from "@/hooks/queries/keys";
+import { catalogKeys, sectionKeys, settingsKeys } from "@/hooks/queries/keys";
 import { storage } from "@/utils/storage";
 import {
   isOverlaySupportedBy,
@@ -21,8 +21,11 @@ import {
   parseOverlayPrefs,
   serializeOverlayPrefs,
   storedOverlayIds,
+  supportsOverlayStyles,
+  withoutUnlistedImages,
   type CardOverlayPrefs,
   type OverlayId,
+  type OverlayImage,
   type OverlayServerSupport,
 } from "@/lib/overlays";
 import {
@@ -55,10 +58,12 @@ function inheritBoolean(userValue: unknown, serverDefault: boolean): boolean {
   return typeof userValue === "boolean" ? userValue : serverDefault;
 }
 
+const NO_IMAGES: readonly OverlayImage[] = [];
+
 // The server-wide overlay defaults live in server_settings, not the
 // user-settings contract, so this endpoint stays alongside the canonical
-// values API.
-function useOverlayConfig() {
+// values API. It also lists the images an administrator uploaded.
+export function useOverlayConfig() {
   return useQuery({
     queryKey: settingsKeys.overlayConfig(),
     queryFn: () => v2("GET /api/v2/settings/overlay-config"),
@@ -94,8 +99,16 @@ export function useOverlayPrefs() {
     [profileId],
   );
 
+  // The server counts seasons and episodes for cards only while the profile
+  // draws the availability badge. Cards cached before it was turned on carry
+  // no counts, so they are read again once the choice is saved.
+  const refetchAvailabilityCards = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    void queryClient.invalidateQueries({ queryKey: sectionKeys.all });
+  }, [queryClient]);
+
   const setProfileValue = useCallback(
-    (key: SettingKey, value: unknown) => {
+    (key: SettingKey, value: unknown, onSaved?: () => void) => {
       // Writing a stored value back unchanged is a no-op: skip the network
       // round-trip and the downstream re-render cascade.
       if (effective?.[key]?.value === value) return;
@@ -106,6 +119,7 @@ export function useOverlayPrefs() {
       setSettingValue(
         { key, value, identity: PROFILE_SCOPE },
         {
+          onSuccess: onSaved,
           // The shared mutation invalidates on success and ambiguous errors.
           // A definitive rejection never reached storage, so refetch instead of
           // restoring a snapshot: rapid successive writes make any snapshot an
@@ -141,6 +155,11 @@ export function useOverlayPrefs() {
     const source = userValue ?? config?.defaults ?? null;
     return parseOverlayPrefs(source);
   }, [userValue, config?.defaults]);
+  const images = config?.images ?? NO_IMAGES;
+  const renderPrefs = useMemo(
+    () => withoutUnlistedImages(prefs, new Set(images.map((image) => image.ref))),
+    [prefs, images],
+  );
 
   // Absent server config (including while it loads), overlays are on — the
   // shipped default — and quick actions are off.
@@ -169,9 +188,15 @@ export function useOverlayPrefs() {
       ) {
         return;
       }
-      setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS, storable);
+      const turnsAvailabilityOn =
+        storable.items.availability?.enabled === true && !prefs.items.availability?.enabled;
+      setProfileValue(
+        SETTING_KEYS.UI_CARD_OVERLAYS,
+        storable,
+        turnsAvailabilityOn ? refetchAvailabilityCards : undefined,
+      );
     },
-    [serverSupport, userValue, setProfileValue],
+    [serverSupport, userValue, prefs, setProfileValue, refetchAvailabilityCards],
   );
 
   const isOverlaySupported = useCallback(
@@ -180,8 +205,13 @@ export function useOverlayPrefs() {
   );
 
   const setOverlaysEnabled = useCallback(
-    (next: boolean) => setProfileValue(SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED, next),
-    [setProfileValue],
+    (next: boolean) =>
+      setProfileValue(
+        SETTING_KEYS.UI_CARD_OVERLAYS_ENABLED,
+        next,
+        next && prefs.items.availability?.enabled ? refetchAvailabilityCards : undefined,
+      ),
+    [prefs, setProfileValue, refetchAvailabilityCards],
   );
 
   const setQuickActionMode = useCallback(
@@ -213,8 +243,10 @@ export function useOverlayPrefs() {
           }
         }),
       );
+      // The server-wide default the profile now follows may draw the badge.
+      if (part === "badges") refetchAvailabilityCards();
     },
-    [clearValue],
+    [clearValue, refetchAvailabilityCards],
   );
 
   const overrides = (keys: readonly SettingKey[]) =>
@@ -228,7 +260,12 @@ export function useOverlayPrefs() {
   const isLoading = (hasProfile && userLoading) || configLoading;
 
   return {
-    prefs: overlaysEnabled && !isLoading ? prefs : null,
+    prefs: overlaysEnabled && !isLoading ? renderPrefs : null,
+    // The full document, badges on or off, for settings screens.
+    editablePrefs: prefs,
+    images,
+    imageUploadsAvailable: config?.image_uploads_available === true,
+    supportsStyles: supportsOverlayStyles(serverSupport),
     setPrefs,
     isOverlaySupported,
     overlaysEnabled,
