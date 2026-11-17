@@ -101,7 +101,6 @@ export default function SetupWizard() {
         <div className="text-muted-foreground relative z-1 text-sm">{t("web.ui.loading")}</div>
       </main>
     );
-
   }
 
   if (!setupRequired && !user) {

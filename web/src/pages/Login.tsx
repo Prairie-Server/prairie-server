@@ -493,7 +493,6 @@ export default function Login() {
           <CardHeader className="sr-only">
             <CardTitle>{t("web.auth.signIn")}</CardTitle>
             <CardDescription>{loginSubtitle}</CardDescription>
-
           </CardHeader>
           <CardContent className="space-y-5 p-0">
             {endedSession && (
@@ -558,7 +557,9 @@ export default function Login() {
               </p>
             )}
             {switchingAccount && oauthProviders.length > 0 && (
-              <p className="text-muted-foreground text-sm">{t("web.auth.login.switchAccountHint")}</p>
+              <p className="text-muted-foreground text-sm">
+                {t("web.auth.login.switchAccountHint")}
+              </p>
             )}
             {networkProviders.length > 0 && (
               <div className="space-y-2">
@@ -680,7 +681,6 @@ export default function Login() {
                     {hasDirectoryProvider ? (
                       <p id={providerPickerHintId} className="text-muted-foreground text-xs">
                         {t("web.auth.login.providerAutomaticHint")}
-
                       </p>
                     ) : null}
                   </div>
@@ -688,7 +688,6 @@ export default function Login() {
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
                   {submitting ? t("web.auth.login.signingIn") : t("web.auth.signIn")}
-
                 </Button>
               </form>
             )}
@@ -751,7 +750,6 @@ export default function Login() {
                       >
                         <RotateCcw />
                         {t("web.auth.login.device.startOver")}
-
                       </Button>
                       <p className="text-muted-foreground text-center text-sm">
                         {devicePolling

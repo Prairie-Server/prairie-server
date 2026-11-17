@@ -232,7 +232,9 @@ function TroubleshootingPanel({
       ? [
           {
             q: t("web.settings.connectApps.troubleshooting.prairieAddressQuestion"),
-            a: t("web.settings.connectApps.troubleshooting.prairieAddressAnswer", { url: compatURL }),
+            a: t("web.settings.connectApps.troubleshooting.prairieAddressAnswer", {
+              url: compatURL,
+            }),
           },
         ]
       : []),

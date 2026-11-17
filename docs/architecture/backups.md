@@ -132,14 +132,14 @@ contents. It does not claim the backup was restored; `prairie backup verify` is
 the drill for that.
 
 The check value is HKDF-SHA256 over `SECRET_KEY` with info
-`prairie/backup-key-check/v1`, 8 bytes, written as 16 hex digits in groups of 4
+`silo/backup-key-check/v1`, 8 bytes, written as 16 hex digits in groups of 4
 (`secret.KeyCheckValue`, beside the data key derivation in
 `internal/secret/cipher.go`). `prairie secret check` reads a key on stdin and
 prints the value, so an operator can tell which key a backup needs without
 showing either key.
 
 `mac` authenticates the rest of the manifest: HMAC-SHA256 under a key
-derived from `SECRET_KEY` (HKDF-SHA256, info `prairie/backup-manifest/v1`,
+derived from `SECRET_KEY` (HKDF-SHA256, info `silo/backup-manifest/v1`,
 `secret.BackupManifestKey`) of the manifest encoded with `mac` empty, in hex.
 It covers the id, kind, server id, times, every object's name, size, and
 checksum, and every other field. Because the MAC is over the encoding, a
@@ -346,7 +346,7 @@ Every object of a backup in an S3 bucket (the `s3` destination, or the
 `default` one on the private bucket) but `manifest.json` is an
 [age](https://age-encryption.org) file with a single scrypt recipient. The
 passphrase is the standard base64 of HKDF-SHA256 over `SECRET_KEY` with info
-`prairie/backup-encryption/v1`, 32 bytes (`secret.BackupPassphrase`, beside the
+`silo/backup-encryption/v1`, 32 bytes (`secret.BackupPassphrase`, beside the
 data key and check value derivations in `internal/secret/cipher.go`). There
 is no separate backup key, and the UI never shows or offers `SECRET_KEY`.
 
@@ -2270,7 +2270,7 @@ database, so neither preflight would see the other.
    Its header records both databases' OIDs and the live storage
    configuration, credentials sealed with `SECRET_KEY`. Every line carries
    an HMAC-SHA256, under a key derived from `SECRET_KEY`
-   (`secret.RestoreJournalKey`, `prairie/restore-journal/v1`), of the previous
+   (`secret.RestoreJournalKey`, `silo/restore-journal/v1`), of the previous
    line's MAC and its record, so the chain covers the header, every step,
    and every blob, in order. `--recover` reads only a regular file of the
    user running it, opened without following links, in a directory no other

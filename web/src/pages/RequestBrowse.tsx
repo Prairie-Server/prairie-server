@@ -123,9 +123,11 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
             </Tabs>
           ) : null}
           <Select value={sort} onValueChange={updateSort}>
-            <SelectTrigger className="w-full sm:w-[160px]" aria-label={t("web.requests.browse.sortBy")}>
+            <SelectTrigger
+              className="w-full sm:w-[160px]"
+              aria-label={t("web.requests.browse.sortBy")}
+            >
               <SelectValue placeholder={t("web.requests.browse.sort")} />
-
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map((option) => (

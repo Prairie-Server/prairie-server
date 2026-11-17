@@ -50,7 +50,8 @@ const I18N_CONVERTED = ["src/**/*.{ts,tsx}"];
 const I18N_UNCHECKED = ["src/i18n/**", "src/locales/**", "src/test/**", "src/test-setup.ts"];
 
 // Files that draw physical geometry, where left means left in every language:
-// media timelines measured with clientX, chart plots, badges placed on poster
+// media timelines measured with clientX, chart plots, the Live TV guide grid
+// (programmes placed by a left pixel offset), badges placed on poster
 // artwork. Everything else uses logical utilities (ps-, ms-, start-,
 // text-start…) so the layout mirrors right to left. A single literal line
 // elsewhere takes an eslint-disable comment with its reason.
@@ -58,6 +59,7 @@ const PHYSICAL_DIRECTION = [
   "src/components/admin/dashboard/charts/chartChrome.tsx",
   "src/components/admin/dashboard/charts/LineChart.tsx",
   "src/components/admin/dashboard/charts/StackedColumnChart.tsx",
+  "src/components/livetv/LiveTVGuideGrid.tsx",
   "src/components/overlays/CardOverlays.tsx",
   "src/player/components/SeekBar.tsx",
   "src/player/components/VolumeControl.tsx",

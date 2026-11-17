@@ -158,7 +158,6 @@ export default function AdminPlaybackHistory() {
             <Select value={selectedUser} onValueChange={(value) => updateFilter("user_id", value)}>
               <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder={t("web.admin.history.filter.allUsers")} />
-
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_USERS}>{t("web.admin.history.filter.allUsers")}</SelectItem>
@@ -202,7 +201,6 @@ export default function AdminPlaybackHistory() {
             >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder={t("web.admin.history.filter.allAttempts")} />
-
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_COMPLETION}>

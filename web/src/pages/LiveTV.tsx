@@ -155,7 +155,7 @@ export default function LiveTV() {
             <TabsTrigger value="recordings">
               My recordings
               {scheduled.length > 0 ? (
-                <Badge variant="secondary" className="ml-1.5">
+                <Badge variant="secondary" className="ms-1.5">
                   {scheduled.length}
                 </Badge>
               ) : null}
@@ -277,7 +277,7 @@ function ChannelListRow({
           active && "bg-muted/40 -mx-2 rounded-lg px-2",
         )}
       >
-        <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
+        <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-start">
           <div className="flex items-center gap-3">
             {channel.logo_url ? (
               <img

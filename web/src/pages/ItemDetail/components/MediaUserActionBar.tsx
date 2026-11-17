@@ -121,6 +121,5 @@ export default function MediaUserActionBar({ item, ...props }: MediaUserActionBa
         />
       )}
     </>
-
   );
 }

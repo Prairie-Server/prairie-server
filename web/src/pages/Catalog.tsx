@@ -2,7 +2,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router";
 import { CheckSquare, RefreshCw, RotateCcw, Search, Trash2, X } from "lucide-react";
 
-
 import { captureProfileRequestContext } from "@/api/client";
 import type { BrowseItem } from "@/api/types";
 import { isNotFoundProblem } from "@/api/v2/request";

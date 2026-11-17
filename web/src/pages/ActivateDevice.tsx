@@ -408,7 +408,9 @@ function ActivateDeviceRequest() {
                 </Button>
               </form>
             ) : loadingDetails || loading || setupLoading ? (
-              <div className="text-muted-foreground text-sm">{t("web.auth.activate.lookingUp")}</div>
+              <div className="text-muted-foreground text-sm">
+                {t("web.auth.activate.lookingUp")}
+              </div>
             ) : needsAccount && !user ? (
               <div className="space-y-3">
                 <p className="text-sm">
@@ -479,7 +481,9 @@ function ActivateDeviceRequest() {
                 {details.status === "pending" && shownCode ? (
                   <div className="border-border/60 bg-background/50 rounded-md border p-4">
                     <div className="text-muted-foreground text-sm">
-                      {t(isQuickConnect ? "web.auth.activate.checkApp" : "web.auth.activate.checkTv")}
+                      {t(
+                        isQuickConnect ? "web.auth.activate.checkApp" : "web.auth.activate.checkTv",
+                      )}
                     </div>
                     <div
                       className="mt-1 font-mono text-3xl font-semibold tracking-[0.12em]"
@@ -608,7 +612,9 @@ function ActivateDeviceRequest() {
                             onClick={() => void handleDecision("approve")}
                           >
                             {acting ? <Loader2 className="animate-spin" /> : <Check />}
-                            {acting ? t("web.auth.login.signingIn") : t("web.auth.activate.signInTv")}
+                            {acting
+                              ? t("web.auth.login.signingIn")
+                              : t("web.auth.activate.signInTv")}
                           </Button>
                           <Button
                             variant="outline"

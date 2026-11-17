@@ -527,7 +527,6 @@ export default function AdminRecommendations() {
       <PageHeader
         title={t("web.admin.recommendations.page.title")}
         subtitle={t("web.admin.recommendations.page.subtitle")}
-
       />
 
       {restartRequired && (

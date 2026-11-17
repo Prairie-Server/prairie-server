@@ -55,7 +55,7 @@ const (
 // manifest records it, and `prairie secret check` prints it for a key the
 // operator holds, so the two can be compared before a restore. Changing the
 // label changes every recorded value, so it is versioned like hkdfInfo.
-const keyCheckInfo = "prairie/backup-key-check/v1"
+const keyCheckInfo = "silo/backup-key-check/v1"
 
 // keyCheckLen is the check value's length in bytes, 16 hex digits.
 const keyCheckLen = 8
@@ -78,7 +78,7 @@ func KeyCheckValue(masterKey []byte) (string, error) {
 // the check value. Backups encrypted under it stay readable only with the
 // same SECRET_KEY and label, so a future key rotation must keep deriving it
 // from the old key for old backups; the manifest's check value names that key.
-const backupKeyInfo = "prairie/backup-encryption/v1"
+const backupKeyInfo = "silo/backup-encryption/v1"
 
 // backupKeyLen is the archive key's length in bytes before encoding.
 const backupKeyLen = 32
@@ -98,7 +98,7 @@ func BackupPassphrase(masterKey []byte) (string, error) {
 
 // manifestKeyInfo domain-separates the key that authenticates backup
 // manifests from every other use of the master key.
-const manifestKeyInfo = "prairie/backup-manifest/v1"
+const manifestKeyInfo = "silo/backup-manifest/v1"
 
 // BackupManifestKey derives the HMAC-SHA256 key backup manifests are
 // authenticated with: HKDF-SHA256 with manifestKeyInfo, 32 bytes. Only a
@@ -109,7 +109,7 @@ func BackupManifestKey(masterKey []byte) ([]byte, error) {
 
 // restoreJournalKeyInfo domain-separates the key that authenticates a full
 // restore's local journal.
-const restoreJournalKeyInfo = "prairie/restore-journal/v1"
+const restoreJournalKeyInfo = "silo/restore-journal/v1"
 
 // RestoreJournalKey derives the HMAC-SHA256 key a full restore's journal is
 // authenticated with: HKDF-SHA256 with restoreJournalKeyInfo, 32 bytes.

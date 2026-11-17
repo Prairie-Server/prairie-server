@@ -202,7 +202,7 @@ export default function QuickConnectSettings() {
         title="How it works"
         description="Any Prairie client that shows a Quick Connect code can be approved here."
       >
-        <ol className="text-muted-foreground list-decimal space-y-2 pl-5 text-sm leading-relaxed">
+        <ol className="text-muted-foreground list-decimal space-y-2 ps-5 text-sm leading-relaxed">
           <li>
             On the other device, choose Quick Connect (or Show QR code) on the sign-in screen.
           </li>

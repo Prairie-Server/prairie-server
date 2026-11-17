@@ -13,7 +13,9 @@ vi.mock("@/hooks/useAuth", () => ({
   getBootstrapProfile: () => null,
 }));
 vi.mock("@/hooks/queries/profiles", () => ({ listProfiles: async () => ({ profiles: [] }) }));
-vi.mock("@/hooks/useServerBranding", () => ({ useServerBranding: () => ({ serverName: "Prairie" }) }));
+vi.mock("@/hooks/useServerBranding", () => ({
+  useServerBranding: () => ({ serverName: "Prairie" }),
+}));
 vi.mock("@/api/v2/request", async () => ({
   ...(await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request")),
   v2: request,

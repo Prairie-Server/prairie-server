@@ -96,7 +96,6 @@ export default function Signup() {
         <div className="auth-viewport">
           <AuthBrandHero subtitle={t("web.auth.signup.closed")} />
         </div>
-
       </div>
     );
   }
@@ -282,7 +281,6 @@ export default function Signup() {
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }

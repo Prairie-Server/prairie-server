@@ -1,7 +1,17 @@
 {
+  "src/components/AppSidebar.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 1
+    }
+  },
   "src/components/ContinueWatchingCard.tsx": {
     "react-hooks/preserve-manual-memoization": {
       "count": 2
+    }
+  },
+  "src/components/FolderBrowser.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 1
     }
   },
   "src/components/GlobalSearch.tsx": {
@@ -55,7 +65,20 @@
       "count": 1
     }
   },
+  "src/components/livetv/LiveTVGuideGrid.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 6
+    }
+  },
+  "src/components/livetv/LiveTVOnNowRow.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 3
+    }
+  },
   "src/components/livetv/LiveTVPlayer.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 2
+    },
     "react-hooks/set-state-in-effect": {
       "count": 1
     }
@@ -90,6 +113,11 @@
       "count": 1
     }
   },
+  "src/hooks/queries/useLiveTV.ts": {
+    "no-restricted-syntax": {
+      "count": 10
+    }
+  },
   "src/hooks/queries/useRequests.test.tsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -115,6 +143,11 @@
       "count": 1
     }
   },
+  "src/pages/AdminLiveTV.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 131
+    }
+  },
   "src/pages/AdminTasks.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
@@ -125,12 +158,25 @@
       "count": 1
     }
   },
+  "src/pages/Home.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 2
+    }
+  },
+  "src/pages/ItemDetail/components/ActionBar.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 3
+    }
+  },
   "src/pages/LibraryRecommended.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 2
     }
   },
   "src/pages/LiveTV.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 27
+    },
     "react-hooks/set-state-in-effect": {
       "count": 1
     }
@@ -138,6 +184,24 @@
   "src/pages/LiveWatchRoute.tsx": {
     "eslint-comments/require-description": {
       "count": 1
+    },
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 9
+    }
+  },
+  "src/pages/Login.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 4
+    }
+  },
+  "src/pages/Profiles.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 2
+    }
+  },
+  "src/pages/admin-settings/AboutSettings.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 16
     }
   },
   "src/pages/audiobooks/player/AudiobookPlayer.tsx": {
@@ -155,6 +219,11 @@
       "count": 1
     }
   },
+  "src/pages/livetv/LiveTVTranscodingTab.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 25
+    }
+  },
   "src/pages/settings/DeviceSettings.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
@@ -166,8 +235,11 @@
     }
   },
   "src/pages/settings/QuickConnectSettings.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 31
+    },
     "no-restricted-syntax": {
-      "count": 1
+      "count": 2
     }
   },
   "src/pages/setup-wizard/steps/SubtitlesStep.tsx": {
@@ -211,7 +283,15 @@
       "count": 1
     }
   },
+  "src/player/components/PlaybackInfoOverlay.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 3
+    }
+  },
   "src/player/components/PlayerMoreMenu.tsx": {
+    "formatjs/no-literal-string-in-jsx": {
+      "count": 5
+    },
     "react-hooks/set-state-in-effect": {
       "count": 1
     }

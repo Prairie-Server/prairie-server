@@ -53,12 +53,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
-  BookHeadphones,
   CalendarDays,
   ChevronDown,
   ChevronRight,
   Clock,
-  Film,
   FolderOpen,
   Heart,
   Home,
@@ -74,7 +72,6 @@ import {
   Settings,
   Shield,
   Sparkles,
-  Tv,
   UserCircle,
   UsersRound,
 } from "lucide-react";
@@ -886,7 +883,7 @@ export default function AppSidebar({ onNavigate, collapsed = false, swap }: AppS
                     >
                       {isActive("/livetv") && (
                         <span
-                          className="absolute top-1/2 left-0 h-[18px] w-[3px] -translate-y-1/2 rounded-r-sm"
+                          className="absolute start-0 top-1/2 h-[18px] w-[3px] -translate-y-1/2 rounded-e-sm"
                           style={{ background: "var(--primary)" }}
                         />
                       )}
