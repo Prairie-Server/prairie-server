@@ -69,7 +69,7 @@ Existing Continuum-to-Silo migration notes remain in [docs/continuum-to-silo-doc
 
 ## Build from source
 
-Prerequisites: Go 1.26+, pnpm, PostgreSQL, Redis, and FFmpeg.
+Prerequisites: Go 1.27+, pnpm, PostgreSQL, Redis, and FFmpeg.
 
 ```sh
 cp .env.example .env
