@@ -84,7 +84,7 @@ function AudiobookAxisTabs({
     <div
       role="radiogroup"
       aria-label={t("web.library.browse.axisLabel")}
-      className="surface-panel inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="surface-panel inline-flex max-w-full [scrollbar-width:none] items-center gap-1 overflow-x-auto rounded-full p-1 [&::-webkit-scrollbar]:hidden"
     >
       {AUDIOBOOK_BROWSE_AXES.map((axis) => {
         const isActive = axis === value;

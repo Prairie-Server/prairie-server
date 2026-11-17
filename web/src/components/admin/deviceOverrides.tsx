@@ -655,7 +655,7 @@ export function DeviceProfileTabs({
       <div
         role="tablist"
         aria-label={t("web.admin.common.deviceOverrides.tabs.label")}
-        className="border-border/60 scrollbar-thin flex shrink-0 gap-0.5 overflow-x-auto border-b px-2 pt-2"
+        className="border-border/60 flex shrink-0 scrollbar-thin gap-0.5 overflow-x-auto border-b px-2 pt-2"
       >
         {profiles.map((profile) => {
           const isActive = profile.profileId === active.profileId;

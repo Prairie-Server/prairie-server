@@ -126,7 +126,9 @@ export class FFmpegAudioDecoder {
         channels,
         sampleRate: this.module._sad_frame_sample_rate(this.handle),
         channelMask: high * 2 ** 32 + low,
-        timestampUs: pts < 0 ? null : pts,
+        // The bridge reports -1 for AV_NOPTS_VALUE. Other negative values are
+        // real: Matroska CodecDelay puts the first AC-3 frame before zero.
+        timestampUs: pts === -1 ? null : pts,
       });
     }
     return frames;
