@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/lang"
@@ -27,6 +28,14 @@ type ViewerPreferences struct {
 	// NextUpNewReleasesFirst is ui.next_up_new_releases_first, carried for the
 	// same reason.
 	NextUpNewReleasesFirst bool
+	// HideWatchedItemsOnHome is home.hide_watched_items, carried so Home
+	// requests read it from the scope too.
+	HideWatchedItemsOnHome bool
+	// CardAvailability reports that the profile's poster badges are on and
+	// include the availability badge (ui.card_overlays_enabled and
+	// ui.card_overlays, each falling back to the server-wide default). Card
+	// reads count seasons and episodes only for such a profile.
+	CardAvailability bool
 	// Degraded reports that the read failed and the values are the contract
 	// defaults rather than the profile's own.
 	Degraded bool
@@ -43,7 +52,7 @@ type ViewerPreferences struct {
 // from the contract. Production callers pass the node's shared
 // *config.AdminDefaults so Home, Jellyfin clients and the settings pages agree.
 func ResolveViewerPreferences(
-	ctx context.Context, store userstore.UserStore, adminDefaults settingsresolve.ServerSettings, profileID string,
+	ctx context.Context, store ViewerPreferenceReader, adminDefaults settingsresolve.ServerSettings, profileID string,
 ) ViewerPreferences {
 	profileID = strings.TrimSpace(profileID)
 	if store == nil || profileID == "" {
@@ -63,6 +72,44 @@ type ViewerPreferenceReader interface {
 	settingsresolve.Store
 }
 
+// viewerPreferenceKeys are the settings ResolveViewerPreferencesStrict reads.
+var viewerPreferenceKeys = []string{
+	settingskeys.UiDisabledLibraryIds,
+	settingskeys.CatalogMetadataLanguage,
+	settingskeys.CatalogMetadataLanguageOverrides,
+	settingskeys.UiNextUpMode,
+	settingskeys.UiNextUpNewReleasesFirst,
+	settingskeys.HomeHideWatchedItems,
+	settingskeys.UiCardOverlays,
+	settingskeys.UiCardOverlaysEnabled,
+}
+
+// ViewerPreferenceQuery is the candidate read that answers profileID's viewer
+// preferences, for a caller that sends it in a batch of its own and hands the
+// result to ResolveViewerPreferences as ViewerPreferenceRows. It reads every
+// key the resolution can ask for, so its rows cover the resolution's own read.
+func ViewerPreferenceQuery(profileID string) userstore.SettingResolutionQuery {
+	return userstore.SettingResolutionQuery{
+		Keys:       viewerPreferenceKeys,
+		ProfileIDs: []string{strings.TrimSpace(profileID)},
+	}
+}
+
+// ViewerPreferenceRows is a ViewerPreferenceReader over the result of a
+// ViewerPreferenceQuery read earlier: its rows, or the error reading them.
+type ViewerPreferenceRows struct {
+	Rows []userstore.SettingValue
+	Err  error
+}
+
+// ListSettingValuesForResolution answers with the rows read earlier. They
+// cover any read of the same profile's viewer preferences.
+func (r ViewerPreferenceRows) ListSettingValuesForResolution(
+	context.Context, userstore.SettingResolutionQuery,
+) ([]userstore.SettingValue, error) {
+	return r.Rows, r.Err
+}
+
 // ResolveViewerPreferencesStrict retains canonical precedence but propagates
 // dependency failures instead of weakening authority through a fallback.
 func ResolveViewerPreferencesStrict(
@@ -73,19 +120,14 @@ func ResolveViewerPreferencesStrict(
 		return ViewerPreferences{}, err
 	}
 	values, err := settingsresolve.New(contract).WithAdminDefaults(adminDefaults).Resolve(ctx, store,
-		settingsresolve.Context{ProfileID: profileID},
-		[]string{
-			settingskeys.UiDisabledLibraryIds,
-			settingskeys.CatalogMetadataLanguage,
-			settingskeys.CatalogMetadataLanguageOverrides,
-			settingskeys.UiNextUpMode,
-			settingskeys.UiNextUpNewReleasesFirst,
-		}, nil)
+		settingsresolve.Context{ProfileID: profileID}, viewerPreferenceKeys, nil)
 	if err != nil {
 		return ViewerPreferences{}, err
 	}
 
 	var out ViewerPreferences
+	var cardOverlays json.RawMessage
+	var cardOverlaysEnabled *bool
 	for _, value := range values {
 		switch value.Key {
 		case settingskeys.UiDisabledLibraryIds:
@@ -104,9 +146,81 @@ func ResolveViewerPreferencesStrict(
 			}
 		case settingskeys.UiNextUpNewReleasesFirst:
 			_ = json.Unmarshal(value.Value, &out.NextUpNewReleasesFirst)
+		case settingskeys.HomeHideWatchedItems:
+			_ = json.Unmarshal(value.Value, &out.HideWatchedItemsOnHome)
+		case settingskeys.UiCardOverlays:
+			cardOverlays = value.Value
+		case settingskeys.UiCardOverlaysEnabled:
+			_ = json.Unmarshal(value.Value, &cardOverlaysEnabled)
 		}
 	}
+	out.CardAvailability = cardAvailabilityEnabled(ctx, adminDefaults, cardOverlays, cardOverlaysEnabled)
 	return out, nil
+}
+
+// Server settings holding the server-wide poster badge defaults. They are not
+// contract admin defaults (the stored names predate the contract), so the
+// resolver does not apply them; getOverlayConfig serves the same two values
+// to clients.
+const (
+	OverlaysEnabledSettingKey     = "overlays.enabled"
+	DefaultCardOverlaysSettingKey = "defaults.card_overlays"
+)
+
+// cardAvailabilityEnabled reports whether a client following the profile's
+// poster badge preferences draws the availability badge. It applies the
+// precedence clients do: the profile's own choice wins, and a profile that
+// has not chosen (null) follows the server-wide default. The badge itself is
+// off unless a preferences document turns it on.
+func cardAvailabilityEnabled(
+	ctx context.Context, adminDefaults settingsresolve.ServerSettings, overlays json.RawMessage, enabled *bool,
+) bool {
+	serverDefault := func(key string) string {
+		if adminDefaults == nil {
+			return ""
+		}
+		value, _ := adminDefaults.Get(ctx, key)
+		return strings.TrimSpace(value)
+	}
+	// The server-wide switch is on unless it is stored as false.
+	on := serverDefault(OverlaysEnabledSettingKey) != strconv.FormatBool(false)
+	if enabled != nil {
+		on = *enabled
+	}
+	if !on {
+		return false
+	}
+	if isJSONNull(overlays) {
+		overlays = json.RawMessage(serverDefault(DefaultCardOverlaysSettingKey))
+	}
+	return overlayDocumentEnables(overlays, "availability")
+}
+
+func isJSONNull(raw json.RawMessage) bool {
+	trimmed := strings.TrimSpace(string(raw))
+	return trimmed == "" || trimmed == "null"
+}
+
+// overlayDocumentEnables reports whether a card-overlay preferences document
+// turns the badge id on. The current document keeps badges under "items"; the
+// first version was a flat map of badge ids, which clients still read.
+func overlayDocumentEnables(raw json.RawMessage, id string) bool {
+	if isJSONNull(raw) {
+		return false
+	}
+	type badge struct {
+		Enabled bool `json:"enabled"`
+	}
+	var doc map[string]json.RawMessage
+	if json.Unmarshal(raw, &doc) != nil {
+		return false
+	}
+	var items map[string]json.RawMessage
+	if json.Unmarshal(doc["items"], &items) != nil || items == nil {
+		items = doc
+	}
+	var item badge
+	return json.Unmarshal(items[id], &item) == nil && item.Enabled
 }
 
 // OriginalMetadataLanguage is a private-use BCP 47 tag stored in

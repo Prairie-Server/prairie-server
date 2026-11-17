@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/prairie-server/prairie-server/internal/fspath"
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
@@ -975,6 +976,10 @@ func (s *Service) resolveAndClaim(ctx context.Context, changes []Change, records
 		case ChangeScopeFile, ChangeScopeSubtree:
 			target, ok := s.resolveChange(ctx, change, &stats, rec)
 			if !ok {
+				if rec.Reason == string(scantrigger.ReasonPathIgnored) {
+					// The path is in a library; its ignore files exclude it.
+					resolvedAny = true
+				}
 				continue
 			}
 			resolvedAny = true
@@ -1117,6 +1122,11 @@ func (s *Service) resolveChange(ctx context.Context, change Change, stats *resol
 		if err == nil && target != nil && target.Mode == scantrigger.ModeLibrary {
 			rec.setTarget(*target)
 			rec.setOutcome(ChangeOutcomeIgnored, ChangeReasonResolvesToLibrary, "")
+			return nil, false
+		}
+		if reqErr, ok := errors.AsType[*scantrigger.RequestError](err); ok && reqErr.Reason == scantrigger.ReasonPathIgnored {
+			// The file is there, but the library's ignore files exclude it.
+			rec.setOutcome(ChangeOutcomeIgnored, string(reqErr.Reason), reqErr.Message)
 			return nil, false
 		}
 		if isRequestError(err) {

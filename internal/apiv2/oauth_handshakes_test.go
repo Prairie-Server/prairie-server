@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -37,6 +38,8 @@ type handshakeCompleter struct {
 	calls int
 	links int
 }
+
+func (f *handshakeCompleter) ProviderAnswerFence(context.Context) (int64, error) { return 0, nil }
 
 func (f *handshakeCompleter) ResolveOAuthLogin(_ context.Context, in auth.OAuthLoginInput) (*models.User, int64, error) {
 	f.in = in

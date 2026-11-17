@@ -62,7 +62,7 @@ func newReportLivenessHandler(upstreamID string, registerUpstream bool) (*Playba
 		codec:         codec,
 		playbackStore: playbackStore,
 		sessionMgr:    sessionMgr,
-		tm:            playback.NewTranscodeManager(),
+		tm:            keyedTranscodeManager(),
 	}
 	return handler, sessionMgr, encodedItemID, source.ID
 }
@@ -102,6 +102,30 @@ func TestHandlePlaybackReport_ClientPlaySessionIDFallsBackToItemRoute(t *testing
 	}
 	if got.position != 123.45 {
 		t.Fatalf("UpdateProgress position = %v, want 123.45", got.position)
+	}
+}
+
+// TestHandlePlaybackReport_BodySizeCap pins that a report body is read up to
+// maxSessionReportBodyBytes, so a large NowPlayingQueue still reports progress
+// while an endless body is refused instead of buffered.
+func TestHandlePlaybackReport_BodySizeCap(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		padding     int
+		wantStatus  int
+		wantUpdates int
+	}{
+		{name: "large queue under the cap", padding: maxSessionReportBodyBytes / 2, wantStatus: http.StatusNoContent, wantUpdates: 1},
+		{name: "body over the cap", padding: maxSessionReportBodyBytes, wantStatus: http.StatusBadRequest},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
+			rec := postProgressReport(handler, `{"PlaySessionId":"play-1","ItemId":"`+encodedItemID+`","MediaSourceId":"`+sourceID+
+				`","PositionTicks":1234500000,"NowPlayingQueue":[{"Id":"`+strings.Repeat("a", tc.padding)+`"}]}`)
+			if rec.Code != tc.wantStatus || len(mgr.progressUpdates) != tc.wantUpdates {
+				t.Fatalf("status = %d, progress updates = %d; want %d and %d", rec.Code, len(mgr.progressUpdates), tc.wantStatus, tc.wantUpdates)
+			}
+		})
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
@@ -231,8 +232,16 @@ func NewSystem(
 		serverChannelSweep.Nudge() // nil-safe
 	})
 	interest := NewInterestUpdater(pool, interests, stores, scopes)
+	var system *System
+	interest.rebuildProfile = func(ctx context.Context, userID int, profileID string) error {
+		store, err := stores.ForUser(ctx, userID)
+		if err != nil {
+			return err
+		}
+		return system.rebuildProfileInterest(ctx, store, userID, profileID)
+	}
 
-	system := &System{
+	system = &System{
 		Settings:            settings,
 		Releases:            releases,
 		Interests:           interests,
@@ -591,7 +600,9 @@ const interestRebuildTask = "interest_rebuild"
 // favorites, watchlist, and watch progress for every profile. Checkpointed
 // per profile so a crash resumes with at most one profile of repeated work;
 // recomputes are idempotent upserts. Completed runs reset and start over
-// (the task doubles as periodic drift repair).
+// (the task doubles as periodic drift repair). One server rebuilds at a time:
+// a call made while another server's rebuild holds the cluster lock returns
+// ErrInterestRebuildRunning without doing any work.
 func (s *System) RebuildInterest(ctx context.Context, progress func(percent int, message string)) error {
 	report := func(percent int, message string) {
 		if progress != nil {
@@ -601,15 +612,20 @@ func (s *System) RebuildInterest(ctx context.Context, progress func(percent int,
 	if s.users == nil {
 		return fmt.Errorf("interest rebuild requires a user lister")
 	}
+	claim, err := s.claimInterestRebuild(ctx)
+	if err != nil {
+		return err
+	}
+	defer claim.release()
 
-	checkpoint, completedAt, err := s.loadBackfillCheckpoint(ctx, interestRebuildTask)
+	checkpoint, completedAt, err := loadBackfillCheckpoint(ctx, claim.conn, interestRebuildTask)
 	if err != nil {
 		return err
 	}
 	if completedAt != nil {
 		// Start a fresh repair pass.
 		checkpoint = ""
-		if err := s.resetBackfillCheckpoint(ctx, interestRebuildTask); err != nil {
+		if err := resetBackfillCheckpoint(ctx, claim.conn, interestRebuildTask); err != nil {
 			return err
 		}
 	}
@@ -649,7 +665,7 @@ func (s *System) RebuildInterest(ctx context.Context, progress func(percent int,
 				s.logger.WarnContext(ctx, "interest rebuild: profile failed",
 					"user_id", user.ID, "profile_id", profile.ID, "error", err)
 			}
-			if err := s.saveBackfillCheckpoint(ctx, interestRebuildTask, key); err != nil {
+			if err := saveBackfillCheckpoint(ctx, claim.conn, interestRebuildTask, key); err != nil {
 				return err
 			}
 			processed++
@@ -658,7 +674,7 @@ func (s *System) RebuildInterest(ctx context.Context, progress func(percent int,
 			fmt.Sprintf("Rebuilt interest for %d profiles", processed))
 	}
 
-	if err := s.completeBackfillCheckpoint(ctx, interestRebuildTask); err != nil {
+	if err := completeBackfillCheckpoint(ctx, claim.conn, interestRebuildTask); err != nil {
 		return err
 	}
 	s.logger.InfoContext(ctx, "interest rebuild completed", "profiles", processed)
@@ -698,36 +714,22 @@ func (s *System) rebuildProfileInterest(ctx context.Context, store userstore.Use
 			break
 		}
 	}
-	for offset := 0; ; offset += pageSize {
-		progress, err := store.ListProgress(ctx, profileID, "", pageSize, offset)
-		if err != nil {
-			return fmt.Errorf("list progress: %w", err)
-		}
-		for _, entry := range progress {
-			itemIDs[entry.MediaItemID] = struct{}{}
-		}
-		if len(progress) < pageSize {
-			break
-		}
+	progress, err := store.ListProgressItemIDs(ctx, profileID)
+	if err != nil {
+		return fmt.Errorf("list progress: %w", err)
+	}
+	for _, id := range progress {
+		itemIDs[id] = struct{}{}
 	}
 	// History imports (watch providers, history import runs) may record
 	// watched episodes without any progress row; they are watch relationships
 	// all the same.
-	for offset := 0; ; offset += pageSize {
-		history, err := store.ListCompletedHistory(ctx, userstore.CompletedHistoryQuery{
-			ProfileID: profileID,
-			Limit:     pageSize,
-			Offset:    offset,
-		})
-		if err != nil {
-			return fmt.Errorf("list completed history: %w", err)
-		}
-		for _, entry := range history {
-			itemIDs[entry.MediaItemID] = struct{}{}
-		}
-		if len(history) < pageSize {
-			break
-		}
+	history, err := store.ListCompletedHistoryItems(ctx, userstore.CompletedHistoryItemQuery{ProfileID: profileID})
+	if err != nil {
+		return fmt.Errorf("list completed history: %w", err)
+	}
+	for _, item := range history {
+		itemIDs[item.MediaItemID] = struct{}{}
 	}
 
 	seriesIDs, err := s.batchResolveSeries(ctx, itemIDs)
@@ -794,13 +796,21 @@ func (s *System) batchResolveSeries(ctx context.Context, itemIDs map[string]stru
 
 // RetentionStats reports what a retention pass removed.
 type RetentionStats struct {
-	DeliveriesDeleted        int64
-	EventsDeleted            int64
-	StaleEventsDeleted       int64
-	InterestPruned           int64
-	WebhookAttemptsDeleted   int64
-	WebPushAttemptsDeleted   int64
-	DiscordLinkStatesDeleted int64
+	DeliveriesDeleted      int64
+	EventsDeleted          int64
+	StaleEventsDeleted     int64
+	InterestPruned         int64
+	WebhookAttemptsDeleted int64
+	WebPushAttemptsDeleted int64
+	WebPushSubsDeleted     int64
+	// UnboundWebPushSubsDeleted counts subscriptions with no recorded login
+	// whose account has no live login and no API key.
+	UnboundWebPushSubsDeleted int64
+	PushRegistrationsDeleted  int64
+	// UnboundPushRegistrationsDeleted counts registrations from before
+	// login_session_id whose device has no live login.
+	UnboundPushRegistrationsDeleted int64
+	DiscordLinkStatesDeleted        int64
 	// Email verification outbox: payloads dropped from terminal rows whose
 	// link expired, and receipt rows deleted past the retention window.
 	EmailVerificationPayloadsRetired int64
@@ -810,7 +820,10 @@ type RetentionStats struct {
 // RunRetention applies the retention policy: read deliveries past the read
 // window, unread past the unread window, processed release events past the
 // debug window, unprocessed release events past the fanout staleness horizon,
-// and inert interest rows.
+// inert interest rows, web push subscriptions whose login session ended or, for
+// one with no recorded login, whose account has no live one, and push
+// registrations whose login ended or, for one with no recorded login, whose
+// device has no live one.
 func (s *System) RunRetention(ctx context.Context) (RetentionStats, error) {
 	var stats RetentionStats
 	now := time.Now().UTC()
@@ -858,6 +871,28 @@ func (s *System) RunRetention(ctx context.Context) (RetentionStats, error) {
 			return stats, fmt.Errorf("prune web push attempts: %w", err)
 		}
 		stats.WebPushAttemptsDeleted = attempts
+		subscriptions, err := s.webPushRepo.DeleteEndedLoginSubscriptions(ctx)
+		if err != nil {
+			return stats, fmt.Errorf("prune web push subscriptions of ended logins: %w", err)
+		}
+		stats.WebPushSubsDeleted = subscriptions
+		unboundSubscriptions, err := s.webPushRepo.DeleteSubscriptionsWithNoLogin(ctx)
+		if err != nil {
+			return stats, fmt.Errorf("prune unbound web push subscriptions: %w", err)
+		}
+		stats.UnboundWebPushSubsDeleted = unboundSubscriptions
+	}
+	if s.pushDeviceRepo != nil {
+		registrations, err := s.pushDeviceRepo.DeleteEndedLoginRegistrations(ctx)
+		if err != nil {
+			return stats, fmt.Errorf("prune push registrations of ended logins: %w", err)
+		}
+		stats.PushRegistrationsDeleted = registrations
+		unbound, err := s.pushDeviceRepo.DeleteRegistrationsWithNoLogin(ctx)
+		if err != nil {
+			return stats, fmt.Errorf("prune unbound push registrations: %w", err)
+		}
+		stats.UnboundPushRegistrationsDeleted = unbound
 	}
 	if s.DiscordPrefs != nil {
 		states, err := s.DiscordPrefs.DeleteExpiredLinkStates(ctx)
@@ -881,10 +916,22 @@ func backfillKey(userID int, profileID string) string {
 	return fmt.Sprintf("%010d|%s", userID, profileID)
 }
 
-func (s *System) loadBackfillCheckpoint(ctx context.Context, task string) (string, *time.Time, error) {
+// backfillStateDB runs the notification_backfill_state statements.
+type backfillStateDB interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// backfillStateTimeout bounds each checkpoint statement, so a lock session
+// that stopped answering fails the rebuild instead of stalling it.
+const backfillStateTimeout = 10 * time.Second
+
+func loadBackfillCheckpoint(ctx context.Context, db backfillStateDB, task string) (string, *time.Time, error) {
+	ctx, cancel := context.WithTimeout(ctx, backfillStateTimeout)
+	defer cancel()
 	var key *string
 	var completedAt *time.Time
-	err := s.pool.QueryRow(ctx,
+	err := db.QueryRow(ctx,
 		`SELECT last_processed_key, completed_at FROM notification_backfill_state WHERE task = $1`,
 		task,
 	).Scan(&key, &completedAt)
@@ -901,8 +948,10 @@ func (s *System) loadBackfillCheckpoint(ctx context.Context, task string) (strin
 	return checkpoint, completedAt, nil
 }
 
-func (s *System) saveBackfillCheckpoint(ctx context.Context, task, key string) error {
-	_, err := s.pool.Exec(ctx, `
+func saveBackfillCheckpoint(ctx context.Context, db backfillStateDB, task, key string) error {
+	ctx, cancel := context.WithTimeout(ctx, backfillStateTimeout)
+	defer cancel()
+	_, err := db.Exec(ctx, `
 		INSERT INTO notification_backfill_state (task, last_processed_key, started_at, updated_at)
 		VALUES ($1, $2, now(), now())
 		ON CONFLICT (task) DO UPDATE SET
@@ -915,8 +964,10 @@ func (s *System) saveBackfillCheckpoint(ctx context.Context, task, key string) e
 	return nil
 }
 
-func (s *System) resetBackfillCheckpoint(ctx context.Context, task string) error {
-	_, err := s.pool.Exec(ctx, `
+func resetBackfillCheckpoint(ctx context.Context, db backfillStateDB, task string) error {
+	ctx, cancel := context.WithTimeout(ctx, backfillStateTimeout)
+	defer cancel()
+	_, err := db.Exec(ctx, `
 		INSERT INTO notification_backfill_state (task, last_processed_key, started_at, updated_at, completed_at)
 		VALUES ($1, NULL, now(), now(), NULL)
 		ON CONFLICT (task) DO UPDATE SET
@@ -931,8 +982,10 @@ func (s *System) resetBackfillCheckpoint(ctx context.Context, task string) error
 	return nil
 }
 
-func (s *System) completeBackfillCheckpoint(ctx context.Context, task string) error {
-	_, err := s.pool.Exec(ctx, `
+func completeBackfillCheckpoint(ctx context.Context, db backfillStateDB, task string) error {
+	ctx, cancel := context.WithTimeout(ctx, backfillStateTimeout)
+	defer cancel()
+	_, err := db.Exec(ctx, `
 		UPDATE notification_backfill_state SET completed_at = now(), updated_at = now() WHERE task = $1`,
 		task)
 	if err != nil {

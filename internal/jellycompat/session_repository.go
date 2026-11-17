@@ -230,6 +230,38 @@ func (r *SessionRepository) DeleteByToken(ctx context.Context, token string) err
 	return nil
 }
 
+// PurgeProfile deletes the compat sessions signed in as a deleted profile.
+// The Postgres user store deletes them in the profile's own transaction; this
+// covers a profile held in another store.
+func (r *SessionRepository) PurgeProfile(ctx context.Context, userID int, profileID string) error {
+	if _, err := r.pool.Exec(ctx,
+		`DELETE FROM jellycompat_sessions WHERE streamapp_user_id = $1 AND profile_id = $2`,
+		userID, profileID); err != nil {
+		return fmt.Errorf("delete compat sessions for user %d profile %s: %w", userID, profileID, err)
+	}
+	return nil
+}
+
+// PseudoUserTokens returns the tokens of up to limit unexpired compat
+// sessions signed in as the pseudo-user id, the most recently extended first.
+// The caller checks each one's login session.
+func (r *SessionRepository) PseudoUserTokens(ctx context.Context, id uuid.UUID, now time.Time, limit int) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT token
+		FROM jellycompat_sessions
+		WHERE pseudo_user_id = $1 AND expires_at > $2
+		ORDER BY expires_at DESC
+		LIMIT $3`, id, now, limit)
+	if err != nil {
+		return nil, fmt.Errorf("find compat sessions for pseudo-user: %w", err)
+	}
+	tokens, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("find compat sessions for pseudo-user: %w", err)
+	}
+	return tokens, nil
+}
+
 // DeleteExpired removes expired compat sessions.
 func (r *SessionRepository) DeleteExpired(ctx context.Context, now time.Time) (int, error) {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM jellycompat_sessions WHERE expires_at <= $1`, now)

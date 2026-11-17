@@ -110,11 +110,13 @@ func TestParseRedisURLRejectsInvalid(t *testing.T) {
 		"redis://sentinel-1:26379?master_name=mymaster&password=p#ss&addr=sentinel-2:26379",
 		"redis://sentinel-1:26379?password=p#ss&master_name=mymaster",
 		"redis://sentinel-1:26379?dial_timeout=5s#&master_name=mymaster",
-		// go-redis reads the first two as no timeout, and fails every dial at
-		// once with the last two.
+		// Explicit zero or negative timeouts disable the read timeout or
+		// make every dial fail at once, including values with a unit.
 		"redis://sentinel-1:26379?master_name=mymaster&read_timeout=0",
+		"redis://sentinel-1:26379?master_name=mymaster&read_timeout=0s",
 		"redis://sentinel-1:26379?master_name=mymaster&read_timeout=-1s",
 		"redis://sentinel-1:26379?master_name=mymaster&dial_timeout=0",
+		"redis://sentinel-1:26379?master_name=mymaster&dial_timeout=0s",
 		"redis://sentinel-1:26379?master_name=mymaster&dial_timeout=-1s",
 		// A + is a space in a query string.
 		"redis://sentinel-1:26379?master_name=mymaster&password=p+ss",

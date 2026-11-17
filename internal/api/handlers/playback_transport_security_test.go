@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/nodeauth"
 	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
@@ -31,7 +32,7 @@ func TestFetchRemoteTranscodeCapabilitiesDoesNotForwardJWTOnRedirect(t *testing.
 	}))
 	defer source.Close()
 
-	_, err := fetchRemoteTranscodeCapabilities(context.Background(), source.URL, jwt)
+	_, err := fetchRemoteNodeCapabilities(context.Background(), nodeauth.TargetTranscode, source.URL, nodeauthtest.NodeKey(jwt))
 	if !sourceSigned.Load() {
 		t.Fatal("source request was not signed with the shared secret")
 	}
@@ -51,7 +52,7 @@ func TestFetchRemoteTranscodeCapabilitiesRejectsOversizedResponse(t *testing.T) 
 	}))
 	defer remote.Close()
 
-	_, err := fetchRemoteTranscodeCapabilities(context.Background(), remote.URL, "cluster-jwt-secret")
+	_, err := fetchRemoteNodeCapabilities(context.Background(), nodeauth.TargetTranscode, remote.URL, nodeauthtest.NodeKey("cluster-jwt-secret"))
 	if err == nil || !strings.Contains(err.Error(), "capability response exceeds") {
 		t.Fatalf("oversized response error = %v, want bounded-response error", err)
 	}

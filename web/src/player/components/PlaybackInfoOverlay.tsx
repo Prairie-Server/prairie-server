@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import "@/styles/player-hud.css";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type HlsType from "hls.js";
 import { buildPlaybackInfoSections, type RuntimePlaybackStats } from "../playback-info";
@@ -9,6 +10,7 @@ import {
 } from "../playback-events";
 import type { PlanV3 } from "../protocol-v3";
 import type { PlayerAudioTrack, PlayerFileVersion } from "../types";
+import { useT } from "@/i18n";
 
 interface PlaybackInfoOverlayProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -42,6 +44,7 @@ export function PlaybackInfoOverlay({
   browserEngine = false,
   onClose,
 }: PlaybackInfoOverlayProps) {
+  const t = useT();
   const [runtimeStats, setRuntimeStats] = useState<RuntimePlaybackStats>({});
   const [events, setEvents] = useState<PlaybackEventEntry[]>(() => eventLog?.snapshot() ?? []);
 
@@ -80,59 +83,59 @@ export function PlaybackInfoOverlay({
     return () => clearInterval(id);
   }, [videoRef, containerRef, hlsRef, eventLog]);
 
-  const sections = useMemo(
-    () =>
-      buildPlaybackInfoSections({
-        streamUrl,
-        plan,
-        currentSourceVersion,
-        requestedVersion,
-        runtimeStats,
-        activeAudioTrack,
-        qualityPreference,
-        browserEngine,
-      }),
-    [
-      streamUrl,
-      plan,
-      currentSourceVersion,
-      requestedVersion,
-      runtimeStats,
-      activeAudioTrack,
-      qualityPreference,
-      browserEngine,
-    ],
-  );
+  // Rebuilt on every render: the stats change every second anyway, and the
+  // rows follow a language change through `t()`.
+  const sections = buildPlaybackInfoSections({
+    streamUrl,
+    plan,
+    currentSourceVersion,
+    requestedVersion,
+    runtimeStats,
+    activeAudioTrack,
+    qualityPreference,
+    browserEngine,
+  });
 
   return (
-    <div className="absolute top-12 right-3 left-3 z-50 max-h-[calc(100%-6rem)] w-auto overflow-y-auto rounded-lg bg-black/85 text-sm text-white shadow-lg backdrop-blur-sm sm:right-auto sm:left-4 sm:w-96">
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <span className="font-medium text-white/90">Stats for nerds</span>
+    <div
+      // A labelled region, not a dialog: it is not modal, and a dialog would
+      // switch off the player's shortcuts and the skip pill's focus.
+      role="region"
+      aria-label={t("web.player.info.heading")}
+      className="hud-panel hud-panel-scroll absolute top-[max(5rem,calc(env(safe-area-inset-top)+4.5rem))] left-[max(1rem,env(safe-area-inset-left))] z-50 max-h-[max(10rem,calc(100%-14rem))] w-[min(20rem,calc(100vw-2rem))] sm:left-[max(2rem,env(safe-area-inset-left))] rtl:right-[max(1rem,env(safe-area-inset-right))] rtl:left-auto sm:rtl:right-[max(2rem,env(safe-area-inset-right))]"
+    >
+      <div className="hud-panel-header pe-2">
+        <span>{t("web.player.info.heading")}</span>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded hover:bg-white/10"
-          aria-label="Close stats for nerds"
+          className="hud-icon-btn"
+          aria-label={t("web.player.info.close")}
         >
-          <X className="h-4 w-4" />
+          <X />
         </button>
       </div>
 
       <div className="px-4 pb-3">
         {sections.map((section) => (
-          <div key={section.title} className="mt-3 first:mt-0">
-            <div className="mb-1 text-xs font-semibold tracking-wider text-white/50 uppercase">
+          <section key={section.title} className="mt-3 first:mt-0">
+            <h3 className="mb-1 text-[0.6875rem] font-bold tracking-[0.1em] text-[var(--hud-ash)] uppercase">
               {section.title}
-            </div>
-            {section.rows.map((row, index) => (
-              <div key={`${row.label}-${index}`} className="flex justify-between gap-4 py-0.5">
-                <span className="shrink-0 text-white/60">{row.label}</span>
-                <span className="truncate text-right text-white/90" title={row.value}>
-                  {row.value}
-                </span>
-              </div>
-            ))}
-          </div>
+            </h3>
+            <dl>
+              {section.rows.map((row, index) => (
+                <div
+                  key={`${row.label}-${index}`}
+                  className="flex justify-between gap-4 py-0.5 text-[0.8125rem]"
+                >
+                  <dt className="shrink-0 text-[var(--hud-ash)]">{row.label}</dt>
+                  <dd className="truncate text-end tabular-nums" title={row.value}>
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         ))}
         {eventLog && (
           <div className="mt-3">

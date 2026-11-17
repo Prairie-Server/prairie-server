@@ -32,7 +32,7 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-b py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="text-muted-foreground text-sm">{label}</div>
-      <div className="text-sm font-medium break-all sm:text-right">{value}</div>
+      <div className="text-sm font-medium break-all sm:text-end">{value}</div>
     </div>
   );
 }

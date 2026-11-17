@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -21,6 +20,31 @@ const mocks = vi.hoisted(() => ({
   },
   startPlayback: vi.fn(),
   toggleActivePlayback: vi.fn(),
+  user: null as null | { role: "admin" | "user"; permissions?: string[] },
+  refresh: vi.fn(),
+  profile: { is_primary: true } as null | { is_primary: boolean },
+}));
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({ user: mocks.user }),
+}));
+vi.mock("@/hooks/useCurrentProfile", () => ({
+  useCurrentProfile: () => ({ profile: mocks.profile, hasSelectedProfile: true }),
+}));
+vi.mock("@/components/EditMetadataDialog", () => ({
+  default: ({ open, item }: { open: boolean; item: { title: string } }) =>
+    open ? <div>Editing {item.title}</div> : null,
+}));
+vi.mock("@/hooks/queries/items", () => ({
+  useRefreshItemMetadata: () => ({ mutate: mocks.refresh, isPending: false }),
+}));
+vi.mock("@/components/MatchItemDialog", () => ({
+  default: ({ open, item }: { open: boolean; item: { title: string; library_id?: number } }) =>
+    open ? (
+      <div>
+        Matching {item.title} in {item.library_id}
+      </div>
+    ) : null,
 }));
 
 vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
@@ -30,24 +54,9 @@ vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
 vi.mock("@/components/AddToCollectionDialog", () => ({
   default: () => null,
 }));
-vi.mock("@/pages/audiobooks/components/ChaptersSection", () => ({
-  ChaptersSection: () => null,
-}));
-vi.mock("@/pages/audiobooks/components/NarratorCard", () => ({
-  NarratorCard: () => null,
-}));
-vi.mock("@/pages/audiobooks/components/NarratorPicker", () => ({
-  NarratorPicker: () => null,
-}));
-vi.mock("@/pages/audiobooks/components/RelatedRail", () => ({
-  RelatedRail: () => null,
-}));
-vi.mock("@/pages/ItemDetail/DetailHero", () => ({
-  default: ({ actions }: { actions?: ReactNode }) => <div>{actions}</div>,
-}));
-vi.mock("@/pages/ItemDetail/components/MetadataBadges", () => ({
-  default: () => null,
-}));
+vi.mock("@/pages/audiobooks/components/ChaptersSection", () => ({ ChaptersSection: () => null }));
+vi.mock("@/pages/audiobooks/components/NarratorPicker", () => ({ NarratorPicker: () => null }));
+vi.mock("@/pages/audiobooks/components/RelatedRail", () => ({ RelatedRail: () => null }));
 
 import { makeItemDetail } from "./itemDetail.test-support";
 import AudiobookContent from "./AudiobookContent";
@@ -159,5 +168,62 @@ describe("AudiobookContent playback actions", () => {
 
     expect(mocks.toggleActivePlayback).toHaveBeenCalledTimes(1);
     expect(mocks.startPlayback).not.toHaveBeenCalled();
+  });
+});
+
+describe("AudiobookContent metadata actions", () => {
+  beforeEach(() => {
+    mocks.controller = null;
+    mocks.profile = { is_primary: true };
+  });
+
+  it("lets a metadata curator edit and match the book", async () => {
+    mocks.user = { role: "user", permissions: ["metadata_curation"] };
+    render(
+      <MemoryRouter>
+        <AudiobookContent item={bookWithProgress(0)} libraryId={7} />
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Edit Metadata" }));
+    expect(screen.getByText("Editing Test Book")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Match Item" }));
+    expect(screen.getByText("Matching Test Book in 7")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Refresh Metadata" }));
+    await userEvent.click(screen.getByRole("button", { name: /Quick Refresh/ }));
+    expect(mocks.refresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        item: expect.objectContaining({ title: "Test Book" }),
+        mode: "quick",
+      }),
+    );
+  });
+
+  it("offers no metadata actions while the selected profile is still loading", () => {
+    mocks.user = { role: "admin" };
+    mocks.profile = null;
+    render(
+      <MemoryRouter>
+        <AudiobookContent item={bookWithProgress(0)} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: "More actions" })).not.toBeInTheDocument();
+  });
+
+  it("offers no metadata actions to a listener", () => {
+    mocks.user = { role: "user", permissions: [] };
+    render(
+      <MemoryRouter>
+        <AudiobookContent item={bookWithProgress(0)} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: "More actions" })).not.toBeInTheDocument();
   });
 });

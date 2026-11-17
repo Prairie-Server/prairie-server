@@ -38,7 +38,7 @@ type LiveTVHandler struct {
 	jwtSecret      string
 	deviceProfiles *DeviceProfileStore
 	httpClient     *http.Client
-	now        func() time.Time
+	now            func() time.Time
 
 	mu      sync.Mutex
 	streams map[string]*openLiveStream
@@ -889,7 +889,7 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		if deliveryID, ok := livetv.LiveHLSDeliveryID(native.HLSURL); ok {
 			token, signErr := streamtoken.Sign(streamtoken.Claims{
 				SessionID: deliveryID,
-				UserID: userID,
+				UserID:    userID,
 				ProfileID: profileID,
 			}, h.jwtSecret, playback.MaxTokenTTL)
 			if signErr == nil {

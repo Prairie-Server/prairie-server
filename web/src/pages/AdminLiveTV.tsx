@@ -138,7 +138,7 @@ function TunersTab() {
           </Button>
         </div>
         {discoverNotes.length > 0 ? (
-          <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-xs">
+          <ul className="text-muted-foreground list-disc space-y-1 ps-5 text-xs">
             {discoverNotes.map((note) => (
               <li key={note}>{note}</li>
             ))}

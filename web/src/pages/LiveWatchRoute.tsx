@@ -286,7 +286,7 @@ export default function LiveWatchRoute() {
             <div className="min-w-0 pt-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <Badge className="bg-red-600 text-white hover:bg-red-600">
-                  <Radio className="mr-1 h-3 w-3" aria-hidden />
+                  <Radio className="me-1 h-3 w-3" aria-hidden />
                   Live
                 </Badge>
                 {channel ? (

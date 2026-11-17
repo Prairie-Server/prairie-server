@@ -110,7 +110,7 @@ export default function LiveTVOnNowRow() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                <div className="absolute right-2 bottom-2 left-2">
+                <div className="absolute start-2 end-2 bottom-2">
                   <div className="mb-1 flex items-center gap-1.5">
                     <Badge variant="secondary">Live</Badge>
                     <span className="text-[11px] font-medium text-white/80 tabular-nums">

@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
+
+	"github.com/prairie-server/prairie-server/internal/fspath"
 )
 
 type nvencEncoder struct {
@@ -85,7 +86,7 @@ func (e *nvencEncoder) encodeNVENC(ctx context.Context, imageBytes []byte) ([]by
 		"-an",
 		outPath,
 	}
-	cmd := exec.CommandContext(ctx, e.ffmpeg, args...)
+	cmd := fspath.CommandContext(ctx, e.ffmpeg, args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := runEncodeCommand(cmd); err != nil {

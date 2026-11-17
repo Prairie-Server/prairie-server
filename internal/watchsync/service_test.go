@@ -1,6 +1,7 @@
 package watchsync
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
@@ -44,6 +45,7 @@ const (
 
 type serviceFakeRepo struct {
 	connections            map[string]Connection
+	watchlistTitlesSince   map[string]time.Time
 	dueConnections         []Connection
 	sessions               map[string]DeviceAuthSession
 	settings               map[string]string
@@ -69,6 +71,7 @@ type serviceFakeRepo struct {
 	confirmingScrobbles    map[string]time.Time
 	markSatisfiedErr       error
 	markLocalRemovedErr    error
+	upsertListItemErr      error
 	markHistoryStatusErr   error
 	syncRunMu              sync.Mutex
 	scrobbleMu             sync.Mutex
@@ -294,9 +297,73 @@ func (r *serviceFakeRepo) ListConnectionsDueForSync(
 	return out, nil
 }
 
+func (r *serviceFakeRepo) AdmitSyncRun(ctx context.Context, expected Connection, run SyncRun) (syncRunAdmission, error) {
+	r.syncRunMu.Lock()
+	defer r.syncRunMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return syncRunAdmission{}, err
+	}
+	conn, ok := r.connections[connectionKey(expected.Provider, expected.UserID, expected.ProfileID)]
+	if !ok || (expected.ID != "" && expected.ID != conn.ID) {
+		return syncRunAdmission{}, ErrConnectionNotFound
+	}
+	admitted := syncRunAdmission{Connection: cloneConnectionForTest(conn)}
+	now := run.StartedAt
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	if conn.RateLimitedUntil != nil && conn.RateLimitedUntil.After(now) {
+		admitted.RetryAfterSeconds = ceilSeconds(conn.RateLimitedUntil.Sub(now))
+		return admitted, nil
+	}
+	for i := len(r.syncRuns) - 1; i >= 0; i-- {
+		active := &r.syncRuns[i]
+		if active.ConnectionID != conn.ID ||
+			(active.Status != string(SyncRunStatusQueued) && active.Status != string(SyncRunStatusRunning)) ||
+			(run.Trigger != "manual" && active.Trigger != "manual") {
+			continue
+		}
+		if !active.StartedAt.IsZero() && now.Sub(active.StartedAt) <= manualSyncTimeout {
+			admitted.Run = *active
+			return admitted, nil
+		}
+		if run.Trigger == "manual" {
+			active.Status = string(SyncRunStatusFailed)
+			active.Error = "watch provider sync timed out before completion"
+			active.CompletedAt = new(now)
+		}
+	}
+	if run.Trigger == "manual" {
+		for i := len(r.syncRuns) - 1; i >= 0; i-- {
+			latest := r.syncRuns[i]
+			if latest.ConnectionID != conn.ID {
+				continue
+			}
+			reference := latest.StartedAt
+			if latest.CompletedAt != nil {
+				reference = *latest.CompletedAt
+			}
+			admitted.RetryAfterSeconds = retryAfterSeconds(now, reference, manualSyncCooldown)
+			if admitted.RetryAfterSeconds > 0 {
+				return admitted, nil
+			}
+			break
+		}
+	}
+	run.ConnectionID, run.Provider, run.StartedAt = conn.ID, conn.Provider, now
+	admitted.Run = r.createSyncRunLocked(run)
+	admitted.Created = true
+	return admitted, nil
+}
+
+// CreateSyncRun is retained only for synthetic fixtures in tests.
 func (r *serviceFakeRepo) CreateSyncRun(_ context.Context, run SyncRun) (SyncRun, error) {
 	r.syncRunMu.Lock()
 	defer r.syncRunMu.Unlock()
+	return r.createSyncRunLocked(run), nil
+}
+
+func (r *serviceFakeRepo) createSyncRunLocked(run SyncRun) SyncRun {
 	if run.ID == "" {
 		run.ID = "run-" + strconv.Itoa(len(r.syncRuns)+1)
 	}
@@ -310,7 +377,7 @@ func (r *serviceFakeRepo) CreateSyncRun(_ context.Context, run SyncRun) (SyncRun
 		run.CreatedAt = run.StartedAt
 	}
 	r.syncRuns = append(r.syncRuns, run)
-	return run, nil
+	return run
 }
 
 func (r *serviceFakeRepo) CompleteSyncRun(_ context.Context, run SyncRun) (SyncRun, error) {
@@ -342,19 +409,6 @@ func (r *serviceFakeRepo) GetLatestSyncRun(_ context.Context, connectionID strin
 	return SyncRun{}, false, nil
 }
 
-func (r *serviceFakeRepo) GetActiveSyncRun(_ context.Context, connectionID string) (SyncRun, bool, error) {
-	r.syncRunMu.Lock()
-	defer r.syncRunMu.Unlock()
-	for i := len(r.syncRuns) - 1; i >= 0; i-- {
-		run := r.syncRuns[i]
-		if run.ConnectionID == connectionID &&
-			(run.Status == string(SyncRunStatusQueued) || run.Status == string(SyncRunStatusRunning)) {
-			return run, true, nil
-		}
-	}
-	return SyncRun{}, false, nil
-}
-
 func (r *serviceFakeRepo) ListSyncRuns(_ context.Context, connectionID string, limit int) ([]SyncRun, error) {
 	r.syncRunMu.Lock()
 	defer r.syncRunMu.Unlock()
@@ -368,6 +422,12 @@ func (r *serviceFakeRepo) ListSyncRuns(_ context.Context, connectionID string, l
 		}
 	}
 	return runs, nil
+}
+
+func (r *serviceFakeRepo) syncRunsSnapshot() []SyncRun {
+	r.syncRunMu.Lock()
+	defer r.syncRunMu.Unlock()
+	return append([]SyncRun(nil), r.syncRuns...)
 }
 
 func (r *serviceFakeRepo) ListLocalWatchEventConnections(_ context.Context, userID int, profileID string, kind LocalWatchEventKind) ([]Connection, error) {
@@ -508,6 +568,9 @@ func (r *serviceFakeRepo) MarkHistoryExportSatisfiedByScrobble(_ context.Context
 }
 
 func (r *serviceFakeRepo) UpsertListItemStates(_ context.Context, states []ListItemState) error {
+	if r.upsertListItemErr != nil {
+		return r.upsertListItemErr
+	}
 	for _, state := range states {
 		if state.ListKind == "" {
 			state.ListKind = ListKindFavorites
@@ -520,6 +583,16 @@ func (r *serviceFakeRepo) UpsertListItemStates(_ context.Context, states []ListI
 				if state.ID == "" {
 					state.ID = r.listItemStates[i].ID
 				}
+				state.CreatedAt = r.listItemStates[i].CreatedAt
+				// Mirror Postgres: empty identity fields keep the stored ones,
+				// and title IDs add up.
+				old := r.listItemStates[i]
+				state.ProviderItemKey = cmp.Or(state.ProviderItemKey, old.ProviderItemKey)
+				state.Kind = cmp.Or(state.Kind, old.Kind)
+				state.Title = cmp.Or(state.Title, old.Title)
+				state.Year = cmp.Or(state.Year, old.Year)
+				state.TitleIDs = mergeTitleIDsForTest(old.TitleIDs, state.TitleIDs)
+				state.RemotePresent = state.RemotePresent || old.RemotePresent
 				r.listItemStates[i] = state
 				replaced = true
 				break
@@ -529,10 +602,49 @@ func (r *serviceFakeRepo) UpsertListItemStates(_ context.Context, states []ListI
 			if state.ID == "" {
 				state.ID = "list-item-" + strconv.Itoa(len(r.listItemStates)+1)
 			}
+			if state.CreatedAt.IsZero() {
+				state.CreatedAt = time.Now()
+			}
 			r.listItemStates = append(r.listItemStates, state)
 		}
 	}
 	return nil
+}
+
+func (r *serviceFakeRepo) WatchlistTitlesSince(_ context.Context, connectionID string) (*time.Time, error) {
+	if since, ok := r.watchlistTitlesSince[connectionID]; ok {
+		return &since, nil
+	}
+	return nil, nil
+}
+
+func (r *serviceFakeRepo) MarkWatchlistTitlesSince(_ context.Context, connectionID string) error {
+	if _, ok := r.watchlistTitlesSince[connectionID]; ok {
+		return nil
+	}
+	if r.watchlistTitlesSince == nil {
+		r.watchlistTitlesSince = map[string]time.Time{}
+	}
+	r.watchlistTitlesSince[connectionID] = time.Now()
+	return nil
+}
+
+func (r *serviceFakeRepo) AddListItemTitleIDs(_ context.Context, connectionID string, kind ListKind, mediaItemID string, ids []string) error {
+	r.markListItem(connectionID, kind, mediaItemID, func(s *ListItemState) {
+		s.TitleIDs = mergeTitleIDsForTest(s.TitleIDs, ids)
+	})
+	return nil
+}
+
+func mergeTitleIDsForTest(a, b []string) []string {
+	out := slices.Clone(a)
+	for _, id := range b {
+		if !slices.Contains(out, id) {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 func (r *serviceFakeRepo) ListListItemStates(_ context.Context, connectionID string, kind ListKind) ([]ListItemState, error) {
@@ -594,6 +706,11 @@ func (r *serviceFakeRepo) listItemKeyHeldElsewhere(state ListItemState) bool {
 		}
 	}
 	return false
+}
+
+func (r *serviceFakeRepo) SetListItemProviderKey(_ context.Context, connectionID string, kind ListKind, mediaItemID, key string) error {
+	r.markListItem(connectionID, kind, mediaItemID, func(state *ListItemState) { state.ProviderItemKey = key })
+	return nil
 }
 
 func (r *serviceFakeRepo) markListItem(connectionID string, kind ListKind, mediaItemID string, apply func(*ListItemState)) {
@@ -969,6 +1086,19 @@ func (r *serviceFakeRepo) ListOpenScrobbleSessions(_ context.Context) ([]Scrobbl
 	r.scrobbleMu.Lock()
 	defer r.scrobbleMu.Unlock()
 	return append([]ScrobbleSession(nil), r.scrobbleSessions...), nil
+}
+
+func (r *serviceFakeRepo) ListScrobbleStops(_ context.Context, connectionID string, mediaItemIDs []string) (map[string][]time.Time, error) {
+	r.scrobbleMu.Lock()
+	defer r.scrobbleMu.Unlock()
+	stops := make(map[string][]time.Time)
+	for _, session := range r.scrobbleSessions {
+		if session.ConnectionID == connectionID && session.StopSentAt != nil && session.HistoryID != "" &&
+			slices.Contains(mediaItemIDs, session.MediaItemID) {
+			stops[session.MediaItemID] = append(stops[session.MediaItemID], *session.StopSentAt)
+		}
+	}
+	return stops, nil
 }
 
 func (r *serviceFakeRepo) ListPendingScrobbleReconciliations(_ context.Context) ([]ScrobbleSession, error) {
@@ -2061,6 +2191,82 @@ func TestServiceImportWatchedDeduplicatesResolvedLeavesAtNewestTimestamp(t *test
 	}
 }
 
+// A scrobbled play comes back from the provider stamped when the stop arrived,
+// a second or so after Prairie's own row (#3433). The import treats a watch within
+// two minutes of a stop this connection sent as that play, and records a watch
+// with no such stop: a later play of a short item, a play Prairie didn't scrobble
+// to this provider, or one another connection scrobbled.
+func TestServiceImportWatchedSkipsProviderCopyOfScrobbledPlay(t *testing.T) {
+	localPlay := time.Date(2026, 11, 3, 1, 8, 27, 0, time.UTC)
+	stopSent := localPlay.Add(time.Second)
+	tests := []struct {
+		name         string
+		connectionID string // of the scrobble session; "" for none
+		remote       time.Time
+		wantRecorded bool
+	}{
+		{name: "provider stamp at the stop", connectionID: "conn-1", remote: stopSent},
+		{name: "provider stamp two minutes before the stop", connectionID: "conn-1", remote: stopSent.Add(-2 * time.Minute)},
+		{name: "provider stamp a minute after the stop", connectionID: "conn-1", remote: stopSent.Add(time.Minute)},
+		{name: "a second play of a short item", connectionID: "conn-1", remote: stopSent.Add(3 * time.Minute), wantRecorded: true},
+		{name: "a play this connection didn't scrobble", remote: stopSent, wantRecorded: true},
+		{name: "a play another connection scrobbled", connectionID: "conn-2", remote: stopSent, wantRecorded: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openUserDB(t)
+			store := userdb.NewSQLiteUserStore(db)
+			if err := userdb.AddHistory(db, userstore.WatchHistoryEntry{
+				ID: "history-1", ProfileID: "profile-1", MediaItemID: testMovieMediaID,
+				WatchedAt: localPlay.Format(time.RFC3339), DurationSeconds: 7200, Completed: true,
+				Source: userstore.WatchHistorySourcePlayback,
+			}); err != nil {
+				t.Fatalf("AddHistory: %v", err)
+			}
+			repo := newServiceFakeRepo()
+			if tt.connectionID != "" {
+				repo.scrobbleSessions = []ScrobbleSession{{
+					PlaybackSessionID: "play-1", ConnectionID: tt.connectionID, MediaItemID: testMovieMediaID,
+					HistoryID: "history-1", LastAction: "stop", StopSentAt: &stopSent,
+				}}
+			}
+			remote := tt.remote
+			provider := watchedImporterStub{
+				historyStubBase: historyStubBase{key: "simkl", source: userstore.WatchHistorySourceSimkl},
+				rows: []RemoteWatch{{
+					Provider: "simkl", Kind: historyimport.KindMovie, Title: "Inception", LastWatchedAt: &remote,
+				}},
+			}
+			watchState := &recordingWatchState{}
+			service := NewService(repo, NewRegistry()).
+				WithMatcher(matchedMatcherStub{mediaItemID: testMovieMediaID}).
+				WithWatchState(watchState).
+				WithUserStoreProvider(staticStoreProvider{store: store})
+
+			result, err := service.ImportWatched(context.Background(), Connection{
+				ID: "conn-1", Provider: "simkl", UserID: 7, ProfileID: "profile-1",
+			}, ServerConfig{}, provider)
+			if err != nil {
+				t.Fatalf("ImportWatched: %v", err)
+			}
+			if recorded := len(watchState.targetIDs) == 1; recorded != tt.wantRecorded || result.Imported != len(watchState.targetIDs) {
+				t.Fatalf("recorded %v (result %+v), want recorded = %v", watchState.targetIDs, result, tt.wantRecorded)
+			}
+			if tt.wantRecorded {
+				return
+			}
+			// A skipped copy still marks the item completed at the provider's time.
+			progress, err := store.GetProgress(context.Background(), "profile-1", testMovieMediaID)
+			if err != nil {
+				t.Fatalf("GetProgress: %v", err)
+			}
+			if progress == nil || !progress.Completed || result.ProgressUpdated != 1 {
+				t.Fatalf("progress = %+v, result %+v; want completed and counted, so the sync refreshes signals", progress, result)
+			}
+		})
+	}
+}
+
 func TestServiceSyncConnectionPreservesConnectionUpdatesAcrossFlows(t *testing.T) {
 	db := openUserDB(t)
 	if err := userdb.AddHistory(db, userstore.WatchHistoryEntry{
@@ -2214,6 +2420,8 @@ func TestServiceSyncConnectionMarksRunFailedWhenExportTransportFails(t *testing.
 		AccessToken:          testAccessToken,
 		ExportWatchedEnabled: true,
 	}
+
+	repo.connections[connectionKey(conn.Provider, conn.UserID, conn.ProfileID)] = conn
 
 	err := service.SyncConnection(context.Background(), conn, "scheduled")
 	if err == nil {
@@ -2842,8 +3050,8 @@ func TestServiceConfirmedStopSerializesConcurrentConfirmation(t *testing.T) {
 }
 
 func TestConfirmedStopLeaseExceedsDispatchTimeout(t *testing.T) {
-	if confirmedStopLease <= confirmedStopDispatchTimeout {
-		t.Fatalf("confirmed stop lease %s must exceed dispatch timeout %s", confirmedStopLease, confirmedStopDispatchTimeout)
+	if confirmedStopLease <= ConfirmedStopDispatchTimeout {
+		t.Fatalf("confirmed stop lease %s must exceed dispatch timeout %s", confirmedStopLease, ConfirmedStopDispatchTimeout)
 	}
 }
 
@@ -2990,7 +3198,10 @@ type completedHistoryListerStub struct {
 
 func (s *completedHistoryListerStub) ListCompletedHistory(_ context.Context, query userstore.CompletedHistoryQuery) ([]userstore.WatchHistoryEntry, error) {
 	s.queries = append(s.queries, query)
-	start := query.Offset
+	start := 0
+	if query.After != nil {
+		start = slices.IndexFunc(s.rows, func(row userstore.WatchHistoryEntry) bool { return row.ID == query.After.ID }) + 1
+	}
 	if start >= len(s.rows) {
 		return nil, nil
 	}
@@ -3010,6 +3221,7 @@ func TestHasVisibleCompletedHistoryAtOrAfterScopesTargetAndPaginates(t *testing.
 	rows := make([]userstore.WatchHistoryEntry, 501)
 	for i := 0; i < 500; i++ {
 		rows[i] = userstore.WatchHistoryEntry{
+			ID:          "history-" + strconv.Itoa(i),
 			ProfileID:   "profile-1",
 			MediaItemID: testMovieMediaID,
 			WatchedAt:   at.Add(-time.Duration(500-i) * time.Hour).Format(time.RFC3339),
@@ -3017,6 +3229,7 @@ func TestHasVisibleCompletedHistoryAtOrAfterScopesTargetAndPaginates(t *testing.
 		}
 	}
 	rows[500] = userstore.WatchHistoryEntry{
+		ID:          "history-500",
 		ProfileID:   "profile-1",
 		MediaItemID: testMovieMediaID,
 		WatchedAt:   at.Add(time.Minute).Format(time.RFC3339),
@@ -3066,11 +3279,11 @@ func TestListAllCompletedHistoryPaginatesUntilExhausted(t *testing.T) {
 	if len(store.queries) != 2 {
 		t.Fatalf("query count = %d, want 2", len(store.queries))
 	}
-	if store.queries[0].Limit != completedHistoryPageSize || store.queries[0].Offset != 0 {
+	if store.queries[0].Limit != completedHistoryPageSize || store.queries[0].After != nil {
 		t.Fatalf("first query = %+v, want first page", store.queries[0])
 	}
-	if store.queries[1].Limit != completedHistoryPageSize || store.queries[1].Offset != completedHistoryPageSize {
-		t.Fatalf("second query = %+v, want second page", store.queries[1])
+	if store.queries[1].Limit != completedHistoryPageSize || store.queries[1].After == nil || store.queries[1].After.ID != rows[completedHistoryPageSize-1].ID {
+		t.Fatalf("second query = %+v, want the page after the first page's last row", store.queries[1])
 	}
 	for _, query := range store.queries {
 		if query.ProfileID != "profile-1" || len(query.ExcludeSources) != 1 ||
@@ -3646,8 +3859,12 @@ func TestServiceFavoriteImportAndPendingLocalRemoval(t *testing.T) {
 		listedAt  time.Time
 		guessed   bool
 		wantAdded bool
+		// storedKey is movie-a's key when the provider has since listed it
+		// under another one.
+		storedKey string
 	}{
 		{name: "listing older than the removal", listedAt: removedAt.Add(-24 * time.Hour)},
+		{name: "older listing under another key", listedAt: removedAt.Add(-24 * time.Hour), storedKey: "tmdb:549"},
 		{name: "listing newer than the removal", listedAt: removedAt.Add(time.Hour), wantAdded: true},
 		// A provider that sends no listing time gets the import time.
 		{name: "undated listing", listedAt: removedAt.Add(time.Hour), guessed: true},
@@ -3662,7 +3879,7 @@ func TestServiceFavoriteImportAndPendingLocalRemoval(t *testing.T) {
 			repo.listItemStates = []ListItemState{
 				{
 					ConnectionID: conn.ID, ListKind: ListKindFavorites, MediaItemID: "movie-a", Kind: "movie",
-					ProviderItemKey: "imdb:tt0137523", RemotePresent: true, LastRemovedLocalAt: &removedAt,
+					ProviderItemKey: cmp.Or(tt.storedKey, "imdb:tt0137523"), RemotePresent: true, LastRemovedLocalAt: &removedAt,
 				},
 				{
 					ConnectionID: conn.ID, ListKind: ListKindFavorites, MediaItemID: "movie-b", Kind: "movie",
@@ -3694,8 +3911,8 @@ func TestServiceFavoriteImportAndPendingLocalRemoval(t *testing.T) {
 			if result.Removed != 0 || len(favorites) != wantFavorites {
 				t.Fatalf("result=%#v favorites=%#v", result, favorites)
 			}
-			if a := repo.listItemStates[0]; a.LocalPresent != tt.wantAdded || !a.RemotePresent {
-				t.Fatalf("movie-a state = %#v, want local %v", a, tt.wantAdded)
+			if a := repo.listItemStates[0]; a.LocalPresent != tt.wantAdded || !a.RemotePresent || a.ProviderItemKey != "imdb:tt0137523" {
+				t.Fatalf("movie-a state = %#v, want local %v under the listed key", a, tt.wantAdded)
 			}
 		})
 	}
@@ -3930,5 +4147,89 @@ func TestExportItemOutcomeDecidesByMediaItemIDBeforeKey(t *testing.T) {
 	}
 	if sent, _ := exportItemOutcome(ExportResult{Failed: map[string]string{"movie-3": "x"}, Sent: []string{"imdb:tt3"}}, "movie-3", "imdb:tt3"); sent {
 		t.Fatal("a failed media item must not be confirmed through its key")
+	}
+}
+
+// favoriteImportRemoverStub serves a favorites batch and records every removal it
+// is asked to send.
+type favoriteImportRemoverStub struct {
+	favoriteBatchProviderStub
+	removed *[]string
+}
+
+func (favoriteImportRemoverStub) AuthMethod() string { return AuthMethodAPIKey }
+func (favoriteImportRemoverStub) Capabilities() Capabilities {
+	return Capabilities{ImportFavorites: true, RemoveFavorites: true}
+}
+
+func (p favoriteImportRemoverStub) RemoveFavorites(_ context.Context, _ ServerConfig, _ Connection, favorites []LocalFavorite) (ExportResult, error) {
+	result := ExportResult{}
+	for _, favorite := range favorites {
+		*p.removed = append(*p.removed, favorite.MediaItemID)
+		result.Sent = append(result.Sent, favorite.MediaItemID)
+	}
+	return result, nil
+}
+
+// failFirstMatcher fails its first call, then matches each row by title.
+type failFirstMatcher struct {
+	calls   *int
+	byTitle map[string]string
+}
+
+func (m failFirstMatcher) Match(_ context.Context, record historyimport.Record) (*historyimport.Match, string, error) {
+	*m.calls++
+	if *m.calls == 1 {
+		return nil, "", errors.New("matcher unavailable")
+	}
+	return &historyimport.Match{MediaItemID: m.byTitle[record.Title]}, "", nil
+}
+
+// A list import that fails before it reaches a newer listing of a title
+// removed locally must not let the run send that stale removal: it would take
+// the provider's newer add off, and the import never added the title back.
+func TestSyncConnectionSkipsListRemovalsAfterFailedImport(t *testing.T) {
+	store, repo, conn := favoriteImportFixture(t)
+	ctx := context.Background()
+	conn.AccessToken = testAccessToken
+	repo.connections[connectionKey(conn.Provider, conn.UserID, conn.ProfileID)] = conn
+	removedAt := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	repo.listItemStates = []ListItemState{{
+		ConnectionID: conn.ID, ListKind: ListKindFavorites, MediaItemID: testMovieMediaID,
+		ProviderItemKey: testMovieProviderItemKey, Kind: "movie",
+		RemotePresent: true, LocalPresent: false, LastRemovedLocalAt: &removedAt,
+	}}
+	var removed []string
+	provider := favoriteImportRemoverStub{
+		favoriteBatchProviderStub: favoriteBatchProviderStub{batch: FavoriteImportBatch{Rows: []RemoteFavorite{
+			{ProviderItemKey: "movie:tmdb:1", Kind: "movie", Title: "Other", FavoritedAt: removedAt.Add(-time.Hour)},
+			{ProviderItemKey: testMovieProviderItemKey, Kind: "movie", Title: "Readded", FavoritedAt: removedAt.Add(time.Hour)},
+		}}},
+		removed: &removed,
+	}
+	calls := 0
+	service := NewService(repo, registryWith(t, provider)).
+		WithMatcher(failFirstMatcher{calls: &calls, byTitle: map[string]string{"Other": "movie-2", "Readded": testMovieMediaID}}).
+		WithUserStoreProvider(staticStoreProvider{store: store})
+
+	if err := service.SyncConnection(ctx, conn, "scheduled"); err == nil {
+		t.Fatal("first sync succeeded, want the import failure")
+	}
+	if len(removed) != 0 {
+		t.Fatalf("removals sent after failed import = %v, want none", removed)
+	}
+
+	if err := service.SyncConnection(ctx, conn, "scheduled"); err != nil {
+		t.Fatalf("retry sync: %v", err)
+	}
+	if len(removed) != 0 {
+		t.Fatalf("removals sent after the newer listing = %v, want none", removed)
+	}
+	favorites, err := store.ListFavorites(ctx, conn.ProfileID, 10, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(favorites, func(f userstore.Favorite) bool { return f.MediaItemID == testMovieMediaID }) {
+		t.Fatalf("favorites = %#v, want the re-added title", favorites)
 	}
 }

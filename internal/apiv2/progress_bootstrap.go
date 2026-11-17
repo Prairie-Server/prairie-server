@@ -9,7 +9,6 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
-	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/progresssync"
 )
 
@@ -157,7 +156,7 @@ func (reg *Registry) bootstrapActor(ctx context.Context, headers ProgressBootstr
 		return progresssync.Actor{}, NewProblem(TypeAuthenticationRequired, "Authentication required.")
 	}
 	captured := *claims
-	input := access.ResolveInput{UserID: userID, ProfileID: profileID, SessionID: captured.SessionID, ProfileToken: headers.ProfileToken, SkipPINVerification: captured.TokenType == auth.TokenTypeAPIKey}
+	input := access.ResolveInput{UserID: userID, ProfileID: profileID, SessionID: captured.SessionID, ProfileToken: headers.ProfileToken, SkipPINVerification: captured.SkipsProfilePIN()}
 	actor := progresssync.Actor{Input: input, Recheck: func(ctx context.Context) (access.Scope, error) {
 		if err := reg.deps.Auth.RevalidateCurrent(ctx, headers.Authorization, &captured, method, path); err != nil {
 			return access.Scope{}, err

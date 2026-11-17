@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
@@ -67,6 +68,9 @@ type RecipeCard struct {
 	DeviceID         string `json:"device_id,omitempty"`
 	DevicePlatform   string `json:"device_platform,omitempty"`
 	IsJellyfinCompat bool   `json:"is_jellyfin_compat,omitempty"`
+	// AdaptationReasons is the admin views' account of why the route adapts,
+	// kept like the client metadata above and never projected into claims.
+	AdaptationReasons []string `json:"adaptation_reasons,omitempty"`
 
 	// Header-authenticated recovery. A session that negotiated
 	// header_authenticated_media_v1 publishes no stream token, so the API keeps
@@ -197,6 +201,21 @@ func (e RecipeExecutor) NamesAnotherNode(card RecipeCard) bool {
 		nodeURL != "" && cardURL != "" && cardURL != nodeURL
 }
 
+// IssuedForAnotherRoute is NamesAnotherNode for the core stopping the node at
+// e.NodeURL, the URL it dialed. The core knows that URL exactly, so the card's
+// own node URL decides: a card naming a different node URL was written for
+// another start of the transport id (a move, or the next candidate a
+// Jellyfin-compatible start tried) and is kept, whatever row id it carries,
+// which a candidate's card may lack or carry stale. Only a card without a URL
+// falls back to the row ids, kept when both are known and differ.
+func (e RecipeExecutor) IssuedForAnotherRoute(card RecipeCard) bool {
+	stopped, issued := nodepool.CanonicalNodeURL(e.NodeURL), nodepool.CanonicalNodeURL(card.TranscodeNodeURL)
+	if stopped != "" && issued != "" {
+		return issued != stopped
+	}
+	return e.NodeID > 0 && card.RoutingExecutionNodeID > 0 && card.RoutingExecutionNodeID != e.NodeID
+}
+
 func normalizeExecutorURL(nodeURL string) string {
 	return strings.TrimRight(strings.TrimSpace(nodeURL), "/")
 }
@@ -270,6 +289,7 @@ func NewRecipeCard(userID int, profileID string, mediaFileID int, transcodeNodeU
 		TargetResolution:           opts.TargetResolution,
 		TargetCodecVideo:           opts.TargetCodecVideo,
 		TargetCodecAudio:           opts.TargetCodecAudio,
+		CopyAudioCodec:             opts.CopyAudioCodec,
 		TargetAudioChannels:        opts.TargetAudioChannels,
 		TargetAudioBitrateKbps:     opts.TargetAudioBitrateKbps,
 		SegmentDuration:            opts.SegmentDuration,
@@ -380,6 +400,7 @@ func (c RecipeCard) TranscodeOpts(outputDir, ffmpegPath string, logSink FFmpegLo
 		TargetResolution:           c.TargetResolution,
 		TargetCodecVideo:           c.TargetCodecVideo,
 		TargetCodecAudio:           c.TargetCodecAudio,
+		CopyAudioCodec:             c.CopyAudioCodec,
 		TargetAudioChannels:        c.TargetAudioChannels,
 		TargetAudioBitrateKbps:     c.TargetAudioBitrateKbps,
 		SegmentDuration:            c.SegmentDuration,

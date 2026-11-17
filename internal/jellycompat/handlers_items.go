@@ -151,7 +151,7 @@ func (h *ItemsHandler) handleViewsResponse(w http.ResponseWriter, r *http.Reques
 		writeCompatUpstreamError(w, err)
 		return
 	}
-	applyItemsResponseOptions(items, parseItemsQuery(r, h.codec))
+	applyItemsResponseOptions(items, h.parseItemsQuery(r))
 	writeJSON(w, http.StatusOK, queryResultDTO{
 		Items:            items,
 		TotalRecordCount: len(items),
@@ -217,7 +217,7 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 	if query.matchesNothing() {
 		// A genre, person, studio, or item filter whose IDs name nothing
 		// matches nothing, rather than falling back to an unfiltered browse
@@ -277,6 +277,10 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 		h.handleBrowseItems(w, r, session, query)
 	case query.isResumable:
 		h.handleResumeResponse(w, r, session, query)
+	case h.browsesPlayedListByCatalog(query):
+		// The played list reads progress rows, which carry no catalog fields
+		// to sort by; the catalog browse applies IsPlayed and sorts.
+		h.handleBrowseItems(w, r, session, query)
 	case query.isPlayed != nil && *query.isPlayed:
 		h.handlePlayedItems(w, r, session, query)
 	case query.isPlayed != nil:
@@ -314,6 +318,9 @@ func emptyQueryResult(startIndex int) queryResultDTO {
 // default path's ListSeasons yields an empty set and writes an empty page.
 func (h *ItemsHandler) handleItemParentChildren(w http.ResponseWriter, r *http.Request, session *Session, query itemsQuery) {
 	switch {
+	case itemTypesContain(query.itemTypes, itemTypeEpisode) && !query.allowsVideo():
+		// Episodes are video; MediaTypes=Audio and the like select none.
+		writeJSON(w, http.StatusOK, emptyQueryResult(query.startIndex))
 	case itemTypesContain(query.itemTypes, itemTypeEpisode):
 		h.writeSeriesEpisodesResponse(w, r, session, query, query.parentItemID, "", true)
 	case !query.hasItemTypeFilter || itemTypesContain(query.itemTypes, "season"):
@@ -328,9 +335,10 @@ func (h *ItemsHandler) handleItemParentChildren(w http.ResponseWriter, r *http.R
 // shared episode-listing path (also used by /Shows/{id}/Episodes) can be reused.
 func (h *ItemsHandler) handleSeasonEpisodeChildren(w http.ResponseWriter, r *http.Request, session *Session, query itemsQuery) {
 	// A season's only children are its episodes; a type filter that excludes
-	// Episode (e.g. IncludeItemTypes=Movie) yields nothing, mirroring the
-	// series-parent path's handling of unsatisfiable type filters.
-	if query.hasItemTypeFilter && !itemTypesContain(query.itemTypes, itemTypeEpisode) {
+	// Episode (e.g. IncludeItemTypes=Movie) or a MediaTypes filter that
+	// excludes Video yields nothing, mirroring the series-parent path's
+	// handling of unsatisfiable filters.
+	if (query.hasItemTypeFilter && !itemTypesContain(query.itemTypes, itemTypeEpisode)) || !query.allowsVideo() {
 		writeJSON(w, http.StatusOK, emptyQueryResult(query.startIndex))
 		return
 	}
@@ -521,7 +529,7 @@ func (h *ItemsHandler) populateDetailSubtitles(ctx context.Context, detail *upst
 				IsHearingImpaired:      dl.HearingImpaired,
 				IsTextSubtitleStream:   true,
 				SupportsExternalStream: true,
-				DeliveryURL:            fmt.Sprintf("/Videos/%s/%s/Subtitles/%d/stream.%s", routeItemID, sourceID, streamIndex, format),
+				DeliveryURL:            storedSubtitleDeliveryURL(routeItemID, sourceID, streamIndex, format, "", dl.ID),
 				DeliveryMethod:         "External",
 				Path:                   downloadedSubtitlePath(version, dl),
 				IsExternalURL:          boolPtr(false),
@@ -1128,7 +1136,7 @@ func (h *ItemsHandler) HandleFiltersStub(w http.ResponseWriter, r *http.Request)
 		writeError(w, 401, "Unauthorized", "Missing authentication token")
 		return
 	}
-	filters, err := h.content.ListItemFilters(r.Context(), session, buildBrowseParams(parseItemsQuery(r, h.codec)))
+	filters, err := h.content.ListItemFilters(r.Context(), session, buildBrowseParams(h.parseItemsQuery(r)))
 	if err != nil {
 		writeCompatUpstreamError(w, err)
 		return
@@ -1242,7 +1250,7 @@ func (h *ItemsHandler) HandleFilters2Stub(w http.ResponseWriter, r *http.Request
 		writeError(w, 401, "Unauthorized", "Missing authentication token")
 		return
 	}
-	params := buildBrowseParams(parseItemsQuery(r, h.codec))
+	params := buildBrowseParams(h.parseItemsQuery(r))
 	if languageTypes := languageFacetTypes(newCaseInsensitiveQuery(r.URL.Query()).Values("IncludeItemTypes")); languageTypes != "" {
 		params.Set("language_facet_types", languageTypes)
 	}
@@ -1313,7 +1321,7 @@ func (h *ItemsHandler) HandleStudios(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 401, "Unauthorized", "Missing authentication token")
 		return
 	}
-	q := parseItemsQuery(r, h.codec)
+	q := h.parseItemsQuery(r)
 	filters, err := h.content.ListItemFilters(r.Context(), session, buildBrowseParams(q))
 	if err != nil {
 		writeCompatUpstreamError(w, err)
@@ -1476,7 +1484,7 @@ func (h *ItemsHandler) HandleLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 	// Latest returns a bare array with no total, so Limit=0 asks for nothing.
 	if query.countOnly {
 		writeJSON(w, http.StatusOK, []baseItemDTO{})
@@ -1690,7 +1698,7 @@ func (h *ItemsHandler) loadLatestViaSections(ctx context.Context, session *Sessi
 	// Fold the client's clamped max content rating into the access filter so the
 	// shared cached list respects the client's cap AND the cache key captures it
 	// — identical to the clamp BrowseItems applies.
-	filter.MaxContentRating = clampMaxContentRating(filter.MaxContentRating, query.maxOfficialRating)
+	filter.MaturityLimits = clampMaturityLimits(filter.MaturityLimits, query.maxOfficialRating)
 
 	limit := query.limit
 	if limit <= 0 {
@@ -1848,7 +1856,7 @@ func (h *ItemsHandler) HandleGenres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 	params := urlValuesFromItemsQuery(query)
 	filters, err := h.content.ListItemFilters(r.Context(), session, params)
 	if err != nil {
@@ -1904,7 +1912,7 @@ func (h *ItemsHandler) HandleGenreByName(w http.ResponseWriter, r *http.Request)
 
 	// Confirm the genre exists within the caller's visible scope so the
 	// response carries the canonical casing.
-	filters, err := h.content.ListItemFilters(r.Context(), session, urlValuesFromItemsQuery(parseItemsQuery(r, h.codec)))
+	filters, err := h.content.ListItemFilters(r.Context(), session, urlValuesFromItemsQuery(h.parseItemsQuery(r)))
 	if err != nil {
 		writeCompatUpstreamError(w, err)
 		return
@@ -1942,7 +1950,7 @@ func (h *ItemsHandler) HandleSeasons(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return
 	}
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 
 	seriesID, err := h.codec.DecodeStringID(EncodedIDItem, chi.URLParam(r, "id"))
 	if err != nil {
@@ -2079,7 +2087,7 @@ func (h *ItemsHandler) HandleEpisodes(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return
 	}
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 
 	var seriesID string
 	var requestedSeasonID string
@@ -2192,13 +2200,13 @@ var errConfiguredUserStoreUnavailable = errors.New("configured user store unavai
 // browse applies for query.
 func (h *ItemsHandler) episodeBrowseFilters(ctx context.Context, session *Session, query itemsQuery) (catalog.AccessFilter, catalog.BrowseFilters) {
 	access := h.resolveAccessFilter(ctx, session)
-	access.MaxContentRating = clampMaxContentRating(access.MaxContentRating, query.maxOfficialRating)
+	access.MaturityLimits = clampMaturityLimits(access.MaturityLimits, query.maxOfficialRating)
 	sortKey, order := "", ""
 	if query.sortExplicit {
 		sortKey = query.sort
 		order = query.order
 	}
-	return access, catalog.BrowseFilters{UserID: session.StreamAppUserID, MaturityLimits: access.MaturityLimits, ProfileID: session.ProfileID, IsFavorite: query.isFavorite, IsPlayed: query.isPlayed, IsResumable: query.isResumable, Genres: query.genres, Genre: query.genreName, Years: query.years, SearchTerm: query.searchTerm, NamePrefix: query.namePrefix, PersonID: query.personID, RequireBackdrop: query.requireBackdrop, AudioLanguages: query.audioLanguages, SubtitleLanguages: query.subtitleLanguages, ExcludeContentIDs: query.excludeIDs, Studios: query.studios, OfficialRatings: query.officialRatings, MinCommunityRating: query.minCommunityRating, MinPremiereDate: query.minPremiereDate, MaxPremiereDate: query.maxPremiereDate, NameLessThan: query.nameLessThan, NameStartsWithOrGreater: query.nameStartsWithOrGreater, Limit: query.limit, Offset: query.startIndex, Sort: sortKey, Order: order}
+	return access, catalog.BrowseFilters{UserID: session.StreamAppUserID, MaturityLimits: access.MaturityLimits, ProfileID: session.ProfileID, IsFavorite: query.isFavorite, IsPlayed: query.isPlayed, IsResumable: query.isResumable, Genres: query.genres, Genre: query.genreName, Years: query.years, SearchTerm: query.searchTerm, NamePrefix: query.namePrefix, PersonID: query.personID, RequireBackdrop: query.requireBackdrop, AudioLanguages: query.audioLanguages, SubtitleLanguages: query.subtitleLanguages, ExcludeContentIDs: query.excludeIDs, Studios: query.studios, OfficialRatings: query.officialRatings, MinCommunityRating: query.minCommunityRating, MinCriticRating: query.minCriticRating, MinPremiereDate: query.minPremiereDate, MaxPremiereDate: query.maxPremiereDate, NameLessThan: query.nameLessThan, NameStartsWithOrGreater: query.nameStartsWithOrGreater, Limit: query.limit, Offset: query.startIndex, Sort: sortKey, Order: order}
 }
 
 // browseEpisodes pages repo.BrowseEpisodes. The catalog applies favorite and
@@ -2282,7 +2290,7 @@ func (h *ItemsHandler) handleEpisodeBrowse(w http.ResponseWriter, r *http.Reques
 	}
 	filters.LibraryID = query.parentLibraryID
 	// Name still sorts by episode title, as Jellyfin's NameComparer does.
-	if filters.Sort == catalog.BrowseSortTitle && sortsBySortName(newCaseInsensitiveQuery(r.URL.Query()).Get("SortBy")) {
+	if filters.Sort == catalog.BrowseSortTitle && query.sortByKey == sortKeySortName {
 		filters.Sort = ""
 	}
 	if query.countOnly {
@@ -2517,7 +2525,7 @@ func (h *ItemsHandler) writeAdjacentEpisodesResponse(w http.ResponseWriter, r *h
 		return
 	}
 
-	episodeModels, err := h.episodeRepo.ListAdjacentInSeries(r.Context(), target.SeriesID, target.SeasonNumber, target.EpisodeNumber)
+	episodeModels, err := h.episodeRepo.ListAdjacentInSeriesFor(r.Context(), target.SeriesID, target.SeasonNumber, target.EpisodeNumber, h.resolveAccessFilter(r.Context(), session))
 	if err != nil {
 		writeCompatUpstreamError(w, err)
 		return
@@ -2544,7 +2552,7 @@ func (h *ItemsHandler) HandleNextUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 
 	q := catalog.NextUpQuery{
 		UserID:          session.StreamAppUserID,
@@ -2687,7 +2695,7 @@ func (h *ItemsHandler) HandleUpcoming(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 401, "Unauthorized", "Missing authentication token")
 		return
 	}
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 	if userID := newCaseInsensitiveQuery(r.URL.Query()).Get("UserId"); userID != "" && !validatePseudoUser(w, userID, session) {
 		return
 	}
@@ -2754,7 +2762,7 @@ func (h *ItemsHandler) HandleResume(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return
 	}
-	query := parseItemsQuery(r, h.codec)
+	query := h.parseItemsQuery(r)
 	h.handleResumeResponse(w, r, session, query)
 }
 
@@ -3639,6 +3647,32 @@ func progressPageCapacity(limit int) int {
 	return limit
 }
 
+// playedByDateLister is the user-data service's play-date listing; see
+// directUserDataService.ListPlayedProgressByDate.
+type playedByDateLister interface {
+	ListPlayedProgressByDate(ctx context.Context, session *Session, types []string, libraryID *int, ascending bool, limit, offset int) ([]upstreamProgress, error)
+}
+
+// fetchProgressRows reads one batch of progress rows for loadProgressPage. A
+// completed list sorted by DatePlayed reads in play-date order, in the
+// requested direction, so paging stays in that order. Every other list, and a
+// store that cannot order by play date, reads newest write first. filtered
+// pushes the type and library pre-filter into the store.
+func (h *ItemsHandler) fetchProgressRows(ctx context.Context, session *Session, status string, query itemsQuery, types []string, libraryID *int, filtered bool, limit, offset int) ([]upstreamProgress, error) {
+	if status == progressStatusCompleted && query.sortByKey == sortKeyDatePlayed {
+		if lister, ok := h.userData.(playedByDateLister); ok {
+			rows, err := lister.ListPlayedProgressByDate(ctx, session, types, libraryID, query.order == sortOrderAscending, limit, offset)
+			if !errors.Is(err, userstore.ErrJellycompatPlayedByDateUnsupported) {
+				return rows, err
+			}
+		}
+	}
+	if filtered {
+		return h.userData.ListProgressFiltered(ctx, session, status, types, libraryID, limit, offset)
+	}
+	return h.userData.ListProgress(ctx, session, status, limit, offset)
+}
+
 func (h *ItemsHandler) loadProgressPage(ctx context.Context, session *Session, status string, query itemsQuery, typeSet map[string]bool, libraryID *int) ([]baseItemDTO, int, error) {
 	// Resume views hide dismissed and superseded entries, so the visible list
 	// is sparser than the raw store list. The raw-offset fast path below is
@@ -3654,7 +3688,7 @@ func (h *ItemsHandler) loadProgressPage(ctx context.Context, session *Session, s
 		result := make([]progressHydratedItem, 0, progressPageCapacity(query.limit))
 		offset := query.startIndex
 		for {
-			progressEntries, err := h.userData.ListProgress(ctx, session, status, batchSize, offset)
+			progressEntries, err := h.fetchProgressRows(ctx, session, status, query, nil, nil, false, batchSize, offset)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -3714,10 +3748,7 @@ func (h *ItemsHandler) loadProgressPage(ctx context.Context, session *Session, s
 		filteredTypes = sortedTypeSet(typeSet)
 	}
 	fetchProgress := func(off int) ([]upstreamProgress, error) {
-		if useFilteredFetch {
-			return h.userData.ListProgressFiltered(ctx, session, status, filteredTypes, libraryID, batchSize, off)
-		}
-		return h.userData.ListProgress(ctx, session, status, batchSize, off)
+		return h.fetchProgressRows(ctx, session, status, query, filteredTypes, libraryID, useFilteredFetch, batchSize, off)
 	}
 
 	items := make([]progressHydratedItem, 0, progressPageCapacity(query.limit))
@@ -3887,6 +3918,17 @@ func (h *ItemsHandler) hydrateProgressItems(ctx context.Context, session *Sessio
 	}
 
 	return result, nil
+}
+
+// parseItemsQuery parses r with the CriticRating sort and MinCriticRating
+// filter applied only while the administrator shows the Rotten Tomatoes
+// critic score, the rule items carry CriticRating under.
+func (h *ItemsHandler) parseItemsQuery(r *http.Request) itemsQuery {
+	query := parseItemsQuery(r, h.codec)
+	query.applyShownCriticRating(r, func() bool {
+		return h.mapper != nil && h.mapper.ratings.shows(models.RatingSourceRTCritic)
+	})
+	return query
 }
 
 func (h *ItemsHandler) resolveAccessFilter(ctx context.Context, session *Session) catalog.AccessFilter {
@@ -4125,7 +4167,7 @@ func validatePseudoUser(w http.ResponseWriter, userID string, session *Session) 
 		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
 		return false
 	}
-	if userID == "" || userID == session.PseudoUserID.String() {
+	if userID == "" || isPseudoUser(userID, session.PseudoUserID) {
 		return true
 	}
 	writeError(w, http.StatusNotFound, "NotFound", "User not found")
@@ -4433,7 +4475,7 @@ func (h *ItemsHandler) HandleAncestors(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	applyItemsResponseOptions(items, parseItemsQuery(r, h.codec))
+	applyItemsResponseOptions(items, h.parseItemsQuery(r))
 	writeJSON(w, 200, items)
 }
 

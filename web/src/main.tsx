@@ -4,9 +4,12 @@ import { detectImageFormats } from "./lib/imageFormats";
 import { installPreloadErrorReload } from "./lib/reloadOnPreloadError";
 import { initPointerCapability } from "./lib/pointerCapability";
 import { ensureStorageSchema } from "./utils/storage";
+import { installLinkTokenHandling } from "./lib/linkToken";
 import "./fonts.css";
 import "./app.css";
 
+// First, so nothing that reads the address sees a reset or invitation token.
+installLinkTokenHandling();
 // Bump/record storage schema without clearing auth/session keys across upgrades.
 ensureStorageSchema();
 installPreloadErrorReload();

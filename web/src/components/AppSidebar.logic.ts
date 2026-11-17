@@ -10,14 +10,31 @@ export function isSidebarExpanded(collapsed: boolean, hovered: boolean, profileM
   return !collapsed || hovered || profileMenuOpen;
 }
 
+/** Beside the collapsed rail, toward the content (Radix sides are physical). */
+export function getProfileMenuSide(collapsed: boolean, dir: "ltr" | "rtl") {
+  if (!collapsed) return "top";
+  return dir === "rtl" ? "left" : "right";
+}
+
+/**
+ * True when the surface should be reduced to the rail.
+ *
+ * The `<aside>` is always {@link SIDEBAR_SURFACE_WIDTH} wide — nothing about it
+ * reflows between states. This drives `data-collapsed`, which app.css turns into
+ * paired transform animation, so the only things that move are compositor
+ * layers over a surface whose 40px backdrop blur has fixed geometry.
+ */
 export function isSidebarRailCollapsed(collapsed: boolean, sidebarExpanded: boolean) {
   return collapsed && !sidebarExpanded;
 }
 
-export function libraryRowShift(hasPins: boolean) {
-  return hasPins ? "-18px" : "0px";
-}
-
+/**
+ * Inline style for the sidebar surface.
+ *
+ * While hover-expanded on a detail page the sidebar floats over the page as an
+ * overlay (raised z-index + drop shadow) so expanding it never moves or resizes
+ * the main content, which stays pinned to the collapsed 64px offset.
+ */
 export function sidebarSurfaceStyle({
   collapsed,
   sidebarExpanded,
@@ -34,10 +51,6 @@ export function sidebarSurfaceStyle({
   return undefined;
 }
 
-export function getProfileMenuSide(collapsed: boolean) {
-  return collapsed ? "right" : "top";
-}
-
 export interface AppNavLink {
   id: string;
   basePath: string;
@@ -48,12 +61,18 @@ export interface AppNavLink {
 }
 
 export interface AppNavGroup {
-  /** Display label for the group ("Other" for uncategorized plugins). */
+  /**
+   * The manifest's first category segment, or {@link UNCATEGORIZED_APP_GROUP}
+   * for uncategorized plugins (the sidebar shows that one translated).
+   */
   category: string;
   links: AppNavLink[];
 }
 
-/** Group label for plugins whose manifest declares no category. */
+/**
+ * Group key for plugins whose manifest declares no category. The sidebar
+ * renders it as the catalog's "Other" (`web.shell.sidebar.otherApps`).
+ */
 export const UNCATEGORIZED_APP_GROUP = "Other";
 
 /**

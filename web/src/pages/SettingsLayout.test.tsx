@@ -91,7 +91,8 @@ describe("SettingsLayout", () => {
       </MemoryRouter>,
     );
 
-    const accountHeading = markup.indexOf('id="settings-nav-connections"');
+    // Group headings are numbered by position, so find Connections by its text.
+    const accountHeading = markup.indexOf(">Connections</");
     const quickConnectHref = markup.indexOf("/settings/quick-connect");
     const notificationsHref = markup.indexOf("/settings/notifications");
 

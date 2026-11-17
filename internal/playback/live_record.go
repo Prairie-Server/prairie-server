@@ -11,6 +11,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/fspath"
 )
 
 // LiveRecordSession copies a live MPEG-TS HTTP source to a single output file.
@@ -71,7 +73,8 @@ func StartLiveRecord(parent context.Context, opts LiveRecordOpts) (*LiveRecordSe
 		"-f", "mpegts",
 		opts.OutputPath,
 	}
-	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd := fspath.CommandContext(ctx, bin, args...)
+	// Own process group: Stop signals -pid to reach ffmpeg's children too.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {

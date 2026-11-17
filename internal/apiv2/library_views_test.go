@@ -9,8 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/usercollections"
 )
@@ -134,10 +136,11 @@ func fakeCard() handlers.SectionItemView {
 		OverlaySummary: &models.OverlaySummary{Resolution: "4K", HDR: "Dolby Vision"}, UserState: &handlers.ItemUserStateView{InWatchlist: true}, ItemSource: "in_progress"}
 }
 
-func (f *fakeLibraryViews) LibraryLayout(_ context.Context, libraryID int) (handlers.SectionLayoutView, error) {
+func (f *fakeLibraryViews) LibraryLayout(_ context.Context, libraryID int, viewer handlers.SectionViewer) (handlers.SectionLayoutView, error) {
 	if f.err != nil {
 		return handlers.SectionLayoutView{}, f.err
 	}
+	f.lastViewer = viewer
 	return handlers.SectionLayoutView{Sections: []handlers.SectionLayoutEntryView{{ID: "continue_watching", SectionType: "continue_watching", Title: "Continue Watching", ItemLimit: 20}, {ID: "recently_added", SectionType: "recently_added", Title: "Recently Added", ItemLimit: 20, Customized: true}}}, nil
 }
 
@@ -153,6 +156,7 @@ func (f *fakeLibraryViews) LibrarySectionItems(_ context.Context, libraryID int,
 	if f.err != nil {
 		return handlers.SectionView{}, f.err
 	}
+	f.lastViewer = viewer
 	if sectionID != "continue_watching" {
 		return handlers.SectionView{}, &handlers.APIError{Status: http.StatusNotFound, Code: "not_found", Message: "Section not found"}
 	}
@@ -437,6 +441,44 @@ func TestLibraryLayoutAndSections(t *testing.T) {
 	requireProblem(t, do(t, newTestHandler(t, deps), http.MethodGet, "/api/v2/library/1/layout", "", viewerHeaders()), TypeDependencyUnavailable)
 }
 
+// TestSectionReadsDeclareTheWebClient pins that every viewer section read
+// tells the service whether the caller declared the web client family, the
+// one client that receives a web-only hero row. Any other family is answered
+// as an app, and an unknown one is not refused.
+func TestSectionReadsDeclareTheWebClient(t *testing.T) {
+	home, homeFake := homeDeps(t)
+	library := libraryViewDeps(t)
+	libraryFake := &fakeLibraryViews{}
+	library.LibrarySections = libraryFake
+	reads := []struct {
+		deps Dependencies
+		path string
+		last func() handlers.SectionViewer
+	}{
+		{home, "/api/v2/home/layout", func() handlers.SectionViewer { return homeFake.lastViewer }},
+		{home, "/api/v2/home/sections", func() handlers.SectionViewer { return homeFake.lastViewer }},
+		{home, "/api/v2/home/sections/continue_watching/items", func() handlers.SectionViewer { return homeFake.lastViewer }},
+		{library, "/api/v2/library/1/layout", func() handlers.SectionViewer { return libraryFake.lastViewer }},
+		{library, "/api/v2/library/1/sections", func() handlers.SectionViewer { return libraryFake.lastViewer }},
+		{library, "/api/v2/library/1/sections/continue_watching/items", func() handlers.SectionViewer { return libraryFake.lastViewer }},
+	}
+	for _, read := range reads {
+		h := newTestHandler(t, read.deps)
+		for _, tc := range []struct {
+			family string
+			web    bool
+		}{{"web", true}, {"tv", false}, {"watch", false}} {
+			rec := do(t, h, http.MethodGet, read.path, "", with(viewerHeaders(), "X-Prairie-Client-Family", tc.family))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("%s with family %q = %d %s", read.path, tc.family, rec.Code, rec.Body.String())
+			}
+			if got := read.last().Web; got != tc.web {
+				t.Errorf("%s with family %q: viewer.Web = %v, want %v", read.path, tc.family, got, tc.web)
+			}
+		}
+	}
+}
+
 func TestLibraryCollections(t *testing.T) {
 	h := newTestHandler(t, libraryViewDeps(t))
 	rec := do(t, h, http.MethodGet, "/api/v2/library/1/collections", "", viewerHeaders())
@@ -470,4 +512,19 @@ func TestLibraryCollections(t *testing.T) {
 	deps := libraryViewDeps(t)
 	deps.LibraryCollections = &fakeLibraryViews{err: &handlers.APIError{Status: http.StatusNotFound, Code: "not_found", Message: "Library not found"}}
 	requireProblem(t, do(t, newTestHandler(t, deps), http.MethodGet, "/api/v2/library/1/collections", "", viewerHeaders()), TypeNotFound)
+}
+
+// Counting seasons and episodes for the availability badge is the one card
+// lookup whose cost grows with the episodes behind a page, so a section read
+// asks for it only when the acting profile draws the badge.
+func TestSectionViewerCountsAvailabilityOnlyForProfilesDrawingTheBadge(t *testing.T) {
+	for _, drawsBadge := range []bool{false, true} {
+		ctx := access.SetScope(t.Context(), access.Scope{ProfileID: "profile", CardAvailability: drawsBadge})
+		if got := sectionViewer(ctx, imagesize.Request{}, SectionClient{}).IncludeCardAvailability; got != drawsBadge {
+			t.Fatalf("badge drawn = %v: IncludeCardAvailability = %v", drawsBadge, got)
+		}
+	}
+	if sectionViewer(t.Context(), imagesize.Request{}, SectionClient{}).IncludeCardAvailability {
+		t.Fatal("a request without a resolved scope asked for availability")
+	}
 }

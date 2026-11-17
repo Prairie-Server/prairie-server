@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { v2 } from "@/api/v2/request";
+import { t } from "@/i18n";
 import { adminKeys } from "../keys";
 import { toast } from "sonner";
 
@@ -23,7 +24,11 @@ export function useTriggerEmbeddings() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger embeddings");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("web.admin.recommendations.jobs.triggerEmbeddingsFailed"),
+      );
     },
   });
 }
@@ -42,7 +47,11 @@ export function useTriggerTasteProfiles() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger taste profiles");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("web.admin.recommendations.jobs.triggerTasteProfilesFailed"),
+      );
     },
   });
 }
@@ -59,7 +68,11 @@ export function useTriggerCowatch() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger co-watch computation");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("web.admin.recommendations.jobs.triggerCowatchFailed"),
+      );
     },
   });
 }
@@ -78,7 +91,11 @@ export function useTriggerRecommendations() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger recommendations");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("web.admin.recommendations.jobs.triggerRecommendationsFailed"),
+      );
     },
   });
 }

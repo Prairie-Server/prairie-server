@@ -14,6 +14,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeauth/nodeauthtest"
 	"github.com/prairie-server/prairie-server/internal/noderouting"
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
@@ -82,6 +83,8 @@ func TestCompatWorkerHLSRouteAllowedHonorsHardExecutionBoundaries(t *testing.T) 
 	}
 }
 
+// A progressive remux is the last resort, offered only when a source that
+// needs a remux has no TranscodingUrl (#2645).
 func TestBuildPlaybackSourceHonorsProgressiveRemuxRoutingPolicy(t *testing.T) {
 	version := catalog.FileVersion{
 		FileID: 1, Container: "mkv", CodecVideo: "h264", CodecAudio: "aac",
@@ -114,7 +117,7 @@ func TestBuildPlaybackSourceHonorsProgressiveRemuxRoutingPolicy(t *testing.T) {
 			wantDirectStream: true,
 		},
 		{
-			name:      "worker execution with API egress falls back to HLS",
+			name:      "worker execution with API egress offers no progressive remux",
 			execution: config.PlaybackExecutionWorkerOnly, egress: config.PlaybackEgressAPIOnly,
 			wantDirectStream: false,
 		},
@@ -127,28 +130,23 @@ func TestBuildPlaybackSourceHonorsProgressiveRemuxRoutingPolicy(t *testing.T) {
 			handler := &PlaybackHandler{
 				codec:     NewResourceIDCodec(),
 				JWTSecret: "test-secret",
+				NodeKeys:  nodeauthtest.SameKey("test-secret"),
 				PlaybackConfig: func() config.PlaybackConfig {
 					return config.PlaybackConfig{Routing: policy}
 				},
 			}
 
-			source := handler.buildPlaybackSource("item", "play", version, profile, playbackInfoRequest{}, true)
+			source := handler.buildPlaybackSource("item", "play", version, profile, playbackInfoRequest{EnableTranscoding: new(false)}, true)
 			if source.SupportsDirectPlay {
 				t.Fatal("SupportsDirectPlay = true, want false for MKV source and MP4 profile")
 			}
 			if source.SupportsDirectStream != test.wantDirectStream {
 				t.Fatalf("SupportsDirectStream = %v, want %v", source.SupportsDirectStream, test.wantDirectStream)
 			}
-			if !source.SupportsTranscoding {
-				t.Fatal("SupportsTranscoding = false, want negotiated HLS fallback")
-			}
 
-			dto := handler.mediaSourceDTO("item", "play", "token", source)
+			dto := handler.mediaSourceDTO("item", "play", source)
 			if (dto.DirectStreamURL != "") != test.wantDirectStream {
 				t.Fatalf("DirectStreamURL = %q, advertised direct stream = %v", dto.DirectStreamURL, test.wantDirectStream)
-			}
-			if dto.TranscodingURL == "" {
-				t.Fatal("TranscodingURL is empty, want HLS fallback")
 			}
 		})
 	}

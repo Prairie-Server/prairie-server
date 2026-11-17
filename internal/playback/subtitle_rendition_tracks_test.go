@@ -942,6 +942,12 @@ func TestPlannedCopyOnDemandSegmentNoGenerationReachesIsNotFound(t *testing.T) {
 			time.Since(started) < subtitleSegmentProductionWait {
 			t.Fatalf("segment before the generation = %q, %v after %v", body, err, time.Since(started))
 		}
+		// Once FFmpeg has exited, the segment's video request restarts it
+		// there, so the answer is still one the player retries.
+		session.running = false
+		if body, err := session.subtitleTrackSegmentVTT(t.Context(), 3, 1); !errors.Is(err, ErrSegmentNotFound) || body != nil {
+			t.Fatalf("segment before the generation after FFmpeg exited = %q, %v", body, err)
+		}
 	})
 }
 
@@ -984,8 +990,9 @@ func TestOnDemandSegmentFailures(t *testing.T) {
 		t.Fatalf("failed conversion = %d %q, want 404", rr.Code, rr.Body.String())
 	}
 
+	// Versions compare at microseconds, as every check across hosts does.
 	replaced := planned
-	replaced.ModTimeUnixNano++
+	replaced.ModTimeUnixNano += int64(time.Microsecond)
 	body, err := session(ffmpeg, replaced).subtitleTrackSegmentVTT(ctx, numbers[0], 0)
 	if err != nil || strings.Contains(string(body), " --> ") || !strings.HasPrefix(string(body), "WEBVTT\n") {
 		t.Fatalf("segment of a replaced source = %q, %v", body, err)

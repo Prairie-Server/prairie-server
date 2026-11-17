@@ -179,11 +179,18 @@ export interface CompatConnectInfo {
   };
   account: {
     /**
-     * False when the account's local password can't sign in: SSO/plugin-provisioned
-     * accounts, and accounts that aren't break-glass while the server turns
-     * password sign-in off.
+     * False when the account's own Prairie password can't sign in: SSO/plugin-provisioned
+     * accounts, accounts that aren't break-glass while the server turns
+     * password sign-in off, and accounts a network provider refuses.
      */
     password_login_available: boolean;
+    /**
+     * True when a password sign-in without a provider (a Jellyfin app's) goes
+     * to the server's directory (LDAP) for this account. Absent on older servers.
+     */
+    directory_login_available?: boolean;
+    /** The account's username at that directory, when one is linked. */
+    directory_username?: string;
   };
 }
 
@@ -251,6 +258,11 @@ export interface Profile {
    * max_advisory_age are shown. No effect without a limit.
    */
   require_advisory_age?: boolean;
+  /**
+   * Whether the profile may use requests and request discovery. Absent on a
+   * server that predates the switch, which allows every profile.
+   */
+  requests_allowed?: boolean;
   quality_preference: string;
   language: string;
   preferred_metadata_language?: string;
@@ -629,7 +641,14 @@ export interface AudiobookRelatedItem {
   title: string;
   year?: number;
   poster_url?: string;
+  poster_thumbhash?: string;
   series_index?: number;
+  /** Audiobooks only: total listening time in seconds. */
+  duration_seconds?: number;
+  /** The profile finished this book; absent when not. */
+  played?: boolean;
+  /** 0-1, only while the book is started and not played. */
+  progress_ratio?: number;
 }
 
 export interface AudiobookSeriesGroup {
@@ -766,6 +785,7 @@ export interface Season {
   poster_url: string;
   poster_thumbhash: string;
   user_data?: SeasonUserData;
+  availability?: { have: number; total: number } | null;
   /** Localized fields whose text was machine-translated by AI. */
   machine_translated_fields?: string[];
 }
@@ -803,6 +823,12 @@ export interface MediaItemUserState {
   in_watchlist: boolean;
   /** The profile marked the movie or series Not interested. */
   not_interested?: boolean;
+  /**
+   * Episodes watched and episodes left, on a series or season the profile
+   * has not finished. Absent on everything else.
+   */
+  watched_count?: number;
+  unplayed_count?: number;
 }
 
 export interface BrowseItemSortMetrics {
@@ -842,6 +868,9 @@ export interface BrowseItem {
   play_content_id?: string;
   type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga";
   title: string;
+  /** On a Continue Watching or Next Up row's card: in_progress or next_up. */
+  item_source?: string;
+  progress_updated_at?: string;
   series_id?: string;
   series_title?: string;
   season_number?: number | null;
@@ -877,8 +906,17 @@ export interface BrowseItem {
   release_date?: string | null;
   last_air_date?: string | null;
   overlay_summary?: OverlaySummary | null;
+  availability?: { have: number; total: number } | null;
   sort_metrics?: BrowseItemSortMetrics | null;
   user_state?: MediaItemUserState;
+  /** Audiobook and ebook browse cards: up to three author names in credit order. */
+  authors?: string[];
+  /**
+   * The profile's resume position and the length it is measured against, in
+   * seconds, on a title it has started and not finished.
+   */
+  position_seconds?: number;
+  duration_seconds?: number;
   // Manga-only count chips. The host populates these only for type='manga'
   // browse items; they are absent (undefined) for every other media type.
   // chapter count = loose chapters without a volume token; volume count =
@@ -1354,6 +1392,9 @@ export interface WatchDetail {
   effective_version_hdr?: boolean;
   effective_version_codec_video?: string;
   effective_version_edition_key?: string;
+  /** The item's backdrop (an episode's series backdrop), for loading screens. */
+  backdrop_url?: string;
+  backdrop_thumbhash?: string;
 }
 
 // Episodes
@@ -2037,7 +2078,7 @@ export interface RequestSeasonProgress {
   episodes_available: number;
 }
 
-export interface RequestDiscoverySection extends RequestMediaPage {
+export interface RequestDiscoverySection extends RequestMediaPage, SectionTitleKey {
   key: string;
   title: string;
   /**
@@ -2049,7 +2090,7 @@ export interface RequestDiscoverySection extends RequestMediaPage {
 }
 
 /** One row of the Discover layout, in page order. */
-export interface RequestDiscoverRowRef {
+export interface RequestDiscoverRowRef extends SectionTitleKey {
   key: string;
   /**
    * tmdb_chart, tmdb_discover, tmdb_list or mdblist for a row of titles;
@@ -2820,6 +2861,10 @@ export interface AdminSession {
   client_label?: string;
   client_label_full?: string;
   client_user_agent?: string;
+  /** Device the client declared when playback started; absent when none was. */
+  device_id?: string;
+  /** Platform the client declared; never derived from the user agent. */
+  device_platform?: string;
   audio_track_index: number;
   transcode_audio: boolean;
   stream_bitrate_kbps: number | null;
@@ -2852,6 +2897,9 @@ export interface AdminSession {
   /** Server-computed activity bucket: direct | remux | direct_stream | transcode.
    * Absent when the per-stream decisions are unknown. */
   effective_play_method?: string;
+  /** Why the route converts or repackages the file, video causes first.
+   * Absent for direct play, older servers, and Jellyfin-protocol sessions. */
+  adaptation_reasons?: string[];
   /** Server-side identification of Jellyfin-ecosystem clients (the JF pill). */
   is_jellyfin_client?: boolean;
   /** Resolved playback workload and route. Node IDs/names are omitted when
@@ -2948,6 +2996,7 @@ export interface ClientDiagnosticManifest {
     platform: DiagnosticPlatform;
     os_version: string;
     profile_id?: string;
+    occurrence_count?: number;
     [key: string]: unknown;
   };
   destination: {
@@ -2964,7 +3013,7 @@ export interface ClientDiagnosticManifest {
     stack_excerpt?: string;
     thread?: string;
     foreground?: boolean;
-    source: "ueh" | "exit_info" | "metrickit" | "exit_sentinel";
+    source: "ueh" | "exit_info" | "metrickit" | "exit_sentinel" | "watchdog";
     provenance: "pre_failure" | "post_restart" | "metric_reporting_period";
     occurred_at: string;
     [key: string]: unknown;
@@ -3569,6 +3618,10 @@ export interface LibraryMetadataMatchFailureDetail {
     outcome: string;
     candidate_count: number;
     threshold: number;
+    /** The rule behind a candidate_rejected outcome, such as "lone_candidate". */
+    rejection?: string;
+    /** The score that rule required, when the rule is a score bar. */
+    required_score?: number;
     top_candidates?: Array<{
       title: string;
       matched_title?: string;
@@ -4090,6 +4143,15 @@ export interface PluginRuntime {
   next_restart_at?: string;
 }
 
+/** The last automatic update Prairie refused to install, and why. */
+export interface PluginUpdateFailure {
+  version: string;
+  reason: string;
+  failed_at: string;
+}
+
+export type PluginSignature = V2Components["schemas"]["AdminPluginSignature"];
+
 export interface PluginInstallation {
   id: number;
   repository_id?: number | null;
@@ -4114,6 +4176,10 @@ export interface PluginInstallation {
   repo_url?: string;
   presentation?: PluginPresentation;
   updates_paused: boolean;
+  /** The last automatic update that failed; absent when the last check did not fail. */
+  update_failure?: PluginUpdateFailure | null;
+  /** The release signature check of the installed package. */
+  signature: PluginSignature;
   legacy_metadata_import_types?: string[];
   created_at?: string;
   updated_at?: string;
@@ -4456,7 +4522,21 @@ export interface StreamNode {
    * no new work, drained once it has none left. Absent on older servers.
    */
   drain_state?: "none" | "draining" | "drained";
+  /**
+   * A key has been issued to this transcode node. A transcode node without
+   * one takes no work. Always false for a proxy; absent on older servers.
+   */
+  key_issued?: boolean;
+  /**
+   * How this transcode node reads source media: through its own library
+   * mount, or over HTTP from the API servers. Absent on proxies and on older
+   * servers.
+   */
+  source_access?: NodeSourceAccess;
 }
+
+/** How a transcode node reads source media. */
+export type NodeSourceAccess = "local" | "core";
 
 export interface CreateNodeRequest {
   name: string;
@@ -4467,6 +4547,8 @@ export interface CreateNodeRequest {
   group?: string;
   max_jobs?: number;
   max_bandwidth_kbps?: number;
+  // Transcode nodes only, with the source_access node capability; absent is local.
+  source_access?: NodeSourceAccess;
 }
 
 export interface UpdateNodeRequest {
@@ -4488,6 +4570,8 @@ export interface UpdateNodeRequest {
   // directory applies when the node restarts.
   download_artifact_dir_override?: string | null;
   download_artifact_max_bytes_override?: number | null;
+  // Transcode nodes only; applies to jobs the node starts after the change.
+  source_access?: NodeSourceAccess;
 }
 
 export interface CheckNodeResponse {
@@ -4584,6 +4668,7 @@ export interface SectionItem {
   backdrop_thumbhash: string;
   logo_url: string;
   overlay_summary?: OverlaySummary | null;
+  availability?: { have: number; total: number } | null;
   badges?: string[];
   user_state?: MediaItemUserState;
   upcoming_event?: SectionItemUpcomingEvent | null;
@@ -4593,7 +4678,18 @@ export interface SectionItem {
   machine_translated_fields?: string[];
 }
 
-export interface ResolvedSection {
+/**
+ * A section title the server wrote itself carries its key in the shared
+ * catalog, so a client can translate it (docs/catalog-api.md, "Section
+ * titles"). Absent on titles an administrator or profile typed; see
+ * `useSectionTitle`.
+ */
+export interface SectionTitleKey {
+  title_key?: string;
+  title_args?: Record<string, string>;
+}
+
+export interface ResolvedSection extends SectionTitleKey {
   id: string;
   section_type: string;
   title: string;
@@ -4603,13 +4699,18 @@ export interface ResolvedSection {
   is_custom: boolean;
   customized: boolean;
   items: SectionItem[];
+  /**
+   * The row was read with an item_limit and holds more cards than `items`
+   * (see homeRowLimit). Absent when false.
+   */
+  has_more?: boolean;
 }
 
 export interface SectionsResponse {
   sections: ResolvedSection[];
 }
 
-export interface ResolvedSectionLayout {
+export interface ResolvedSectionLayout extends SectionTitleKey {
   id: string;
   section_type: string;
   title: string;
@@ -4657,7 +4758,7 @@ export function isFilterSectionConfig(
   return config != null && "match" in config && "groups" in config;
 }
 
-export interface PageSectionConfig {
+export interface PageSectionConfig extends SectionTitleKey {
   id: string;
   scope: string;
   library_id: number | null;
@@ -4668,6 +4769,8 @@ export interface PageSectionConfig {
   item_limit: number;
   config: Record<string, unknown>;
   enabled: boolean;
+  /** The hero banner is kept off the apps. Absent from a server that predates it. */
+  web_only?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -4827,12 +4930,15 @@ export interface SectionOverride {
   removed?: boolean;
 }
 
-export interface SettingsSectionEntry {
+export interface SettingsSectionEntry extends SectionTitleKey {
   id: string;
   section_type: string;
   title: string;
   /** The admin row's own title; empty for a profile-built row. Absent on entries built locally. */
   default_title?: string;
+  /** The catalog key of `default_title` while it is the server's own title (see `SectionTitleKey`). */
+  default_title_key?: string;
+  default_title_args?: Record<string, string>;
   featured: boolean;
   item_limit: number;
   hidden: boolean;
@@ -5152,6 +5258,18 @@ export interface AdminTimeseriesPoint {
   // `egress_kbps`; the remainder is egress no source accounts for. v2 only
   // (the `egress_by_source` dashboard capability).
   egress_by_source?: Record<string, number>;
+  // `streams` split by play method, read from the bucket's peak-streams minute
+  // so the parts add up to no more than `streams` and can be stacked. The
+  // point's own `direct`/`remux`/`transcode` are each their own peak and may
+  // come from different minutes. Sessions with any other play method are the
+  // remainder. v2 only (the `streams_by_method` dashboard capability).
+  streams_by_method?: AdminTimeseriesStreamsByMethod;
+}
+
+export interface AdminTimeseriesStreamsByMethod {
+  direct: number;
+  remux: number;
+  transcode: number;
 }
 
 // One key of `AdminTimeseriesPoint.egress_by_source`: every API process

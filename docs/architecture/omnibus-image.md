@@ -7,8 +7,10 @@ optional Redis and Meilisearch, in one container supervised by
 installs that want one container instead of the Compose stack: a main server
 with its own PostgreSQL, and proxy and transcode nodes that use it (see
 [Nodes](#nodes)). Its source is `omnibus/`; `docker-compose.yml` runs a
-main server, or a node when `.env` sets `MODE`, `DATABASE_URL`, `REDIS_URL`,
-and `NODE_URL`. Hardware transcoding and node access are commented out in it.
+main server, a transcode node when `.env` sets `MODE`, `PRAIRIE_CORE_URL` and
+`PRAIRIE_NODE_KEY`, or a proxy node when it sets `MODE`, `DATABASE_URL`,
+`REDIS_URL`, and `NODE_URL`. Hardware transcoding and node access are commented
+out in it.
 `docker-compose.advanced.yml` is the earlier multi-container file, kept for
 installs that stay on that layout; it runs the same image, whose bundled
 services stay off because `DATABASE_URL` and `REDIS_URL` name its own.
@@ -79,7 +81,8 @@ order:
    `REDIS_URL` turns the matching bundled service off. With the bundled
    PostgreSQL it defaults `POSTGRES_TUNE` to `auto` with a 50% memory budget;
    a deployment's own database keeps Prairie's default, tuning off. A proxy or
-   transcode `MODE` turns them all off and requires both URLs.
+   transcode `MODE` turns them all off; a proxy `MODE` also requires both
+   URLs.
 4. `init-postgres` creates the cluster on first start and writes the image's
    settings and `pg_hba.conf` on every start; `svc-postgres` runs it;
    `init-postgres-db` creates the `prairie` database and rebuilds
@@ -194,16 +197,47 @@ takes longer. A database that does not accept connections cannot be rebuilt,
 so it keeps its recorded version and logs a warning on each start. `init-postgres` rewrites `conf.d/00-omnibus.conf` and
 `pg_hba.conf` on every start and makes sure `postgresql.conf` includes
 `conf.d`; `POSTGRES_TUNE` writes `postgresql.auto.conf`, which loads after it.
+Prairie tunes with `ALTER SYSTEM` once it is up, and PostgreSQL applies some of
+those settings, such as `shared_buffers`, only at start. So while
+`POSTGRES_TUNE` is on, `init-postgres` also writes
+`conf.d/02-omnibus-tune.conf` from `prairie postgres-tune-conf`, which prints the
+restart-only settings Prairie sizes from memory and CPUs, read from the same
+environment and `/config/prairie/.env`. A new cluster then starts with them, and
+Prairie's later `ALTER SYSTEM` writes the same values, so no restart is pending.
+An existing cluster whose `postgresql.auto.conf` holds an older value runs
+with that value until the restart after Prairie rewrites it. Of the settings in
+this file, `shared_buffers` is a quarter of the memory budget, up to a fixed
+2GB when the budget is detected, and `max_worker_processes` follows a
+detected CPU count of at most 16. `POSTGRES_TUNE_MEMORY` and
+`POSTGRES_TUNE_CPUS` are used as given, so an explicit
+`POSTGRES_TUNE_MEMORY` is the way to a larger `shared_buffers`: the tuner's
+`postgresql.auto.conf` loads after `conf.d`, so a local file cannot raise it.
+The ceiling is fixed, not sized from the database, because this file is
+written before the database has content and a value that grew with it would
+need a restart each time.
+`max_connections` and `io_method` stay out: the first is sized from
+`database.max_connections`, which lives in the database, and an `io_method`
+PostgreSQL rejects would drop the whole file (below). Both apply at the next
+restart. With tuning off, or when Prairie cannot size the settings, the file is
+removed. A value outside a setting's range in a configuration file stops
+PostgreSQL from starting, where `ALTER SYSTEM` refuses it, so `init-postgres`
+also removes the file, with a warning, when `postgres -C` rejects the
+configuration with it in place (for example `POSTGRES_TUNE_MEMORY` below
+512kB). The check cannot catch shared memory the host cannot provide, from an
+overstated `POSTGRES_TUNE_MEMORY`: the first start fails then, as the restart
+after `ALTER SYSTEM` would. On an existing cluster
+`postgresql.auto.conf` still decides, and `10-local.conf` overrides the file.
 Rewriting `pg_hba.conf` matters for a data directory from the official
 PostgreSQL image, whose file trusts every local connection.
 
 ## Search settings
 
-Meilisearch search keeps its paging sessions in Redis, and without Redis the
-v2 search capabilities and paged searches answer 503
-`search_continuation_unavailable`. So `ENABLE_MEILISEARCH=true`, or a
-deployment's own `PRAIRIE_SEARCH_PROVIDER=meilisearch`, also starts the bundled
-Redis unless `REDIS_URL` points elsewhere.
+Meilisearch search keeps its paging sessions in process for a single-node
+deployment without Redis. Redis provides shared paging sessions for multi-node
+deployments and keeps them available across Prairie restarts. The omnibus image
+therefore still starts bundled Redis when `ENABLE_MEILISEARCH=true`, or when a
+deployment sets `PRAIRIE_SEARCH_PROVIDER=meilisearch`, unless `REDIS_URL` points
+elsewhere.
 
 With `ENABLE_MEILISEARCH=true`, `init-config` exports `PRAIRIE_SEARCH_PROVIDER`,
 `PRAIRIE_MEILISEARCH_URL`, and `PRAIRIE_MEILISEARCH_API_KEY` for the bundled instance,
@@ -225,18 +259,30 @@ working.
 
 ## Nodes
 
-The same image runs a proxy or transcode node. With `MODE=proxy` or
-`MODE=transcode`, `init-config` requires `DATABASE_URL` and `REDIS_URL`,
-starts none of the bundled services, and ignores `ENABLE_REDIS`, `ENABLE_MEILISEARCH`,
-and `ENABLE_NODE_ACCESS` with a warning. Prairie already keeps migrations and
-`POSTGRES_TUNE` to the primary modes (`integrated`, `api`), so a node never
-changes the shared database's schema or settings. `/config` holds the node's
-own state. Prairie itself refuses to start either mode without `NODE_URL`, the
-node's identity. An administrator registers the node's URL on the main server,
-which checks the node's health at that registered URL; it can differ from
-`NODE_URL` (see [Proxy origins by access path](../admin-api.md#proxy-origins-by-access-path)).
+The same image runs a proxy or transcode node. With either `MODE`,
+`init-config` starts none of the bundled services and ignores `ENABLE_REDIS`,
+`ENABLE_MEILISEARCH`, and `ENABLE_NODE_ACCESS` with a warning. `/config` holds
+the node's own state.
 
-A main server shares its bundled services with nodes when `.env` sets
+With `MODE=transcode`, Prairie branches before it loads the bootstrap: the node
+needs only `PRAIRIE_CORE_URL`, the main server's URL, and `PRAIRIE_NODE_KEY`, the key
+an administrator issued it, and Prairie refuses to start without a well-formed
+key. It opens no database or Redis and holds no `SECRET_KEY`: it reads its
+configuration from the main server and ignores `DATABASE_URL`, `REDIS_URL`,
+`SECRET_KEY`, `NODE_URL` and `NODE_NAME` with one warning, so a `.env` copied
+from the main server keeps working. `init-config` requires nothing of it.
+[Transcode nodes](transcode-nodes.md) describes what the node takes from the
+main server and what it needs from the network.
+
+With `MODE=proxy`, `init-config` requires `DATABASE_URL` and `REDIS_URL`. Prairie
+already keeps migrations and `POSTGRES_TUNE` to the primary modes
+(`integrated`, `api`), so a proxy never changes the shared database's schema or
+settings. Prairie itself refuses to start a proxy without `NODE_URL`, its
+identity. An administrator registers the proxy's URL on the main server, which
+checks its health at that registered URL; it can differ from `NODE_URL` (see
+[Proxy origins by access path](../admin-api.md#proxy-origins-by-access-path)).
+
+A main server shares its bundled services with proxies when `.env` sets
 `ENABLE_NODE_ACCESS=true` and the two commented port lines in
 `docker-compose.yml` are uncommented to publish 5432 and 6379 on
 `NODE_ACCESS_HOST`:
@@ -245,20 +291,20 @@ A main server shares its bundled services with nodes when `.env` sets
   and `pg_hba.conf` gains `host prairie prairie all scram-sha-256`.
   `init-postgres-db` sets the `prairie` role's password to `POSTGRES_PASSWORD` on
   every start, passing it to `psql` through the environment.
-- Redis starts even without `ENABLE_REDIS`, since nodes need the Redis the main
-  server uses. It binds every interface and requires `REDIS_PASSWORD`, which
+- Redis starts even without `ENABLE_REDIS`, since proxies need the Redis the
+  main server uses. It binds every interface and requires `REDIS_PASSWORD`, which
   `init-config` writes to a file only the `redis` account and root read; the
   readiness check signs in from it. The password is limited to characters that
   need no escaping in a URL, because Prairie's own `REDIS_URL` carries it.
 - Prairie on the main server still uses the socket and loopback.
 
 Turning node access off removes the listener and the network rule, clears the
-role's password, and puts Redis back on loopback. Nodes sign in as `prairie`, the
-cluster's superuser, as they did with the multi-container stack, and neither
-connection is encrypted, so the ports belong on a trusted network only.
+role's password, and puts Redis back on loopback. Proxies sign in as `prairie`,
+the cluster's superuser, as they did with the multi-container stack, and
+neither connection is encrypted, so the ports belong on a trusted network only.
 Reusing `POSTGRES_PASSWORD` means a main server moved from that stack keeps the
-`DATABASE_URL` its nodes already have, as long as that stack ran with the
-default `POSTGRES_USER=prairie`; nodes that sign in as another user are refused
+`DATABASE_URL` its proxies already have, as long as that stack ran with the
+default `POSTGRES_USER=prairie`; proxies that sign in as another user are refused
 until their `DATABASE_URL` names `prairie`. Their `REDIS_URL` gains the password.
 
 ## Moving from the multi-container stack
@@ -358,12 +404,8 @@ here. It refuses, before anything is moved into place, when:
   its largest collation-dependent index twice over (the index and its WAL) plus
   1 GiB, or for copying a Prairie directory that cannot be hard-linked while
   keeping that room for the database's first start.
-- The copy's search uses a Meilisearch chosen in the admin UI, `.env` sets no
-  `PRAIRIE_SEARCH_PROVIDER`, and nothing turns Redis on (`ENABLE_REDIS`,
-  `ENABLE_MEILISEARCH`, node access, or a `REDIS_URL`): its paging sessions need
-  the Redis the earlier stack always ran.
-- The copy has enabled proxy or transcode nodes and node access is off: they
-  reached the old services on published ports.
+- The copy has enabled proxy nodes and node access is off: they reached the
+  old services on published ports.
 
 How it stays safe to repeat and to roll back:
 

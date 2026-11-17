@@ -1,8 +1,9 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
+import { Loader2, UserPlus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { v2 } from "@/api/v2/request";
+import { problemFieldDetail, v2, V2ProblemError } from "@/api/v2/request";
 import { listProfiles } from "@/hooks/queries/profiles";
 import { getBootstrapProfile, useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,48 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
+import { AuthLanguagePicker } from "@/components/auth/AuthLanguagePicker";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
-import { INVALID_EMAIL_MESSAGE, isValidEmail } from "@/lib/email";
+import { invalidEmailMessage, isValidEmail } from "@/lib/email";
+import { newPasswordLengthProblem } from "@/lib/newPassword";
 import { toast } from "sonner";
+import { useT } from "@/i18n";
 
-import { Loader2, UserPlus } from "lucide-react";
+const FIELDS = ["username", "email", "password", "confirmPassword", "inviteCode"] as const;
+type Field = (typeof FIELDS)[number];
+type FieldMessages = Partial<Record<Field, string>>;
+
+/** The form field each signup request member comes from, for placing a server refusal. */
+const FIELD_BY_MEMBER: Record<string, Field> = {
+  username: "username",
+  email: "email",
+  password: "password",
+  invite_code: "inviteCode",
+};
+
+/** A refusal's field errors placed under their fields, plus the details no field takes. */
+function placeServerErrors(err: unknown): { placed: FieldMessages; unplaced: string[] } | null {
+  if (!(err instanceof V2ProblemError) || !err.problem.errors?.length) return null;
+  const placed: FieldMessages = {};
+  const unplaced: string[] = [];
+  for (const error of err.problem.errors) {
+    const member = error.location?.startsWith("body.") ? error.location.slice(5) : "";
+    const field = FIELD_BY_MEMBER[member];
+    if (field && !placed[field]) placed[field] = problemFieldDetail(error);
+    else unplaced.push(problemFieldDetail(error));
+  }
+  return Object.keys(placed).length > 0 ? { placed, unplaced } : null;
+}
+
+function FieldError({ id, message }: { id: string; message?: string | null }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="text-destructive text-xs">
+      {message}
+    </p>
+  );
+}
+
 export default function Signup() {
   const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
@@ -24,10 +62,14 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [inviteCode, setInviteCode] = useState(searchParams.get("code") ?? "");
+  // A field shows its rule once the user has typed in it or left it.
+  const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const [serverErrors, setServerErrors] = useState<FieldMessages>({});
   const [submitting, setSubmitting] = useState(false);
   const { signup, profile, selectProfile, user, loading } = useAuth();
   const navigate = useNavigate();
   const redirectTarget = sanitizeAuthRedirect(searchParams.get("redirect"));
+  const t = useT();
 
   const statusQuery = useQuery({
     queryKey: ["auth", "signup-status"],
@@ -50,22 +92,54 @@ export default function Signup() {
     return (
       <div className="auth-shell">
         <AuthBackground />
-        <h1 className="sr-only">Public signups are currently closed</h1>
+        <h1 className="sr-only">{t("web.auth.signup.closed")}</h1>
         <div className="auth-viewport">
-          <AuthBrandHero subtitle="Public signups are currently closed." />
+          <AuthBrandHero subtitle={t("web.auth.signup.closed")} />
         </div>
       </div>
     );
   }
 
+  const required = (label: string) => t("web.common.schemaForm.required", { label });
+  const problems: Record<Field, string | null> = {
+    username: username.trim() ? null : required(t("web.auth.username")),
+    email: isValidEmail(email) ? null : invalidEmailMessage(),
+    password: newPasswordLengthProblem(password),
+    confirmPassword: password === confirmPassword ? null : t("web.auth.passwordRules.mismatch"),
+    inviteCode: inviteCode.trim() ? null : required(t("web.auth.signup.inviteCodeLabel")),
+  };
+  const invalid = FIELDS.some((field) => problems[field]);
+  const errorFor = (field: Field) =>
+    serverErrors[field] ?? (touched[field] ? problems[field] : null);
+
+  function touch(field: Field) {
+    setTouched((current) => (current[field] ? current : { ...current, [field]: true }));
+  }
+
+  function edit(field: Field, set: (value: string) => void) {
+    return (e: ChangeEvent<HTMLInputElement>) => {
+      set(e.target.value);
+      touch(field);
+      setServerErrors(({ [field]: _cleared, ...rest }) => rest);
+    };
+  }
+
+  // The invalid state, error text, and blur marking every field shares.
+  function fieldProps(field: Field, id: string) {
+    const error = errorFor(field);
+    return {
+      id,
+      onBlur: () => touch(field),
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? `${id}-error` : undefined,
+    };
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!isValidEmail(email)) {
-      toast.error(INVALID_EMAIL_MESSAGE);
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+    // The disabled button is the usual guard; this one covers any other way the form submits.
+    if (invalid) {
+      setTouched(Object.fromEntries(FIELDS.map((field) => [field, true])));
       return;
     }
     setSubmitting(true);
@@ -89,7 +163,13 @@ export default function Signup() {
       }
       void navigate("/profiles");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Signup failed");
+      const refusal = placeServerErrors(err);
+      if (refusal) {
+        setServerErrors(refusal.placed);
+        if (refusal.unplaced.length > 0) toast.error(refusal.unplaced.join(" "));
+      } else {
+        toast.error(err instanceof Error ? err.message : t("web.auth.signup.failed"));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -98,89 +178,105 @@ export default function Signup() {
   return (
     <div className="auth-shell">
       <AuthBackground />
-      <h1 className="sr-only">Create account</h1>
+      <AuthLanguagePicker />
+      <h1 className="sr-only">{t("web.auth.createAccount")}</h1>
       <div className="auth-viewport">
-        <AuthBrandHero subtitle="Create a new account to get started." />
+        <AuthBrandHero subtitle={t("web.auth.signup.description")} />
         <Card className="auth-card border-0 bg-transparent shadow-none">
           <CardHeader className="sr-only">
-            <CardTitle>Create account</CardTitle>
-            <CardDescription>Create a new account to get started.</CardDescription>
+            <CardTitle>{t("web.auth.createAccount")}</CardTitle>
+            <CardDescription>{t("web.auth.signup.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 p-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-username">Username</Label>
-                <Input
-                  id="signup-username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  autoFocus
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <p className="text-muted-foreground text-xs">At least 8 characters</p>
-                <PasswordInput
-                  id="signup-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-confirm-password">Confirm password</Label>
-                <PasswordInput
-                  id="signup-confirm-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-destructive text-xs">Passwords do not match</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-invite-code">Invite code</Label>
-                <Input
-                  id="signup-invite-code"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="Enter your invite code"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                {submitting ? "Creating account..." : "Create account"}
-              </Button>
+            <form onSubmit={handleSubmit}>
+              {/* Locked while a request is out, so a refusal can't land on a value typed since. */}
+              <fieldset disabled={submitting} className="min-w-0 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">{t("web.auth.username")}</Label>
+                  <Input
+                    {...fieldProps("username", "signup-username")}
+                    value={username}
+                    onChange={edit("username", setUsername)}
+                    autoComplete="username"
+                    autoFocus
+                    required
+                  />
+                  <FieldError id="signup-username-error" message={errorFor("username")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">{t("web.auth.email")}</Label>
+                  <Input
+                    {...fieldProps("email", "signup-email")}
+                    type="email"
+                    value={email}
+                    onChange={edit("email", setEmail)}
+                    autoComplete="email"
+                    required
+                  />
+                  <FieldError id="signup-email-error" message={errorFor("email")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">{t("web.auth.password")}</Label>
+                  <p className="text-muted-foreground text-xs">
+                    {t("web.auth.passwordRules.minLength")}
+                  </p>
+                  <PasswordInput
+                    {...fieldProps("password", "signup-password")}
+                    value={password}
+                    onChange={edit("password", setPassword)}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <FieldError id="signup-password-error" message={errorFor("password")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">{t("web.auth.confirmPassword")}</Label>
+                  <PasswordInput
+                    {...fieldProps("confirmPassword", "signup-confirm-password")}
+                    value={confirmPassword}
+                    onChange={edit("confirmPassword", setConfirmPassword)}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <FieldError
+                    id="signup-confirm-password-error"
+                    message={errorFor("confirmPassword")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-invite-code">{t("web.auth.signup.inviteCodeLabel")}</Label>
+                  <Input
+                    {...fieldProps("inviteCode", "signup-invite-code")}
+                    value={inviteCode}
+                    onChange={edit("inviteCode", setInviteCode)}
+                    placeholder={t("web.auth.signup.inviteCodePlaceholder")}
+                    required
+                  />
+                  <FieldError id="signup-invite-code-error" message={errorFor("inviteCode")} />
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting || invalid}>
+                  {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                  {submitting
+                    ? t("web.auth.passwordRules.creatingAccount")
+                    : t("web.auth.createAccount")}
+                </Button>
+              </fieldset>
             </form>
             <p className="text-muted-foreground mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link
-                to={
-                  redirectTarget
-                    ? `/login?redirect=${encodeURIComponent(redirectTarget)}`
-                    : "/login"
-                }
-                className="text-foreground underline hover:no-underline"
-              >
-                Sign in
-              </Link>
+              {t("web.auth.passwordRules.alreadyHaveAccount", {
+                link: (chunks) => (
+                  <Link
+                    to={
+                      redirectTarget
+                        ? `/login?redirect=${encodeURIComponent(redirectTarget)}`
+                        : "/login"
+                    }
+                    className="text-foreground underline hover:no-underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           </CardContent>
         </Card>

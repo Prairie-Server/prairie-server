@@ -65,7 +65,7 @@ describe("SubtitleMenu", () => {
 
     expect(aiStatusCalls()).toHaveLength(0);
 
-    await userEvent.click(screen.getByRole("button", { name: /enable captions/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^subtitles,/i }));
 
     await waitFor(() => {
       expect(playerV2Mock).toHaveBeenCalledWith(config, AI_STATUS, {});
@@ -91,7 +91,7 @@ describe("SubtitleMenu", () => {
       />,
     );
 
-    const trigger = screen.getByRole("button", { name: /enable captions/i });
+    const trigger = screen.getByRole("button", { name: /^subtitles,/i });
     await userEvent.click(trigger);
     await waitFor(() => expect(aiStatusCalls()).toHaveLength(1));
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -44,14 +43,11 @@ func TestGoTestArgsAnchorsEveryName(t *testing.T) {
 	}
 }
 
-// The committed list must parse, so a malformed edit fails make test-go
-// rather than only the CI job that has a database.
-func TestCommittedListParses(t *testing.T) {
-	data, err := os.ReadFile("../db-pins.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := parseList(string(data)); err != nil {
+// The committed lists must parse and name each test once between them, so a
+// malformed edit fails make test-go rather than only the CI job that has a
+// database.
+func TestCommittedListsParse(t *testing.T) {
+	if _, err := readLists([]string{"../db-pins.txt", "../db-contracts.txt"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -154,5 +150,67 @@ func TestCheck(t *testing.T) {
 				t.Fatalf("report does not show %q:\n%s", tc.reportHas, report)
 			}
 		})
+	}
+}
+
+// The wrapper repoints a database variable only when it names the template,
+// however its host, port and options are spelled, and never passes its own
+// variables on.
+func TestCloneEnv(t *testing.T) {
+	const template = "postgres://u:p@localhost:5432/prairie_test?sslmode=disable"
+	const clone = "postgres://u:p@localhost:5432/dbpins_x?sslmode=disable"
+	got := cloneEnv([]string{
+		"PRAIRIE_TEST_DATABASE_URL=" + template,
+		"PRAIRIE_SUBTITLE_STORAGE_TEST_DATABASE_URL=postgresql://u:p@127.0.0.1/other?dbname=prairie_test",
+		"OTHER=" + template,
+		cloneTemplateEnv + "=" + template,
+		cloneRunEnv + "=abcd",
+	}, template, clone)
+	want := []string{
+		"PRAIRIE_TEST_DATABASE_URL=" + clone,
+		"PRAIRIE_SUBTITLE_STORAGE_TEST_DATABASE_URL=" + clone,
+		"OTHER=" + template,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("env = %q, want %q", got, want)
+	}
+	for _, other := range []string{
+		"postgres://u:p@localhost:5432/subtitles",
+		"postgres://u:p@localhost:5432/prairie_test?host=other-server",
+		"postgres://u:p@localhost:5432/prairie_test?database=subtitles",
+	} {
+		got := cloneEnv([]string{"PRAIRIE_SUBTITLE_STORAGE_TEST_DATABASE_URL=" + other}, template, clone)
+		if got[0] != "PRAIRIE_SUBTITLE_STORAGE_TEST_DATABASE_URL="+other {
+			t.Fatalf("a different database was repointed: %q", got)
+		}
+	}
+}
+
+// A dbname or database query parameter overrides the URL path, so pointing
+// a URL at the copy, or at the maintenance database, must drop it.
+func TestWithDatabaseDropsTheDatabaseOverride(t *testing.T) {
+	for _, override := range []string{"dbname", "database"} {
+		template := "postgres://u:p@localhost/ignored?" + override + "=prairie_test&sslmode=disable"
+		if name, err := databaseName(template); err != nil || name != "prairie_test" {
+			t.Fatalf("%s: databaseName = %q, %v; want prairie_test", override, name, err)
+		}
+		got, err := withDatabase(template, "postgres")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != "postgres://u:p@localhost/postgres?sslmode=disable" {
+			t.Fatalf("%s: withDatabase = %q", override, got)
+		}
+	}
+}
+
+// Postgres truncates names past 63 bytes, which would make two copies collide.
+func TestCloneNameFitsPostgres(t *testing.T) {
+	name, err := cloneName("0123abcd", "/home/runner/work/prairie-server/prairie-server/internal/a_very_long_parent_package_name/another_long_package_name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(name) > 63 || !strings.HasPrefix(name, clonePrefix+"0123abcd_") || !strings.Contains(name, "another_long_package_name_") {
+		t.Fatalf("clone name %q (%d bytes)", name, len(name))
 	}
 }

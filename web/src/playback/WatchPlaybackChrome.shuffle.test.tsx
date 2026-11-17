@@ -4,7 +4,7 @@ import { useEffect, type ComponentProps } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { V2ProblemError } from "@/api/v2/request";
 import type { Shuffle } from "@/api/v2/shuffles";
@@ -171,6 +171,14 @@ async function renderPlayback(input: WatchPlaybackStartInput, client = new Query
 }
 
 describe("WatchPlaybackHost shuffle", () => {
+  // The post-roll screens load lazily; a cold import (motion and all) can
+  // outlast findByText's one-second wait on the first test.
+  beforeAll(async () => {
+    await Promise.all([
+      import("@/player/components/PlayingNextScreen"),
+      import("./ShufflePlayingNext"),
+    ]);
+  });
   beforeEach(() => {
     mocks.navigate.mockReset();
     mocks.player.props = null;
@@ -188,7 +196,7 @@ describe("WatchPlaybackHost shuffle", () => {
     movie.nearEnd();
     expect(movie.controller().state.mode).toBe("post-roll");
     expect(await screen.findByText("Shuffling Movies")).toBeTruthy();
-    expect(screen.getByText("Up Next at Random")).toBeTruthy();
+    expect(screen.getByText("Up next at random")).toBeTruthy();
     expect(screen.getByText("Title movie-2")).toBeTruthy();
     expect(screen.queryByText(/S0:E0/)).toBeNull();
   });
@@ -355,7 +363,7 @@ describe("WatchPlaybackHost shuffle", () => {
     expect(movie.controller().state.mode).toBe("foreground");
     act(() => movie.player().onEnded?.());
 
-    expect(screen.queryByText("Up Next at Random")).toBeNull();
+    expect(screen.queryByText("Up next at random")).toBeNull();
     expect(mocks.navigate).toHaveBeenCalledWith("/item/movie-1", { up: true });
     expect(mocks.getShuffle).not.toHaveBeenCalled();
   });

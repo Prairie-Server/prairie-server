@@ -30,6 +30,8 @@ type AndroidPushCommand struct {
 	Token           string
 	PushMode        string
 	Remove          bool
+	// LoginSessionID is as in ApplePushRegistrationInput.
+	LoginSessionID string
 }
 type AndroidPushReceipt struct {
 	Generation     int64
@@ -163,7 +165,7 @@ func (r *PushDeviceRepository) ApplyAndroidPush(ctx context.Context, cmd Android
 	}
 	result = AndroidPushReceipt{Generation: cmd.Generation, Removed: cmd.Remove}
 	if !cmd.Remove {
-		device, err := r.insertFCM(ctx, tx, FCMPushDeviceRegistration{UserID: cmd.UserID, ProfileID: cmd.ProfileID, DeviceID: cmd.DeviceID, FCMToken: cmd.Token, PushMode: cmd.PushMode}, cipher)
+		device, err := r.insertFCM(ctx, tx, FCMPushDeviceRegistration{UserID: cmd.UserID, ProfileID: cmd.ProfileID, DeviceID: cmd.DeviceID, FCMToken: cmd.Token, PushMode: cmd.PushMode, LoginSessionID: cmd.LoginSessionID}, cipher)
 		if err != nil {
 			return result, err
 		}

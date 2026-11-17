@@ -22,14 +22,16 @@ import { useProfiles } from "@/hooks/queries/profiles";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
+import { canAddProfile } from "@/lib/profile-management";
+import { useT, type MessageKey } from "@/i18n";
 
 type ManagePurpose = "add" | "manage";
 /** What a PIN prompt on the picker unlocks. */
 type PinPurpose = "select" | ManagePurpose;
 
-const PIN_PURPOSE_DESCRIPTIONS: Partial<Record<PinPurpose, string>> = {
-  add: "Adding a profile needs the primary profile's PIN.",
-  manage: "Managing profiles needs the primary profile's PIN.",
+const PIN_PURPOSE_DESCRIPTIONS: Partial<Record<PinPurpose, MessageKey>> = {
+  add: "web.profiles.picker.addNeedsPin",
+  manage: "web.profiles.picker.manageNeedsPin",
 };
 
 /** A new profile being created as the verified primary profile. */
@@ -39,12 +41,15 @@ interface AddProfileSession {
 }
 
 export default function Profiles() {
+  const t = useT();
   const {
     data: profiles = [],
     isLoading: profilesLoading,
     avatarUploadEnabled,
     maxAdvisoryAgeSupported,
     requireAdvisoryAgeSupported,
+    requestsAllowedSupported,
+    maxProfiles,
   } = useProfiles();
   const { data: libraries = [], isLoading: librariesLoading } = useAvailableUserLibraries();
   const [editorOpen, setEditorOpen] = useState(false);
@@ -53,21 +58,25 @@ export default function Profiles() {
   );
   const [addSession, setAddSession] = useState<AddProfileSession | null>(null);
   const [preparingAdd, setPreparingAdd] = useState(false);
-  const { selectProfile, verifyProfilePin, logout } = useAuth();
+  const { selectProfile, verifyProfilePin, logout, isImpersonating } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTarget = sanitizeAuthRedirect(searchParams.get("redirect"));
 
-  useDocumentTitle("Profiles");
+  useDocumentTitle(t("web.profiles.picker.documentTitle"));
 
   const isLoading = profilesLoading || librariesLoading;
+  const pinPurposeDescription = pinRequest
+    ? PIN_PURPOSE_DESCRIPTIONS[pinRequest.purpose]
+    : undefined;
 
   function enterApp() {
     void navigate(redirectTarget ?? "/");
   }
 
   function handleSelect(profile: Profile) {
-    if (profile.has_pin) {
+    // View-as opens a locked profile without its PIN; the server allows it too.
+    if (profile.has_pin && !isImpersonating) {
       setPinRequest({ profile, purpose: "select" });
       return;
     }
@@ -82,7 +91,7 @@ export default function Profiles() {
   function startManaging(purpose: ManagePurpose) {
     const primary = profiles.find((profile) => profile.is_primary);
     if (!primary) {
-      toast.error("Couldn't find the primary profile needed to manage profiles.");
+      toast.error(t("web.profiles.picker.primaryMissing"));
       return;
     }
     if (primary.has_pin) {
@@ -109,16 +118,16 @@ export default function Profiles() {
     // those of a profile this browser may still remember.
     const profileContext = captureProfileRequestContextAs(primary.id, profileToken);
     if (!profileContext) {
-      toast.error("Your session ended. Sign in again.");
+      toast.error(t("web.profiles.picker.sessionEnded"));
       return;
     }
     setPreparingAdd(true);
     try {
-      const libraries = await listUserLibraries({ profileContext });
+      const libraries = await listUserLibraries({ profileContext, includeHidden: true });
       setAddSession({ profileContext, libraries });
     } catch (err) {
       if (!(err instanceof StaleApiRequestContextError)) {
-        toast.error("Couldn't open the new profile form. Try again.");
+        toast.error(t("web.profiles.picker.addFormFailed"));
       }
     } finally {
       setPreparingAdd(false);
@@ -158,13 +167,13 @@ export default function Profiles() {
     } catch (err) {
       const lockout = pinLockoutMessage(err);
       if (lockout) {
-        toast.error(`Profile created. ${lockout}`);
+        toast.error(t("web.profiles.picker.createdLockout", { lockout }));
         return;
       }
       // fall through to the toast below
     }
 
-    toast.error("Profile created, but PIN verification failed");
+    toast.error(t("web.profiles.picker.createdPinFailed"));
   }
 
   if (isLoading) {
@@ -191,29 +200,31 @@ export default function Profiles() {
         <div className="relative z-10 flex flex-col items-center gap-6">
           <AuthBrandHero subtitle="Create a profile before you enter the app." />
           <div className="w-full max-w-md space-y-3 text-center">
-            <h1 className="page-title text-[clamp(2.1rem,6vw,4rem)]">Create your first profile</h1>
-            <p className="text-muted-foreground text-sm">
-              You need a profile before you can enter the app.
-            </p>
+            <h1 className="page-title text-[clamp(2.1rem,6vw,4rem)]">
+              {t("web.profiles.picker.firstTitle")}
+            </h1>
+            <p className="text-muted-foreground text-sm">{t("web.profiles.picker.firstHint")}</p>
           </div>
 
           <Button onClick={() => setEditorOpen(true)}>
             <Plus className="h-4 w-4" />
-            Create profile
+            {t("web.profiles.picker.create")}
           </Button>
 
           <Button variant="outline" size="sm" onClick={logout}>
             <LogOut />
-            Sign out
+            {t("common.signOut")}
           </Button>
         </div>
 
         <ProfileEditorDialog
           open={editorOpen}
+          createsPrimary
           libraries={libraries}
           avatarUploadEnabled={avatarUploadEnabled}
           advisoryAgeSupported={maxAdvisoryAgeSupported}
           requireAdvisoryAgeSupported={requireAdvisoryAgeSupported}
+          requestsAllowedSupported={requestsAllowedSupported}
           onOpenChange={setEditorOpen}
           onSaveSuccess={(profile, context) => void handleCreateSuccess(profile, context)}
         />
@@ -226,7 +237,9 @@ export default function Profiles() {
       <AuthBackground />
       <div className="relative z-10 text-center">
         <AuthBrandHero className="mb-6" subtitle="Choose who is watching on this device." />
-        <h1 className="page-title text-[clamp(2.2rem,7vw,4.5rem)]">Who&apos;s watching?</h1>
+        <h1 className="page-title text-[clamp(2.2rem,7vw,4.5rem)]">
+          {t("web.profiles.picker.title")}
+        </h1>
       </div>
 
       <div className="relative z-10 flex max-w-5xl flex-wrap justify-center gap-5">
@@ -235,7 +248,11 @@ export default function Profiles() {
             <button
               onClick={() => handleSelect(profile)}
               disabled={preparingAdd}
-              aria-label={profile.has_pin ? `${profile.name} (PIN protected)` : profile.name}
+              aria-label={
+                profile.has_pin
+                  ? t("web.profiles.picker.pinProtected", { name: profile.name })
+                  : profile.name
+              }
               className="surface-panel hover:border-primary flex w-[148px] flex-col items-center gap-3 rounded-[1.75rem] p-5 transition-all duration-150 hover:-translate-y-1"
             >
               <div className="relative">
@@ -246,7 +263,7 @@ export default function Profiles() {
                   </AvatarFallback>
                 </Avatar>
                 {profile.has_pin ? (
-                  <span className="bg-surface border-border text-muted-foreground absolute -right-0.5 -bottom-0.5 flex h-6 w-6 items-center justify-center rounded-full border">
+                  <span className="bg-surface border-border text-muted-foreground absolute -end-0.5 -bottom-0.5 flex h-6 w-6 items-center justify-center rounded-full border">
                     <Lock className="h-3 w-3" aria-hidden="true" />
                   </span>
                 ) : null}
@@ -255,17 +272,19 @@ export default function Profiles() {
             </button>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => startManaging("add")}
-          disabled={preparingAdd}
-          className="group border-border hover:border-primary text-muted-foreground hover:text-foreground flex w-[148px] flex-col items-center gap-3 rounded-[1.75rem] border-2 border-dashed p-5 transition-all duration-150 hover:-translate-y-1 disabled:pointer-events-none disabled:opacity-60"
-        >
-          <span className="border-border group-hover:border-primary/40 flex h-20 w-20 items-center justify-center rounded-full border-2 transition-colors">
-            <Plus className="h-8 w-8" aria-hidden="true" />
-          </span>
-          <span className="text-sm font-medium">Add profile</span>
-        </button>
+        {canAddProfile(profiles.length, maxProfiles) ? (
+          <button
+            type="button"
+            onClick={() => startManaging("add")}
+            disabled={preparingAdd}
+            className="group border-border hover:border-primary text-muted-foreground hover:text-foreground flex w-[148px] flex-col items-center gap-3 rounded-[1.75rem] border-2 border-dashed p-5 transition-all duration-150 hover:-translate-y-1 disabled:pointer-events-none disabled:opacity-60"
+          >
+            <span className="border-border group-hover:border-primary/40 flex h-20 w-20 items-center justify-center rounded-full border-2 transition-colors">
+              <Plus className="h-8 w-8" aria-hidden="true" />
+            </span>
+            <span className="text-sm font-medium">{t("web.profiles.picker.add")}</span>
+          </button>
+        ) : null}
       </div>
 
       <div className="relative z-10 mt-2 flex flex-wrap justify-center gap-3">
@@ -276,17 +295,17 @@ export default function Profiles() {
           disabled={preparingAdd}
         >
           <UserCog className="h-4 w-4" />
-          Manage profiles
+          {t("web.profiles.picker.manage")}
         </Button>
         <Button variant="outline" size="sm" onClick={logout}>
           <LogOut />
-          Sign out
+          {t("common.signOut")}
         </Button>
       </div>
 
       <ProfilePinDialog
         profile={pinRequest?.profile ?? null}
-        description={pinRequest ? PIN_PURPOSE_DESCRIPTIONS[pinRequest.purpose] : undefined}
+        description={pinPurposeDescription ? t(pinPurposeDescription) : undefined}
         onClose={() => setPinRequest(null)}
         onVerified={handlePinVerified}
         verifyPin={verifyProfilePin}
@@ -298,6 +317,7 @@ export default function Profiles() {
         avatarUploadEnabled={avatarUploadEnabled}
         advisoryAgeSupported={maxAdvisoryAgeSupported}
         requireAdvisoryAgeSupported={requireAdvisoryAgeSupported}
+        requestsAllowedSupported={requestsAllowedSupported}
         profileContext={addSession?.profileContext}
         onOpenChange={(open) => {
           if (!open) {

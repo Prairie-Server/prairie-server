@@ -16,20 +16,20 @@ import {
   SortableContext,
   arrayMove,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useMotionSafeSortable } from "@/hooks/useSortableList";
 import type { HomeRow } from "@/lib/homeRows/types";
 import type { ListRowProps } from "@/components/calm/ListRow";
+import { useT } from "@/i18n";
+import { useHomeRowTitle } from "@/lib/sectionTitle";
+import { useMotionScrollBehavior } from "@/hooks/usePrefersReducedMotion";
 
 /** What the list hands each row so it can be dragged by its grip only. */
 export type SortableRowProps = Pick<ListRowProps, "handleProps" | "ref" | "style" | "dragging">;
 
 const TOUCH_DRAG_DELAY_MS = 200;
-
-const SCREEN_READER_INSTRUCTIONS =
-  "To move a row, focus its handle and press Space or Enter. Use the up and down arrow keys to move it, Space or Enter to drop it, or Escape to cancel.";
 
 function SortableRow({
   id,
@@ -48,7 +48,7 @@ function SortableRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled });
+  } = useMotionSafeSortable({ id, disabled });
   return children({
     ref: setNodeRef,
     style: { transform: CSS.Transform.toString(transform), transition },
@@ -79,39 +79,50 @@ export function RowList({
   onDragActiveChange?: (active: boolean) => void;
   children: (row: HomeRow, sortable: SortableRowProps) => ReactNode;
 }) {
+  const t = useT();
+  const rowTitle = useHomeRowTitle();
   const [drag, setDrag] = useState<{ rows: HomeRow[]; token: unknown } | null>(null);
   // dnd-kit reports the row as over itself right after pickup; announcing that
   // would talk over "Picked up". Only a change of position is announced.
   const lastOver = useRef<UniqueIdentifier | null>(null);
   const shownRows = drag?.rows ?? rows;
+  const scrollBehavior = useMotionScrollBehavior();
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: TOUCH_DRAG_DELAY_MS, tolerance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      scrollBehavior,
+    }),
   );
 
   const announcements = useMemo<Announcements>(() => {
-    const titleOf = (id: UniqueIdentifier) =>
-      shownRows.find((row) => row.id === id)?.title ?? "Row";
-    const positionOf = (id: UniqueIdentifier) =>
-      `position ${shownRows.findIndex((row) => row.id === id) + 1} of ${shownRows.length}`;
+    const titleOf = (id: UniqueIdentifier) => {
+      const row = shownRows.find((entry) => entry.id === id);
+      if (!row) return t("web.home.rows.drag.fallbackTitle");
+      return rowTitle(row);
+    };
+    const at = (id: UniqueIdentifier) => ({
+      position: shownRows.findIndex((row) => row.id === id) + 1,
+      total: shownRows.length,
+    });
     return {
       onDragStart: ({ active }) => {
         lastOver.current = active.id;
-        return `Picked up ${titleOf(active.id)}, ${positionOf(active.id)}.`;
+        return t("web.home.rows.drag.pickedUp", { ...at(active.id), row: titleOf(active.id) });
       },
       onDragOver: ({ active, over }) => {
         if (!over || over.id === lastOver.current) return undefined;
         lastOver.current = over.id;
-        return `${titleOf(active.id)} is now at ${positionOf(over.id)}.`;
+        return t("web.home.rows.drag.over", { ...at(over.id), row: titleOf(active.id) });
       },
       onDragEnd: ({ active, over }) =>
         over
-          ? `${titleOf(active.id)} dropped at ${positionOf(over.id)}.`
-          : `${titleOf(active.id)} dropped.`,
-      onDragCancel: ({ active }) => `Moving ${titleOf(active.id)} was canceled.`,
+          ? t("web.home.rows.drag.droppedAt", { ...at(over.id), row: titleOf(active.id) })
+          : t("web.home.rows.drag.dropped", { row: titleOf(active.id) }),
+      onDragCancel: ({ active }) => t("web.home.rows.drag.canceled", { row: titleOf(active.id) }),
     };
-  }, [shownRows]);
+  }, [shownRows, t, rowTitle]);
 
   function setDragState(next: typeof drag) {
     setDrag(next);
@@ -140,7 +151,7 @@ export function RowList({
       collisionDetection={closestCenter}
       accessibility={{
         announcements,
-        screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS },
+        screenReaderInstructions: { draggable: t("web.home.rows.drag.instructions") },
       }}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}

@@ -1,5 +1,6 @@
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { t } from "@/i18n";
 import type { ItemDetail } from "@/api/types";
 import { v2 } from "@/api/v2/request";
 import { fetchCatalogItemDetail } from "./catalogRead";
@@ -63,7 +64,7 @@ export function useSetRating(itemId: string) {
       for (const [queryKey, value] of context?.previous ?? []) {
         queryClient.setQueryData(queryKey, value);
       }
-      toast.error("Failed to update rating");
+      toast.error(t("web.common.toast.ratings.updateFailed"));
     },
     onSuccess: () => {
       void refreshCommunityRating(queryClient, itemId);
@@ -98,7 +99,7 @@ export function useDeleteRating(itemId: string) {
       for (const [queryKey, value] of context?.previous ?? []) {
         queryClient.setQueryData(queryKey, value);
       }
-      toast.error("Failed to update rating");
+      toast.error(t("web.common.toast.ratings.updateFailed"));
     },
     onSuccess: () => {
       void refreshCommunityRating(queryClient, itemId);

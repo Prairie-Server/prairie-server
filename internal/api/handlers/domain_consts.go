@@ -7,5 +7,4 @@ const (
 	playbackModeDirect    = "direct"
 	playbackModeRemux     = "remux"
 	playbackModeTranscode = "transcode"
-	sectionTypeLibrary    = "library"
 )
