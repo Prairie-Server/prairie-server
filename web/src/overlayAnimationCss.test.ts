@@ -69,8 +69,8 @@ describe("overlay animation CSS", () => {
       "data-[state=open]:zoom-in-95",
       "data-[state=open]:slide-in-from-start",
     ]);
-    expect(css).toMatch(/&\[data-state="open"\] \{\s*animation: enter /);
-    expect(css).toMatch(/&\[data-state="closed"\] \{\s*animation: exit /);
+    expect(css).toMatch(/\[data-state="open"\] \{\s*animation: enter /);
+    expect(css).toMatch(/\[data-state="closed"\] \{\s*animation: exit /);
     expect(css).toMatch(/--tw-enter-opacity: 0;/);
     expect(css).toMatch(/--tw-enter-scale: \.95;|--tw-enter-scale: 0\.95;/);
     expect(css).toMatch(/:dir\(rtl\)/);

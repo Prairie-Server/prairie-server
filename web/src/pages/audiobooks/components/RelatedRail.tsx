@@ -39,7 +39,7 @@ export function RelatedRail({ heading, meta, items, coverAspect = "square" }: Re
         <h2 className="text-xl font-semibold tracking-tight">{heading}</h2>
         {meta && <span className="text-muted-foreground text-sm">{meta}</span>}
       </div>
-      <div className="-mx-2 -mt-1 flex gap-4 overflow-x-auto px-2 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-2 -mt-1 flex [scrollbar-width:none] gap-4 overflow-x-auto px-2 pt-1 pb-2 [&::-webkit-scrollbar]:hidden">
         {items.map((item) => (
           <ViewTransitionLink
             key={item.content_id}

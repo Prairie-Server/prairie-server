@@ -49,7 +49,10 @@ describe("FFmpegAudioDecoder", () => {
       const planes: Float32Array[][] = [];
       let mask = 0;
       let firstTimestamp: number | null = null;
+      let firstPacketUs: number | null = null;
       for await (const packet of new EncodedPacketSink(track).packets()) {
+        // FFmpeg keeps whole microseconds, so the timestamp is truncated.
+        firstPacketUs ??= Math.trunc(packet.timestamp * 1e6);
         for (const frame of decoder.decode(packet.data, packet.timestamp * 1e6)) {
           firstTimestamp ??= frame.timestampUs;
           mask = frame.channelMask;
@@ -62,7 +65,9 @@ describe("FFmpegAudioDecoder", () => {
 
       const total = planes.reduce((sum, frame) => sum + frame[0]!.length, 0);
       expect(total / 48_000).toBeGreaterThan(0.2);
-      expect(firstTimestamp).toBe(0);
+      // The first frame keeps the first packet's timestamp, which is negative
+      // when the track declares a codec delay (AC-3 and E-AC-3 priming).
+      expect(firstTimestamp).toBe(firstPacketUs);
       const speakers = speakersFromMask(mask, channels);
       expect(speakers).toHaveLength(channels);
       const joined = (speaker: number) => {

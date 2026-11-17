@@ -267,7 +267,7 @@ function CreateUserForm({
 
       <Tabs value={dialogTab} onValueChange={setDialogTab} className="min-h-0 flex-1 max-sm:gap-0">
         {/* Below sm the tab strip scrolls sideways if the labels outgrow the screen. */}
-        <div className="max-sm:shrink-0 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
+        <div className="max-sm:shrink-0 max-sm:[scrollbar-width:none] max-sm:overflow-x-auto max-sm:[&::-webkit-scrollbar]:hidden">
           <TabsList
             variant="line"
             className="border-border mb-4 w-full justify-start border-b pb-1 max-sm:mb-0 max-sm:h-auto! max-sm:min-w-max max-sm:px-2"
