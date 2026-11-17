@@ -9,11 +9,12 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 
 	_ "golang.org/x/image/webp"
+
+	"github.com/prairie-server/prairie-server/internal/fspath"
 )
 
 // svtMinEdge is SVT-AV1's minimum frame edge. Below this the encoder rejects
@@ -83,7 +84,7 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 		"-an",
 		outPath,
 	)
-	cmd := exec.CommandContext(ctx, e.ffmpeg, args...)
+	cmd := fspath.CommandContext(ctx, e.ffmpeg, args...)
 	cmd.Env = append(os.Environ(), "OMP_NUM_THREADS=1")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

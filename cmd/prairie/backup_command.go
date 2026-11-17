@@ -63,7 +63,7 @@ const (
 	envBackupS3Endpoint  = "PRAIRIE_BACKUP_S3_ENDPOINT"
 	envBackupS3Region    = "PRAIRIE_BACKUP_S3_REGION"
 	envBackupS3AccessKey = "PRAIRIE_BACKUP_S3_ACCESS_KEY"
-	envBackupS3SecretKey = "PRAIRIE_BACKUP_S3_SECRET_KEY" //nolint:gosec // G101: the variable's name, not a credential
+	envBackupS3SecretKey = "PRAIRIE_BACKUP_S3_SECRET_KEY"
 	envBackupS3PathStyle = "PRAIRIE_BACKUP_S3_PATH_STYLE"
 
 	backupS3EnvUsage = envBackupS3Endpoint + ", " + envBackupS3Region + ", " + envBackupS3AccessKey + ", " +

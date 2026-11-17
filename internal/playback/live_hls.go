@@ -13,6 +13,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/fspath"
 )
 
 // LiveHLSSession is an ffmpeg remux of a live MPEG-TS HTTP source into a
@@ -396,7 +398,8 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 
 	args, pipeline := buildLiveHLSArgs(opts, playlist, segPattern, seg, listSize)
 
-	cmd := exec.CommandContext(procCtx, bin, args...)
+	cmd := fspath.CommandContext(procCtx, bin, args...)
+	// Own process group: Stop signals -pid to reach ffmpeg's children too.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {

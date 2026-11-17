@@ -90,6 +90,7 @@ var restoredFlagSettings = map[string]string{
 	"matcher.enable_tv_series_group_queue":                 "local matching",
 	"matcher.enable_tv_series_root_queue":                  "local matching",
 	"metadata.cache_images":                                "local caching",
+	"metadata.pause_artwork_during_playback":               whyLocal,
 	"notifications.discord.allow_per_episode":              "message granularity on a channel its own switch gates",
 	"notifications.email.allow_per_episode":                "message granularity on a channel its own switch gates",
 	"notifications.server_channels.mention_requesters":     "message content on channels their own switch gates",

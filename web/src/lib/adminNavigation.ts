@@ -147,13 +147,6 @@ const PAGES = {
     icon: Library,
     href: "/admin/libraries",
   },
-  liveTv: {
-    label: "Live TV",
-    description: "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
-    keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
-    icon: Radio,
-    href: "/admin/livetv",
-  },
   autoscanSources: {
     labelKey: "web.admin.shell.nav.page.autoscanSources.label",
     descriptionKey: "web.admin.shell.nav.page.autoscanSources.description",
@@ -367,6 +360,18 @@ const PAGES = {
   },
 } satisfies Record<string, NavPageDefinition>;
 
+/**
+ * Prairie's Live TV page. Its text is not in the prairie-translations catalog
+ * yet, so it stays English in every language until keys are added there.
+ */
+const LIVE_TV_PAGE: AdminNavItem = {
+  label: "Live TV",
+  description: "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
+  keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
+  icon: Radio,
+  href: "/admin/livetv",
+};
+
 /** A page as a sidebar item; `labelKey` names it differently under a topic. */
 function navPage(page: NavPageDefinition, labelKey: MessageKey = page.labelKey): AdminNavItem {
   return {
@@ -513,7 +518,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   navSection("manage", "web.admin.shell.nav.section.manage", [
     navTopic("libraries", "web.admin.shell.nav.topic.libraries", Library, [
       navPage(PAGES.libraries),
-      navPage(PAGES.liveTv),
+      LIVE_TV_PAGE,
       navPage(PAGES.collections),
       navPage(PAGES.sections, "web.admin.shell.nav.item.homeSections"),
       navPage(PAGES.subtitleFiles),

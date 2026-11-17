@@ -4,7 +4,7 @@ import { useEffect, type ComponentProps } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { V2ProblemError } from "@/api/v2/request";
 import type { Shuffle } from "@/api/v2/shuffles";
@@ -171,6 +171,14 @@ async function renderPlayback(input: WatchPlaybackStartInput, client = new Query
 }
 
 describe("WatchPlaybackHost shuffle", () => {
+  // The post-roll screens load lazily; a cold import (motion and all) can
+  // outlast findByText's one-second wait on the first test.
+  beforeAll(async () => {
+    await Promise.all([
+      import("@/player/components/PlayingNextScreen"),
+      import("./ShufflePlayingNext"),
+    ]);
+  });
   beforeEach(() => {
     mocks.navigate.mockReset();
     mocks.player.props = null;

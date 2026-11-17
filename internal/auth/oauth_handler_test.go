@@ -271,7 +271,7 @@ func TestOAuthInit_BouncesToPublicOriginOnce(t *testing.T) {
 		t.Fatalf("bounced start: code = %d cookie = %v inits = %d", w.Code, cookie, rig.client.inits)
 	}
 	// The default port is the same origin.
-	if _, cookie := rig.start(t, "https://PRAIRIE.test:443/api/v2/auth/oauth/42/init"); cookie == nil {
+	if _, cookie := rig.start(t, "https://SILO.test:443/api/v2/auth/oauth/42/init"); cookie == nil {
 		t.Fatal("explicit default port was treated as another origin")
 	}
 }

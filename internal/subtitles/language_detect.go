@@ -33,7 +33,7 @@ type LanguageDetection struct {
 
 var (
 	subtitleTimestampLine = regexp.MustCompile(`^\d{1,2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[,.]\d{3}`)
-	assDialoguePrefix     = regexp.MustCompile(`(?i)^dialog:\s*\d`)
+	assDialoguePrefix     = regexp.MustCompile(`(?i)^dialogue:\s*\d`)
 	metadataLanguageLine  = regexp.MustCompile(`(?i)^(?:language|lang)\s*:\s*(.+)$`)
 	vttLanguageLine       = regexp.MustCompile(`(?i)language\s*:\s*([^;]+)`)
 )

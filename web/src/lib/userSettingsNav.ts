@@ -41,18 +41,38 @@ export interface UserSettingsNavGroup {
   items: UserSettingsNavItem[];
 }
 
+/**
+ * Text for a Prairie-only page that has no prairie-translations keys yet. It
+ * shows in English in every language until the keys are added to the catalog.
+ */
+interface Untranslated {
+  english: string;
+}
+
 /** A page in the table below: its text as message ids, translated when read. */
 interface UserSettingsNavSource {
   path: string;
-  label: MessageKey;
+  label: MessageKey | Untranslated;
   icon: LucideIcon;
-  description: MessageKey;
+  description: MessageKey | Untranslated;
   /** English search terms; they match in every language. */
   keywords?: readonly string[];
   /** Every control on the page, by the id of its visible label, so search can find it. */
-  settings?: readonly MessageKey[];
+  settings?: readonly (MessageKey | Untranslated)[];
   primaryOrAdmin?: boolean;
   requiresRequests?: boolean;
+}
+
+function untranslated(english: string): Untranslated {
+  return { english };
+}
+
+function text(id: MessageKey | Untranslated): string {
+  return typeof id === "string" ? t(id) : id.english;
+}
+
+function messageKeys(...ids: (MessageKey | Untranslated)[]): MessageKey[] {
+  return ids.filter((id): id is MessageKey => typeof id === "string");
 }
 
 interface UserSettingsNavGroupSource {
@@ -78,15 +98,15 @@ function navItem(group: MessageKey, source: UserSettingsNavSource): UserSettings
   return {
     path: source.path,
     icon: source.icon,
-    label: t(source.label),
-    description: t(source.description),
+    label: text(source.label),
+    description: text(source.description),
     keywords: [
       ...(source.keywords ?? []),
-      ...englishTerms(group, source.label, source.description),
+      ...englishTerms(group, ...messageKeys(source.label, source.description)),
     ],
     settings: source.settings?.map((id) => {
-      const keywords = englishTerms(id);
-      return keywords.length > 0 ? { label: t(id), keywords } : { label: t(id) };
+      const keywords = englishTerms(...messageKeys(id));
+      return keywords.length > 0 ? { label: text(id), keywords } : { label: text(id) };
     }),
     primaryOrAdmin: source.primaryOrAdmin,
     requiresRequests: source.requiresRequests,
@@ -473,9 +493,9 @@ const USER_SETTINGS_GROUPS: UserSettingsNavGroupSource[] = [
       },
       {
         path: "quick-connect",
-        label: "Quick Connect",
+        label: untranslated("Quick Connect"),
         icon: MonitorSmartphone,
-        description: "Approve sign-in on another device",
+        description: untranslated("Approve sign-in on another device"),
         keywords: [
           "quick connect",
           "pair device",
@@ -487,12 +507,12 @@ const USER_SETTINGS_GROUPS: UserSettingsNavGroupSource[] = [
           "code",
           "qr",
         ],
-        settings: settingIndex(
-          "Enter device code",
-          "Approve sign-in",
-          "Match code",
-          "How it works",
-        ),
+        settings: [
+          untranslated("Enter device code"),
+          untranslated("Approve sign-in"),
+          untranslated("Match code"),
+          untranslated("How it works"),
+        ],
       },
       {
         path: "watch-providers",

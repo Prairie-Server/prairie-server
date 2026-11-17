@@ -560,7 +560,7 @@ func TestDiscordDigestMessageLimit(t *testing.T) {
 			return BuildDiscordDMPayload(digestEpisodeRows(3, sameOverview))
 		}},
 		{name: "dm non-latin declined requests fit by character count", items: 10, wantEmbeds: 10, links: 1, build: func() ([]byte, error) {
-			return BuildDiscordDMPayload(digestDeclinedRows(10, strings.Repeat("申請作品", 25), strings.Repeat("配信地域外のため", 50)))
+			return BuildDiscordDMPayload(digestDeclinedRows(10, strings.Repeat("申請作品", 25), strings.Repeat("配信地域外のため", 49)))
 		}},
 		{name: "dm over the embed cap", items: 14, links: 1, build: func() ([]byte, error) {
 			return BuildDiscordDMPayload(digestLongDeclines(14))

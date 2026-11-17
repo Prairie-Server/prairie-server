@@ -17,7 +17,7 @@ Title: Example
 Language: Spanish
 
 [Events]
-Dialog: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hola
+Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hola
 `)
 	srt := []byte(`1
 00:00:01,000 --> 00:00:04,000

@@ -207,7 +207,7 @@ func TestCalendarBatchResolvesCardPosters(t *testing.T) {
 		{ContentID: "episode-2", Type: "episode", Title: "Series", SeriesID: ptrString("series-1"),
 			SeasonNumber: ptrInt(1), EpisodeNumber: ptrInt(2), AirDate: apr6, PosterPath: "images/poster/original.jpg"},
 	}}
-	resolver := &stubCalendarImageResolver{urls: map[string]string{"images/poster/w300.jpg": "https://cdn.example/poster-card.jpg"}}
+	resolver := &stubCalendarImageResolver{urls: map[string]string{"images/poster/w200.jpg": "https://cdn.example/poster-card.jpg"}}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
 	h := &CalendarHandler{repo: repo, detailSvc: detailSvc}
@@ -221,8 +221,8 @@ func TestCalendarBatchResolvesCardPosters(t *testing.T) {
 	if resolver.resolveURLsCalls != 1 || resolver.resolveURLCalls != 0 {
 		t.Fatalf("resolver calls batch=%d single=%d, want 1/0", resolver.resolveURLsCalls, resolver.resolveURLCalls)
 	}
-	if !slices.Equal(resolver.lastPaths, []string{"images/poster/w300.jpg"}) || resolver.lastVariant != "card" {
-		t.Fatalf("resolved paths %v variant %q, want [images/poster/w300.jpg] card", resolver.lastPaths, resolver.lastVariant)
+	if !slices.Equal(resolver.lastPaths, []string{"images/poster/w200.jpg"}) || resolver.lastVariant != "card" {
+		t.Fatalf("resolved paths %v variant %q, want [images/poster/w200.jpg] card", resolver.lastPaths, resolver.lastVariant)
 	}
 	if len(view.Events) != 1 || len(view.Events[0].Items) != 2 {
 		t.Fatalf("days = %+v, want one day with two items", view.Events)

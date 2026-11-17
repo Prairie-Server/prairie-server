@@ -12,7 +12,7 @@ import (
 
 // streamTokenHeader carries the stream token a relay forwards with a media
 // request. The node passes it to the core unread.
-const streamTokenHeader = "X-Prairie-Stream-Token" //nolint:gosec // a header name, not a credential
+const streamTokenHeader = "X-Prairie-Stream-Token"
 
 // errNoCore is a node wired without the core's playback authority.
 var errNoCore = errors.New("transcode node has no core client")
