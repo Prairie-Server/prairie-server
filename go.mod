@@ -35,7 +35,7 @@ require (
 	github.com/open-policy-agent/opa v1.22.4
 	github.com/pgvector/pgvector-go v0.4.1
 	github.com/pgvector/pgvector-go/pgx v0.4.1
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20261102160212-f1a0e3822112
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20261116221220-168efd6f9fcd
 	github.com/pressly/goose/v3 v3.30.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
